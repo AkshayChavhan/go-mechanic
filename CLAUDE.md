@@ -45,7 +45,8 @@ Every task gets one. The reader is a junior software engineer.
 
 ## Git rules
 
-- **Commit messages** use Conventional Commits: `type: what changed`, with types `feat`, `fix`, `docs`, `chore`, `refactor`, `style`, `test`. Add a scope in brackets when it helps: `docs(01): fix example`.
+- **Commit messages** use Conventional Commits: `type: what changed`. Types: `feat` (new app feature), `fix` (bug fix), `docs` (documentation), `chore` (tooling, config, dependencies), `refactor`, `style`, `test`. Add a scope in brackets when it helps: `docs(01): fix example`.
+- **Small commits:** code, docs and tracker updates usually go in separate commits, so each can be reviewed or reverted alone.
 - **Never commit secrets.** API keys and tokens go in `.env` (ignored by git) or the tool's own login. Commit a `.env.example` with fake values instead.
 - **Ask the user first** before: `git push`, opening a pull request, deleting a branch, `--force` anything, rewriting history on `main`, or installing anything globally (`-g`, `npm install -g`, `brew install`).
 - **Don't commit generated folders** such as `node_modules/` or `.next/`. `.gitignore` already covers them.

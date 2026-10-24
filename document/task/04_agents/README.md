@@ -29,7 +29,12 @@ A team works the same way: a planner, a builder, a technical writer and a review
 
 ## How: step by step
 
-1. **Branch from `main`:** `git switch -c 04_agents`.
+1. **Branch from `main`.**
+   ```bash
+   git switch main
+   git switch -c 04_agents
+   ```
+   `-c` creates the new branch from whatever branch you're on, so switch to `main` first.
 
 2. **Write one Markdown file per agent.** Each file has a **frontmatter** block (settings between `---` lines) followed by the agent's instructions:
    ```markdown
@@ -46,7 +51,7 @@ A team works the same way: a planner, a builder, a technical writer and a review
    What each field does:
    - `name`: how you and Claude refer to the agent.
    - `description`: **the most important line.** The main session reads it to decide when to hand off work, so it says *when* to use the agent, not only what it is.
-   - `tools`: an allowlist. `code-reviewer` gets no `Edit` or `Write`, so it **can't** change files even if it wanted to. That's stronger than asking it nicely.
+   - `tools`: an allowlist. `code-reviewer` gets no `Edit` or `Write` tool. It still needs `Bash` to run `git diff` and tests, and **Bash can change files too** (`rm`, `sed -i`, `git commit`). So fewer tools means fewer ways to go wrong, not zero, and the "read-only" rule in its instructions still matters.
    - `model: inherit`: use the same model as the main session.
    - `color`: its label color in the Claude Code interface.
    - `skills` (in `ui-engineer` only): skills loaded into the agent from the start. `ui-engineer` always needs `frontend-design`, `ui-ux-pro-max`, `shadcn` and `gsap-react`, so it gets them up front instead of discovering them one at a time.
@@ -60,17 +65,38 @@ A team works the same way: a planner, a builder, a technical writer and a review
    | `learning-doc-writer` | Read, Glob, Grep, Write, Edit, Bash | the learning doc only |
    | `code-reviewer` | Read, Glob, Grep, Bash | nothing |
 
+   Claude Code enforces the **Tools** column. The **Writes to** column is enforced only by each agent's instructions. Any agent with `Write`, `Edit` or `Bash` *could* touch other files; its instructions tell it not to.
+
    None of them create branches, commit or merge. **Git stays with the main session**, so there's one place where the task workflow is enforced and history doesn't get tangled.
 
 4. **Check that Claude Code loads them.** We asked a fresh one-shot session which agents it could see:
    ```bash
-   claude -p "...list the custom subagent types..." --model haiku --max-turns 1
+   claude -p "Without using any tools, list the names of the custom subagent types defined in this project's .claude/agents folder that appear in your Agent tool's list of available agent types. Reply with just the names, one per line." --model haiku --max-turns 1
    ```
-   It answered `code-reviewer`, `learning-doc-writer`, `task-planner`, `ui-engineer`. All four loaded.
+   - `-p` ("print"): run one prompt without the interactive screen, print the answer, and exit.
+   - `--model haiku`: use the small, fast model; this check doesn't need a big one.
+   - `--max-turns 1`: stop after one reply, so it can't wander off and do other work.
+
+   It answered `code-reviewer`, `learning-doc-writer`, `task-planner`, `ui-engineer`. All four loaded. (The simpler check is `/agents` in a new session; see "Check that it works".)
 
 5. **Wire them into the rules.** `CLAUDE.md` now says: plan with `task-planner`, draft docs with `learning-doc-writer`, and run `code-reviewer` before every merge. The definition of done includes a "Ready to merge" review.
 
-6. **Review this task with its own reviewer, then merge.** Before merging we ran the new `code-reviewer` on this branch, fixed what it found, and merged with `--no-ff`.
+6. **Review this task with its own reviewer.** We ran the new agent on this branch:
+   ```bash
+   claude -p "Review the current branch (04_agents) against main, following your instructions. Also check that every relative Markdown link ... points at a file that exists." --agent code-reviewer --allowedTools "Read" "Glob" "Grep" "Bash(git *)" "Bash(ls *)" "Bash(grep *)" "Bash(cat *)" "Bash(head *)" "Bash(wc *)" "Bash(find *)" "Bash(test *)"
+   ```
+   `--agent code-reviewer` runs the whole session as that agent. `--allowedTools` pre-approves only read-only commands, because `-p` mode can't stop to ask permission.
+
+   The verdict was **Needs changes**. What it caught, and what we did:
+   - **This doc said the reviewer "can't" change files.** Wrong: it has Bash. Fixed in step 2 and the table note above.
+   - **The `claude -p` command in step 4 was a placeholder** with unexplained flags. Replaced with the real command and a note on each flag.
+   - **Step 1 left out `git switch main`.** Added.
+   - **"Try it yourself" used `git restore .`**, which throws away *all* uncommitted changes. Narrowed to the two files the exercise touches.
+   - **This step claimed the review had already happened** before it ran. Rewritten (this list) after the real review.
+   - **The work went into one big `feat:` commit.** Fair point: small commits are a repo rule, and `chore`/`docs` fit tooling work better than `feat`. We left that commit alone (rewriting history to split it isn't worth it) and put the fixes in a separate `docs(04):` commit.
+   - **It doubted that subagents can start their own subagents.** We checked the [subagents docs](https://code.claude.com/docs/en/sub-agents), which say: *"By default, a subagent can spawn subagents of its own, up to three layers below the main conversation."* The reviewer's knowledge was out of date, so that line stays, now with the source. **A reviewer can be wrong too. Check its claims the same way it checks yours.**
+
+7. **Merge** with `git switch main && git merge --no-ff 04_agents`.
 
 ## Decisions worth knowing
 
@@ -82,9 +108,9 @@ A team works the same way: a planner, a builder, a technical writer and a review
 
 - **Agent vs subagent:** the Claude session you talk to is the main agent. A **subagent** is another Claude instance the main agent starts for one job. It gets its own instructions, its own tools and a fresh context, and it hands back a summary when it's done. In Claude Code, "custom agents" and "subagents" mean the same files in `.claude/agents/`.
 - **Context isolation:** the subagent's reading and thinking stay in its own context. Only its final report comes back, which keeps the main session focused.
-- **Least privilege:** give each part of a system only the permissions its job needs. A reviewer that can't write can't accidentally change your code.
+- **Least privilege:** give each part of a system only the permissions its job needs. Every tool you leave out is one less way for an agent to cause damage by accident.
 - **Frontmatter:** a settings block at the top of a Markdown file, between two `---` lines, written in YAML (`key: value`).
-- **Nested subagents:** a subagent can start subagents of its own (up to three levels deep). We don't need that yet.
+- **Nested subagents:** a subagent can start subagents of its own, up to three levels below the main conversation ([docs](https://code.claude.com/docs/en/sub-agents)). We don't need that yet.
 
 ## Check that it works
 
@@ -96,6 +122,7 @@ A team works the same way: a planner, a builder, a technical writer and a review
 
 - **A vague `description`** like "helps with code". Claude can't tell when to use it. Say *when*: "Use when a task branch is ready to merge."
 - **Giving every agent every tool.** Leaving out `tools` gives the agent everything. Do that only when the job really needs it (like `ui-engineer`).
+- **Thinking "no Write tool" means read-only.** `Bash` can write, delete and commit. If an agent must never change anything, leave out `Bash` too, or accept that its instructions are what keep it read-only.
 - **Letting several agents commit.** Two agents committing on the same branch at the same time makes a mess. One owner for git.
 - **Editing an agent file and testing in the old session.** Start a new session, or the old definition is still in use.
 
@@ -103,7 +130,7 @@ A team works the same way: a planner, a builder, a technical writer and a review
 
 1. Start a new session and ask: *"Use task-planner to plan a contact page."* Check the result follows the rules: `NN_` number, row in `task.md`, a step list including the branch, learning doc and merge.
 2. Open `.claude/agents/code-reviewer.md` and add one check you care about (for example, "every image has an `alt` attribute"). Start a new session and run the reviewer again.
-3. Throw the experiments away with `git restore .` if you don't want to keep them.
+3. To throw the experiments away, run `git status` first to see what changed, then restore only the exercise files: `git restore document/task/task.md .claude/agents/code-reviewer.md`. (`git restore .` would also wipe any other unsaved work.)
 
 ## Learn more
 

@@ -58,6 +58,7 @@ Each task is broken into small steps. Tick them off as you go.
 - [x] Check Claude Code loads all four agents
 - [x] Add the agents section to `CLAUDE.md` and `readme.md`
 - [x] Write the learning doc
+- [x] Review with `code-reviewer` and fix what it found
 - [x] Merge into `main`
 
 ## Backlog (proposed)
