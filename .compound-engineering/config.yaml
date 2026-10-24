@@ -1,0 +1,19 @@
+# Compound Engineering: team settings for go-mechanic (committed to git).
+# Every available setting, with explanations: config.example.yaml (next to this file).
+# Personal overrides go in config.local.yaml (ignored by git).
+# Why each value below was chosen: document/learning/06_compound_engineering.md
+
+# Keep everything Compound Engineering writes (plans, solutions, ...) inside
+# our document/ folder, next to document/task/ and document/learning/.
+docs_root: document
+
+# Never send our code or documents to another AI company's model for a
+# "second opinion" review. Reviews stay on Claude.
+cross_model_review_mode: off
+
+# Don't hand implementation work to other AI coding tools.
+work_engine_mode: off
+
+# Don't start watching (and pushing fixes to) pull requests automatically.
+# This repo doesn't open PRs unless the owner asks.
+auto_babysit: false
