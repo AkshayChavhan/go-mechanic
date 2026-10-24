@@ -28,23 +28,23 @@ Read the page's source (page, layout, and the components it uses). If the site b
 - `/account`, `/admin`, `/dev`, `/login` and booking confirmation pages are `noindex` (Next.js `robots: { index: false }` in their metadata), and are **not** blocked in `robots.ts`: Google has to crawl a page to see its `noindex`, so blocking it in robots.txt can leave the URL in search results. A private page that is blocked in `robots.ts` is a finding.
 
 **Content and structure**
-- Exactly one `<h1>`, which matches the page's topic; headings in order (`h2` under `h1`, and so on).
+- One `<h1>` that matches the page's topic, and headings in order (`h2` under `h1`, and so on). Google says several `<h1>`s don't hurt ranking, so label extra `<h1>`s **nice to have** (they hurt structure and screen-reader navigation), not must fix.
 - Real text in the HTML. Important content must not exist only after JavaScript runs or an animation finishes.
 - Descriptive link text (not "click here"); internal links to related services, booking and contact.
 - Every meaningful image has useful `alt` text; decorative images have `alt=""`.
 - Semantic landmarks (`header`, `nav`, `main`, `footer`) and lists for lists.
 
 **Structured data** (JSON-LD in a `<script type="application/ld+json">`)
-- Site-wide: `AutoRepair` with name, address, phone, opening hours, geo, URL and logo (and `aggregateRating` only when the reviews are real).
+- Site-wide: `AutoRepair` with name, address, phone, opening hours, geo, URL and logo. Note: Google doesn't show review stars for a business's ratings of itself ("self-serving" reviews), so `aggregateRating` on our own `AutoRepair` won't produce stars; don't recommend adding it for that reason.
 - On service pages: `Service` (with `provider` and price where shown). On the FAQ page: `FAQPage`. Deep pages: `BreadcrumbList`.
 - It must be valid JSON, match what's visible on the page, and escape `<` to prevent injection (see the JSON-LD guide).
 
 **Crawling**
-- The page is in `src/app/sitemap.ts` (with the right URL), and not blocked by `robots.ts`.
+- Public pages are in `src/app/sitemap.ts` with their canonical URL and aren't blocked by `robots.ts`. `noindex` pages (`/account`, `/admin`, `/dev`, `/login`) are left **out** of the sitemap, and also not blocked in `robots.ts`.
 - No links to pages that don't exist; no duplicate pages for the same content without a canonical.
 
 **Speed (Core Web Vitals)**
-- Images use `next/image` with `sizes`; the main hero image is loaded with priority; modern formats.
+- Images use `next/image` with `sizes`; the hero (LCP) image loads early with `loading="eager"` or `fetchPriority="high"` (or `preload`). Next.js 16 **deprecated** the `priority` prop, so never suggest it (see `node_modules/next/dist/docs/01-app/03-api-reference/02-components/image.md`).
 - Fonts use `next/font`; no layout shift from late-loading fonts, images or banners (reserve space).
 - Animations (GSAP) animate only `transform` and `opacity`, don't hide the main heading or hero text before JavaScript loads, and respect `prefers-reduced-motion`.
 - Not too much client JavaScript: interactive parts are small `"use client"` islands.

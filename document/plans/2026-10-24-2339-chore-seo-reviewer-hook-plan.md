@@ -245,7 +245,7 @@ There is no `npm run check` yet; task 09 adds it.
 
 - R1–R10 hold, and every Verification Contract gate passes.
 - `document/task/task.md` links this plan, and every 08 step is ticked except "Merge into `main`".
-- Nothing is committed that shouldn't be: no state file, no throwaway probe file, no draft copies. Commits stay on `08_seo_reviewer`, and nothing is pushed.
+- Nothing is committed that shouldn't be: no state file, no throwaway probe file, no draft copies. Commits stay on `08_seo_reviewer`, and Claude doesn't push (the owner may push branches from the editor).
 - U1: the agent loads in a new session and changes no files.
 - U2: every scenario passes, and the end-to-end check shows exactly one review round.
 - U3: the docs match the script's real behaviour.
