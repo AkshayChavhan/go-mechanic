@@ -23,7 +23,8 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `.claude/skills/` | Installed project skills (third-party: don't edit by hand) |
 | `skills-lock.json` | Source and content hash of each installed skill |
 | `.claude/agents/` | Project subagents (see Agents) |
-| `.claude/settings.json` | Shared Claude Code settings: installs the Compound Engineering plugin (pinned version) |
+| `.claude/settings.json` | Shared Claude Code settings: installs the Compound Engineering plugin (pinned version) and registers the SEO Stop hook |
+| `.claude/hooks/` | Hook scripts: `seo_check.py` asks for an SEO review after page changes (see SEO review) |
 | `.compound-engineering/config.yaml` | Compound Engineering team settings (`config.example.yaml` lists every option) |
 | `document/plans/` | The master plan (`2026-10-24-gomechanic-master-plan.md`) plus per-task plans written by `ce-plan` / `ce-brainstorm` |
 | `document/solutions/` | Lessons written by `ce-compound`: read the relevant ones before starting a task |
@@ -118,8 +119,18 @@ Subagents live in `.claude/agents/`. The main session runs the task workflow and
 | `ui-engineer` | A task changes how the app looks, feels or moves | Yes (app code); no git |
 | `learning-doc-writer` | A task's changes are committed and need a learning doc | Only the learning doc |
 | `code-reviewer` | A task branch is ready to merge | No (read-only) |
+| `seo-reviewer` | Page files changed (the SEO hook asks automatically), or the owner asks to check SEO | No (read-only) |
 
 Run independent subagents in parallel. When an agent's job changes, update its file and this table in the same task.
+
+## SEO review
+
+- **Automatic:** a Stop hook (`.claude/hooks/seo_check.py`, registered in `.claude/settings.json`) runs every time you finish a reply. If any file under `src/app/`, `src/components/`, `src/content/`, `src/i18n/`, `messages/` or `public/` changed since the last review (API routes, tests and `.DS_Store` excluded), it stops you once with a list of the changed files.
+- **When it asks:** run the `seo-reviewer` agent on the affected pages, **in the foreground** (not in the background, so it doesn't review half-finished pages while another agent is still building them). Then reply with a short **"SEO check"** section: what changed, each page's verdict (Pass / Needs work) and the suggested fixes. **Don't apply the fixes unless the owner asks.**
+- **On demand:** when the owner asks to "check SEO" (for a page or the whole site), run `seo-reviewer` the same way.
+- **Child sessions:** start every `claude -p` helper session with `GOMECHANIC_SEO_HOOK=off` in front (e.g. `GOMECHANIC_SEO_HOOK=off claude -p ...`). Otherwise the child takes the review, and the owner never sees it.
+- **Re-review everything:** delete `.claude/.seo-reviewed.json` (git-ignored); the next reply reviews all page files.
+- **Before task 42:** missing metadata, sitemap, robots file and JSON-LD are planned for task 42, so the agent lists them on one "Waiting for task 42" line instead of failing the page.
 
 ## Definition of done
 

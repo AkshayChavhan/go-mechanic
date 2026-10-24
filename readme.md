@@ -30,8 +30,9 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `document/skills/skills.md` | The Claude skills we use (GSAP, shadcn/ui, frontend-design, UI/UX Pro Max, 21st.dev) and when to use each. |
 | `.claude/skills/` | The installed skill files. They come with the repo, so there's nothing extra to install. |
 | `skills-lock.json` | Where each skill came from, so installs are repeatable. |
-| `.claude/agents/` | Helper agents Claude can hand work to: `task-planner`, `ui-engineer`, `learning-doc-writer`, `code-reviewer`. |
-| `.claude/settings.json` | Shared Claude Code settings. Installs the Compound Engineering plugin (pinned version) for everyone. |
+| `.claude/agents/` | Helper agents Claude can hand work to: `task-planner`, `ui-engineer`, `learning-doc-writer`, `code-reviewer`, `seo-reviewer`. |
+| `.claude/settings.json` | Shared Claude Code settings. Installs the Compound Engineering plugin (pinned version) for everyone, and turns on the automatic SEO check. |
+| `.claude/hooks/` | `seo_check.py`: after Claude changes pages, it asks Claude to run the SEO reviewer and show you its suggestions. |
 | `.compound-engineering/` | Compound Engineering settings: `config.yaml` (ours) and `config.example.yaml` (every option explained). |
 | `document/plans/` | Plans: the project's master plan, plus one plan per task written by Compound Engineering's `ce-plan`. |
 | `document/solutions/` | Reusable lessons, written by `ce-compound`. Claude reads them before similar work. |
@@ -40,6 +41,6 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 
 - Git
 - Node.js 20 or newer (check with `node -v`)
-- Python 3 (check with `python3 --version`), for the UI/UX Pro Max search script
+- Python 3 (check with `python3 --version`), for the UI/UX Pro Max search script and the automatic SEO check
 - [Claude Code](https://code.claude.com/docs/en/overview). The first time you open the repo, accept the "trust this folder" prompt. That's what lets the Compound Engineering plugin load from `.claude/settings.json`.
 - Optional: a [21st.dev](https://21st.dev) account for the 21st skills. Run `npx @21st-dev/cli login` once.
