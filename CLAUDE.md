@@ -21,17 +21,27 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `.claude/skills/` | Installed project skills (third-party: don't edit by hand) |
 | `skills-lock.json` | Source and content hash of each installed skill |
 | `.claude/agents/` | Project subagents (see Agents) |
+| `.claude/settings.json` | Shared Claude Code settings: installs the Compound Engineering plugin (pinned version) |
+| `.compound-engineering/config.yaml` | Compound Engineering team settings (`config.example.yaml` lists every option) |
+| `document/plans/` | Implementation plans written by `ce-plan` / `ce-brainstorm` |
+| `document/solutions/` | Lessons written by `ce-compound`: read the relevant ones before starting a task |
 
-## Task workflow (always follow)
+## Task workflow: the Compound Engineering loop (always follow)
+
+Every task goes **plan → work → review → compound**, inside our task and branch rules. Compound Engineering commands are namespaced: `/compound-engineering:ce-plan`, shortened to `ce-plan` below.
 
 1. **Split the work into small tasks.** One task = one focused change that can be reviewed in about 15 minutes. If a request is bigger, split it (use the `task-planner` agent), add every piece to `document/task/task.md` with a step list, and show the plan to the user before starting.
 2. **Name the task `NN_short_name`**: next free two-digit number, lowercase, words joined with `_`, two to four words that describe the outcome (`03_skills_installation`, `12_booking_form`).
 3. **Branch name = task name.** Start from an up-to-date `main`: `git switch main`, then `git switch -c NN_short_name`.
 4. **Track progress in `task.md`**: set the row to `In progress` when you start, tick the steps as they're done, set `Done` and link the learning doc at the end.
-5. **Commit in small steps** with Conventional Commit messages (see Git rules).
-6. **Write the learning doc** at `document/learning/NN_short_name.md` from `document/learning/TEMPLATE.md` (see Learning docs; the `learning-doc-writer` agent can draft it).
-7. **Review, then merge into `main`.** Run the `code-reviewer` agent on the branch and fix every "must fix". Then `git switch main && git merge --no-ff NN_short_name`, unless the user asked for a pull request.
-8. **One task at a time.** Don't start the next task on the same branch. If you find unrelated work, add it to the backlog in `task.md` instead of doing it.
+5. **Read past lessons.** Search `document/solutions/` for lessons that touch this task (`grep -ril "<topic>" document/solutions/`) and follow them.
+6. **Plan.** For anything bigger than a one-file change, run `ce-plan` (run `ce-brainstorm` first if the request is still fuzzy). The plan is saved in `document/plans/`; link it from the task's steps in `task.md`.
+7. **Work.** Build it, by hand or with `ce-work <plan file>`. Commit in small steps with Conventional Commit messages (see Git rules).
+8. **Write the learning doc** at `document/learning/NN_short_name.md` from `document/learning/TEMPLATE.md` (see Learning docs; the `learning-doc-writer` agent can draft it).
+9. **Review.** If the task changed code, run `ce-code-review` (it only reports). Then run the `code-reviewer` agent: it checks the repo rules and is the final gate. Fix every "must fix".
+10. **Compound.** Ask: *"If this lesson weren't written down, would a future session repeat the mistake or redo the investigation?"* Mistakes the review caught are the usual source. If yes, run `/compound-engineering:ce-compound mode:non-interactive depth:lightweight <one-line summary>`; it writes one lesson to `document/solutions/`. If no, skip it and say so in the learning doc.
+11. **Merge into `main`**: `git switch main && git merge --no-ff NN_short_name`, unless the user asked for a pull request.
+12. **One task at a time.** Don't start the next task on the same branch. If you find unrelated work, add it to the backlog in `task.md` instead of doing it.
 
 ## Learning docs
 
@@ -68,6 +78,33 @@ Rules:
 - **Don't edit files in `.claude/skills/`.** They come from upstream and `npx skills update` overwrites them. Put project-specific rules in this file instead.
 - **New or updated skills:** read the files before installing or committing them. Use project scope: `npx skills add <owner/repo> --agent claude-code --skill <name> --copy -y`, then update `document/skills/skills.md`.
 
+## Compound Engineering (plugin)
+
+Installed for this project through `.claude/settings.json`, pinned to v3.32.0. Settings in `.compound-engineering/config.yaml`. Full guide: `document/skills/skills.md`.
+
+**Who does what** (pick this owner; don't run two tools for the same job):
+
+| Job | Owner | Writes to |
+| --- | --- | --- |
+| Split a request into numbered tasks | `task-planner` agent | `document/task/task.md` |
+| Plan one task in detail | `ce-plan` (`ce-brainstorm` for fuzzy ideas) | `document/plans/` |
+| Build | you, or `ce-work` | the code |
+| Code review | `ce-code-review` (report only) | nothing |
+| Repo-rules review, final gate | `code-reviewer` agent | nothing |
+| Teach the human what happened | `learning-doc-writer` agent | `document/learning/` |
+| Save a lesson for future sessions | `ce-compound` | `document/solutions/` |
+
+A **learning doc** teaches the owner (a junior engineer) what one task did. A **solution doc** is a short, reusable lesson that future Claude sessions read before similar work. A task always gets a learning doc; it gets a solution doc only when it taught something worth reusing.
+
+**Rules (these override the plugin's defaults):**
+
+- **Our shipping process wins.** In this repo, shipping means: commit on the task branch, then merge into `main` locally with `--no-ff`. No Compound Engineering skill may push, open or update a pull request, start PR babysitting, or create branches other than the task branch, unless the user asks in this session. Don't use `lfg`, `ce-commit-push-pr`, `ce-babysit-pr` or `ce-resolve-pr-feedback` unless the user asks for them by name.
+- **No other AI vendors.** `cross_model_review_mode` and `work_engine_mode` are `off`. Never send code or docs to another model provider (Codex, Grok, Antigravity, Cursor, OpenCode) unless the user asks.
+- **Privacy:** run `ce-compound` with `depth:lightweight`, which skips reading past session transcripts. Never read other projects' session files (`~/.claude/projects/`, `~/.codex/`, `~/.cursor/`).
+- **Don't publish** to Proof (`ce-proof`) or anywhere else outside this machine without asking.
+- **Updating the plugin:** read the release notes and the changed files first, then change the `ref` tag in `.claude/settings.json` in its own task. Never switch it to an unpinned branch.
+- **Optional tools** it suggests (`agent-browser`, `ast-grep`, `ffmpeg`, a newer Node) are global installs: ask first.
+
 ## Agents
 
 Subagents live in `.claude/agents/`. The main session runs the task workflow and owns git (branches, commits, merges); subagents do one focused job and report back.
@@ -86,12 +123,14 @@ Run independent subagents in parallel. When an agent's job changes, update its f
 A task is done when all of these are true:
 
 - [ ] The work is on its own `NN_short_name` branch, in small commits
+- [ ] Bigger tasks have a plan in `document/plans/`, linked from `task.md`
 - [ ] It works, and you checked it (ran it, tested it, or opened it)
 - [ ] `document/task/task.md` shows `Done`, all steps ticked, learning doc linked
 - [ ] The learning doc exists and answers Why, What and How
 - [ ] `readme.md` and `CLAUDE.md` are updated if the task changed how the repo works
 - [ ] No secrets, no generated folders committed
 - [ ] `code-reviewer` reports "Ready to merge" (or every "must fix" is fixed)
+- [ ] The compound question was asked: a lesson is in `document/solutions/`, or the learning doc says why none was needed
 - [ ] Merged into `main` with `--no-ff` (or a pull request is open, if the user asked for one)
 
 ## Talking to the user

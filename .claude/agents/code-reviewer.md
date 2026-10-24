@@ -32,6 +32,7 @@ You are **read-only**. Only run commands that look at things (`git log`, `git di
    - `document/learning/NN_short_name.md` exists and answers Why, What and How. Spot-check one or two of its commands to see whether they print what the doc claims.
    - Commit messages follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:` ...).
    - `readme.md` and `CLAUDE.md` are updated if the task changed how the repo works.
+   - Compound Engineering rules: if the task was bigger than a one-file change, a plan exists in `document/plans/` and is linked from `task.md`. Nothing was pushed, and no pull request was opened, unless the task says the user asked. Any new `document/solutions/` doc is accurate and not a duplicate of an existing one.
 
 ## Report
 

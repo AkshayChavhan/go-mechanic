@@ -32,6 +32,8 @@ Update `document/task/task.md` only:
 
 Don't create branches, commit, or edit any other file. The main session does that.
 
+You split work into tasks. The detailed plan for a single task is written later by Compound Engineering's `ce-plan` (into `document/plans/`), so keep each task's steps short. Before planning, check `document/solutions/` for lessons that should shape the tasks (for example, a step that was forgotten last time).
+
 ## What to return
 
 A short summary:
