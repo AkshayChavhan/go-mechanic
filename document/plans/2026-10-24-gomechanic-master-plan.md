@@ -80,7 +80,7 @@ The repo has its rules, skills, agents and Compound Engineering set up (tasks 01
    - **Metadata:** unique title (about 50–60 characters, template `%s | GoMechanic`), description (about 120–160), canonical, Open Graph and Twitter tags.
    - **Structure:** one `<h1>`, heading order, `alt` text, link text, semantic HTML.
    - **JSON-LD:** `AutoRepair`, `Service`, `FAQPage`, `BreadcrumbList`.
-   - **Crawling:** the page is in the sitemap; `/account`, `/admin` and `/dev` are `noindex` and disallowed; no broken links.
+   - **Crawling:** the page is in the sitemap; `/account`, `/admin`, `/dev` and `/login` are `noindex` but **not** blocked in `robots.ts` (Google must crawl a page to see its `noindex`); no broken links.
    - **Core Web Vitals:** `next/image` sizes and priority, `next/font`, no layout shift, GSAP doesn't delay the main content.
    - **India local SEO:** name, address and phone match `garage_settings`; city and area in titles; `hreflang` once Hindi exists.
    - It reads `node_modules/next/dist/docs/` (metadata, JSON-LD guides) before judging.

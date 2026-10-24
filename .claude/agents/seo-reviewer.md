@@ -25,7 +25,7 @@ Read the page's source (page, layout, and the components it uses). If the site b
 - A unique meta description of about 120–160 characters that says what the visitor gets and invites a click.
 - A canonical URL (`alternates.canonical`), and `metadataBase` set in the root layout.
 - Open Graph and Twitter tags (title, description, image 1200×630).
-- `/account`, `/admin`, `/dev`, `/login` and booking confirmation pages are `noindex` and disallowed in `robots.ts`.
+- `/account`, `/admin`, `/dev`, `/login` and booking confirmation pages are `noindex` (Next.js `robots: { index: false }` in their metadata), and are **not** blocked in `robots.ts`: Google has to crawl a page to see its `noindex`, so blocking it in robots.txt can leave the URL in search results. A private page that is blocked in `robots.ts` is a finding.
 
 **Content and structure**
 - Exactly one `<h1>`, which matches the page's topic; headings in order (`h2` under `h1`, and so on).

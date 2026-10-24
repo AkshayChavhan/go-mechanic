@@ -128,13 +128,13 @@ These are bets made without the owner confirming them. Correct any that are wron
 - Verification is manual: sample-input runs of the script plus one end-to-end check in a new session. Nothing is committed as a test file, because nothing else uses the hook and the repo has no Python test setup yet.
 - The first turn after task 09 scaffolds the app will list every new starter file and review the starter page. That is accepted as the first real SEO run.
 - `readme.md` is updated too (repo map and the Python prerequisite line), because the Definition of done in `CLAUDE.md` asks for it when the repo works differently.
-- Claude Code loads hooks and agents when a session starts. It acts on `{"decision":"block","reason":...}` printed on stdout with exit code 0, and it passes `stop_hook_active` to Stop hooks. The end-to-end check confirms this. It hasn't been observed in this repo yet.
+- Claude Code loads hooks and agents at session start, and usually also picks up later edits mid-session (see Risks). It acts on `{"decision":"block","reason":...}` printed on stdout with exit code 0, and it passes `stop_hook_active` to Stop hooks. The end-to-end check confirms this. It hasn't been observed in this repo yet.
 - The new `CLAUDE.md` section goes right after "Agents".
 
 ### Risks
 
 - **A child `claude -p` started without the switch takes the review.** Mitigation: KTD4 plus a `CLAUDE.md` rule next to the existing `claude -p` usage. Recovery: ask for a review on demand (R7).
-- **The session that installs the hook never triggers it,** because hooks load at session start. The end-to-end check therefore runs in a new session.
+- **Not sure whether the installing session picks up the hook.** The current Claude Code docs say edits to hooks in settings files and to agent files are normally picked up mid-session by a file watcher (with exceptions), so don't rely on either assumption. The end-to-end check runs in a new session, which is certain. (Corrected after implementation; the first draft said hooks only load at session start.)
 - **Extra reviews after branch switches or the first scaffold.** Harmless, and accepted.
 - **The agent leaves a `next start` server running.** The prompt tells it to stop the server; the reviewers check that this instruction is there.
 
