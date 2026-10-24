@@ -1,6 +1,6 @@
 # Claude skills in this project
 
-This page lists every Claude Code skill installed in this repo: what it does, when Claude uses it, and how the skills work together. For how we installed them, see the learning doc [03_skills_installation](../task/03_skills_installation/README.md).
+This page lists every Claude Code skill installed in this repo: what it does, when Claude uses it, and how the skills work together. For how we installed them, see the learning doc [03_skills_installation](../learning/03_skills_installation.md).
 
 ## What is a skill?
 
@@ -61,7 +61,7 @@ A searchable database (CSV files plus a Python search script) of styles, color p
 shadcn/ui isn't a package you import. Its CLI **copies component source code into your project**, so you own and can edit every component. The skill teaches Claude the CLI and the rules for using the components correctly.
 
 - **Key rules it enforces:** use existing components before writing custom markup; use semantic colors (`bg-primary`, `text-muted-foreground`) instead of raw ones (`bg-blue-500`); use `gap-*` instead of `space-y-*`; forms use `FieldGroup` + `Field`; every `Dialog` needs a `DialogTitle`.
-- **Works once the app exists.** Every time the skill loads it runs `npx shadcn@latest info --json` to read the project's `components.json`. Until task `05_app_setup` creates the app, that command has nothing to report.
+- **Works once the app exists.** Every time the skill loads it runs `npx shadcn@latest info --json` to read the project's `components.json`. Until the app-setup task in the backlog creates the app, that command has nothing to report.
 - **Try:** *"Add a booking dialog with a date picker using shadcn."*
 
 ### 21st.dev skills

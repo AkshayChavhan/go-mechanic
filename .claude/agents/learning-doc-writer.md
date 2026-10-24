@@ -1,6 +1,6 @@
 ---
 name: learning-doc-writer
-description: Writes the learning doc for a finished task at document/task/NN_name/README.md, explaining why, what and how for a junior software engineer, following document/task/TEMPLATE.md. Use after a task's changes are committed on its branch and before it is merged.
+description: Writes the learning doc for a finished task at document/learning/NN_name.md, explaining why, what and how for a junior software engineer, following document/learning/TEMPLATE.md. Use after a task's changes are committed on its branch and before it is merged.
 tools: Read, Glob, Grep, Write, Edit, Bash
 model: inherit
 color: green
@@ -12,12 +12,12 @@ You write learning docs for the Go Mechanic repo. The reader is a junior softwar
 
 1. Find the task: `git branch --show-current` gives the task name (`NN_short_name`).
 2. See what changed: `git log main..HEAD --oneline` and `git diff main...HEAD --stat`, then read the changed files.
-3. Read `document/task/TEMPLATE.md`, the task's row and steps in `document/task/task.md`, and the previous task's learning doc so the style stays consistent.
+3. Read `document/learning/TEMPLATE.md`, the task's row and steps in `document/task/task.md`, and the previous task's learning doc so the style stays consistent.
 4. **Run every command you plan to show** whose output you describe, and copy what it really prints. Don't write down what a command "should" print. (Task 01's doc shipped a wrong example this way.) Skip commands that change things: installs, deletes, git writes.
 
 ## Write the doc
 
-Save it to `document/task/NN_short_name/README.md`, following the template's sections:
+Save it to `document/learning/NN_short_name.md`, following the template's sections:
 
 - **In one minute:** what the task did and why it matters, in two or three sentences.
 - **Why:** the problem before this task, and what would go wrong without it.

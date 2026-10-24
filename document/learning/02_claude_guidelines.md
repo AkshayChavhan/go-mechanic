@@ -1,6 +1,8 @@
 # 02_claude_guidelines: Write the rules Claude follows
 
 > **Branch:** `02_claude_guidelines` · **Date:** 2026-10-24 · **Status:** Done
+>
+> **Moved:** this doc used to live at `document/task/02_claude_guidelines/README.md`. Task `05_learning_folder` moved it here. Paths under `document/task/` (other than `task.md`) and backlog task numbers below describe the repo as it was when this task was done.
 
 ## In one minute
 

@@ -8,9 +8,9 @@ Every change is a small, numbered **task**:
 
 1. The task is listed in [document/task/task.md](document/task/task.md).
 2. It gets its own git branch with the same name, for example `01_project_setup`.
-3. It ships with a learning doc, `document/task/<task>/README.md`, that explains **why** we made the change, **what** changed and **how** we did it.
+3. It ships with a learning doc, `document/learning/<task>.md`, that explains **why** we made the change, **what** changed and **how** we did it.
 
-New here? Read the learning docs in order, starting with [01_project_setup](document/task/01_project_setup/README.md).
+New here? Read the learning docs in order, starting with [01_project_setup](document/learning/01_project_setup.md).
 
 ## Repo map
 
@@ -20,8 +20,8 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `CLAUDE.md` | The rules Claude Code follows in this repo. Claude reads it at the start of every session. |
 | `.gitignore` | Files git must never track: dependencies, build output, secrets. |
 | `document/task/task.md` | The task tracker: every task, its branch, its status and its learning doc. |
-| `document/task/TEMPLATE.md` | The starting point for each task's learning doc. |
-| `document/task/NN_name/README.md` | One learning doc per task. |
+| `document/learning/TEMPLATE.md` | The starting point for each task's learning doc. |
+| `document/learning/NN_name.md` | One learning doc per task: why, what and how. |
 | `document/skills/skills.md` | The Claude skills we use (GSAP, shadcn/ui, frontend-design, UI/UX Pro Max, 21st.dev) and when to use each. |
 | `.claude/skills/` | The installed skill files. They come with the repo, so there's nothing extra to install. |
 | `skills-lock.json` | Where each skill came from, so installs are repeatable. |

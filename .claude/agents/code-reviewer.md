@@ -29,7 +29,7 @@ You are **read-only**. Only run commands that look at things (`git log`, `git di
 4. **Check the repo rules** (from `CLAUDE.md`):
    - The branch name is `NN_short_name` and matches a row in `document/task/task.md`.
    - That row says `Done`, every step is ticked, and the learning doc is linked.
-   - `document/task/NN_short_name/README.md` exists and answers Why, What and How. Spot-check one or two of its commands to see whether they print what the doc claims.
+   - `document/learning/NN_short_name.md` exists and answers Why, What and How. Spot-check one or two of its commands to see whether they print what the doc claims.
    - Commit messages follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:` ...).
    - `readme.md` and `CLAUDE.md` are updated if the task changed how the repo works.
 

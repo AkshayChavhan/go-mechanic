@@ -1,10 +1,12 @@
 # 03_skills_installation: Install the Claude skills for UI work
 
 > **Branch:** `03_skills_installation` · **Date:** 2026-10-24 · **Status:** Done
+>
+> **Moved:** this doc used to live at `document/task/03_skills_installation/README.md`. Task `05_learning_folder` moved it here. Paths under `document/task/` (other than `task.md`) and backlog task numbers below describe the repo as it was when this task was done.
 
 ## In one minute
 
-We installed 16 Claude Code skills from five official sources: GSAP (animation), shadcn/ui (components), Anthropic's frontend-design (visual direction), UI/UX Pro Max (design data and UX rules) and 21st.dev (ready-made components). They live in `.claude/skills/`, are committed to git, and are explained in [document/skills/skills.md](../../skills/skills.md).
+We installed 16 Claude Code skills from five official sources: GSAP (animation), shadcn/ui (components), Anthropic's frontend-design (visual direction), UI/UX Pro Max (design data and UX rules) and 21st.dev (ready-made components). They live in `.claude/skills/`, are committed to git, and are explained in [document/skills/skills.md](../skills/skills.md).
 
 ## Why: the problem we solved
 

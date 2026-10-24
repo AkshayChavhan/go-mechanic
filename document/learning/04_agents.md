@@ -1,6 +1,8 @@
 # 04_agents: Add helper agents for planning, UI, docs and review
 
 > **Branch:** `04_agents` · **Date:** 2026-10-24 · **Status:** Done
+>
+> **Moved:** this doc used to live at `document/task/04_agents/README.md`. Task `05_learning_folder` moved it here. Paths under `document/task/` (other than `task.md`) and backlog task numbers below describe the repo as it was when this task was done.
 
 ## In one minute
 
