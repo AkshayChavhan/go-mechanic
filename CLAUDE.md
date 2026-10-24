@@ -4,8 +4,9 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 
 ## The project
 
-- **Go Mechanic**, a web app. Current stage: setup only, no app code yet.
-- The stack is not chosen yet. The installed skills point to React + Tailwind + shadcn/ui + GSAP (Next.js suggested). **Confirm the stack with the user before scaffolding the app.**
+- **Go Mechanic**, a website for a car repair garage: services and prices, online booking, booking tracking, contact, and an admin dashboard.
+- **Product plan:** `document/website/features.md` (who it's for, features, pages, decisions, task list). Keep it up to date when features change.
+- **Stack:** Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + shadcn/ui + GSAP, with npm. Business details are sample data in `src/config/site.ts`. These are Claude's defaults and the owner hasn't confirmed them yet (see "Decisions and assumptions" in `features.md`). Follow the owner if they say otherwise.
 - **The owner is learning.** Every task must teach. Write explanations for a junior software engineer.
 
 ## Repo map
@@ -18,6 +19,7 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `document/task/TEMPLATE.md` | Template for learning docs |
 | `document/task/NN_name/README.md` | Learning doc for task `NN_name` |
 | `document/skills/skills.md` | What each installed skill does and when to use it |
+| `document/website/features.md` | Product plan for the website |
 | `.claude/skills/` | Installed project skills (third-party: don't edit by hand) |
 | `skills-lock.json` | Source and content hash of each installed skill |
 | `.claude/agents/` | Project subagents (see Agents) |
@@ -25,7 +27,7 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 ## Task workflow (always follow)
 
 1. **Split the work into small tasks.** One task = one focused change that can be reviewed in about 15 minutes. If a request is bigger, split it (use the `task-planner` agent), add every piece to `document/task/task.md` with a step list, and show the plan to the user before starting.
-2. **Name the task `NN_short_name`**: next free two-digit number, lowercase, words joined with `_`, two to four words that describe the outcome (`05_app_setup`, `12_booking_form`).
+2. **Name the task `NN_short_name`**: next free two-digit number, lowercase, words joined with `_`, two to four words that describe the outcome (`06_app_setup`, `11_booking_form`).
 3. **Branch name = task name.** Start from an up-to-date `main`: `git switch main`, then `git switch -c NN_short_name`.
 4. **Track progress in `task.md`**: set the row to `In progress` when you start, tick the steps as they're done, set `Done` and link the learning doc at the end.
 5. **Commit in small steps** with Conventional Commit messages (see Git rules).

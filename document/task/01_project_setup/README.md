@@ -48,7 +48,7 @@ Without a foundation, a project drifts:
    - `!.env.example`: the `!` means "but do track this one". An example file with fake values shows teammates which settings they need.
    - `.DS_Store`: clutter macOS drops into folders.
 
-5. **Create the task tracker** (`document/task/task.md`). It lists all planned tasks, splits each one into small steps with checkboxes, and explains how to add a new task. We also added a **backlog** of proposed app tasks (05 to 08) so the next steps are visible.
+5. **Create the task tracker** (`document/task/task.md`). It lists all planned tasks, splits each one into small steps with checkboxes, and explains how to add a new task. We also added a **backlog** of proposed app tasks (05 to 08) so the next steps are visible. (Task 05 later replaced it with the real plan, tasks 06 to 16.)
 
 6. **Create the learning-doc template** (`document/task/TEMPLATE.md`) with fixed sections: In one minute, Why, What, How, New ideas, Check that it works, Common mistakes, Try it yourself, Learn more.
 
