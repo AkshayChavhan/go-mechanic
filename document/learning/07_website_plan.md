@@ -1,6 +1,6 @@
 # 07_website_plan: Save the approved website plan in the repo
 
-> **Branch:** `07_website_plan` · **Date:** 2026-10-24 · **Status:** In progress (merge pending)
+> **Branch:** `07_website_plan` · **Date:** 2026-10-24 · **Status:** Done
 
 ## In one minute
 
