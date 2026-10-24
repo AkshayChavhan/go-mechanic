@@ -6,7 +6,7 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 
 - **Go Mechanic**, a website for a car repair garage: services and prices, online booking, booking tracking, contact, and an admin dashboard.
 - **Product plan:** `document/website/features.md` (who it's for, features, pages, decisions, task list). Keep it up to date when features change.
-- **Stack:** Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + shadcn/ui + GSAP, with npm. Business details are sample data in `src/config/site.ts`.
+- **Stack:** Next.js 16 (App Router) + TypeScript + Tailwind CSS v4 + shadcn/ui + GSAP, with npm. Business details are sample data in `src/config/site.ts`. These are Claude's defaults and the owner hasn't confirmed them yet (see "Decisions and assumptions" in `features.md`). Follow the owner if they say otherwise.
 - **The owner is learning.** Every task must teach. Write explanations for a junior software engineer.
 
 ## Repo map

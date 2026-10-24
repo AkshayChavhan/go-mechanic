@@ -18,6 +18,10 @@ coverage/
 .env.*
 !.env.example
 
+# App data saved at runtime (bookings, estimate requests).
+# It holds customers' names, phone numbers and addresses: never commit it.
+data/
+
 # Logs
 *.log
 npm-debug.log*

@@ -110,6 +110,7 @@ Each task is broken into small steps. Tick them off as you go.
 - [ ] Footer with address, hours, contact links and page links
 - [ ] Sticky mobile action bar (Call, WhatsApp, Book)
 - [ ] "Open now" helper based on opening hours
+- [ ] Offer banner, switched on or off in `src/config/site.ts`
 - [ ] 404 page
 - [ ] Write the learning doc, review, merge
 
@@ -135,7 +136,7 @@ Each task is broken into small steps. Tick them off as you go.
 
 - [ ] Create branch `11_booking_form`
 - [ ] Booking rules as a validation schema (shared by browser and server)
-- [ ] Storage module that saves bookings to `data/bookings.json`
+- [ ] Storage module that saves bookings to `data/bookings.json` (check `data/` is git-ignored)
 - [ ] `/book` form with vehicle, services, date and slot, pickup and drop, contact
 - [ ] Server action that validates, saves and redirects
 - [ ] `/book/confirmed` page and "Book on WhatsApp" button
@@ -167,7 +168,7 @@ Each task is broken into small steps. Tick them off as you go.
 ### 15_admin_dashboard
 
 - [ ] Create branch `15_admin_dashboard`
-- [ ] Password protection for `/admin`
+- [ ] Password protection for `/admin`; `ADMIN_PASSWORD` in `.env.example` with a fake value
 - [ ] Bookings and estimate requests list with status filter
 - [ ] Change booking status
 - [ ] Write the learning doc, review, merge
@@ -195,15 +196,15 @@ Not in this build. See "Not in this build" in [features.md](../website/features.
 
 ## How to add a task
 
-1. **Pick the next free number.** Always two digits: `05`, `06`, ... `17`, `18`.
+1. **Pick the next free number**: the highest number in the table plus one, always two digits (`07`, not `7`).
 2. **Name it** `NN_short_name`: lowercase, words joined with `_`, two to four words that say the outcome.
-   Good: `06_app_setup`, `17_blog_tips`. Bad: `5-stuff`, `fix`, `Task_Twelve`.
+   Good: `06_app_setup`, `11_booking_form`. Bad: `5-stuff`, `fix`, `Task_Twelve`.
 3. **Add it here**: a row in the table (status `To do`) and a list of small steps under "Task steps".
-4. **Create the branch** from an up-to-date `main`:
+4. **Create the branch** from an up-to-date `main` (replace `NN_short_name` with your task's name):
    ```bash
    git switch main
    git pull            # only if the repo has a remote you work with
-   git switch -c 17_blog_tips
+   git switch -c NN_short_name
    ```
 5. **Set the status to `In progress`** and do the work in small commits.
 6. **Write the learning doc**: copy [TEMPLATE.md](TEMPLATE.md) to `document/task/NN_short_name/README.md` and fill it in.
@@ -211,5 +212,5 @@ Not in this build. See "Not in this build" in [features.md](../website/features.
 8. **Merge into `main`** (or open a pull request):
    ```bash
    git switch main
-   git merge --no-ff 17_blog_tips
+   git merge --no-ff NN_short_name
    ```

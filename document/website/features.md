@@ -26,7 +26,7 @@ Every feature below answers one of those questions.
 - **Services list**: each service with a short description, starting price ("from ₹...") and typical time.
 - **Service detail page** for each service: what's included, signs you need it, price, common questions, and a *Book this service* button.
 - **Service packages**: Basic, Standard and Comprehensive service, compared side by side.
-- **Offer banner** (for example a first-service discount), switched on or off in config.
+- **Offer banner** (for example a first-service discount), switched on or off in `src/config/site.ts`.
 
 ### 3. Book and stay informed
 
@@ -81,11 +81,13 @@ These are useful, but each one needs a service, money or decisions we don't have
 
 | Decision | Why | How to change it |
 | --- | --- | --- |
-| **Stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui, GSAP, npm | It's what the installed skills are built for, and the most common React setup | Hard to change later: decide before task 06 |
+| **Stack:** Next.js 16 (App Router), TypeScript, Tailwind CSS v4, shadcn/ui, GSAP, npm | It's what the installed skills are built for, and the most common React setup | Hard to change later: say so before task 06 |
 | **Business details are sample data** in one file (`src/config/site.ts`) | We don't have the real name, address or phone yet | Edit that one file |
-| **Indian market:** prices in ₹, +91 phone numbers, WhatsApp-first | WhatsApp is how most Indian customers talk to a local garage | Edit currency and phone in `src/config/site.ts` |
-| **Bookings saved to a JSON file** (`data/`, ignored by git) | No database needed to learn the full flow | Swap the storage module for a database (backlog) |
-| **Admin login is one password** from the `ADMIN_PASSWORD` environment variable | One garage, a few staff: simple is enough | Add real accounts (backlog) |
+| **Indian market:** prices in ₹, +91 phone numbers, WhatsApp-first | Assumption: the owner seems to be in India, and many local garages there take bookings over WhatsApp | Edit currency and phone in `src/config/site.ts` |
+| **Bookings saved to a JSON file** in `data/` (ignored by git, because it holds customers' personal details) | No database needed to learn the full flow | Swap the storage module for a database (backlog) |
+| **Admin login is one password** from the `ADMIN_PASSWORD` environment variable (fake value in `.env.example`) | One garage, a few staff: simple is enough | Add real accounts (backlog) |
+
+**Status of these decisions:** Claude chose them as defaults on 2026-10-24, because the request was to build the whole site and no stack, market or business details were given. They have **not** been confirmed by the owner yet. Any of them can be changed; the stack is the only one that gets expensive to change after task 06.
 
 ## Task breakdown
 

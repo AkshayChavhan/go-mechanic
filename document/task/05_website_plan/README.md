@@ -22,9 +22,10 @@ A short written plan fixes all three. It's also the cheapest place to change you
 | --- | --- | --- |
 | `document/website/features.md` | Added | The product plan: users, features, out of scope, pages, decisions, tasks |
 | `document/task/task.md` | Changed | Tasks 05 to 16 with steps; the old guessed backlog replaced by the real plan |
-| `CLAUDE.md` | Changed | Project description and stack are now decided; points to the plan |
+| `CLAUDE.md` | Changed | Describes the website and the chosen stack; points to the plan; example task names updated |
 | `readme.md` | Changed | Describes the website and links the plan |
-| `CLAUDE.md`, `task-planner.md`, `skills.md`, `04_agents/README.md` | Changed | Example task names updated (`05_app_setup` became `06_app_setup`) |
+| `.gitignore` | Changed | Ignores `data/`, where bookings with customers' personal details will be saved |
+| `task-planner.md`, `skills.md`, `01_project_setup/README.md`, `04_agents/README.md` | Changed | Example task names updated (`05_app_setup` became `06_app_setup`); note that the old backlog was replaced |
 
 ## How: step by step
 
@@ -41,20 +42,30 @@ A short written plan fixes all three. It's also the cheapest place to change you
 4. **Write down the decisions and assumptions.** We didn't have the garage's real name, address or phone number, so we chose sensible defaults and said so:
    - **Stack:** Next.js + TypeScript + Tailwind + shadcn/ui + GSAP, because that's what the installed skills are built for.
    - **Sample business details** in one file, so swapping in the real ones is a single edit.
-   - **Indian market** (₹, +91, WhatsApp), because the owner is likely in India. Easy to change.
-   - **Bookings in a JSON file**, to learn the full flow without setting up a database.
+   - **Indian market** (₹, +91, WhatsApp), because the owner seems to be in India. Easy to change.
+   - **Bookings in a JSON file** in `data/`, to learn the full flow without setting up a database. `data/` is added to `.gitignore` in this task, because it will hold customers' names, phone numbers and addresses.
 
    An assumption written down can be checked and corrected. A hidden one turns into a bug later.
 
+   **To be clear:** these are Claude's defaults, not the owner's confirmed choices. The request was "build the whole site", with no stack or business details, so Claude picked and wrote them down, and `features.md` marks them as not yet confirmed. `CLAUDE.md` used to say "confirm the stack with the user before scaffolding"; the owner asking for the full build was taken as the go-ahead. The reviewer rightly flagged this.
+
 5. **Split the work into tasks in build order.** Foundations first (app, design, layout), then pages that only show information, then forms that save data, then the admin side that reads the saved data, then the final polish. Each task is one branch.
 
-6. **Commit, review, merge.**
+6. **Commit.** Look before you stage: `git status` lists every changed file, so you can spot anything that shouldn't be committed (a `.env`, customer data). Then stage by path instead of `git add .`:
    ```bash
-   git add .
+   git status
+   git add document/ CLAUDE.md readme.md .claude/agents/task-planner.md
    git commit -m "docs: add website feature plan and tasks 06-16"
-   git switch main
-   git merge --no-ff 05_website_plan
    ```
+
+7. **Review.** The `code-reviewer` agent said **Needs changes**:
+   - **must fix:** the plan said `data/` was git-ignored, but it wasn't. Booking data would have been committed. We added `data/` to `.gitignore`.
+   - **must fix:** the offer banner had no task. We added a step to `08_layout_shell`.
+   - The stack and market were stated as decided, without the owner confirming. We now mark them as Claude's defaults (see step 4).
+   - Smaller fixes: `ADMIN_PASSWORD` now has an `.env.example` step in task 15; the WhatsApp claim is labeled as an assumption; the "How to add a task" example now uses a placeholder name instead of a real backlog item.
+   - One big commit again. The fixes went into a separate commit, and from task 06 on, code, docs and tracker changes go in separate commits.
+
+8. **Merge.** `git switch main && git merge --no-ff 05_website_plan`.
 
 ## New ideas in this task
 
