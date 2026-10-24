@@ -11,7 +11,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | # | Task (= branch) | Goal | Status | Learning doc |
 | --- | --- | --- | --- | --- |
 | 01 | `01_project_setup` | Repo foundation: readme, `.gitignore`, this tracker, learning-doc template | Done | [README](01_project_setup/README.md) |
-| 02 | `02_claude_guidelines` | `CLAUDE.md`: the rules Claude follows in this repo | To do | |
+| 02 | `02_claude_guidelines` | `CLAUDE.md`: the rules Claude follows in this repo | Done | [README](02_claude_guidelines/README.md) |
 | 03 | `03_skills_installation` | Install Claude skills (GSAP, shadcn/ui, frontend-design, UI/UX Pro Max, 21st.dev) and write the skills doc | To do | |
 | 04 | `04_agents` | Subagents for planning, learning docs, UI work and review | To do | |
 
@@ -32,11 +32,12 @@ Each task is broken into small steps. Tick them off as you go.
 
 ### 02_claude_guidelines
 
-- [ ] Create branch `02_claude_guidelines`
-- [ ] Write `CLAUDE.md` (project facts, task workflow, git rules, learning-doc rules, definition of done)
-- [ ] Link it from `readme.md`
-- [ ] Write the learning doc
-- [ ] Merge into `main`
+- [x] Create branch `02_claude_guidelines`
+- [x] Fix the wrong `git check-ignore` example in the 01 learning doc (found after 01 was merged)
+- [x] Write `CLAUDE.md` (project facts, task workflow, git rules, learning-doc rules, definition of done)
+- [x] Link it from `readme.md`
+- [x] Write the learning doc
+- [x] Merge into `main`
 
 ### 03_skills_installation
 

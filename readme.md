@@ -17,6 +17,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | Path | What it is |
 | --- | --- |
 | `readme.md` | This file. The front page of the repo. |
+| `CLAUDE.md` | The rules Claude Code follows in this repo. Claude reads it at the start of every session. |
 | `.gitignore` | Files git must never track: dependencies, build output, secrets. |
 | `document/task/task.md` | The task tracker: every task, its branch, its status and its learning doc. |
 | `document/task/TEMPLATE.md` | The starting point for each task's learning doc. |

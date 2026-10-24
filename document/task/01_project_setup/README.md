@@ -75,9 +75,12 @@ Without a foundation, a project drifts:
 ```bash
 git log --oneline --graph --all     # draw the history: you should see the merge of 01_project_setup into main
 git branch                          # list branches: main and 01_project_setup
-git check-ignore -v .env            # prints the .gitignore line that ignores .env
-git check-ignore -v .env.example    # prints nothing: .env.example is NOT ignored
+git check-ignore .env               # prints ".env": the file is ignored
+git check-ignore .env.example       # prints nothing: .env.example is NOT ignored
+git check-ignore -v .env            # -v (verbose) also shows which .gitignore line matched
 ```
+
+Careful with `-v`: it prints *every* matching line, including the `!` lines that un-ignore a file. `git check-ignore -v .env.example` prints `.gitignore:19:!.env.example`, which looks like "ignored" but means the opposite. Without `-v`, an un-ignored file prints nothing.
 
 ## Common mistakes
 
