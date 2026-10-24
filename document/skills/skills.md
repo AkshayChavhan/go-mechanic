@@ -94,6 +94,39 @@ Building a new page usually goes like this:
 
 **When skills disagree:** ui-ux-pro-max gives common, data-backed defaults; frontend-design pushes away from defaults toward a distinct identity. Treat ui-ux-pro-max output as **input and a safety checklist**, and let frontend-design and the product brief make the final visual call. Accessibility rules always win.
 
+## Compound Engineering plugin
+
+[Compound Engineering](https://github.com/EveryInc/compound-engineering-plugin) (by Every, MIT license) is a **plugin**: a bundle of 36 skills installed through Claude Code's plugin system instead of `npx skills`. Its idea is that each piece of work should make the next one easier, by saving what was learned for future sessions to read. How we installed and vetted it: [06_compound_engineering](../learning/06_compound_engineering.md).
+
+- **Installed for this project** in `.claude/settings.json`, pinned to tag `compound-engineering-v3.32.0`. When you open the repo in Claude Code and trust the folder, the plugin loads; there's nothing to install by hand.
+- **Settings** are in `.compound-engineering/config.yaml`. `config.example.yaml` next to it lists every option.
+- **Commands** start with the plugin name: `/compound-engineering:ce-plan`.
+
+The commands we use, one per step of our task workflow (`CLAUDE.md`):
+
+| Step | Command | What it does | Writes to |
+| --- | --- | --- | --- |
+| Plan (fuzzy idea) | `ce-brainstorm` | Asks questions until the requirements are clear | `document/plans/` |
+| Plan | `ce-plan` | Writes a step-by-step plan for one task | `document/plans/` |
+| Work | `ce-work` | Builds the plan, committing as it goes | code |
+| Tidy | `ce-simplify-code` | Simplifies the new code before review | code |
+| Review | `ce-code-review` | Several reviewer personas read the diff and report problems (changes nothing) | nothing |
+| Compound | `ce-compound` | Saves one reusable lesson, if the task taught one | `document/solutions/` |
+| Health check | `ce-setup` | Checks the plugin's settings and optional tools | `.compound-engineering/` |
+
+Also useful on demand: `ce-debug` (find and fix a bug), `ce-explain` (explain code with evidence), `wtf` (re-explain the last answer in plain words).
+
+**Not used here, and why:**
+
+- `lfg`, `ce-commit-push-pr`, `ce-babysit-pr`, `ce-resolve-pr-feedback` push code and open or update pull requests without asking. Our rule is to ask before any push or PR.
+- Cross-model review sends diffs to other AI companies (Codex, Grok and others). `cross_model_review_mode: off` in `config.yaml` stops reviews doing that on their own; `CLAUDE.md` forbids sending code elsewhere, or handing implementation to another AI tool, unless you ask.
+- `ce-compound`'s "full" mode reads recent session transcripts from your home folder. Only ever run it as `/compound-engineering:ce-compound mode:non-interactive depth:lightweight ...`. Plain `/ce-compound`, and the calls other skills (`lfg`, `ce-debug`, ...) make to it, use full mode. `depth:lightweight` only works together with `mode:non-interactive`.
+- `ce-proof` publishes documents to an outside website.
+
+**Learning doc vs solution doc:** a learning doc (`document/learning/`) teaches a person what one task did. A solution doc (`document/solutions/`) is a short lesson for future Claude sessions to read before similar work. Example: [run commands before documenting output](../solutions/conventions/run-commands-before-documenting-output.md).
+
+**Updating it:** read the release notes and changed files, then change `ref` in `.claude/settings.json` to the new tag, in its own task. Check the installed version with `claude plugin list`.
+
 ## Managing skills
 
 Run these from the repo root. `skills-lock.json` records each skill's source and a hash of its content, so installs are repeatable.

@@ -35,3 +35,8 @@ CLAUDE.local.md
 # OS and editor clutter
 .DS_Store
 .idea/
+
+# Compound Engineering: personal settings and scratch files
+.compound-engineering/*.local.yaml
+.context/compound-engineering/
+.worktrees/

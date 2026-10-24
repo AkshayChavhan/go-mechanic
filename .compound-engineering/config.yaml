@@ -1,0 +1,24 @@
+# Compound Engineering: team settings for go-mechanic (committed to git).
+# Every available setting, with explanations: config.example.yaml (next to this file).
+# Personal overrides go in config.local.yaml (ignored by git).
+# Why each value below was chosen: document/learning/06_compound_engineering.md
+
+# Keep everything Compound Engineering writes (plans, solutions, ...) inside
+# our document/ folder, next to document/task/ and document/learning/.
+docs_root: document
+
+# Stops ce-code-review and ce-doc-review from sending our diffs or documents
+# to another AI company's model for a "second opinion" on their own.
+# (Without this, running ce-code-review counts as permission to do that.)
+cross_model_review_mode: off
+
+# No standing preference for handing implementation to other AI coding tools.
+# This is already the default; it's written here so the choice is on record.
+# It doesn't block a request made in the conversation: CLAUDE.md does that.
+work_engine_mode: off
+
+# Stops the long-running PR watch that ce-commit-push-pr starts after opening
+# a PR. It does NOT stop commits, pushes or PRs (and lfg runs its own watch).
+# CLAUDE.md's "Our shipping process wins" rule is what keeps those from
+# happening without the owner asking.
+auto_babysit: false

@@ -82,7 +82,7 @@ git check-ignore .env.example       # prints nothing: .env.example is NOT ignore
 git check-ignore -v .env            # -v (verbose) also shows which .gitignore line matched
 ```
 
-Careful with `-v`: it prints *every* matching line, including the `!` lines that un-ignore a file. `git check-ignore -v .env.example` prints `.gitignore:19:!.env.example`, which looks like "ignored" but means the opposite. Without `-v`, an un-ignored file prints nothing.
+Careful with `-v`: it prints *every* matching line, including the `!` lines that un-ignore a file. `git check-ignore -v .env.example` prints a line starting with `.gitignore:19:!.env.example` (then a tab and the path), which looks like "ignored" but means the opposite. Without `-v`, an un-ignored file prints nothing.
 
 ## Common mistakes
 
