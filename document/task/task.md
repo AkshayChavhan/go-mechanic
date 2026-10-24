@@ -85,8 +85,11 @@ Each task is broken into small steps. Tick them off as you go.
 - [x] Run `ce-compound` once for real: first lesson in `document/solutions/`
 - [x] Update `document/skills/skills.md` and `readme.md`
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: decide whether the review taught a lesson worth saving (no new doc: the lesson went straight into `CLAUDE.md`)
 - [ ] Merge into `main`
+
+No `ce-plan` plan for this task: the vetting and install (what a plan would cover) happened before the plugin was available here. From task 07 on, bigger tasks need a plan in `document/plans/`.
 
 ## Backlog (proposed)
 
@@ -113,9 +116,10 @@ These are suggestions for building the app. They depend on the product brief, so
    ```
 5. **Set the status to `In progress`** and do the work in small commits.
 6. **Write the learning doc**: copy [TEMPLATE.md](../learning/TEMPLATE.md) to `document/learning/NN_short_name.md` and fill it in.
-7. **Set the status to `Done`** and link the learning doc in the table.
+7. **Link the learning doc** in the table. Tick "Review" only after the review really happened.
 8. **Merge into `main`** (or open a pull request):
    ```bash
    git switch main
    git merge --no-ff NN_short_name
    ```
+9. **Mark it done** in one bookkeeping commit on `main`: tick "Merge into `main`", set the status to `Done` here and in the learning doc's header, then `git commit -m "docs(NN): mark task NN done"`. A step can't honestly be ticked before it happens, which is why this comes after the merge.
