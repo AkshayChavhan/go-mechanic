@@ -119,8 +119,8 @@ Also useful on demand: `ce-debug` (find and fix a bug), `ce-explain` (explain co
 **Not used here, and why:**
 
 - `lfg`, `ce-commit-push-pr`, `ce-babysit-pr`, `ce-resolve-pr-feedback` push code and open or update pull requests without asking. Our rule is to ask before any push or PR.
-- Cross-model review and the external work engine send code to other AI companies (Codex, Grok and others). They're switched off in `config.yaml`.
-- `ce-compound`'s default "full" mode reads recent session transcripts from your home folder. We always run it with `depth:lightweight`, which skips that.
+- Cross-model review sends diffs to other AI companies (Codex, Grok and others). `cross_model_review_mode: off` in `config.yaml` stops reviews doing that on their own; `CLAUDE.md` forbids sending code elsewhere, or handing implementation to another AI tool, unless you ask.
+- `ce-compound`'s "full" mode reads recent session transcripts from your home folder. Only ever run it as `/compound-engineering:ce-compound mode:non-interactive depth:lightweight ...`. Plain `/ce-compound`, and the calls other skills (`lfg`, `ce-debug`, ...) make to it, use full mode. `depth:lightweight` only works together with `mode:non-interactive`.
 - `ce-proof` publishes documents to an outside website.
 
 **Learning doc vs solution doc:** a learning doc (`document/learning/`) teaches a person what one task did. A solution doc (`document/solutions/`) is a short lesson for future Claude sessions to read before similar work. Example: [run commands before documenting output](../solutions/conventions/run-commands-before-documenting-output.md).

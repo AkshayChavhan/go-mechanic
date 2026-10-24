@@ -7,13 +7,18 @@
 # our document/ folder, next to document/task/ and document/learning/.
 docs_root: document
 
-# Never send our code or documents to another AI company's model for a
-# "second opinion" review. Reviews stay on Claude.
+# Stops ce-code-review and ce-doc-review from sending our diffs or documents
+# to another AI company's model for a "second opinion" on their own.
+# (Without this, running ce-code-review counts as permission to do that.)
 cross_model_review_mode: off
 
-# Don't hand implementation work to other AI coding tools.
+# No standing preference for handing implementation to other AI coding tools.
+# This is already the default; it's written here so the choice is on record.
+# It doesn't block a request made in the conversation: CLAUDE.md does that.
 work_engine_mode: off
 
-# Don't start watching (and pushing fixes to) pull requests automatically.
-# This repo doesn't open PRs unless the owner asks.
+# Stops the long-running PR watch that ce-commit-push-pr starts after opening
+# a PR. It does NOT stop commits, pushes or PRs (and lfg runs its own watch).
+# CLAUDE.md's "Our shipping process wins" rule is what keeps those from
+# happening without the owner asking.
 auto_babysit: false

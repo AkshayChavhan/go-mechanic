@@ -33,14 +33,14 @@ Every task goes **plan → work → review → compound**, inside our task and b
 1. **Split the work into small tasks.** One task = one focused change that can be reviewed in about 15 minutes. If a request is bigger, split it (use the `task-planner` agent), add every piece to `document/task/task.md` with a step list, and show the plan to the user before starting.
 2. **Name the task `NN_short_name`**: next free two-digit number, lowercase, words joined with `_`, two to four words that describe the outcome (`03_skills_installation`, `12_booking_form`).
 3. **Branch name = task name.** Start from an up-to-date `main`: `git switch main`, then `git switch -c NN_short_name`.
-4. **Track progress in `task.md`**: set the row to `In progress` when you start, tick the steps as they're done, set `Done` and link the learning doc at the end.
+4. **Track progress in `task.md`**: set the row to `In progress` when you start, tick each step only after it's really done, and link the learning doc. `Done` and the "Merge" tick come last, after the merge (step 11).
 5. **Read past lessons.** Search `document/solutions/` for lessons that touch this task (`grep -ril "<topic>" document/solutions/`) and follow them.
 6. **Plan.** For anything bigger than a one-file change, run `ce-plan` (run `ce-brainstorm` first if the request is still fuzzy). The plan is saved in `document/plans/`; link it from the task's steps in `task.md`.
-7. **Work.** Build it, by hand or with `ce-work <plan file>`. Commit in small steps with Conventional Commit messages (see Git rules).
+7. **Work.** Build it, by hand or with `ce-work <plan file>`. Commit in small steps with Conventional Commit messages (see Git rules). When `ce-work` reaches its shipping step, it only commits on the task branch and stops (see "Compound Engineering" rules).
 8. **Write the learning doc** at `document/learning/NN_short_name.md` from `document/learning/TEMPLATE.md` (see Learning docs; the `learning-doc-writer` agent can draft it).
-9. **Review.** If the task changed code, run `ce-code-review` (it only reports). Then run the `code-reviewer` agent: it checks the repo rules and is the final gate. Fix every "must fix", **then** add the real verdict and what you fixed to the learning doc. Never write that a review (or test, or merge) happened before it did. See `document/solutions/conventions/run-commands-before-documenting-output.md`.
-10. **Compound.** Ask: *"If this lesson weren't written down, would a future session repeat the mistake or redo the investigation?"* Mistakes the review caught are the usual source. If yes, run `/compound-engineering:ce-compound mode:non-interactive depth:lightweight <one-line summary>`; it writes one lesson to `document/solutions/`. If no, skip it and say so in the learning doc.
-11. **Merge into `main`**: `git switch main && git merge --no-ff NN_short_name`, unless the user asked for a pull request.
+9. **Review.** If the task changed code, run `ce-code-review` (it only reports), unless `ce-work` already ran it for this change. Then run the `code-reviewer` agent: it checks the repo rules and is the final gate. Fix every "must fix", **then** add the real verdict and what you fixed to the learning doc. Never write that a review (or test, or merge) happened before it did. See `document/solutions/conventions/run-commands-before-documenting-output.md`.
+10. **Compound.** Ask: *"If this lesson weren't written down, would a future session repeat the mistake or redo the investigation?"* Mistakes the review caught are the usual source. If yes, run exactly `/compound-engineering:ce-compound mode:non-interactive depth:lightweight <one-line summary>` (never plain `/ce-compound`; see the privacy rule). It writes one lesson to `document/solutions/`. If no, skip it and say why in the learning doc.
+11. **Merge, then mark it done.** `git switch main && git merge --no-ff NN_short_name` (unless the user asked for a pull request). Then make one bookkeeping commit on `main`, `docs(NN): mark task NN done`: tick "Merge into `main`" and set `Done` in `task.md` and in the learning doc's header. This is the only kind of commit made directly on `main`.
 12. **One task at a time.** Don't start the next task on the same branch. If you find unrelated work, add it to the backlog in `task.md` instead of doing it.
 
 ## Learning docs
@@ -98,11 +98,12 @@ A **learning doc** teaches the owner (a junior engineer) what one task did. A **
 
 **Rules (these override the plugin's defaults):**
 
-- **Our shipping process wins.** In this repo, shipping means: commit on the task branch, then merge into `main` locally with `--no-ff`. No Compound Engineering skill may push, open or update a pull request, start PR babysitting, or create branches other than the task branch, unless the user asks in this session. Don't use `lfg`, `ce-commit-push-pr`, `ce-babysit-pr` or `ce-resolve-pr-feedback` unless the user asks for them by name.
-- **No other AI vendors.** `cross_model_review_mode` and `work_engine_mode` are `off`. Never send code or docs to another model provider (Codex, Grok, Antigravity, Cursor, OpenCode) unless the user asks.
-- **Privacy:** run `ce-compound` with `depth:lightweight`, which skips reading past session transcripts. Never read other projects' session files (`~/.claude/projects/`, `~/.codex/`, `~/.cursor/`).
+- **Our shipping process wins.** In this repo, a Compound Engineering skill's shipping step means **commit on the task branch, then stop**. Merging into `main` happens only at Task workflow step 11, after the learning doc, review and compound steps. No Compound Engineering skill may push, open or update a pull request, start PR babysitting, merge, or create branches other than the task branch, unless the user asks in this session. Don't use `lfg`, `ce-commit-push-pr`, `ce-babysit-pr` or `ce-resolve-pr-feedback` unless the user asks for them by name. These rules are the real protection: the config switches only cover some of these paths.
+- **No other AI vendors.** `cross_model_review_mode: off` stops `ce-code-review` and `ce-doc-review` from sending diffs to another model on their own. Never send code or docs to another model provider (Codex, Grok, Antigravity, Cursor, OpenCode), and never hand implementation to one, unless the user asks.
+- **Privacy:** only ever run `ce-compound` as `mode:non-interactive depth:lightweight`. Plain `/ce-compound`, and the calls that `lfg`, `ce-debug`, `ce-optimize`, `ce-polish` and `ce-pov` make to it, run Full mode, which scans recent session transcripts in your home folder. If a skill offers to run `ce-compound`, decline and run the lightweight command yourself. Never read other projects' session files (`~/.claude/projects/`, `~/.codex/`, `~/.cursor/`).
 - **Don't publish** to Proof (`ce-proof`) or anywhere else outside this machine without asking.
-- **Updating the plugin:** read the release notes and the changed files first, then change the `ref` tag in `.claude/settings.json` in its own task. Never switch it to an unpinned branch.
+- **Pinned version:** tag `compound-engineering-v3.32.0`, reviewed at commit `786ac0194183fadc3d0e2525b2ba6d40353926d3`. A tag can be moved upstream, so check that `gitCommitSha` for this plugin in `~/.claude/plugins/installed_plugins.json` still matches. If it doesn't, stop and tell the user.
+- **Updating the plugin:** read the release notes and the changed files first, then change the `ref` tag in `.claude/settings.json` and the commit above, in its own task. Never switch it to an unpinned branch.
 - **Optional tools** it suggests (`agent-browser`, `ast-grep`, `ffmpeg`, a newer Node) are global installs: ask first.
 
 ## Agents
@@ -125,13 +126,13 @@ A task is done when all of these are true:
 - [ ] The work is on its own `NN_short_name` branch, in small commits
 - [ ] Bigger tasks have a plan in `document/plans/`, linked from `task.md`
 - [ ] It works, and you checked it (ran it, tested it, or opened it)
-- [ ] `document/task/task.md` shows `Done`, all steps ticked, learning doc linked
+- [ ] `document/task/task.md` has the learning doc linked and every step ticked except "Merge" (ticked by the bookkeeping commit in step 11)
 - [ ] The learning doc exists and answers Why, What and How
 - [ ] `readme.md` and `CLAUDE.md` are updated if the task changed how the repo works
 - [ ] No secrets, no generated folders committed
 - [ ] `code-reviewer` reports "Ready to merge" (or every "must fix" is fixed)
 - [ ] The compound question was asked: a lesson is in `document/solutions/`, or the learning doc says why none was needed
-- [ ] Merged into `main` with `--no-ff` (or a pull request is open, if the user asked for one)
+- [ ] Merged into `main` with `--no-ff` (or a pull request is open, if the user asked for one), then the `docs(NN): mark task NN done` commit sets `Done`
 
 ## Talking to the user
 
