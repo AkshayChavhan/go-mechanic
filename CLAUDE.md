@@ -20,16 +20,17 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `document/skills/skills.md` | What each installed skill does and when to use it |
 | `.claude/skills/` | Installed project skills (third-party: don't edit by hand) |
 | `skills-lock.json` | Source and content hash of each installed skill |
+| `.claude/agents/` | Project subagents (see Agents) |
 
 ## Task workflow (always follow)
 
-1. **Split the work into small tasks.** One task = one focused change that can be reviewed in about 15 minutes. If a request is bigger, split it, add every piece to `document/task/task.md` with a step list, and show the plan to the user before starting.
+1. **Split the work into small tasks.** One task = one focused change that can be reviewed in about 15 minutes. If a request is bigger, split it (use the `task-planner` agent), add every piece to `document/task/task.md` with a step list, and show the plan to the user before starting.
 2. **Name the task `NN_short_name`**: next free two-digit number, lowercase, words joined with `_`, two to four words that describe the outcome (`05_app_setup`, `12_booking_form`).
 3. **Branch name = task name.** Start from an up-to-date `main`: `git switch main`, then `git switch -c NN_short_name`.
 4. **Track progress in `task.md`**: set the row to `In progress` when you start, tick the steps as they're done, set `Done` and link the learning doc at the end.
 5. **Commit in small steps** with Conventional Commit messages (see Git rules).
-6. **Write the learning doc** at `document/task/NN_short_name/README.md` from `TEMPLATE.md` (see Learning docs).
-7. **Merge into `main`** with `git switch main && git merge --no-ff NN_short_name`, unless the user asked for a pull request.
+6. **Write the learning doc** at `document/task/NN_short_name/README.md` from `TEMPLATE.md` (see Learning docs; the `learning-doc-writer` agent can draft it).
+7. **Review, then merge into `main`.** Run the `code-reviewer` agent on the branch and fix every "must fix". Then `git switch main && git merge --no-ff NN_short_name`, unless the user asked for a pull request.
 8. **One task at a time.** Don't start the next task on the same branch. If you find unrelated work, add it to the backlog in `task.md` instead of doing it.
 
 ## Learning docs
@@ -44,7 +45,8 @@ Every task gets one. The reader is a junior software engineer.
 
 ## Git rules
 
-- **Commit messages** use Conventional Commits: `type: what changed`, with types `feat`, `fix`, `docs`, `chore`, `refactor`, `style`, `test`. Add a scope in brackets when it helps: `docs(01): fix example`.
+- **Commit messages** use Conventional Commits: `type: what changed`. Types: `feat` (new app feature), `fix` (bug fix), `docs` (documentation), `chore` (tooling, config, dependencies), `refactor`, `style`, `test`. Add a scope in brackets when it helps: `docs(01): fix example`.
+- **Small commits:** code, docs and tracker updates usually go in separate commits, so each can be reviewed or reverted alone.
 - **Never commit secrets.** API keys and tokens go in `.env` (ignored by git) or the tool's own login. Commit a `.env.example` with fake values instead.
 - **Ask the user first** before: `git push`, opening a pull request, deleting a branch, `--force` anything, rewriting history on `main`, or installing anything globally (`-g`, `npm install -g`, `brew install`).
 - **Don't commit generated folders** such as `node_modules/` or `.next/`. `.gitignore` already covers them.
@@ -66,6 +68,19 @@ Rules:
 - **Don't edit files in `.claude/skills/`.** They come from upstream and `npx skills update` overwrites them. Put project-specific rules in this file instead.
 - **New or updated skills:** read the files before installing or committing them. Use project scope: `npx skills add <owner/repo> --agent claude-code --skill <name> --copy -y`, then update `document/skills/skills.md`.
 
+## Agents
+
+Subagents live in `.claude/agents/`. The main session runs the task workflow and owns git (branches, commits, merges); subagents do one focused job and report back.
+
+| Agent | Use it when | Can change files? |
+| --- | --- | --- |
+| `task-planner` | New work might need more than one task | Only `document/task/task.md` |
+| `ui-engineer` | A task changes how the app looks, feels or moves | Yes (app code); no git |
+| `learning-doc-writer` | A task's changes are committed and need a learning doc | Only the learning doc |
+| `code-reviewer` | A task branch is ready to merge | No (read-only) |
+
+Run independent subagents in parallel. When an agent's job changes, update its file and this table in the same task.
+
 ## Definition of done
 
 A task is done when all of these are true:
@@ -76,6 +91,7 @@ A task is done when all of these are true:
 - [ ] The learning doc exists and answers Why, What and How
 - [ ] `readme.md` and `CLAUDE.md` are updated if the task changed how the repo works
 - [ ] No secrets, no generated folders committed
+- [ ] `code-reviewer` reports "Ready to merge" (or every "must fix" is fixed)
 - [ ] Merged into `main` with `--no-ff` (or a pull request is open, if the user asked for one)
 
 ## Talking to the user

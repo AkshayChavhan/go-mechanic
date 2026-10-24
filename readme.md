@@ -25,6 +25,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `document/skills/skills.md` | The Claude skills we use (GSAP, shadcn/ui, frontend-design, UI/UX Pro Max, 21st.dev) and when to use each. |
 | `.claude/skills/` | The installed skill files. They come with the repo, so there's nothing extra to install. |
 | `skills-lock.json` | Where each skill came from, so installs are repeatable. |
+| `.claude/agents/` | Helper agents Claude can hand work to: `task-planner`, `ui-engineer`, `learning-doc-writer`, `code-reviewer`. |
 
 ## Prerequisites
 
