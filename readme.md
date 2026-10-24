@@ -41,6 +41,6 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 
 - Git
 - Node.js 20 or newer (check with `node -v`)
-- Python 3 (check with `python3 --version`), for the UI/UX Pro Max search script and the automatic SEO check
+- Python 3.9 or newer (check with `python3 --version`), for the UI/UX Pro Max search script and the automatic SEO check
 - [Claude Code](https://code.claude.com/docs/en/overview). The first time you open the repo, accept the "trust this folder" prompt. That's what lets the Compound Engineering plugin load from `.claude/settings.json`.
 - Optional: a [21st.dev](https://21st.dev) account for the 21st skills. Run `npx @21st-dev/cli login` once.

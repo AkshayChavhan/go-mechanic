@@ -59,6 +59,7 @@ Every task gets one. The reader is a junior software engineer.
 ## Git rules
 
 - **Commit messages** use Conventional Commits: `type: what changed`. Types: `feat` (new app feature), `fix` (bug fix), `docs` (documentation), `chore` (tooling, config, dependencies), `refactor`, `style`, `test`. Add a scope in brackets when it helps: `docs(01): fix example`.
+- **`feat` vs `chore`:** `feat` only for something a website visitor or garage user gets. Agents, hooks, skills, settings, config and dependencies are `chore` (this slipped in tasks 04 and 08).
 - **Small commits:** code, docs and tracker updates usually go in separate commits, so each can be reviewed or reverted alone.
 - **Never commit secrets.** API keys and tokens go in `.env` (ignored by git) or the tool's own login. Commit a `.env.example` with fake values instead.
 - **Ask the user first** before: `git push`, opening a pull request, deleting a branch, `--force` anything, rewriting history on `main`, or installing anything globally (`-g`, `npm install -g`, `brew install`).
@@ -125,7 +126,7 @@ Run independent subagents in parallel. When an agent's job changes, update its f
 
 ## SEO review
 
-- **Automatic:** a Stop hook (`.claude/hooks/seo_check.py`, registered in `.claude/settings.json`) runs every time you finish a reply. If any file under `src/app/`, `src/components/`, `src/content/`, `src/i18n/`, `messages/` or `public/` changed since the last review (API routes, tests and `.DS_Store` excluded), it stops you once with a list of the changed files.
+- **Automatic:** a Stop hook (`.claude/hooks/seo_check.py`, registered in `.claude/settings.json`) runs every time you finish a reply. If any file under `src/app/`, `src/components/`, `src/content/`, `src/i18n/`, `messages/` or `public/` changed since the last review (`src/app/api/`, `route.ts` files, tests and `.DS_Store` excluded), it stops you once with a list of the changed files. It waits while a background subagent is still running, so half-built pages aren't reviewed.
 - **When it asks:** run the `seo-reviewer` agent on the affected pages, **in the foreground** (not in the background, so it doesn't review half-finished pages while another agent is still building them). Then reply with a short **"SEO check"** section: what changed, each page's verdict (Pass / Needs work) and the suggested fixes. **Don't apply the fixes unless the owner asks.**
 - **On demand:** when the owner asks to "check SEO" (for a page or the whole site), run `seo-reviewer` the same way.
 - **Child sessions:** start every `claude -p` helper session with `GOMECHANIC_SEO_HOOK=off` in front (e.g. `GOMECHANIC_SEO_HOOK=off claude -p ...`). Otherwise the child takes the review, and the owner never sees it.
