@@ -17,6 +17,9 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `document/task/task.md` | Task tracker: every task, branch, status and step list |
 | `document/task/TEMPLATE.md` | Template for learning docs |
 | `document/task/NN_name/README.md` | Learning doc for task `NN_name` |
+| `document/skills/skills.md` | What each installed skill does and when to use it |
+| `.claude/skills/` | Installed project skills (third-party: don't edit by hand) |
+| `skills-lock.json` | Source and content hash of each installed skill |
 
 ## Task workflow (always follow)
 
@@ -45,6 +48,23 @@ Every task gets one. The reader is a junior software engineer.
 - **Never commit secrets.** API keys and tokens go in `.env` (ignored by git) or the tool's own login. Commit a `.env.example` with fake values instead.
 - **Ask the user first** before: `git push`, opening a pull request, deleting a branch, `--force` anything, rewriting history on `main`, or installing anything globally (`-g`, `npm install -g`, `brew install`).
 - **Don't commit generated folders** such as `node_modules/` or `.next/`. `.gitignore` already covers them.
+
+## Skills
+
+Installed in `.claude/skills/`. Full guide: `document/skills/skills.md`. For UI work, use them in this order:
+
+1. **Direction:** `frontend-design` decides the look. `ui-ux-pro-max` supplies data and checklists. `21st-ui-explore` compares options when the direction is open.
+2. **Build:** `shadcn` for components (always through the shadcn CLI). Search 21st (`21st-cli-use`) before hand-writing a section. `21st-ui-build` for whole pages or sections.
+3. **Motion:** `gsap-react` (with `useGSAP`), plus `gsap-timeline` or `gsap-scrolltrigger`. Always handle `prefers-reduced-motion`.
+4. **Review:** `21st-ui-review` and the ui-ux-pro-max pre-delivery checklist.
+
+Rules:
+
+- **ui-ux-pro-max script path:** run `python3 .claude/skills/ui-ux-pro-max/scripts/search.py ...` from the repo root. Ignore the `${CLAUDE_PLUGIN_ROOT}` prefix in its `SKILL.md`; that only applies to plugin installs. Persist with `--persist --output-dir .`; never pass `--force` without the user's OK.
+- **ui-ux-pro-max vs frontend-design:** treat ui-ux-pro-max results as input and a checklist; frontend-design and the product brief make the final visual call. Accessibility rules always win.
+- **21st.dev:** needs the user's login (`npx @21st-dev/cli login`) or a `TWENTYFIRST_TOKEN` env var. Never commit the key. Don't use hosted generation (`21st generate`, `21st iterate`) unless `21st usage` shows AI is enabled; it uses paid credits. Don't publish anything to 21st.dev.
+- **Don't edit files in `.claude/skills/`.** They come from upstream and `npx skills update` overwrites them. Put project-specific rules in this file instead.
+- **New or updated skills:** read the files before installing or committing them. Use project scope: `npx skills add <owner/repo> --agent claude-code --skill <name> --copy -y`, then update `document/skills/skills.md`.
 
 ## Definition of done
 

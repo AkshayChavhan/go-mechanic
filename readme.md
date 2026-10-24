@@ -22,8 +22,14 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `document/task/task.md` | The task tracker: every task, its branch, its status and its learning doc. |
 | `document/task/TEMPLATE.md` | The starting point for each task's learning doc. |
 | `document/task/NN_name/README.md` | One learning doc per task. |
+| `document/skills/skills.md` | The Claude skills we use (GSAP, shadcn/ui, frontend-design, UI/UX Pro Max, 21st.dev) and when to use each. |
+| `.claude/skills/` | The installed skill files. They come with the repo, so there's nothing extra to install. |
+| `skills-lock.json` | Where each skill came from, so installs are repeatable. |
 
 ## Prerequisites
 
 - Git
 - Node.js 20 or newer (check with `node -v`)
+- Python 3 (check with `python3 --version`), for the UI/UX Pro Max search script
+- [Claude Code](https://code.claude.com/docs/en/overview)
+- Optional: a [21st.dev](https://21st.dev) account for the 21st skills. Run `npx @21st-dev/cli login` once.
