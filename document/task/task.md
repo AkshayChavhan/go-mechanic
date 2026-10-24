@@ -149,10 +149,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `08_seo_reviewer`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-24-2339-chore-seo-reviewer-hook-plan.md)
-- [ ] Write `.claude/agents/seo-reviewer.md`
-- [ ] Write `.claude/hooks/seo_check.py` (fingerprints page files) and test it with sample input
-- [ ] Add the Stop hook to `.claude/settings.json` (merge with plugin settings)
-- [ ] Add the SEO review rule to `CLAUDE.md`
+- [x] Write `.claude/agents/seo-reviewer.md`
+- [x] Write `.claude/hooks/seo_check.py` (fingerprints page files) and test it with sample input
+- [x] Add the Stop hook to `.claude/settings.json` (merge with plugin settings)
+- [x] Add the SEO review rule to `CLAUDE.md`
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
