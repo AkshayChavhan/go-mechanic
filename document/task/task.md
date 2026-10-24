@@ -17,7 +17,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 05 | `05_learning_folder` | Move learning docs to `document/learning/NN_name.md` | Done | [05_learning_folder.md](../learning/05_learning_folder.md) |
 | 06 | `06_compound_engineering` | Install the Compound Engineering plugin and fit its plan, work, review, compound loop into our workflow | Done | [06_compound_engineering.md](../learning/06_compound_engineering.md) |
 | 07 | `07_website_plan` | Save the approved website plan: features doc, master plan, tasks 07–46 | Done | [07_website_plan.md](../learning/07_website_plan.md) |
-| 08 | `08_seo_reviewer` | SEO reviewer agent + Stop hook that runs it after every page change | To do |  |
+| 08 | `08_seo_reviewer` | SEO reviewer agent + Stop hook that runs it after every page change | In progress | [08_seo_reviewer.md](../learning/08_seo_reviewer.md) |
 | 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | To do |  |
 | 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | To do |  |
 | 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/design` preview | To do |  |
@@ -147,8 +147,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 08_seo_reviewer
 
-- [ ] Create branch `08_seo_reviewer`
-- [ ] Plan with `ce-plan`
+- [x] Create branch `08_seo_reviewer`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-24-2339-chore-seo-reviewer-hook-plan.md)
 - [ ] Write `.claude/agents/seo-reviewer.md`
 - [ ] Write `.claude/hooks/seo_check.py` (fingerprints page files) and test it with sample input
 - [ ] Add the Stop hook to `.claude/settings.json` (merge with plugin settings)
