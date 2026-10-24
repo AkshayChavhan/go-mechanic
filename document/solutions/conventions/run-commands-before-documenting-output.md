@@ -20,7 +20,7 @@ tags: [learning-docs, command-output, verification, code-review, honesty]
 
 The same mistake reached a learning doc three times. Each time, the doc said what a command or step *should* produce, not what it really produced:
 
-1. **Task 01** (commit `07706a8`) said `git check-ignore -v .env.example` prints nothing. It doesn't. `-v` also prints the negation rule that matched, so it prints `.gitignore:19:!.env.example` (line 19 of `.gitignore` is `!.env.example`). This was found after task 01 was merged, before the `code-reviewer` agent existed, and fixed in task 02 (commit `0b74212`). See `document/learning/02_claude_guidelines.md`, step 2 and "Common mistakes".
+1. **Task 01** (commit `07706a8`) said `git check-ignore -v .env.example` prints nothing. It doesn't. `-v` also prints the negation rule that matched, so it prints a line starting with `.gitignore:19:!.env.example`, then a tab and the path `.env.example` (line 19 of `.gitignore` is `!.env.example`). This was found after task 01 was merged, before the `code-reviewer` agent existed, and fixed in task 02 (commit `0b74212`). See `document/learning/02_claude_guidelines.md`, step 2 and "Common mistakes".
 2. **Task 04** (commit `f237f4c`) said "we ran the new `code-reviewer` on this branch, fixed what it found" before the review had run. The `code-reviewer` agent caught it. Fixed in `36f0b30`; see `document/learning/04_agents.md`, step 6.
 3. **Task 05** (commit `5e6ccf7`) described the `git log --follow` output instead of pasting it. The real output held two surprising commits (`3b5f31e`, `5ebfe5c`, from an earlier, reverted task 05) that the description hid. The `code-reviewer` agent caught it. Fixed in `2af0076`; see `document/learning/05_learning_folder.md`, "Check that it works".
 
@@ -59,7 +59,7 @@ git check-ignore .env.example       # prints nothing: .env.example is NOT ignore
 git check-ignore -v .env            # -v (verbose) also shows which .gitignore line matched
 ```
 
-plus a note that `git check-ignore -v .env.example` prints `.gitignore:19:!.env.example`, which means the opposite of "ignored".
+plus a note that `git check-ignore -v .env.example` prints a line starting with `.gitignore:19:!.env.example`, which means the opposite of "ignored".
 
 Before (task 04, step written ahead of time):
 
