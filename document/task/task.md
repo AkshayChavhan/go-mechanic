@@ -15,7 +15,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 03 | `03_skills_installation` | Install Claude skills (GSAP, shadcn/ui, frontend-design, UI/UX Pro Max, 21st.dev) and write the skills doc | Done | [03_skills_installation.md](../learning/03_skills_installation.md) |
 | 04 | `04_agents` | Subagents for planning, learning docs, UI work and review | Done | [04_agents.md](../learning/04_agents.md) |
 | 05 | `05_learning_folder` | Move learning docs to `document/learning/NN_name.md` | Done | [05_learning_folder.md](../learning/05_learning_folder.md) |
-| 06 | `06_compound_engineering` | Install the Compound Engineering plugin and fit its plan, work, review, compound loop into our workflow | In progress | [06_compound_engineering.md](../learning/06_compound_engineering.md) |
+| 06 | `06_compound_engineering` | Install the Compound Engineering plugin and fit its plan, work, review, compound loop into our workflow | Done | [06_compound_engineering.md](../learning/06_compound_engineering.md) |
 
 ## Task steps
 
@@ -87,7 +87,7 @@ Each task is broken into small steps. Tick them off as you go.
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds
 - [x] Compound: decide whether the review taught a lesson worth saving (no new doc: the lesson went straight into `CLAUDE.md`)
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 No `ce-plan` plan for this task: the vetting and install (what a plan would cover) happened before the plugin was available here. From task 07 on, bigger tasks need a plan in `document/plans/`.
 

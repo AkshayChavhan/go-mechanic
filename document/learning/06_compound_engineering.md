@@ -1,6 +1,6 @@
 # 06_compound_engineering: Add the Compound Engineering plugin
 
-> **Branch:** `06_compound_engineering` · **Date:** 2026-10-24 · **Status:** In progress (merge pending)
+> **Branch:** `06_compound_engineering` · **Date:** 2026-10-24 · **Status:** Done
 
 ## In one minute
 
