@@ -54,20 +54,20 @@ This is the product plan: who the site is for, what it does, and what's left for
 22. ✅ **Schedule:** hours, slot rules and capacity, holidays, pickup pincodes and fees.
 23. ✅ **Mechanic job view on a phone:** status, notes and photos; the customer is notified automatically.
 24. ✅ **Estimate builder:** part and labour lines, versions, send; record approvals given by phone.
-25. ✅ **Customers and vehicles** (a simple CRM); **team and roles**.
+25. ✅ **Customers and vehicles** (a simple CRM); **team and roles** (owner only).
 26. ✅ **Content:** services, prices, packages, vehicle catalogue, offers, FAQ and garage info, all editable without code.
 27. ✅ **Reviews** (reply or hide) and **reports** (bookings, approved value, top services, rating, mechanic workload; CSV export).
 28. 🔜 Revenue and GST reports, spare-parts inventory.
 
 ### D. Built in everywhere
-29. ✅ **Mobile-first, fast on 4G.**
+29. ✅ **Mobile-first, fast on 4G**; staff can add the admin dashboard to their phone's home screen.
 30. ✅ **Local SEO:** metadata, canonical URLs, social preview image, sitemap, robots file, `AutoRepair` structured data.
 31. ✅ **Automatic SEO review** after every change to pages (task 08).
 32. ✅ **Ready for Hindi:** all text in translation files and translatable database fields.
 33. ✅ **Privacy (DPDP Act 2023 and 2025 Rules):** consent history, privacy notice, delete-my-data, data export.
 34. ✅ **Security:** customers see only their own data; mechanics only their assigned jobs. Tested.
 35. ✅ **Accessibility:** keyboard use, contrast, reduced motion; automated checks.
-36. 🔜 App-like install for customers, roadside-assistance dispatch, more branches.
+36. 🔜 App-like install for customers (PWA), roadside-assistance dispatch, more branches.
 
 ## Design direction: Apple-like
 

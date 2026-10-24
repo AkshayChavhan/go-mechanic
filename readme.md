@@ -33,7 +33,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `.claude/agents/` | Helper agents Claude can hand work to: `task-planner`, `ui-engineer`, `learning-doc-writer`, `code-reviewer`. |
 | `.claude/settings.json` | Shared Claude Code settings. Installs the Compound Engineering plugin (pinned version) for everyone. |
 | `.compound-engineering/` | Compound Engineering settings: `config.yaml` (ours) and `config.example.yaml` (every option explained). |
-| `document/plans/` | Plans for individual tasks, written by Compound Engineering's `ce-plan`. Appears with the first plan. |
+| `document/plans/` | Plans: the project's master plan, plus one plan per task written by Compound Engineering's `ce-plan`. |
 | `document/solutions/` | Reusable lessons, written by `ce-compound`. Claude reads them before similar work. |
 
 ## Prerequisites

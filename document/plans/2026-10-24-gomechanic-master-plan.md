@@ -26,6 +26,8 @@ The repo has its rules, skills, agents and Compound Engineering set up (tasks 01
 
 ## Feature list
 
+> Snapshot at approval. The living copy is [document/website/features.md](../website/features.md); update that one.
+
 ✅ = version 1 · 🔜 = later
 
 ### A. Public website
@@ -112,7 +114,7 @@ The repo has its rules, skills, agents and Compound Engineering set up (tasks 01
 
 **Data rules:** money in integer paise; UTC timestamps, garage-local date and time in `Asia/Kolkata`; booking items snapshot their prices; slot capacity is taken with one atomic conditional `UPDATE`; the notification outbox has a `dedupe_key`.
 
-**Data model** (about 26 tables): auth tables with `role` (customer / mechanic / manager / owner); `garage_settings`, `opening_hours`, `slot_rules`, `calendar_exceptions`, `slot_counters`, `pickup_areas`; `vehicle_categories`, `vehicle_makes`, `vehicle_models`; `services`, `package_items`, `service_prices`; `customer_vehicles`, `consents`; `bookings`, `booking_items`, `booking_events`; `media`; `estimate_requests`, `estimates`, `estimate_items`; `reviews`, `offers`, `faqs`, `content_blocks`; `notifications`, `dev_messages`, `audit_log`.
+**Data model** (28 tables plus Better Auth's own tables): auth tables with `role` (customer / mechanic / manager / owner); `garage_settings`, `opening_hours`, `slot_rules`, `calendar_exceptions`, `slot_counters`, `pickup_areas`; `vehicle_categories`, `vehicle_makes`, `vehicle_models`; `services`, `package_items`, `service_prices`; `customer_vehicles`, `consents`; `bookings`, `booking_items`, `booking_events`; `media`; `estimate_requests`, `estimates`, `estimate_items`; `reviews`, `offers`, `faqs`, `content_blocks`; `notifications`, `dev_messages`, `audit_log`.
 
 **Cache Components rules** (from `node_modules/next/dist/docs/01-app/…`):
 - Public catalogue reads use `'use cache'` + `cacheTag`, and admin saves call `updateTag`.
@@ -129,11 +131,11 @@ The repo has its rules, skills, agents and Compound Engineering set up (tasks 01
 | 08 | `08_seo_reviewer` | SEO agent + Stop hook + `CLAUDE.md` rule (above) | – |
 | 09 | `09_app_setup` | Delete leftover `node_modules/`, `.next/` etc.; scaffold `create-next-app@16.4.3` in a scratch folder (`--ts --tailwind --eslint --app --src-dir --cache-components --use-npm --agents-md --no-agent-feedback --disable-git`) and copy it in; `shadcn init` with **Radix**; GSAP; Vitest + Playwright smoke tests; `npm run check` (lint + `next typegen` + `tsc` + tests); `CLAUDE.md` stack and `@AGENTS.md` | – |
 | 10 | `10_i18n_foundation` | next-intl, `[locale]`, `en.json`, ₹ and date formatters, a Cache Components compatibility test | – |
-| 11 | `11_design_system` | **Apple-like** visual system (frontend-design + ui-ux-pro-max + shadcn): tokens, type scale, Inter + system font, Devanagari-ready, motion tokens, restyled shadcn controls (44 px targets), `design-system/go-mechanic/MASTER.md`, a `/design` preview page | Approve the look; name and logo |
-| 12 | `12_layout_shell` | Frosted header, footer, sticky Call/WhatsApp/Book bar on phones, 404, "Open now", offer banner; garage details from a typed content file (moved to the database in task 40) | Real address, phone, hours |
-| 13 | `13_home_page` | Apple-style home: hero, scroll storytelling (pinned section), bento grid of services, counting stats, reviews preview, final call to action; GSAP + ScrollTrigger with a reduced-motion fallback | Photos (placeholders until real ones) |
+| 11 | `11_design_system` | **Apple-like** visual system (frontend-design + ui-ux-pro-max + shadcn): tokens, type scale, Inter + system font, Devanagari-ready, motion tokens, restyled shadcn controls (44 px targets), `design-system/go-mechanic/MASTER.md`, a `/dev/design` preview page (development only, not indexed) | Approve the look; name and logo |
+| 12 | `12_layout_shell` | Frosted header, footer, sticky Call/WhatsApp/Book bar on phones, 404, "Open now", offer banner; garage details, hours and the offer from typed **placeholder** content files (`src/content/`). Task 14 moves garage details and hours to the database; task 38 switches the offer banner to real offers | Real address, phone, hours |
+| 13 | `13_home_page` | Apple-style home: hero, scroll storytelling (pinned section), bento grid of services, counting stats, reviews preview, final call to action; GSAP + ScrollTrigger with a reduced-motion fallback. Services, stats and reviews use labelled **placeholder** content until tasks 18 (services) and 37 (reviews and rating) switch them to real data. Sample reviews are marked as samples and never shown as real | Photos (placeholders until real ones) |
 | **M1 Data and accounts** ||||
-| 14 | `14_database_setup` | Drizzle, PGlite / postgres.js, migrations, garage settings and hours, seed data, `env.ts`, `clock.ts` | – |
+| 14 | `14_database_setup` | Drizzle, PGlite / postgres.js, migrations, garage settings and hours (moved here from the placeholder content file), seed data, `env.ts`, `clock.ts` | – |
 | 15 | `15_auth_otp_login` | Better Auth phone OTP, provider pattern, fake SMS + `/dev/outbox`, `/login`, consent | – |
 | 16 | `16_roles_access` | Roles, `can()` matrix with tests, `requireUser/Staff/Role`, proxy redirects, owner bootstrap | Owner's phone number |
 | **M1b Public site** ||||
@@ -182,7 +184,7 @@ The repo has its rules, skills, agents and Compound Engineering set up (tasks 01
 - **Users reaching others' data** by changing IDs in URLs: data-access layer checks plus tests.
 - **DLT and Meta approvals take weeks:** start at task 21; WhatsApp OTP as fallback.
 - **Next.js 16 caching mistakes:** follow the rules above.
-- **Library compatibility:** spike next-intl in 10 and Better Auth in 13, and pin versions.
+- **Library compatibility:** spike next-intl in 10 and Better Auth in 15, and pin versions.
 
 ## Verification
 

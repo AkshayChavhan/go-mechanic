@@ -25,7 +25,7 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `.claude/agents/` | Project subagents (see Agents) |
 | `.claude/settings.json` | Shared Claude Code settings: installs the Compound Engineering plugin (pinned version) |
 | `.compound-engineering/config.yaml` | Compound Engineering team settings (`config.example.yaml` lists every option) |
-| `document/plans/` | Implementation plans written by `ce-plan` / `ce-brainstorm` |
+| `document/plans/` | The master plan (`2026-10-24-gomechanic-master-plan.md`) plus per-task plans written by `ce-plan` / `ce-brainstorm` |
 | `document/solutions/` | Lessons written by `ce-compound`: read the relevant ones before starting a task |
 
 ## Task workflow: the Compound Engineering loop (always follow)
