@@ -138,7 +138,7 @@ No `ce-plan` plan for this task: the vetting and install (what a plan would cove
 - [x] Save the approved plan in `document/plans/2026-10-24-gomechanic-master-plan.md` (tasks 12–16 reordered for the Apple-like look)
 - [x] Add tasks 07–46 to this tracker; replace the old backlog
 - [x] Update `CLAUDE.md` and `readme.md` (project and stack decided)
-- [ ] Write the learning doc
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
