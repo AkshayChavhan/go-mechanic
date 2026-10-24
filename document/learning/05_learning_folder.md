@@ -37,7 +37,7 @@ The owner asked for learning docs in `document/learning/`, one file per task nam
    ```bash
    grep -rn "document/task/\|README.md\|TEMPLATE" --include='*.md' .
    ```
-   `-r` searches folders recursively, `-n` shows line numbers, `--include='*.md'` limits the search to Markdown files. We ignored the hits inside `.claude/skills/` (third-party files) and `node_modules/`.
+   `-r` searches folders recursively, `-n` shows line numbers, `--include='*.md'` limits the search to Markdown files. If anything shows up in third-party folders such as `.claude/skills/` or `node_modules/`, skip it: those aren't our files.
 
 3. **Move the files with `git mv`.**
    ```bash
@@ -59,12 +59,27 @@ The owner asked for learning docs in `document/learning/`, one file per task nam
    ```
    Git doesn't store "renames". It spots them by comparing content: a deleted file and a new file with (nearly) the same text count as a move. A commit that only moves files gives git a 100% match, so the history connects cleanly.
 
-5. **Update every reference**, in a second commit: links in `readme.md`, `CLAUDE.md`, `task.md` and `skills.md`, the paths the agents use, and the template's instructions. The links also had to change shape. From `document/task/task.md`, the 01 doc used to be `01_project_setup/README.md`. Now it's `../learning/01_project_setup.md`: `..` means "go up one folder" (to `document/`), then into `learning/`.
+5. **Update every reference**, in two commits:
+   - `docs: point links, rules and agents at document/learning/`: `readme.md`, `CLAUDE.md`, `skills.md`, the agents' paths and the template's instructions.
+   - `docs: add tasks 05-06 to tracker, renumber backlog, update links`: `task.md`, its links together with the new rows.
+
+   One honest slip: between those two commits, `task.md`'s links pointed at files that had already moved. Nobody used the repo in that moment, but it's better if every commit leaves the links working (see "Common mistakes").
+
+   The links also had to change shape. From `document/task/task.md`, the 01 doc used to be `01_project_setup/README.md`. Now it's `../learning/01_project_setup.md`: `..` means "go up one folder" (to `document/`), then into `learning/`.
 
 6. **Leave the old docs' history alone, but explain it.** Docs 01 to 04 mention old paths in their "What" tables, for example `document/task/TEMPLATE.md | Added`. That's what those tasks really did, so we didn't rewrite it. Each one got a note at the top instead:
    > **Moved:** this doc used to live at `document/task/01_project_setup/README.md`. Task `05_learning_folder` moved it here. ...
 
-7. **Check every link**, write this doc, review, merge (see below).
+7. **Check every link** with a small script (see "Check that it works"), write this doc.
+
+8. **Review.** The `code-reviewer` agent said **Needs changes**:
+   - **must fix:** `document/skills/skills.md` still said "until task `05_app_setup` creates the app". Renumbering the backlog had made that name wrong. It now says "the app-setup task in the backlog", so it can't go stale again.
+   - The `task-planner` agent still used `05_app_setup` as its naming example. Updated to match `CLAUDE.md`.
+   - This doc said all references changed "in a second commit". It was really two commits, with broken links in between. Step 5 now says so.
+   - The "Moved" note didn't cover `document/task/TEMPLATE.md` or old backlog numbers. Widened.
+   - "Check that it works" described the `git log --follow` output instead of showing it. Now it shows the real output.
+
+9. **Merge** with `git switch main && git merge --no-ff 05_learning_folder`.
 
 ## Decisions worth knowing
 
@@ -85,10 +100,26 @@ ls document/learning
 # 01_project_setup.md  02_claude_guidelines.md  03_skills_installation.md  04_agents.md  05_learning_folder.md  TEMPLATE.md
 
 git log --follow --oneline document/learning/01_project_setup.md
-# lists commits from task 01 onward, including the move
+```
 
-git log --oneline document/learning/01_project_setup.md
-# without --follow: only the two commits since the move
+Real output (newest first) when this doc was written:
+
+```
+82cf270 docs: point links, rules and agents at document/learning/
+4c79ead docs: move learning docs to document/learning/NN_name.md
+5ebfe5c chore: revert task 05 website plan
+3b5f31e docs(05): fix review findings (ignore data/, offer banner task, mark defaults)
+0b74212 docs(01): fix git check-ignore example in learning doc
+07706a8 docs: add readme, gitignore, task tracker and learning-doc template
+```
+
+The history goes all the way back to task 01 (`07706a8`), through the move (`4c79ead`). Don't be confused by `3b5f31e` and `5ebfe5c`: they come from an **earlier task 05** (a website plan). The owner reverted it, which freed the number 05 for this task.
+
+Without `--follow`, the same command shows only the commits since the move:
+
+```
+82cf270 docs: point links, rules and agents at document/learning/
+4c79ead docs: move learning docs to document/learning/NN_name.md
 ```
 
 We also ran a small script that opened every Markdown file (outside `.claude/skills/`) and checked that each relative link points at a file that exists. Result: all links work.
@@ -99,6 +130,8 @@ We also ran a small script that opened every Markdown file (outside `.claude/ski
 - **Moving and editing in one commit.** The rename can show up as "delete + add", and `git log --follow` may lose the trail.
 - **Only fixing the links you remember.** Search first (step 2), then fix, then search again to confirm nothing is left.
 - **Forgetting the tools.** Our agents had the old path written into their instructions. Without updating them, the next learning doc would have gone to the old place.
+- **Leaving broken links between commits.** After a move, try to update every reference in the commit right after it, so no commit in the history has broken links. Here, `task.md` was fixed one commit later than the rest.
+- **Renumbering without searching.** Changing task numbers (the backlog went from 05–08 to 07–10) breaks every mention of the old names. Search for the old names (`grep -rn "05_app_setup"`) after renumbering.
 
 ## Try it yourself
 
