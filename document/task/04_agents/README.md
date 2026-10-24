@@ -102,7 +102,7 @@ A team works the same way: a planner, a builder, a technical writer and a review
 
 - **Four agents, not more.** Each matches one step of the workflow. More agents means more descriptions for Claude to choose between, and more files to keep up to date. Add one when a job comes up again and again and doesn't fit an existing agent.
 - **The `learning-doc-writer` must run commands before documenting their output.** That rule comes straight from the mistake fixed in task 02.
-- **`ui-engineer` stops if there's no app yet.** Right now the repo has no `package.json`, so it would report that an app-setup task (now planned as `06_app_setup`) is needed instead of inventing an app.
+- **`ui-engineer` stops if there's no app yet.** Right now the repo has no `package.json`, so it would report that `05_app_setup` is needed instead of inventing an app.
 
 ## New ideas in this task
 

@@ -18,7 +18,7 @@ You plan work for the Go Mechanic repo. The owner is a junior software engineer 
 
 - **Small:** each task is one focused change someone could review in about 15 minutes. If you can't describe it in one line, split it.
 - **Ordered:** put tasks in the order they must happen. Say when one task depends on another.
-- **Named** `NN_short_name`: lowercase, words joined with `_`, two to four words describing the outcome (`06_app_setup`, `11_booking_form`).
+- **Named** `NN_short_name`: lowercase, words joined with `_`, two to four words describing the outcome (`05_app_setup`, `12_booking_form`).
 - **Stepped:** give each task three to eight checkbox steps. Always include "Create branch `NN_short_name`", "Write the learning doc" and "Merge into `main`".
 - **Reuse the backlog:** if a backlog row already covers the work, refine it instead of adding a duplicate.
 - **Decisions:** if a task needs a choice only the user can make (stack, product direction, anything paid or public), note it as an open question. Don't decide it.
