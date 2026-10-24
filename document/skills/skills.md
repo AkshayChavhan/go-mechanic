@@ -1,6 +1,6 @@
 # Claude skills in this project
 
-This page lists every Claude Code skill installed in this repo: what it does, when Claude uses it, and how the skills work together. For how we installed them, see the learning doc [03_skills_installation](../task/03_skills_installation/README.md).
+This page lists every Claude Code skill installed in this repo: what it does, when Claude uses it, and how the skills work together. For how we installed them, see the learning doc [03_skills_installation](../learning/03_skills_installation.md).
 
 ## What is a skill?
 

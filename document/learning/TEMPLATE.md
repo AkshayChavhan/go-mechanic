@@ -4,7 +4,7 @@
 
 <!--
 How to use this template:
-- Copy it to document/task/NN_task_name/README.md.
+- Copy it to document/learning/NN_task_name.md (same name as the task and its branch).
 - Write for a junior software engineer: plain words, short sentences.
 - Explain every new term the first time it appears.
 - Use the real commands and file paths from this task, not made-up examples.

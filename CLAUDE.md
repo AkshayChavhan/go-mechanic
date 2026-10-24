@@ -15,8 +15,8 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `CLAUDE.md` | This file: rules for Claude |
 | `readme.md` | Front page for humans |
 | `document/task/task.md` | Task tracker: every task, branch, status and step list |
-| `document/task/TEMPLATE.md` | Template for learning docs |
-| `document/task/NN_name/README.md` | Learning doc for task `NN_name` |
+| `document/learning/TEMPLATE.md` | Template for learning docs |
+| `document/learning/NN_name.md` | Learning doc for task `NN_name` (one flat file per task) |
 | `document/skills/skills.md` | What each installed skill does and when to use it |
 | `.claude/skills/` | Installed project skills (third-party: don't edit by hand) |
 | `skills-lock.json` | Source and content hash of each installed skill |
@@ -25,11 +25,11 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 ## Task workflow (always follow)
 
 1. **Split the work into small tasks.** One task = one focused change that can be reviewed in about 15 minutes. If a request is bigger, split it (use the `task-planner` agent), add every piece to `document/task/task.md` with a step list, and show the plan to the user before starting.
-2. **Name the task `NN_short_name`**: next free two-digit number, lowercase, words joined with `_`, two to four words that describe the outcome (`05_app_setup`, `12_booking_form`).
+2. **Name the task `NN_short_name`**: next free two-digit number, lowercase, words joined with `_`, two to four words that describe the outcome (`03_skills_installation`, `12_booking_form`).
 3. **Branch name = task name.** Start from an up-to-date `main`: `git switch main`, then `git switch -c NN_short_name`.
 4. **Track progress in `task.md`**: set the row to `In progress` when you start, tick the steps as they're done, set `Done` and link the learning doc at the end.
 5. **Commit in small steps** with Conventional Commit messages (see Git rules).
-6. **Write the learning doc** at `document/task/NN_short_name/README.md` from `TEMPLATE.md` (see Learning docs; the `learning-doc-writer` agent can draft it).
+6. **Write the learning doc** at `document/learning/NN_short_name.md` from `document/learning/TEMPLATE.md` (see Learning docs; the `learning-doc-writer` agent can draft it).
 7. **Review, then merge into `main`.** Run the `code-reviewer` agent on the branch and fix every "must fix". Then `git switch main && git merge --no-ff NN_short_name`, unless the user asked for a pull request.
 8. **One task at a time.** Don't start the next task on the same branch. If you find unrelated work, add it to the backlog in `task.md` instead of doing it.
 
