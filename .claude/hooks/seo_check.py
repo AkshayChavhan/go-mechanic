@@ -26,10 +26,12 @@ from pathlib import Path
 # Folders whose files affect what visitors and search engines see.
 WATCHED_DIRS = ["src/app", "src/components", "src/content", "src/i18n", "messages", "public"]
 # Inside those folders, skip things that don't change pages.
-SKIPPED_PARTS = {"api", "__tests__", "node_modules"}
+SKIPPED_PREFIXES = ("src/app/api/",)  # API routes return data, not pages
+SKIPPED_PARTS = {"__tests__", "node_modules"}
 SKIPPED_SUFFIXES = (".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx")
-# Files that never affect a page (macOS Finder drops .DS_Store into folders).
-SKIPPED_NAMES = {".DS_Store"}
+# Files that never affect a page: route handlers (anywhere) and the
+# .DS_Store files macOS Finder drops into folders.
+SKIPPED_NAMES = {".DS_Store", "route.ts", "route.js"}
 # Where the fingerprints from the last review are kept (git-ignored).
 STATE_FILE = ".claude/.seo-reviewed.json"
 # How many changed files to list by name in the message.
@@ -37,6 +39,8 @@ MAX_LISTED = 20
 
 
 def is_watched(relative: Path) -> bool:
+    if relative.as_posix().startswith(SKIPPED_PREFIXES):
+        return False
     if any(part in SKIPPED_PARTS for part in relative.parts):
         return False
     if relative.name in SKIPPED_NAMES:
@@ -80,8 +84,15 @@ def main() -> int:
         hook_input = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):
         hook_input = {}
+    if not isinstance(hook_input, dict):
+        hook_input = {}
     if hook_input.get("stop_hook_active"):
         return 0  # We already asked once in this cycle: let Claude stop.
+    background = hook_input.get("background_tasks") or []
+    if any(isinstance(t, dict) and t.get("type") == "subagent" for t in background):
+        # A background agent may still be writing pages. Don't review a
+        # half-built page; the next Stop (after it finishes) will catch it.
+        return 0
 
     root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or hook_input.get("cwd") or ".").resolve()
     state_path = root / STATE_FILE
@@ -89,6 +100,8 @@ def main() -> int:
         reviewed = json.loads(state_path.read_text())
     except (FileNotFoundError, json.JSONDecodeError):
         reviewed = {}
+    if not isinstance(reviewed, dict):
+        reviewed = {}  # Unexpected content: treat as "nothing reviewed yet".
 
     current = fingerprints(root)
     changes = changed_files(reviewed, current)
