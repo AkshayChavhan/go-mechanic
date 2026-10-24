@@ -1,6 +1,9 @@
 # Go Mechanic
 
-Go Mechanic is a web app project. Right now the repo holds the **project setup only**: docs, task tracking and the Claude Code tooling. App code starts in a later task (see the backlog in the [task tracker](document/task/task.md)).
+GoMechanic is the website and booking system for one garage in India that repairs cars and two-wheelers. Customers see services and prices, book a slot, track their vehicle and approve estimates online; the garage runs everything from an admin dashboard. The look is clean and Apple-like, with smooth animation.
+
+- What it does: [document/website/features.md](document/website/features.md)
+- How it's built, and all tasks: [the master plan](document/plans/2026-10-24-gomechanic-master-plan.md) and the [task tracker](document/task/task.md)
 
 ## How we work
 
@@ -23,6 +26,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `document/task/task.md` | The task tracker: every task, its branch, its status and its learning doc. |
 | `document/learning/TEMPLATE.md` | The starting point for each task's learning doc. |
 | `document/learning/NN_name.md` | One learning doc per task: why, what and how. |
+| `document/website/features.md` | The product plan: features, users, pages, design direction. |
 | `document/skills/skills.md` | The Claude skills we use (GSAP, shadcn/ui, frontend-design, UI/UX Pro Max, 21st.dev) and when to use each. |
 | `.claude/skills/` | The installed skill files. They come with the repo, so there's nothing extra to install. |
 | `skills-lock.json` | Where each skill came from, so installs are repeatable. |

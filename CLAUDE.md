@@ -4,8 +4,9 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 
 ## The project
 
-- **Go Mechanic**, a web app. Current stage: setup only, no app code yet.
-- The stack is not chosen yet. The installed skills point to React + Tailwind + shadcn/ui + GSAP (Next.js suggested). **Confirm the stack with the user before scaffolding the app.**
+- **GoMechanic**: a website and booking system for **one garage in India** that repairs cars and two-wheelers. Features: `document/website/features.md`. Full plan, architecture and tasks 07–46: `document/plans/2026-10-24-gomechanic-master-plan.md` (approved by the owner).
+- **Stack (in the approved plan):** Next.js 16 (App Router, Cache Components), TypeScript, Tailwind v4, shadcn/ui (Radix), GSAP, Drizzle + Postgres (PGlite in development), Better Auth phone OTP, next-intl (English now, Hindi-ready). SMS, WhatsApp and email use fake providers until the launch tasks (44–45).
+- **Design:** Apple-like, calm and spacious, with smooth GSAP scroll animation (see "Design direction" in `features.md`). Version 1 has no online payments or GST invoices.
 - **The owner is learning.** Every task must teach. Write explanations for a junior software engineer.
 
 ## Repo map
@@ -18,6 +19,7 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `document/learning/TEMPLATE.md` | Template for learning docs |
 | `document/learning/NN_name.md` | Learning doc for task `NN_name` (one flat file per task) |
 | `document/skills/skills.md` | What each installed skill does and when to use it |
+| `document/website/features.md` | Product plan: features, roles, pages, design direction |
 | `.claude/skills/` | Installed project skills (third-party: don't edit by hand) |
 | `skills-lock.json` | Source and content hash of each installed skill |
 | `.claude/agents/` | Project subagents (see Agents) |
