@@ -15,7 +15,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 03 | `03_skills_installation` | Install Claude skills (GSAP, shadcn/ui, frontend-design, UI/UX Pro Max, 21st.dev) and write the skills doc | Done | [03_skills_installation.md](../learning/03_skills_installation.md) |
 | 04 | `04_agents` | Subagents for planning, learning docs, UI work and review | Done | [04_agents.md](../learning/04_agents.md) |
 | 05 | `05_learning_folder` | Move learning docs to `document/learning/NN_name.md` | Done | [05_learning_folder.md](../learning/05_learning_folder.md) |
-| 06 | `06_compound_engineering` | Install the Compound Engineering plugin and fit its plan, work, review, compound loop into our workflow | To do | |
+| 06 | `06_compound_engineering` | Install the Compound Engineering plugin and fit its plan, work, review, compound loop into our workflow | In progress | [06_compound_engineering.md](../learning/06_compound_engineering.md) |
 
 ## Task steps
 
@@ -76,12 +76,15 @@ Each task is broken into small steps. Tick them off as you go.
 
 ### 06_compound_engineering
 
-- [ ] Create branch `06_compound_engineering`
-- [ ] Review the plugin's files before installing (hooks, scripts, MCP servers, instructions)
-- [ ] Install it for this project so it's shared through git
-- [ ] Decide which steps use the plugin's commands and which use our agents; update `CLAUDE.md`
-- [ ] Point its learnings at our `document/` folder
-- [ ] Write the learning doc
+- [x] Create branch `06_compound_engineering`
+- [x] Review the plugin's files before installing (hooks, scripts, MCP servers, instructions)
+- [x] Install it for this project so it's shared through git (pinned to v3.32.0)
+- [x] Check the installed copy matches the reviewed code
+- [x] Configure it: artifacts in `document/`, no other AI vendors, no automatic PR watching
+- [x] Decide which steps use the plugin's commands and which use our agents; update `CLAUDE.md` and the agents
+- [x] Run `ce-compound` once for real: first lesson in `document/solutions/`
+- [x] Update `document/skills/skills.md` and `readme.md`
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Merge into `main`
 

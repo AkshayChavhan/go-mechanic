@@ -28,7 +28,7 @@ You are **read-only**. Only run commands that look at things (`git log`, `git di
    - If the project has tests, lint or a build, run them and report the result.
 4. **Check the repo rules** (from `CLAUDE.md`):
    - The branch name is `NN_short_name` and matches a row in `document/task/task.md`.
-   - That row says `Done`, every step is ticked, and the learning doc is linked.
+   - The learning doc is linked, and every step is ticked except "Review" and "Merge". Those are ticked only after they really happen, so during review the row may still say `In progress`. A review or merge step ticked before it happened is a finding (see `document/solutions/conventions/run-commands-before-documenting-output.md`).
    - `document/learning/NN_short_name.md` exists and answers Why, What and How. Spot-check one or two of its commands to see whether they print what the doc claims.
    - Commit messages follow Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:` ...).
    - `readme.md` and `CLAUDE.md` are updated if the task changed how the repo works.
