@@ -23,6 +23,7 @@ Tasks 09–42 will build dozens of pages. Without this task, mistakes would pile
 | `CLAUDE.md` | Changed | New "SEO review" section, a `seo-reviewer` row in the Agents table, repo-map rows |
 | `readme.md` | Changed | Repo-map rows. Python 3 is now also needed for the SEO check. |
 | `document/plans/2026-10-24-2339-chore-seo-reviewer-hook-plan.md` | Added | The task's plan, written by `ce-plan` |
+| `document/plans/2026-10-24-gomechanic-master-plan.md` | Changed | Corrected two SEO rules: private pages are `noindex` but **not** blocked in robots, and the hero image uses `fetchPriority`, not the deprecated `priority` |
 | `document/task/task.md` | Changed | Task 08 set to In progress, done steps ticked, plan linked |
 
 ## How it fits together
@@ -63,10 +64,10 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
    - **Report:** a verdict per page. Each finding gets a **What** (with `file:line`), a **Why it matters** and a **Fix**, and is labelled "must fix" or "nice to have".
 
 4. **Write the hook script** (`.claude/hooks/seo_check.py`). It uses only Python's standard library, so there's nothing to install. What it does, in order:
-   - **Lines 77–84: check the two switches.** It does nothing when `GOMECHANIC_SEO_HOOK=off` is set or when `stop_hook_active` is true.
-   - **Lines 86–96: compare fingerprints.** It hashes every watched file and compares the hashes with the state file. If nothing changed, it exits quietly.
-   - **Lines 98–100: save first.** It saves the new hashes *before* asking for the review (see "Decisions worth knowing").
-   - **Line 113: ask for the review.** It prints the block decision. The `reason` text is the instruction Claude follows.
+   - **Lines 81–95: check the switches.** It does nothing when `GOMECHANIC_SEO_HOOK=off` is set, when `stop_hook_active` is true, or while a background subagent is still running (added after the review, so half-built pages aren't reviewed).
+   - **Lines 97–109: compare fingerprints.** It hashes every watched file and compares the hashes with the state file. If nothing changed, it exits quietly.
+   - **Lines 111–113: save first.** It saves the new hashes *before* asking for the review (see "Decisions worth knowing").
+   - **Line 126: ask for the review.** It prints the block decision. The `reason` text is the instruction Claude follows.
 
 5. **Test it in a scratch folder before switching it on.** Pointing the script at an empty temporary folder means testing never writes a state file into the real repo. Real output when this doc was written (run from the repo root):
    ```bash
@@ -81,12 +82,7 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
    ```
    {"decision": "block", "reason": "SEO check: these page files changed since the last SEO review:\n- src/app/page.tsx (new)\n\nRun the seo-reviewer agent on the pages these files affect (it only reads). Then reply to the owner with a short \"SEO check\" section: what changed, each page's verdict (Pass / Needs work) and the suggested fixes. Don't apply the suggestions unless the owner asks."}
    ```
-   Running the same command again prints nothing, because nothing changed since the saved fingerprints. The main session tested 13 scenarios this way, and all 13 passed:
-   - **Silent:** no page folders at all; nothing changed; `stop_hook_active` is true (the state file is left alone); `GOMECHANIC_SEO_HOOK=off`; only API, test or `.DS_Store` files changed.
-   - **Reported:** a new, changed or deleted page; `src/content/garage.ts`.
-   - **Odd input:** empty stdin works. A corrupt state file means everything is reported. With 25 changed files, 20 are listed, then "...and 5 more".
-
-   Most of them were run again while writing this doc, with the same results.
+   Running the same command again prints nothing, because nothing changed since the saved fingerprints. The plan's U2 section lists every scenario we ran (silent cases, reported cases, odd input). All of them passed, and most were run again while writing this doc.
 
 6. **Register the hook** in `.claude/settings.json`, next to the plugin settings:
    ```json
@@ -137,15 +133,17 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
 
    **Waiting for task 42:** title and meta description, canonical URL, `metadataBase` and title template, Open Graph and Twitter tags, the sitemap entry, `robots.ts` and JSON-LD.
    ```
-   The first line is a harmless warning from `claude -p` itself. It waited 3 seconds for piped input that never came. Notice what the report did right: it caught the missing `alt`, didn't fix anything, and put the missing title on the "Waiting for task 42" line instead of failing the page for it.
+   The first line is a harmless warning from `claude -p` itself. It waited 3 seconds for piped input that never came. **One piece of this advice is outdated:** fix 2 suggests `priority`, which Next.js 16 deprecated (use `loading="eager"` or `fetchPriority="high"`). The review caught it, and the agent's checklist now says so (see step 11). Notice what the report did right: it caught the missing `alt`, didn't fix anything, and put the missing title on the "Waiting for task 42" line instead of failing the page for it.
 
    Then we deleted the probe page **and** the state file together, and checked that the hook was silent again. If we had deleted only the page, the next turn would have reported `src/app/seo-probe/page.tsx (deleted)` and started another review.
 
-9. **Write this learning doc.** Every output block above was really run and copied, following [run-commands-before-documenting-output](../solutions/conventions/run-commands-before-documenting-output.md).
+9. **Catch a wrong SEO rule.** The first version of the checklist (and the master plan) said private pages like `/admin` should be `noindex` **and** blocked in `robots.txt`. That sounds extra safe, but it backfires. A page blocked in `robots.txt` is never crawled, so Google never sees its `noindex` tag, and the bare URL can still show up in results. Commit `ea46a5d` fixed both files: `noindex`, not blocked. The lesson: two "safe" settings can cancel each other out, so check them against the official docs.
 
-10. **Review.** (filled in after it happens)
+10. **Write this learning doc.** Every output block above was really run and copied, following [run-commands-before-documenting-output](../solutions/conventions/run-commands-before-documenting-output.md).
 
-11. **Compound.** (filled in after it happens)
+11. **Review.** (filled in after it happens)
+
+12. **Compound.** (filled in after it happens)
 
 ## Decisions worth knowing
 
@@ -216,7 +214,7 @@ About 10 minutes, all in a scratch folder (`T=$(mktemp -d)`, as in step 5). For 
 
 1. Create `$T/src/app/page.tsx` and run the hook. Then `touch "$T/src/app/page.tsx"` (which updates its timestamp only) and run it again. Is the second run silent? Why?
 2. Add these one at a time, running the hook after each: `$T/public/.DS_Store`, then `$T/public/logo.svg`, then `$T/src/app/api/book/route.ts`. Which ones get reported?
-3. Look at lines 98–100 of `.claude/hooks/seo_check.py`. What would go wrong if the script saved the fingerprints only *after* a successful review? (Hint: can the hook tell whether the review really ran?)
+3. Look at lines 111–113 of `.claude/hooks/seo_check.py`. What would go wrong if the script saved the fingerprints only *after* a successful review? (Hint: can the hook tell whether the review really ran?)
 4. In the end-to-end report in step 8, why is the missing `<title>` not listed as a "must fix"?
 
 Answers from a real run: (1) silent, because the content didn't change; (2) only `public/logo.svg (new)` is reported.
