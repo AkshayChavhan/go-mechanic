@@ -1,6 +1,6 @@
 # 09_app_setup: A working Next.js app, and one command that checks it
 
-> **Branch:** `09_app_setup` · **Date:** 2026-10-25 · **Status:** In progress (merge pending)
+> **Branch:** `09_app_setup` · **Date:** 2026-10-25 · **Status:** Done
 
 ## In one minute
 

@@ -18,7 +18,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 06 | `06_compound_engineering` | Install the Compound Engineering plugin and fit its plan, work, review, compound loop into our workflow | Done | [06_compound_engineering.md](../learning/06_compound_engineering.md) |
 | 07 | `07_website_plan` | Save the approved website plan: features doc, master plan, tasks 07–46 | Done | [07_website_plan.md](../learning/07_website_plan.md) |
 | 08 | `08_seo_reviewer` | SEO reviewer agent + Stop hook that runs it after every page change | Done | [08_seo_reviewer.md](../learning/08_seo_reviewer.md) |
-| 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | In progress | [09_app_setup.md](../learning/09_app_setup.md) |
+| 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | Done | [09_app_setup.md](../learning/09_app_setup.md) |
 | 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | To do |  |
 | 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/design` preview | To do |  |
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | To do |  |
@@ -169,7 +169,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds
 - [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 10_i18n_foundation
 
