@@ -1,6 +1,7 @@
 ---
 title: "Next.js 16: read the bundled docs before using an API from memory (next/image `priority` is deprecated)"
 date: 2026-10-25
+last_updated: 2026-10-25
 category: conventions
 module: next/image
 problem_type: convention
@@ -31,7 +32,7 @@ Nothing else would have caught it:
 
 ## Guidance
 
-1. **Before using a Next.js API, read its guide in `node_modules/next/dist/docs/`.** This includes images, metadata, caching and Cache Components, `proxy`, routing and fonts. `grep -rl "<api name>" node_modules/next/dist/docs/` finds the page. Read the deprecation notes and the version history table at the end of each page. `node_modules/next/AGENTS.md`, shipped with Next.js, says the same: "This is NOT the Next.js you know ... Read the relevant guide in `dist/docs/` before writing any code. Heed deprecation notices." (There is no repo-root `AGENTS.md` yet; task 09 plans to add `@AGENTS.md` to `CLAUDE.md`.)
+1. **Before using a Next.js API, read its guide in `node_modules/next/dist/docs/`.** This includes images, metadata, caching and Cache Components, `proxy`, routing and fonts. `grep -rl "<api name>" node_modules/next/dist/docs/` finds the page. Read the deprecation notes and the version history table at the end of each page. `node_modules/next/AGENTS.md`, shipped with Next.js, says the same: "This is NOT the Next.js you know ... Read the relevant guide in `dist/docs/` before writing any code. Heed deprecation notices." Since task 09 the repo has its own `AGENTS.md`, and `CLAUDE.md` imports it with `@AGENTS.md`.
 2. **Advice counts too.** Agent checklists, plans, reviews and learning docs that name a Next.js API must be checked against the bundled docs. This slip started in a checklist, not in app code.
 3. **Hero (LCP) image in Next.js 16.** Source: `node_modules/next/dist/docs/01-app/03-api-reference/02-components/image.md`, the `preload`, `priority` and `loading` sections (lines 266–310 in 16.4.3):
    - **Never use `priority`.**
@@ -48,7 +49,7 @@ The hero image is usually the home page's Largest Contentful Paint (LCP) element
 
 - Task 13 (`13_home_page`, with its hero image) and every page task after it.
 - Whenever `ui-ux-pro-max` or another skill names a Next.js API: check it against the bundled docs first.
-- **When `node_modules/next/dist/docs/` is missing.** Right now the docs come from a leftover `node_modules/` from a removed scaffold. Task 09 (`09_app_setup`) deletes it and reinstalls Next.js 16.4.3. If the folder is missing, install the dependencies first instead of falling back to memory. The online docs at nextjs.org may describe a newer version.
+- **When `node_modules/next/dist/docs/` is missing** (a fresh clone before `npm install`): install the dependencies first (`npm ci` with Node 24, see `.nvmrc`) instead of falling back to memory. The online docs at nextjs.org may describe a newer version than 16.4.3.
 
 ## Examples
 
