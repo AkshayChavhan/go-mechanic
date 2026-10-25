@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
 
-import { cn } from "./utils";
+// Imported through the "@/" alias on purpose: this also tests that Vitest
+// understands the alias (resolve.tsconfigPaths in vitest.config.mts).
+import { cn } from "@/lib/utils";
 
 describe("cn()", () => {
   test("a later Tailwind class wins over a conflicting earlier one", () => {

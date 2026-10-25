@@ -9,6 +9,8 @@ const PORT = 3210;
 
 export default defineConfig({
   testDir: "./e2e",
+  // A forgotten test.only would silently skip every other test: fail instead.
+  forbidOnly: true,
   fullyParallel: true,
   reporter: "list",
   use: {
