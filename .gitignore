@@ -34,6 +34,10 @@ CLAUDE.local.md
 # SEO hook state: fingerprints of the last reviewed page files
 .claude/.seo-reviewed.json
 
+# Deployment and certificates
+.vercel
+*.pem
+
 # OS and editor clutter
 .DS_Store
 .idea/
