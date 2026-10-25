@@ -77,6 +77,7 @@ Installed in `.claude/skills/`. Full guide: `document/skills/skills.md`. For UI 
 Rules:
 
 - **ui-ux-pro-max script path:** run `python3 .claude/skills/ui-ux-pro-max/scripts/search.py ...` from the repo root. Ignore the `${CLAUDE_PLUGIN_ROOT}` prefix in its `SKILL.md`; that only applies to plugin installs. Persist with `--persist --output-dir .`; never pass `--force` without the user's OK.
+- **ui-ux-pro-max is not always up to date for Next.js 16:** its Next.js data still says to use `priority` for hero images, which Next.js 16 deprecated. Check any Next.js advice from a skill against `node_modules/next/dist/docs/` (see `document/solutions/conventions/nextjs-16-read-bundled-docs-image-priority.md`).
 - **ui-ux-pro-max vs frontend-design:** treat ui-ux-pro-max results as input and a checklist; frontend-design and the product brief make the final visual call. Accessibility rules always win.
 - **21st.dev:** needs the user's login (`npx @21st-dev/cli login`) or a `TWENTYFIRST_TOKEN` env var. Never commit the key. Don't use hosted generation (`21st generate`, `21st iterate`) unless `21st usage` shows AI is enabled; it uses paid credits. Don't publish anything to 21st.dev.
 - **Don't edit files in `.claude/skills/`.** They come from upstream and `npx skills update` overwrites them. Put project-specific rules in this file instead.
@@ -126,11 +127,12 @@ Run independent subagents in parallel. When an agent's job changes, update its f
 
 ## SEO review
 
-- **Automatic:** a Stop hook (`.claude/hooks/seo_check.py`, registered in `.claude/settings.json`) runs every time you finish a reply. If any file under `src/app/`, `src/components/`, `src/content/`, `src/i18n/`, `messages/` or `public/` changed since the last review (`src/app/api/`, `route.ts` files, tests and `.DS_Store` excluded), it stops you once with a list of the changed files. It waits while a background subagent is still running, so half-built pages aren't reviewed.
+- **Automatic:** a Stop hook (`.claude/hooks/seo_check.py`, registered in `.claude/settings.json`) runs every time you finish a reply. If any file under `src/app/`, `src/components/`, `src/content/`, `src/i18n/`, `messages/` or `public/` changed since the last review (`src/app/api/`, `route.ts` files, tests and `.DS_Store` excluded), it sends you feedback once (shown as "Stop hook feedback") with a list of the changed files. It waits while a background subagent is still running, so half-built pages aren't reviewed.
 - **When it asks:** run the `seo-reviewer` agent on the affected pages, **in the foreground** (not in the background, so it doesn't review half-finished pages while another agent is still building them). Then reply with a short **"SEO check"** section: what changed, each page's verdict (Pass / Needs work) and the suggested fixes. **Don't apply the fixes unless the owner asks.**
 - **On demand:** when the owner asks to "check SEO" (for a page or the whole site), run `seo-reviewer` the same way.
 - **Child sessions:** start every `claude -p` helper session with `GOMECHANIC_SEO_HOOK=off` in front (e.g. `GOMECHANIC_SEO_HOOK=off claude -p ...`). Otherwise the child takes the review, and the owner never sees it.
-- **Re-review everything:** delete `.claude/.seo-reviewed.json` (git-ignored); the next reply reviews all page files.
+- **Re-review everything:** delete `.claude/.seo-reviewed.json` (git-ignored); the next reply reviews all page files. A fresh clone or worktree has no state file, so its first reply reviews every page once.
+- **Two sessions in one folder** share the state file: the first one to finish a reply gets the review, even if the other made the change. Keep one session per checkout while building pages.
 - **Before task 42:** missing metadata, sitemap, robots file and JSON-LD are planned for task 42, so the agent lists them on one "Waiting for task 42" line instead of failing the page.
 
 ## Definition of done

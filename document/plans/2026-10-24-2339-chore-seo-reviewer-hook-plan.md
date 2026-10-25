@@ -10,6 +10,11 @@ execution: code
 
 # SEO Reviewer Agent and Stop Hook - Plan
 
+> **Changes after the implementation review** (this plan was written before them):
+> - The hook asks for the review with `hookSpecificOutput.additionalContext`, not `{"decision": "block"}`. Claude Code shows "block" as a hook *error*; additionalContext is the documented way to give normal guidance ("Stop hook feedback"). Wherever this plan says "block", read "ask with feedback". Re-tested end to end.
+> - R2 and R3 above were updated: only `src/app/api/` and `route.ts`/`route.js` are skipped (a page at `/docs/api` counts), and the hook waits while a background subagent or teammate runs.
+> - Non-object JSON on stdin or in the state file is treated as empty instead of crashing.
+
 ## Goal Capsule
 
 - **Objective:** Whenever Claude changes the website's pages, the owner gets an SEO verdict and concrete suggested fixes for those pages in the same turn, without asking. Turns that don't touch pages are unaffected.
@@ -39,8 +44,8 @@ The owner wants GoMechanic to be found in local search, and Claude sessions will
 **Automatic trigger**
 
 - R1. When a turn ends with any watched file added, changed or deleted since the last SEO review, Claude doesn't stop. It runs `seo-reviewer` on the affected pages first.
-- R2. Watched files are everything under `src/app/`, `src/components/`, `src/content/`, `src/i18n/`, `messages/` and `public/`, except files inside any `api` folder or `__tests__` folder, files ending `.test.ts`, `.test.tsx`, `.spec.ts` or `.spec.tsx`, and macOS `.DS_Store` files.
-- R3. The hook blocks at most once per turn. It stays silent when nothing changed, when `stop_hook_active` is true, or when the environment variable `GOMECHANIC_SEO_HOOK=off` is set.
+- R2. Watched files are everything under `src/app/`, `src/components/`, `src/content/`, `src/i18n/`, `messages/` and `public/`, except `src/app/api/`, files named `route.ts` or `route.js`, files inside `__tests__` folders, files ending `.test.ts`, `.test.tsx`, `.spec.ts` or `.spec.tsx`, and macOS `.DS_Store` files.
+- R3. The hook asks at most once per turn. It stays silent when nothing changed, when `stop_hook_active` is true, while a background subagent or teammate is still running, or when the environment variable `GOMECHANIC_SEO_HOOK=off` is set.
 - R4. Changes are detected by file content, however they happened: Claude's edits, scripts, subagents or git operations.
 
 **Review and report**

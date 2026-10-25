@@ -44,7 +44,7 @@ Read the page's source (page, layout, and the components it uses). If the site b
 - No links to pages that don't exist; no duplicate pages for the same content without a canonical.
 
 **Speed (Core Web Vitals)**
-- Images use `next/image` with `sizes`; the hero (LCP) image loads early with `loading="eager"` or `fetchPriority="high"` (or `preload`). Next.js 16 **deprecated** the `priority` prop, so never suggest it (see `node_modules/next/dist/docs/01-app/03-api-reference/02-components/image.md`).
+- Images use `next/image` with `sizes`; the hero (LCP) image loads early with `loading="eager"` (plus `fetchPriority="high"` if wanted). `fetchPriority` alone is **not** enough: the image is still lazy-loaded. Next.js 16 **deprecated** the `priority` prop, so never suggest it. Details: `document/solutions/conventions/nextjs-16-read-bundled-docs-image-priority.md`.
 - Fonts use `next/font`; no layout shift from late-loading fonts, images or banners (reserve space).
 - Animations (GSAP) animate only `transform` and `opacity`, don't hide the main heading or hero text before JavaScript loads, and respect `prefers-reduced-motion`.
 - Not too much client JavaScript: interactive parts are small `"use client"` islands.

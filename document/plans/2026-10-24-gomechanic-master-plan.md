@@ -81,7 +81,7 @@ The repo has its rules, skills, agents and Compound Engineering set up (tasks 01
    - **Structure:** one `<h1>`, heading order, `alt` text, link text, semantic HTML.
    - **JSON-LD:** `AutoRepair`, `Service`, `FAQPage`, `BreadcrumbList`.
    - **Crawling:** public pages are in the sitemap (noindex pages left out); `/account`, `/admin`, `/dev` and `/login` are `noindex` but **not** blocked in `robots.ts` (Google must crawl a page to see its `noindex`); no broken links.
-   - **Core Web Vitals:** `next/image` with `sizes`, the hero image loaded early with `loading="eager"` / `fetchPriority="high"` (Next.js 16 deprecated `priority`), `next/font`, no layout shift, GSAP doesn't delay the main content.
+   - **Core Web Vitals:** `next/image` with `sizes`, the hero image loaded early with `loading="eager"` (optionally plus `fetchPriority="high"`; Next.js 16 deprecated `priority`), `next/font`, no layout shift, GSAP doesn't delay the main content.
    - **India local SEO:** name, address and phone match `garage_settings`; city and area in titles; `hreflang` once Hindi exists.
    - It reads `node_modules/next/dist/docs/` (metadata, JSON-LD guides) before judging.
 2. **`.claude/hooks/seo_check.py`**, run by a **Stop hook** in `.claude/settings.json` (merged with the existing plugin settings; load the `update-config` skill first):
