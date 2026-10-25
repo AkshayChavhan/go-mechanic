@@ -162,10 +162,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `09_app_setup`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-25-1300-chore-app-setup-plan.md)
-- [ ] Remove leftover ignored build folders; scaffold Next.js 16.4.3 in a scratch folder and copy it in
-- [ ] `shadcn init` (Radix); install GSAP
-- [ ] Vitest + Playwright smoke tests; `npm run check`
-- [ ] Update `CLAUDE.md` (stack, commands, `@AGENTS.md`) and `readme.md`
+- [x] Remove leftover ignored build folders; scaffold Next.js 16.4.3 in a scratch folder and copy it in
+- [x] `shadcn init` (Radix); install GSAP
+- [x] Vitest + Playwright smoke tests; `npm run check`
+- [x] Update `CLAUDE.md` (stack, commands, `@AGENTS.md`) and `readme.md`
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
