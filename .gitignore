@@ -31,6 +31,8 @@ __pycache__/
 # Personal Claude Code files (shared ones live in .claude/ and CLAUDE.md)
 .claude/settings.local.json
 CLAUDE.local.md
+# SEO hook state: fingerprints of the last reviewed page files
+.claude/.seo-reviewed.json
 
 # OS and editor clutter
 .DS_Store

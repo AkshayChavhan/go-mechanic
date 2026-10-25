@@ -23,7 +23,8 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `.claude/skills/` | Installed project skills (third-party: don't edit by hand) |
 | `skills-lock.json` | Source and content hash of each installed skill |
 | `.claude/agents/` | Project subagents (see Agents) |
-| `.claude/settings.json` | Shared Claude Code settings: installs the Compound Engineering plugin (pinned version) |
+| `.claude/settings.json` | Shared Claude Code settings: installs the Compound Engineering plugin (pinned version) and registers the SEO Stop hook |
+| `.claude/hooks/` | Hook scripts: `seo_check.py` asks for an SEO review after page changes (see SEO review) |
 | `.compound-engineering/config.yaml` | Compound Engineering team settings (`config.example.yaml` lists every option) |
 | `document/plans/` | The master plan (`2026-10-24-gomechanic-master-plan.md`) plus per-task plans written by `ce-plan` / `ce-brainstorm` |
 | `document/solutions/` | Lessons written by `ce-compound`: read the relevant ones before starting a task |
@@ -58,6 +59,7 @@ Every task gets one. The reader is a junior software engineer.
 ## Git rules
 
 - **Commit messages** use Conventional Commits: `type: what changed`. Types: `feat` (new app feature), `fix` (bug fix), `docs` (documentation), `chore` (tooling, config, dependencies), `refactor`, `style`, `test`. Add a scope in brackets when it helps: `docs(01): fix example`.
+- **`feat` vs `chore`:** `feat` only for something a website visitor or garage user gets. Agents, hooks, skills, settings, config and dependencies are `chore` (this slipped in tasks 04 and 08).
 - **Small commits:** code, docs and tracker updates usually go in separate commits, so each can be reviewed or reverted alone.
 - **Never commit secrets.** API keys and tokens go in `.env` (ignored by git) or the tool's own login. Commit a `.env.example` with fake values instead.
 - **Ask the user first** before: `git push`, opening a pull request, deleting a branch, `--force` anything, rewriting history on `main`, or installing anything globally (`-g`, `npm install -g`, `brew install`).
@@ -75,6 +77,7 @@ Installed in `.claude/skills/`. Full guide: `document/skills/skills.md`. For UI 
 Rules:
 
 - **ui-ux-pro-max script path:** run `python3 .claude/skills/ui-ux-pro-max/scripts/search.py ...` from the repo root. Ignore the `${CLAUDE_PLUGIN_ROOT}` prefix in its `SKILL.md`; that only applies to plugin installs. Persist with `--persist --output-dir .`; never pass `--force` without the user's OK.
+- **ui-ux-pro-max is not always up to date for Next.js 16:** its Next.js data still says to use `priority` for hero images, which Next.js 16 deprecated. Check any Next.js advice from a skill against `node_modules/next/dist/docs/` (see `document/solutions/conventions/nextjs-16-read-bundled-docs-image-priority.md`).
 - **ui-ux-pro-max vs frontend-design:** treat ui-ux-pro-max results as input and a checklist; frontend-design and the product brief make the final visual call. Accessibility rules always win.
 - **21st.dev:** needs the user's login (`npx @21st-dev/cli login`) or a `TWENTYFIRST_TOKEN` env var. Never commit the key. Don't use hosted generation (`21st generate`, `21st iterate`) unless `21st usage` shows AI is enabled; it uses paid credits. Don't publish anything to 21st.dev.
 - **Don't edit files in `.claude/skills/`.** They come from upstream and `npx skills update` overwrites them. Put project-specific rules in this file instead.
@@ -118,8 +121,19 @@ Subagents live in `.claude/agents/`. The main session runs the task workflow and
 | `ui-engineer` | A task changes how the app looks, feels or moves | Yes (app code); no git |
 | `learning-doc-writer` | A task's changes are committed and need a learning doc | Only the learning doc |
 | `code-reviewer` | A task branch is ready to merge | No (read-only) |
+| `seo-reviewer` | Page files changed (the SEO hook asks automatically), or the owner asks to check SEO | No (read-only) |
 
 Run independent subagents in parallel. When an agent's job changes, update its file and this table in the same task.
+
+## SEO review
+
+- **Automatic:** a Stop hook (`.claude/hooks/seo_check.py`, registered in `.claude/settings.json`) runs every time you finish a reply. If any file under `src/app/`, `src/components/`, `src/content/`, `src/i18n/`, `messages/` or `public/` changed since the last review (`src/app/api/`, `route.ts` files, tests and `.DS_Store` excluded), it sends you feedback once (shown as "Stop hook feedback") with a list of the changed files. It waits while a background subagent is still running, so half-built pages aren't reviewed.
+- **When it asks:** run the `seo-reviewer` agent on the affected pages, **in the foreground** (not in the background, so it doesn't review half-finished pages while another agent is still building them). Then reply with a short **"SEO check"** section: what changed, each page's verdict (Pass / Needs work) and the suggested fixes. **Don't apply the fixes unless the owner asks.**
+- **On demand:** when the owner asks to "check SEO" (for a page or the whole site), run `seo-reviewer` the same way.
+- **Child sessions:** start every `claude -p` helper session with `GOMECHANIC_SEO_HOOK=off` in front (e.g. `GOMECHANIC_SEO_HOOK=off claude -p ...`). Otherwise the child takes the review, and the owner never sees it.
+- **Re-review everything:** delete `.claude/.seo-reviewed.json` (git-ignored); the next reply reviews all page files. A fresh clone or worktree has no state file, so its first reply reviews every page once.
+- **Two sessions in one folder** share the state file: the first one to finish a reply gets the review, even if the other made the change. Keep one session per checkout while building pages.
+- **Before task 42:** missing metadata, sitemap, robots file and JSON-LD are planned for task 42, so the agent lists them on one "Waiting for task 42" line instead of failing the page.
 
 ## Definition of done
 

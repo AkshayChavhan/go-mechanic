@@ -10,5 +10,19 @@
   },
   "enabledPlugins": {
     "compound-engineering@compound-engineering-plugin": true
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/seo_check.py\"",
+            "timeout": 30,
+            "statusMessage": "Checking for page changes (SEO)"
+          }
+        ]
+      }
+    ]
   }
 }
