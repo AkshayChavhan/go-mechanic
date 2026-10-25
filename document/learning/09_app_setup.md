@@ -1,6 +1,6 @@
 # 09_app_setup: A working Next.js app, and one command that checks it
 
-> **Branch:** `09_app_setup` · **Date:** 2026-10-25 · **Status:** In progress (review pending)
+> **Branch:** `09_app_setup` · **Date:** 2026-10-25 · **Status:** In progress (merge pending)
 
 ## In one minute
 
@@ -139,9 +139,25 @@ This attempt fixes all three, and a check or test now guards each one. Planning 
 
     No fixes were applied (they're the owner's choice); the two follow-ups went into tasks 11 and 12 in `task.md`.
 
-12. **Review.** (filled in after it happens)
+12. **Review.** Two reviews ran, plus an extra SEO check when `globals.css` changed. That one passed: the change only removed three unused CSS rules.
+    - **`code-reviewer`: Needs changes.** It re-ran everything on a fresh clone (including `test:e2e`) and confirmed the numbers in this doc. Its two must-fixes were paperwork: the tracker hadn't ticked "Write the learning doc", and this doc didn't record the SEO check (now step 11). We also took its suggestions:
+      - `engines` let in Node 25, which Vitest and jsdom reject: now `^24.15.0 || >=26.0.0`.
+      - The clean-up test only proved something when it ran after the other test: rewritten.
+      - `CLAUDE.md` now names both held-back install scripts (`fsevents` and `unrs-resolver`) and explains when fnm switches Node by itself.
+      - Upgrading the end-of-life ESLint 9 is on the backlog.
+    - **`ce-code-review`: Ready to merge.** Five reviewer personas (correctness, adversarial, project standards, testing, past lessons) found nothing at any severity, and every plan requirement was met. We still took three cheap suggestions:
+      - Vitest and Playwright now **fail on a forgotten `test.only`**, instead of silently skipping every other test (checked: a `test.only` file now fails).
+      - The `cn()` test imports through `@/`, so the alias is tested too.
+      - The font browser test compares against `--font-sans` itself instead of the name "Geist", so it won't break when task 11 changes the font. Its first version failed, because browsers drop the quotes around simple font names (`"Geist"` becomes `Geist`); it now ignores quotes.
+    - The **cleanup test fix** was proven both ways: run on its own, it passes; with the setup file switched off, it fails.
+    - **Commit types:** two commits used `test:` for what was mostly config, and one hid an app fix (the icon) in a test commit. They weren't rewritten, because the branch was already pushed (from outside this session; Claude doesn't push). Next time: `chore(09):` for config, `test(09):` for tests, `fix(09):` for app fixes.
+    - The final head passed `npm run check` and all 4 browser tests, with no browser download.
 
-13. **Compound.** (filled in after it happens)
+13. **Compound.** The counterfactual question: *would a future session repeat a mistake from this task?* The two most likely repeats now live **in the code itself**, where a future session can't miss them:
+    - the Tailwind leak, in commented `source()` / `@source not` lines in `globals.css`;
+    - the `@vitejs/plugin-react` clash, in a comment in `vitest.config.mts`.
+
+    `CLAUDE.md` repeats both as rules. So no new solution doc. We did **refresh** the existing Next.js lesson, whose "docs come from a leftover `node_modules`" note was now out of date.
 
 ## Decisions worth knowing
 
