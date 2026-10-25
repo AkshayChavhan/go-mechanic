@@ -56,7 +56,7 @@ npm run test         # Vitest once (npm run test:watch to keep it running)
 npx shadcn@latest add <component>   # add a shadcn/ui component
 ```
 
-`test:e2e` isn't part of `check` because it needs a production build (slow). Never run `npx playwright install`: it downloads browsers; the tests use the Chrome already installed.
+`test:e2e` isn't part of `check` because it needs a production build (slow). Never run `npx playwright install`: it downloads browsers; the tests use the Chrome already installed. If `typecheck` fails with an error inside `.next/dev/types/` after you moved a route, delete `.next/dev` (stale types from an earlier `npm run dev`) and run it again.
 
 ## Code conventions
 
