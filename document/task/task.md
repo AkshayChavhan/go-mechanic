@@ -192,6 +192,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Fonts: Inter + system San Francisco, Devanagari-ready
 - [ ] Restyle shadcn controls (44 px touch targets, pill buttons)
 - [ ] `design-system/go-mechanic/MASTER.md` and a `/dev/design` preview page (development only)
+- [ ] Also load a Devanagari font with `next/font` for Hindi later (SEO check in task 09: Geist has no Hindi letters)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -205,6 +206,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Frosted sticky header with navigation and mobile menu
 - [ ] Footer, sticky Call/WhatsApp/Book bar on phones, 404 page
 - [ ] Open-now badge and offer banner
+- [ ] Custom `src/app/not-found.tsx` with its own title (SEO check in task 09: the built-in 404 gets two `<title>` tags)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
