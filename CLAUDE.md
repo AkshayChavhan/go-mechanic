@@ -65,7 +65,7 @@ npx shadcn@latest add <component>   # add a shadcn/ui component
 - **Imports** use the `@/` alias (`@/lib/utils`).
 - **Code layout** (from the master plan): `src/app/` routes, `src/components/{ui,site,account,admin}`, `src/domain/` pure logic with no Next.js or database imports, `src/server/` database, data access, actions and providers, `src/lib/` small helpers.
 - **Tests sit next to the code:** `*.test.ts` runs in Node (logic), `*.test.tsx` runs in jsdom (React components). Browser tests go in `e2e/`. Import `test`/`expect` from `vitest` (no globals).
-- **Tailwind only scans `src/`** (`@import "tailwindcss" source("../")` in `src/app/globals.css`). Put anything that uses Tailwind classes inside `src/`.
+- **Tailwind only scans `src/`, minus test files** (`source("../")` and `@source not` in `src/app/globals.css`). Put anything that uses Tailwind classes inside `src/`, and not in a `*.test.*` file.
 - **Secrets** come from environment variables, read on the server only. Never prefix a secret with `NEXT_PUBLIC_`: those values are built into the JavaScript every visitor downloads. Add every variable to `.env.example` with a fake value.
 - **npm install scripts:** npm 11 asks before running a package's install script. Don't approve one unless something is actually broken without it (`unrs-resolver` is left unapproved; ESLint works without it).
 

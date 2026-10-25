@@ -2,6 +2,8 @@
    Without this, Tailwind scans every file git tracks, including the skill
    data in .claude/ and the docs, and ships their classes to visitors. */
 @import "tailwindcss" source("../");
+/* ...but not test files: their class names never reach a page. */
+@source not "../**/*.test.{ts,tsx}";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
