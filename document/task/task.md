@@ -166,7 +166,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] `shadcn init` (Radix); install GSAP
 - [x] Vitest + Playwright smoke tests; `npm run check`
 - [x] Update `CLAUDE.md` (stack, commands, `@AGENTS.md`) and `readme.md`
-- [ ] Write the learning doc
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
@@ -189,10 +189,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Design direction with frontend-design + ui-ux-pro-max (Apple-like)
 - [ ] Tokens in `globals.css`: colors, type scale, radius, shadows, motion
-- [ ] Fonts: Inter + system San Francisco, Devanagari-ready
+- [ ] Fonts: Inter + system San Francisco, plus a Devanagari font with `next/font` for Hindi (SEO check in task 09: Geist has no Hindi letters)
 - [ ] Restyle shadcn controls (44 px touch targets, pill buttons)
 - [ ] `design-system/go-mechanic/MASTER.md` and a `/dev/design` preview page (development only)
-- [ ] Also load a Devanagari font with `next/font` for Hindi later (SEO check in task 09: Geist has no Hindi letters)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -204,9 +203,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
 - [ ] Frosted sticky header with navigation and mobile menu
-- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, 404 page
+- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom `not-found.tsx` 404 page with its own title (SEO check in task 09: the built-in 404 gets two `<title>` tags)
 - [ ] Open-now badge and offer banner
-- [ ] Custom `src/app/not-found.tsx` with its own title (SEO check in task 09: the built-in 404 gets two `<title>` tags)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -567,6 +565,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Referral rewards
 - Revenue and GST reports, spare-parts inventory
 - Hindi translation of all text (the site is built Hindi-ready from task 10)
+- Upgrade ESLint 9 (end-of-life; `npm ci` prints a deprecation warning) to ESLint 10 once `eslint-config-next`'s plugins support it
 - App-like install for customers, roadside-assistance dispatch, more branches
 
 ## How to add a task

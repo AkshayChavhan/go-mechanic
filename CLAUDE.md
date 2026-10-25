@@ -36,7 +36,7 @@ Next.js's own notes for coding agents (kept up to date by `next dev`): @AGENTS.m
 | `e2e/` | Playwright browser tests (`*.spec.ts`) |
 | `AGENTS.md` | Next.js's notes for AI agents; imported above. `next dev` may rewrite its block: commit what it writes |
 | `package.json`, `package-lock.json` | Dependencies and npm scripts (always commit the lockfile) |
-| `.nvmrc` | Node version (24); fnm switches to it automatically |
+| `.nvmrc` | Node version (24): fnm switches to it on `cd` if set up with `fnm env --use-on-cd`, otherwise run `fnm use` |
 | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs` | Next.js, TypeScript and ESLint settings (TypeScript and ESLint skip `.claude/`) |
 | `components.json` | shadcn/ui settings |
 | `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts` | Test settings |
@@ -67,7 +67,7 @@ npx shadcn@latest add <component>   # add a shadcn/ui component
 - **Tests sit next to the code:** `*.test.ts` runs in Node (logic), `*.test.tsx` runs in jsdom (React components). Browser tests go in `e2e/`. Import `test`/`expect` from `vitest` (no globals).
 - **Tailwind only scans `src/`, minus test files** (`source("../")` and `@source not` in `src/app/globals.css`). Put anything that uses Tailwind classes inside `src/`, and not in a `*.test.*` file.
 - **Secrets** come from environment variables, read on the server only. Never prefix a secret with `NEXT_PUBLIC_`: those values are built into the JavaScript every visitor downloads. Add every variable to `.env.example` with a fake value.
-- **npm install scripts:** npm 11 asks before running a package's install script. Don't approve one unless something is actually broken without it (`unrs-resolver` is left unapproved; ESLint works without it).
+- **npm install scripts:** npm 11 *skips* packages' install scripts until you approve them (`npm install-scripts approve <pkg>`) and prints an `install-scripts` warning. Don't approve one unless something is actually broken without it. `unrs-resolver` and `fsevents` are left unapproved; `check` and `test:e2e` pass without them.
 
 ## Task workflow: the Compound Engineering loop (always follow)
 
