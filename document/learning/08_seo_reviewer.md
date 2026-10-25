@@ -1,10 +1,10 @@
 # 08_seo_reviewer: An SEO check after every page change
 
-> **Branch:** `08_seo_reviewer` · **Date:** 2026-10-24 · **Status:** In progress (review pending)
+> **Branch:** `08_seo_reviewer` · **Date:** 2026-10-24 · **Status:** In progress (merge pending)
 
 ## In one minute
 
-The owner asked for "an agent who checks every page is SEO friendly or not, if not suggests changes; run it every time after Claude makes changes and share the changes and suggestions". We built two pieces. The first is a read-only **`seo-reviewer` agent** with an SEO checklist. The second is a **Stop hook**: it notices when page files changed and makes Claude run that agent and post an "SEO check" before finishing its reply. There are no pages yet (task 09 creates the app), so for now the hook stays quiet. From the first page on, every page gets reviewed.
+The owner asked for "an agent who checks every page is SEO friendly or not, if not suggests changes; run it every time after Claude makes changes and share the changes and suggestions". We built two pieces. The first is a read-only **`seo-reviewer` agent** with an SEO checklist. The second is a **Stop hook**: it notices when page files changed and sends Claude feedback, so Claude runs that agent and posts an "SEO check" before finishing its reply. There are no pages yet (task 09 creates the app), so for now the hook stays quiet. From the first page on, every page gets reviewed.
 
 ## Why: the problem we solved
 
@@ -25,22 +25,6 @@ Tasks 09–42 will build dozens of pages. Without this task, mistakes would pile
 | `document/plans/2026-10-24-2339-chore-seo-reviewer-hook-plan.md` | Added | The task's plan, written by `ce-plan` |
 | `document/plans/2026-10-24-gomechanic-master-plan.md` | Changed | Corrected two SEO rules: private pages are `noindex` but **not** blocked in robots, and the hero image uses `fetchPriority`, not the deprecated `priority` |
 | `document/task/task.md` | Changed | Task 08 set to In progress, done steps ticked, plan linked |
-
-## How it fits together
-
-One turn that changes a page:
-
-```
-You ask for a page change
-  → Claude edits src/app/..., writes its reply, and tries to stop
-  → Stop hook runs seo_check.py
-       nothing changed → prints nothing, Claude stops
-       files changed   → prints {"decision": "block", "reason": "...run seo-reviewer..."}
-  → Claude keeps going: runs seo-reviewer, then posts an "SEO check" section
-  → Claude tries to stop again → stop_hook_active is true → the hook stays quiet → done
-```
-
-The plan has the same flow as two diagrams (a flowchart and a sequence diagram), under "High-Level Technical Design".
 
 ## How: step by step
 
@@ -67,7 +51,7 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
    - **Lines 81–95: check the switches.** It does nothing when `GOMECHANIC_SEO_HOOK=off` is set, when `stop_hook_active` is true, or while a background subagent is still running (added after the review, so half-built pages aren't reviewed).
    - **Lines 97–109: compare fingerprints.** It hashes every watched file and compares the hashes with the state file. If nothing changed, it exits quietly.
    - **Lines 111–113: save first.** It saves the new hashes *before* asking for the review (see "Decisions worth knowing").
-   - **Line 126: ask for the review.** It prints the block decision. The `reason` text is the instruction Claude follows.
+   - **Line 126: ask for the review.** It prints feedback (`additionalContext`). That text is the instruction Claude follows.
 
 5. **Test it in a scratch folder before switching it on.** Pointing the script at an empty temporary folder means testing never writes a state file into the real repo. Real output when this doc was written (run from the repo root):
    ```bash
@@ -80,7 +64,7 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
    - `echo '{}' |` pretends to be Claude Code. Claude Code sends the hook a JSON object on standard input (stdin), and `{}` is the simplest one.
    - `CLAUDE_PROJECT_DIR="$T"` sets an environment variable for this one command only. It tells the script that the "project" is the scratch folder.
    ```
-   {"decision": "block", "reason": "SEO check: these page files changed since the last SEO review:\n- src/app/page.tsx (new)\n\nRun the seo-reviewer agent on the pages these files affect (it only reads). Then reply to the owner with a short \"SEO check\" section: what changed, each page's verdict (Pass / Needs work) and the suggested fixes. Don't apply the suggestions unless the owner asks."}
+   {"hookSpecificOutput": {"hookEventName": "Stop", "additionalContext": "SEO check: these page files changed since the last SEO review:\n- src/app/page.tsx (new)\n\nRun the seo-reviewer agent on the pages these files affect (it only reads). Then reply to the owner with a short \"SEO check\" section: what changed, each page's verdict (Pass / Needs work) and the suggested fixes. Don't apply the suggestions unless the owner asks."}}
    ```
    Running the same command again prints nothing, because nothing changed since the saved fingerprints. The plan's U2 section lists every scenario we ran (silent cases, reported cases, odd input). All of them passed, and most were run again while writing this doc.
 
@@ -115,25 +99,14 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
 
    We left out `GOMECHANIC_SEO_HOOK=off` on purpose, because this time the child session *was* meant to get the review. We asked it to create `src/app/seo-probe/page.tsx` with an `<h1>` and an `<img>` without `alt`. (The exact prompt wasn't saved.) The hook fired once, `seo-reviewer` ran, and the session ended with this, copied as it was:
    ```text
-   Warning: no stdin data received in 3s, proceeding without it. If piping from a slow command, redirect stdin explicitly: < /dev/null to skip, or wait longer.
    ## SEO check
-
-   **What changed:** I added one new page, `src/app/seo-probe/page.tsx`, served at `/seo-probe`. It is a test probe for the hook.
-
    **`/seo-probe`: Needs work.** The `seo-reviewer` agent reviewed the source only. It couldn't build the site, because the repo has no `package.json` or root layout yet.
-
-   Suggested fixes (I haven't applied any):
-   1. **Must fix:** the `<img src='/hero.jpg' />` has no `alt` attribute. Add a descriptive one, for example `alt="Mechanic servicing a car at the GoMechanic garage in Pune"`. Use `alt=""` if the image is only decoration.
-   2. **Nice to have:** use `next/image` with `width`, `height`, `sizes` and `priority` instead of a plain `<img>`. That avoids layout shift and gives automatic image resizing.
-   3. **Nice to have:** `/hero.jpg` doesn't exist, because there is no `public/` folder. The image would return a 404.
-   4. **Nice to have:** the page has only an `<h1>` and an image. A real page needs body text, internal links such as booking and contact, and mentions of both cars and two-wheelers.
-   5. **Nice to have:** the probe would be public and indexable. Delete `src/app/seo-probe/` after the test and don't merge it to `main`.
-
-   **Done well:** there is exactly one `<h1>` and it matches the topic. The content sits inside `<main>` as server-rendered text.
-
+   1. **Must fix:** the `<img src='/hero.jpg' />` has no `alt` attribute. Add a descriptive one...
+   2. **Nice to have:** use `next/image` with `width`, `height`, `sizes` and `priority` instead of a plain `<img>`...
+   ...
    **Waiting for task 42:** title and meta description, canonical URL, `metadataBase` and title template, Open Graph and Twitter tags, the sitemap entry, `robots.ts` and JSON-LD.
    ```
-   The first line is a harmless warning from `claude -p` itself. It waited 3 seconds for piped input that never came. **One piece of this advice is outdated:** fix 2 suggests `priority`, which Next.js 16 deprecated (use `loading="eager"` or `fetchPriority="high"`). The review caught it, and the agent's checklist now says so (see step 11). Notice what the report did right: it caught the missing `alt`, didn't fix anything, and put the missing title on the "Waiting for task 42" line instead of failing the page for it.
+   (Lines cut with "..."; the full report also had a "Done well" part.) **One piece of this advice is outdated:** fix 2 suggests `priority`, which Next.js 16 deprecated (use `loading="eager"` or `fetchPriority="high"`). The review caught it, and the agent's checklist now says so (see step 11). After the review we ran this test again with the new hook output, and the second report said: "use `next/image` with ... `loading=\"eager\"` and `fetchPriority=\"high\"`. Don't use `priority`, which Next.js 16 deprecated." Notice what the report did right: it caught the missing `alt`, didn't fix anything, and put the missing title on the "Waiting for task 42" line instead of failing the page for it.
 
    Then we deleted the probe page **and** the state file together, and checked that the hook was silent again. If we had deleted only the page, the next turn would have reported `src/app/seo-probe/page.tsx (deleted)` and started another review.
 
@@ -141,9 +114,17 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
 
 10. **Write this learning doc.** Every output block above was really run and copied, following [run-commands-before-documenting-output](../solutions/conventions/run-commands-before-documenting-output.md).
 
-11. **Review.** (filled in after it happens)
+11. **Review.** Two reviews ran.
+   - **`code-reviewer`: Needs changes.** It re-ran every hook scenario in scratch folders, and they all matched. It found four must-fixes:
+     - the tracker hadn't ticked "Write the learning doc";
+     - the checklist recommended `priority`, which Next.js 16 deprecated;
+     - the sitemap rule said *every* page belongs in the sitemap, including `noindex` ones;
+     - this doc left out the `noindex`/robots correction.
+     All four are fixed. Suggestions we took: skip only `src/app/api/` and `route.ts` files (so a page at `/docs/api` still counts); treat odd JSON as empty instead of crashing; wait while a background agent is still building pages; label extra `<h1>`s "nice to have" (Google says they don't hurt ranking); and note that a business's own `aggregateRating` won't show stars. It also pointed out that two commits used `feat` for tooling. They should have been `chore`, the same slip as task 04. `CLAUDE.md` now spells out the rule.
+   - **`ce-code-review`: Ready with fixes.** The first run died when the computer went to sleep; the second finished. Its main finding: `{"decision": "block"}` makes Claude Code show a hook **error** on every page change, though nothing is wrong. We switched to `additionalContext` (shown as "Stop hook feedback") and re-ran the end-to-end test: Claude still ran the reviewer and posted the SEO check. It also flagged that the plan's R2 and R3 were out of date (updated, plus a note at the top of the plan), and that this doc was too long (we dropped the "How it fits together" diagram and cut the transcript). It listed some risks to keep in mind: two sessions in one folder share the state file, and a fresh clone reviews every page once. Both are now in `CLAUDE.md`.
+   - **Noticed:** the branch was pushed to GitHub from outside this session (Claude didn't run `git push`), as in task 07.
 
-12. **Compound.** (filled in after it happens)
+12. **Compound.** The counterfactual question: *if we didn't write this down, would a future session repeat the mistake?* For the `priority` slip, yes. It's the natural thing to write from memory, `ui-ux-pro-max`'s own data still recommends it, and task 13 has a big hero image. So we ran `ce-compound` (lightweight, hook switched off) and it wrote [nextjs-16-read-bundled-docs-image-priority](../solutions/conventions/nextjs-16-read-bundled-docs-image-priority.md). While checking the real Next.js source, it found something we'd missed: `fetchPriority="high"` **alone** still leaves the image lazy-loaded (`isLazy` in `node_modules/next/dist/shared/lib/get-img-props.js` only looks at `priority`, `preload` and `loading`). So the agent's rule now says `loading="eager"`, and `CLAUDE.md` warns that `ui-ux-pro-max`'s Next.js data is out of date. One lesson, written down, already fixed a second bug. That's compounding.
 
 ## Decisions worth knowing
 
@@ -151,7 +132,7 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
 | --- | --- | --- |
 | A **Stop** hook, not a hook after every edit | One review per turn, however many files changed. It also sees changes made by scripts, subagents and `git`, which an after-each-edit hook would miss. | The review comes at the end of the turn, not right after each edit |
 | Compare **file contents** (hashes), not timestamps | Saving a file without changing it doesn't trigger a review. A `git switch` that really changes pages does. | Every watched file is read at the end of every turn. That's fine for a small site. |
-| **Save the hashes before** the review runs | A skipped or interrupted review can't make every later turn block | A skipped review isn't asked for again. Ask "check SEO" to get one on demand. |
+| **Save the hashes before** the review runs | A skipped or interrupted review can't make the hook ask again on every later turn | A skipped review isn't asked for again. Ask "check SEO" to get one on demand. |
 | Read-only **by instruction**, with Bash kept | The agent needs Bash to build the site and `curl` pages. A tool list can't say "Bash, but read-only". | It relies on the agent following its prompt, the same as `code-reviewer` |
 | **Suggest, don't fix** | The owner chooses. Page changes stay small and reviewable, and each report is a lesson. | Making a fix takes one more request |
 | An **environment switch** for child sessions | The hook's input has no reliable way to tell that it's running in a child `claude -p` session | You have to remember to type it |
@@ -160,8 +141,8 @@ The plan has the same flow as two diagrams (a flowchart and a sequence diagram),
 ## New ideas in this task
 
 - **Hook:** a command Claude Code runs by itself at a fixed moment, such as before a tool runs or when Claude finishes. Think of a smoke alarm: nobody presses it, it reacts to what happens.
-- **Stop event:** the moment Claude finishes its reply and is about to hand control back to you. A Stop hook can answer `{"decision": "block", "reason": "..."}`. Claude then keeps working and treats the `reason` as its next instruction. When a *subagent* finishes, Claude Code fires a different event, `SubagentStop`, so the reviewer finishing doesn't set our hook off again.
-- **`stop_hook_active`:** a true/false field in the hook's input. It's `true` when Claude is already continuing because a Stop hook blocked. Our script then stays quiet, so it blocks **at most once per turn**. Without this check, a hook that always finds something wrong would keep sending Claude back to work, over and over. (Claude Code has a safety cap of 8 continuations in a row, but that's 8 wasted rounds.) It's like a teacher who says "check your work" once, not every time you hand it back in.
+- **Stop event:** the moment Claude finishes its reply and is about to hand control back to you. A Stop hook can answer with feedback, `{"hookSpecificOutput": {"hookEventName": "Stop", "additionalContext": "..."}}`. Claude then keeps working and treats that text as its next instruction. (There's also `{"decision": "block"}`, but Claude Code shows it as a hook *error*, so it's meant for real problems, not routine guidance.) When a *subagent* finishes, Claude Code fires a different event, `SubagentStop`, so the reviewer finishing doesn't set our hook off again.
+- **`stop_hook_active`:** a true/false field in the hook's input. It's `true` when Claude is already continuing because of a Stop hook. Our script then stays quiet, so it asks **at most once per turn**. Without this check, a hook that always finds something wrong would keep sending Claude back to work, over and over. (Claude Code has a safety cap of 8 continuations in a row, but that's 8 wasted rounds.) It's like a teacher who says "check your work" once, not every time you hand it back in.
 - **Fingerprint / hash (SHA-256):** a fixed-length code computed from a file's bytes. The same content always gives the same code. Change one character and you get a completely different code. Like a real fingerprint, it's small but identifies the whole thing. In the scratch test, the state file and `shasum -a 256` agreed:
   ```
   {

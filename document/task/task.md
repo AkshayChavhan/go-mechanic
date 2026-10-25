@@ -153,9 +153,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write `.claude/hooks/seo_check.py` (fingerprints page files) and test it with sample input
 - [x] Add the Stop hook to `.claude/settings.json` (merge with plugin settings)
 - [x] Add the SEO review rule to `CLAUDE.md`
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Write the learning doc
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
 ### 09_app_setup
