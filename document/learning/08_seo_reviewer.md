@@ -1,6 +1,6 @@
 # 08_seo_reviewer: An SEO check after every page change
 
-> **Branch:** `08_seo_reviewer` · **Date:** 2026-10-24 · **Status:** In progress (merge pending)
+> **Branch:** `08_seo_reviewer` · **Date:** 2026-10-24 · **Status:** Done
 
 ## In one minute
 
