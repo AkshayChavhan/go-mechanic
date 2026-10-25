@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, test } from "vitest";
+import { describe, expect, onTestFinished, test } from "vitest";
 
 import Home from "./page";
 
@@ -11,8 +11,12 @@ describe("Home page (placeholder)", () => {
     expect(headings[0].textContent).toBe("GoMechanic");
   });
 
-  test("starts empty: the previous test's render was cleaned up", () => {
-    // Proves vitest.setup.ts runs. Tests in a file run in order.
-    expect(document.body.innerHTML).toBe("");
+  test("the page is cleaned up after each test (vitest.setup.ts runs)", () => {
+    render(<Home />);
+    // onTestFinished runs after the afterEach hooks, so by then the cleanup
+    // registered in vitest.setup.ts must have emptied the page.
+    onTestFinished(() => {
+      expect(document.body.innerHTML).toBe("");
+    });
   });
 });
