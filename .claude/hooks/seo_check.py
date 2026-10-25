@@ -6,8 +6,10 @@ hook in .claude/settings.json). It takes a fingerprint (SHA-256 hash) of every
 file that makes up the website's pages and compares them with the fingerprints
 saved after the last SEO review.
 
-- Something changed -> print a "block" decision. Claude Code then keeps Claude
-  going with our instruction: run the seo-reviewer agent and share its report.
+- Something changed -> print feedback ("additionalContext"). Claude Code then
+  keeps Claude going with our instruction: run the seo-reviewer agent and share
+  its report. (We don't use `"decision": "block"`: Claude Code shows that as a
+  hook *error*, and this is normal guidance, not an error.)
 - Nothing changed  -> print nothing, so Claude stops normally.
 
 It never loops: when Claude is already continuing because of this hook
@@ -36,6 +38,8 @@ SKIPPED_NAMES = {".DS_Store", "route.ts", "route.js"}
 STATE_FILE = ".claude/.seo-reviewed.json"
 # How many changed files to list by name in the message.
 MAX_LISTED = 20
+# Background work that may be editing pages right now (wait until it's done).
+BUILDER_TASK_TYPES = {"subagent", "teammate"}
 
 
 def is_watched(relative: Path) -> bool:
@@ -89,9 +93,10 @@ def main() -> int:
     if hook_input.get("stop_hook_active"):
         return 0  # We already asked once in this cycle: let Claude stop.
     background = hook_input.get("background_tasks") or []
-    if any(isinstance(t, dict) and t.get("type") == "subagent" for t in background):
+    if any(isinstance(t, dict) and t.get("type") in BUILDER_TASK_TYPES for t in background):
         # A background agent may still be writing pages. Don't review a
         # half-built page; the next Stop (after it finishes) will catch it.
+        # (A background shell, like a dev server, doesn't count.)
         return 0
 
     root = Path(os.environ.get("CLAUDE_PROJECT_DIR") or hook_input.get("cwd") or ".").resolve()
@@ -123,7 +128,7 @@ def main() -> int:
         "each page's verdict (Pass / Needs work) and the suggested fixes. "
         "Don't apply the suggestions unless the owner asks."
     )
-    print(json.dumps({"decision": "block", "reason": reason}))
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "Stop", "additionalContext": reason}}))
     return 0
 
 
