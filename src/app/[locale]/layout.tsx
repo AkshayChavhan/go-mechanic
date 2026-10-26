@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { sansFont } from "@/app/fonts";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
-import { sansFont } from "../fonts";
-import "../globals.css";
+import "@/app/globals.css";
 
 // This is the root layout: it sits inside [locale], so `locale` is a "root
 // param" every server component can read. With Cache Components, every root
