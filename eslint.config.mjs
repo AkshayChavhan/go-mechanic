@@ -31,13 +31,37 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  // Text people read goes in messages/en.json, not typed into JSX, so it can
-  // be translated. Props (className, href...) are not text people read.
+  // Text people read or hear goes in messages/en.json, not typed into JSX, so
+  // it can be translated. jsx-no-literals catches text between tags; it skips
+  // all props (className, href... aren't text) and text inside a condition, so
+  // no-restricted-syntax adds those cases. shadcn's ui/ folder is third-party
+  // style code. src/i18n/lint-guards.test.ts checks these rules still fire.
   {
-    files: ["src/app/**/*.tsx", "src/components/{site,account,admin}/**/*.tsx"],
-    ignores: ["**/*.test.tsx"],
+    files: ["src/app/**/*.tsx", "src/components/**/*.tsx"],
+    ignores: ["**/*.test.tsx", "src/components/ui/**"],
     rules: {
       "react/jsx-no-literals": ["error", { noStrings: true, ignoreProps: true }],
+      "no-restricted-syntax": [
+        "error",
+        {
+          // {isOpen ? "Open now" : "Closed"}, {error && "Oops"}, {name ?? "Guest"}
+          selector:
+            ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > :matches(ConditionalExpression, LogicalExpression) > :matches(Literal[value=/\\S/], TemplateLiteral)",
+          message: "Put text people read in messages/en.json and show it with t().",
+        },
+        {
+          // alt="...", aria-label="...", placeholder="...", title="..."
+          selector:
+            "JSXAttribute[name.name=/^(alt|aria-label|aria-description|aria-valuetext|placeholder|title)$/] > Literal[value=/\\S/]",
+          message: "Text people read or hear (alt, title, placeholder, aria-*) goes in messages/en.json.",
+        },
+        {
+          // The same attributes written as {"..."} or {`...`}
+          selector:
+            "JSXAttribute[name.name=/^(alt|aria-label|aria-description|aria-valuetext|placeholder|title)$/] > JSXExpressionContainer > :matches(Literal[value=/\\S/], TemplateLiteral)",
+          message: "Text people read or hear (alt, title, placeholder, aria-*) goes in messages/en.json.",
+        },
+      ],
     },
   },
   // Override default ignores of eslint-config-next.
