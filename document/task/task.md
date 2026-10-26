@@ -20,8 +20,8 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 08 | `08_seo_reviewer` | SEO reviewer agent + Stop hook that runs it after every page change | Done | [08_seo_reviewer.md](../learning/08_seo_reviewer.md) |
 | 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | Done | [09_app_setup.md](../learning/09_app_setup.md) |
 | 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | Done | [10_i18n_foundation.md](../learning/10_i18n_foundation.md) |
-| 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/dev/design` preview | In progress | [11_design_system.md](../learning/11_design_system.md) |
-| 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | To do |  |
+| 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/dev/design` preview | Done | [11_design_system.md](../learning/11_design_system.md) |
+| 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | In progress |  |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | To do |  |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | To do |  |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | To do |  |
@@ -195,11 +195,11 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds
 - [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [ce-plan hang lesson](../solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #5 on GitHub
 
 ### 12_layout_shell
 
-- [ ] Create branch `12_layout_shell`
+- [x] Create branch `12_layout_shell`
 - [ ] Plan with `ce-plan`
 - [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
 - [ ] Frosted sticky header with navigation and mobile menu: the header uses the `frosted` class; the mobile menu is `Sheet` with `closeLabel={t("close")}` (task 11)

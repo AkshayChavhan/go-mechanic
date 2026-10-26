@@ -1,6 +1,6 @@
 # 11_design_system: one calm, Apple-like look, defined once
 
-> **Branch:** `11_design_system` · **Date:** 2026-10-26 · **Status:** In progress
+> **Branch:** `11_design_system` · **Date:** 2026-10-26 · **Status:** Done
 
 ## In one minute
 
@@ -156,7 +156,7 @@ Before this task the app still used shadcn's grey defaults and an unused `.dark`
 
 18. **Compound.** Would a future session repeat this without a written lesson? For one thing, clearly yes: `ce-plan` hung after writing its plan in both task 10 (about 21 hours lost) and task 11 (caught by a watcher in 10 minutes). We ran `ce-compound` (lightweight). It wrote `document/solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md`: start ce-plan in the background, start an idle watcher on the plan file at once, and stop the process when the file has been quiet for 10 minutes. Its watcher script was new, so we tested it before committing (exited, idle and still-waiting cases). The `type-*` ordering and the reduced-motion reason didn't get lessons: `CLAUDE.md`, MASTER.md, lint and the corrected comments now carry them.
 
-19. **Pull request.** The owner pushed the branch to GitHub four times during the task, from VS Code, right after Claude's commits (13:36, 15:22, 15:31 and 15:39 on 2026-10-26; the first came before the look was approved). Claude didn't push during the task. The plan's "no push before approval" rule bound Claude, and the owner may push their own branch whenever they like. After the reviews, Claude asked who should push the rest, and the owner chose Claude. The owner then opens and merges the pull request on GitHub (CLAUDE.md step 11).
+19. **Pull request.** The owner pushed the branch to GitHub four times during the task, from VS Code, right after Claude's commits (13:36, 15:22, 15:31 and 15:39 on 2026-10-26; the first came before the look was approved). Claude didn't push during the task. The plan's "no push before approval" rule bound Claude, and the owner may push their own branch whenever they like. After the reviews, Claude asked who should push the rest, and the owner chose Claude. The owner then opens and merges the pull request on GitHub (CLAUDE.md step 11). Claude pushed, opened PR #5 at the owner's request, and the owner merged it on 2026-10-26.
 
 ## Decisions worth knowing
 
