@@ -77,4 +77,69 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
   test("leaves shadcn's components/ui alone", async () => {
     expect(await errorRules(component("<p>Close</p>"), "src/components/ui/example.tsx")).toEqual([]);
   });
+
+  // Development-only pages (/dev/design...) may type demo text: devOnly()
+  // makes them a 404 in production, so no visitor ever reads it.
+  test.each([
+    ["the dev page itself", "src/app/[locale]/dev/design/page.tsx"],
+    ["a component next to a dev page", "src/app/[locale]/dev/design/_components/demo.tsx"],
+  ])("allows typed text on %s", async (_name, filePath) => {
+    expect(await errorRules(component('<button aria-label="Play the demo">Play</button>'), filePath)).toEqual([]);
+  });
+
+  test.each([
+    ["a page whose name starts with dev", "src/app/[locale]/devices/page.tsx"],
+    ["a dev folder deeper in the site", "src/app/[locale]/services/dev/page.tsx"],
+  ])("still rejects typed text on %s", async (_name, filePath) => {
+    expect(await errorRules(component("<p>Hello</p>"), filePath)).toContain("react/jsx-no-literals");
+  });
+
+  // Text sizes come from the type-* classes in globals.css. Tailwind puts its
+  // own text-sm, text-lg... after them in the CSS, so a stock size would win
+  // over a type-* class on the same element.
+  test.each([
+    ["a size inside cn()", 'import { cn } from "@/lib/utils";\nexport const classes = cn("text-sm", "font-bold");\n'],
+    ["a size with a screen prefix", component('<p className="md:text-lg">{t("title")}</p>')],
+    ["a size with a state prefix", component('<p className="hover:text-2xl">{t("title")}</p>')],
+    ["a size in a template string", "export const classes = (extra: string) => `text-base ${extra}`;\n"],
+    ["text-xs", component('<p className="text-xs text-muted-foreground">{t("title")}</p>')],
+    ["text-9xl", component('<p className="text-9xl">{t("title")}</p>')],
+  ])("rejects a stock text size: %s", async (_name, code) => {
+    expect(await errorRules(code)).toContain("no-restricted-syntax");
+  });
+
+  test.each([
+    ["type-* sizes", component('<p className="type-title">{t("title")}</p>')],
+    ["text colours", component('<p className="text-muted-foreground hover:text-link text-white">{t("title")}</p>')],
+    ["text alignment", component('<p className="text-center md:text-left">{t("title")}</p>')],
+    ["text colours in cn()", 'import { cn } from "@/lib/utils";\nexport const classes = cn("text-link", "text-foreground");\n'],
+  ])("allows %s", async (_name, code) => {
+    expect(await errorRules(code)).toEqual([]);
+  });
+
+  // The stock-size rule also covers plain .ts files (class lists kept in
+  // constants) and the dev-page catalogue, which the main text block skips.
+  test.each([
+    ["a .ts file (a class list in a constant)", 'export const sizes = "type-body text-sm";\n', "src/components/site/sizes.ts"],
+    ["a dev page", component('<p className="text-sm">Demo</p>'), "src/app/[locale]/dev/design/page.tsx"],
+  ])("rejects a stock text size in %s", async (_name, code, filePath) => {
+    expect(await errorRules(code, filePath)).toContain("no-restricted-syntax");
+  });
+
+  test.each([
+    ["a .ts test file", 'export const sizes = "text-sm";\n', "src/components/site/sizes.test.ts"],
+    ["a .tsx test file", component('<p className="text-sm">{t("title")}</p>'), "src/components/site/sizes.test.tsx"],
+  ])("leaves stock text sizes alone in %s", async (_name, code, filePath) => {
+    expect(await errorRules(code, filePath)).toEqual([]);
+  });
+
+  test("leaves stock text sizes alone in shadcn's components/ui", async () => {
+    const code = 'import { cn } from "cn";\nexport const classes = cn("text-sm");\n';
+    expect(await errorRules(code, "src/components/ui/example.tsx")).toEqual([]);
+  });
+
+  test("still rejects next/link on dev pages", async () => {
+    const code = 'import Link from "next/link";\nexport const x = Link;\n';
+    expect(await errorRules(code, "src/app/[locale]/dev/design/page.tsx")).toContain("no-restricted-imports");
+  });
 });

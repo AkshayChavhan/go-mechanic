@@ -1,5 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="GoMechanic">
-  <!-- Placeholder icon; task 11 (design system) replaces it with the real one. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- The site icon: the brand's first letter, outlined from Inter Bold, white
+       on a near-black tile. A path, not a text element, so every device draws
+       the same letter. Renaming the brand means redrawing this letter. -->
+  <style>
+    /* In a dark browser tab bar, a light edge keeps the dark tile visible. */
+    .edge { display: none; }
+    @media (prefers-color-scheme: dark) { .edge { display: inline; } }
+  </style>
   <rect width="64" height="64" rx="14" fill="#1d1d1f"/>
-  <text x="32" y="44" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="34" font-weight="700" fill="#ffffff">G</text>
+  <rect class="edge" x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="#f5f5f7" stroke-opacity="0.4" stroke-width="2"/>
+  <path fill="#ffffff" d="M32.64 49Q28 49 24.5 46.94Q21 44.89 19.03 41.08Q17.07 37.27 17.07 32.04Q17.07 26.67 19.11 22.86Q21.16 19.04 24.64 17.02Q28.13 15 32.49 15Q35.29 15 37.7 15.81Q40.11 16.62 41.99 18.11Q43.87 19.6 45.06 21.63Q46.24 23.67 46.6 26.13L39.71 26.13Q39.36 24.93 38.72 23.99Q38.09 23.04 37.19 22.38Q36.29 21.71 35.13 21.37Q33.98 21.02 32.6 21.02Q30.04 21.02 28.09 22.3Q26.13 23.58 25.04 26.02Q23.96 28.47 23.96 31.98Q23.96 35.49 25.03 37.94Q26.11 40.4 28.07 41.69Q30.02 42.98 32.69 42.98Q35.09 42.98 36.8 42.11Q38.51 41.24 39.43 39.63Q40.36 38.02 40.36 35.87L41.78 36.07L33.16 36.07L33.16 30.91L46.93 30.91L46.93 35.04Q46.93 39.4 45.09 42.52Q43.24 45.64 40.02 47.32Q36.8 49 32.64 49Z"/>
 </svg>

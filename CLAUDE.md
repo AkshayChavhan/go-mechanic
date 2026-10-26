@@ -7,9 +7,9 @@ Next.js's own notes for coding agents (kept up to date by `next dev`): @AGENTS.m
 ## The project
 
 - **GoMechanic**: a website and booking system for **one garage in India** that repairs cars and two-wheelers. Features: `document/website/features.md`. Full plan, architecture and tasks 07–46: `document/plans/2026-10-24-gomechanic-master-plan.md` (approved by the owner).
-- **Stack, installed (task 09):** Node 24 LTS (`.nvmrc`), Next.js 16.4.3 (App Router, Cache Components), React 19.3, TypeScript 5, Tailwind CSS 4, shadcn/ui 4 (Radix base, nova preset), GSAP 3.15, Vitest 5, Playwright 1.64; next-intl 4.14 (task 10: English now, Hindi-ready).
+- **Stack, installed (task 09):** Node 24 LTS (`.nvmrc`), Next.js 16.4.3 (App Router, Cache Components), React 19.3, TypeScript 5, Tailwind CSS 4, shadcn/ui 4 (Radix base, nova preset), GSAP 3.15, Vitest 5, Playwright 1.64; next-intl 4.14 (task 10: English now, Hindi-ready); fonts and design tokens (task 11: San Francisco on Apple devices, Inter elsewhere, Noto Sans Devanagari for Hindi, through `next/font`).
 - **Stack, planned for later tasks:** Drizzle + Postgres (PGlite in development, task 14), Better Auth phone OTP (15). SMS, WhatsApp and email use fake providers until the launch tasks (44–45).
-- **Design:** Apple-like, calm and spacious, with smooth GSAP scroll animation (see "Design direction" in `features.md`). Version 1 has no online payments or GST invoices.
+- **Design:** Apple-like, calm and spacious, with smooth GSAP scroll animation (see "Design direction" in `features.md`). The design system is `design-system/go-mechanic/MASTER.md` (approved 2026-10-26); see it all at `/dev/design` under `npm run dev`. Version 1 has no online payments or GST invoices.
 - **The owner is learning.** Every task must teach. Write explanations for a junior software engineer.
 
 ## Repo map
@@ -32,13 +32,18 @@ Next.js's own notes for coding agents (kept up to date by `next dev`): @AGENTS.m
 | `document/plans/` | The master plan (`2026-10-24-gomechanic-master-plan.md`) plus per-task plans written by `ce-plan` / `ce-brainstorm` |
 | `document/solutions/` | Lessons written by `ce-compound`: read the relevant ones before starting a task |
 | `src/app/[locale]/` | Pages and the root layout (Next.js App Router: one folder per URL). `[locale]` is the language; English URLs have no prefix |
+| `src/app/[locale]/dev/` | Development-only pages: `/dev/design` is the living catalogue of the design (404 in production) |
 | `src/app/global-not-found.tsx` | The 404 page for unknown URLs (has its own `<html>`; uses `next/link` on purpose) |
-| `src/app/globals.css`, `fonts.ts`, `icon.svg` | Global styles, the shared font, the site icon |
+| `src/app/globals.css`, `fonts.ts`, `icon.svg` | Design tokens and global styles, the fonts, the letter icon |
+| `src/components/ui/` | shadcn/ui components, restyled ("Our changes to shadcn's ..." at the top of each edited file; `restyle.test.tsx` guards them) |
+| `src/components/site/` | Our shared components: `Wordmark` (the brand name), `Section` (page sections) |
+| `design-system/go-mechanic/MASTER.md` | The design system for people: tokens, rules, brand and rename checklist (`globals.css` wins if they disagree) |
 | `src/proxy.ts` | Runs before each request: next-intl picks the language and redirects `/en/...` to `/...` |
 | `src/i18n/` | Languages: `config.ts` (locales, IST time zone), `routing.ts`, `request.ts`, `navigation.ts` (links and redirects), `global.ts` (typed message keys), `format.ts` (₹, dates), `localized-text.ts`, `test-utils.tsx` (`renderWithIntl`), `lint-guards.test.ts` |
 | `messages/en.json` | Every piece of UI text, by namespace (Hindi goes in `messages/hi.json` later) |
-| `src/lib/` | Small shared helpers (`utils.ts` has `cn()`) |
-| `e2e/` | Playwright browser tests (`*.spec.ts`) |
+| `src/lib/` | Small shared helpers: `utils.ts` (`cn()`), `motion.ts` (motion tokens), `color-contrast.ts`, `dev-only.ts` (`devOnly()`) |
+| `e2e/` | Playwright browser tests (`*.spec.ts`) on a production build |
+| `e2e/dev/`, `playwright.dev.config.ts` | Browser checks of dev-only pages against `next dev` (`npm run test:design`) |
 | `AGENTS.md` | Next.js's notes for AI agents; imported above. `next dev` may rewrite its block: commit what it writes |
 | `package.json`, `package-lock.json` | Dependencies and npm scripts (always commit the lockfile) |
 | `.nvmrc` | Node version (24): fnm switches to it on `cd` if set up with `fnm env --use-on-cd`, otherwise run `fnm use` |
@@ -54,6 +59,7 @@ Run them with Node 24 (`.nvmrc`; `fnm use` if your shell is on another version).
 npm run dev          # dev server on http://localhost:3000
 npm run check        # lint + typecheck (next typegen + tsc) + unit tests; must pass before every commit you call done
 npm run test:e2e     # Playwright on a production build (port 3210, your installed Chrome); must pass before every merge
+npm run test:design  # Playwright on /dev/design under next dev (port 3000; reuses a running dev server), saves screenshots to test-results/design/
 npm run build        # production build
 npm run lint         # ESLint only
 npm run typecheck    # next typegen, then tsc --noEmit
@@ -61,7 +67,7 @@ npm run test         # Vitest once (npm run test:watch to keep it running)
 npx shadcn@latest add <component>   # add a shadcn/ui component
 ```
 
-`test:e2e` isn't part of `check` because it needs a production build (slow). Never run `npx playwright install`: it downloads browsers; the tests use the Chrome already installed. If `typecheck` fails with an error inside `.next/dev/types/` after you moved a route, delete `.next/dev` (stale types from an earlier `npm run dev`) and run it again.
+`test:e2e` isn't part of `check` because it needs a production build (slow). Never run `npx playwright install`: it downloads browsers; the tests use the Chrome already installed. If `typecheck` fails with an error inside `.next/dev/types/` after you moved a route, delete `.next/dev` (stale types from an earlier `npm run dev`) and run it again. If a CSS change doesn't show up in `npm run build` or `test:e2e`, delete `.next/cache/turbopack` (Turbopack's build cache) and run again: seen once in task 11, not reproduced in 3 later tries.
 
 ## Code conventions
 
@@ -71,8 +77,22 @@ npx shadcn@latest add <component>   # add a shadcn/ui component
 - **Code layout** (from the master plan): `src/app/` routes, `src/components/{ui,site,account,admin}`, `src/domain/` pure logic with no Next.js or database imports, `src/server/` database, data access, actions and providers, `src/lib/` small helpers.
 - **Tests sit next to the code:** `*.test.ts` runs in Node (logic), `*.test.tsx` runs in jsdom (React components). Browser tests go in `e2e/`. Import `test`/`expect` from `vitest` (no globals).
 - **Tailwind only scans `src/`, minus test files** (`source("../")` and `@source not` in `src/app/globals.css`). Put anything that uses Tailwind classes inside `src/`, and not in a `*.test.*` file.
+- **Design system** (`design-system/go-mechanic/MASTER.md`; `globals.css` wins if they disagree):
+  - Colours, radius, shadows and spacing only through token classes (`bg-card`, `text-link`, `rounded-xl`, `py-(--section-space)`). No raw values outside `globals.css` and `src/components/ui/`.
+  - Text size comes only from `type-*` classes (Tailwind writes stock classes after them, so a stock class on the same element wins):
+    - Banned: stock `text-*` sizes (lint rejects them), and `leading-*` or `tracking-*` next to a `type-*` class, except inside a component's own definition (such as Wordmark's tracking).
+    - Allowed: a weight next to a `type-*` class (`type-callout font-semibold`, Button's `font-medium`). It wins, which is the point.
+    - Never put two `type-*` classes on one element, so never pass a `type-*` class to a component that sets its own (Button, Card, CardTitle, CardDescription, Input): Tailwind's CSS order picks the winner, not your class order.
+    - A `type-*` class passed to a component doesn't beat stock sizes the component sets itself. Badge, Sheet, Field and Label keep shadcn's sizes until a task restyles them, so change a component's size through its variant or size prop.
+    - Lint misses arbitrary sizes (`text-[17px]`) and stacked `leading-*`/`tracking-*`: check those by hand.
+  - Page sections use `Section` (`tone`: white, grey or dark; `width`). There is no site-wide dark mode.
+  - Buttons and fields keep 44px touch targets. One blue (`default`) button per group.
+  - The brand name lives only in `messages/en.json`; pages show it through `Wordmark` (`brand-name.test.ts` enforces it).
+  - Motion timings come from `@/lib/motion`. GSAP animations go inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced`, and content is visible before JavaScript runs.
+  - `/dev/design` is the living catalogue of the design. A task that adds or changes a token, a `type-*` style or a `ui/`/`site/` component also adds or updates its sample there, and `npm run test:design` must pass.
+- **Development-only pages** live in `src/app/[locale]/dev/`, call `devOnly()` (`@/lib/dev-only`) first so production answers 404 with `noindex`, and may type demo text (lint allows it there only).
 - **Languages (next-intl).** The site is English-only for now but must stay Hindi-ready:
-  - UI text goes in `messages/en.json` and is read with `useTranslations` (pages stay non-async). Async server code (`generateMetadata`, layouts) uses `getTranslations`. Lint rejects text typed into JSX in `src/app/` and `src/components/` (except `ui/`): between tags, inside conditions (`{ok ? "Yes" : "No"}`, one level nested too) and in `alt`, `title`, `placeholder`, `aria-label`, `aria-description`, `aria-valuetext`, `aria-roledescription` and `aria-placeholder`. `src/i18n/lint-guards.test.ts` keeps these rules working; add a case there for any new guard (`document/solutions/conventions/lint-guards-test-real-jsx-shapes.md`). Lint doesn't check page metadata, so put its text in messages too.
+  - UI text goes in `messages/en.json` and is read with `useTranslations` (pages stay non-async). Async server code (`generateMetadata`, layouts) uses `getTranslations`. Lint rejects text typed into JSX in `src/app/` and `src/components/` (except `ui/` and dev pages): between tags, inside conditions (`{ok ? "Yes" : "No"}`, one level nested too) and in `alt`, `title`, `placeholder`, `aria-label`, `aria-description`, `aria-valuetext`, `aria-roledescription` and `aria-placeholder`. `src/i18n/lint-guards.test.ts` keeps these rules working; add a case there for any new guard (`document/solutions/conventions/lint-guards-test-real-jsx-shapes.md`). Lint doesn't check page metadata, so put its text in messages too.
   - `Link`, `redirect`, `useRouter` and `usePathname` come from `@/i18n/navigation`, not `next/link` or `next/navigation` (lint enforces it), so the `/hi` prefix is kept.
   - Money is stored and passed as integer paise and shown with `formatRupees` (`₹1,23,456`). Dates and times are shown with `formatDate` and `formatTime`, always in India time (`Asia/Kolkata`). Format first, then pass the string to `t()`: don't use ICU `{n, number}` or `{d, date}` in messages, because next-intl formats those with plain `en` (`₹123,456`, US date order).
   - Text stored in the database is a `LocalizedText` (`{ en, hi? }`), shown with `localize(text, locale)`.
@@ -134,7 +154,8 @@ Rules:
 
 - **ui-ux-pro-max script path:** run `python3 .claude/skills/ui-ux-pro-max/scripts/search.py ...` from the repo root. Ignore the `${CLAUDE_PLUGIN_ROOT}` prefix in its `SKILL.md`; that only applies to plugin installs. Persist with `--persist --output-dir .`; never pass `--force` without the user's OK.
 - **ui-ux-pro-max is not always up to date for Next.js 16:** its Next.js data still says to use `priority` for hero images, which Next.js 16 deprecated. Check any Next.js advice from a skill against `node_modules/next/dist/docs/` (see `document/solutions/conventions/nextjs-16-read-bundled-docs-image-priority.md`).
-- **ui-ux-pro-max vs frontend-design:** treat ui-ux-pro-max results as input and a checklist; frontend-design and the product brief make the final visual call. Accessibility rules always win.
+- **ui-ux-pro-max vs frontend-design:** treat ui-ux-pro-max results as input and a checklist; frontend-design and the product brief make the final visual call. Accessibility rules always win. Don't `--persist` its output when it contradicts the brief: `MASTER.md` is written by hand (task 11).
+- **After `npx shadcn add`:** read the new `ui/` files for English typed into them (like Sheet's "Close") and turn it into a prop fed from messages. Never re-add an edited component with `--overwrite`; `restyle.test.tsx` fails if the restyle is lost.
 - **21st.dev:** needs the user's login (`npx @21st-dev/cli login`) or a `TWENTYFIRST_TOKEN` env var. Never commit the key. Don't use hosted generation (`21st generate`, `21st iterate`) unless `21st usage` shows AI is enabled; it uses paid credits. Don't publish anything to 21st.dev.
 - **Don't edit files in `.claude/skills/`.** They come from upstream and `npx skills update` overwrites them. Put project-specific rules in this file instead.
 - **New or updated skills:** read the files before installing or committing them. Use project scope: `npx skills add <owner/repo> --agent claude-code --skill <name> --copy -y`, then update `document/skills/skills.md`.
@@ -199,6 +220,7 @@ A task is done when all of these are true:
 - [ ] Bigger tasks have a plan in `document/plans/`, linked from `task.md`
 - [ ] It works, and you checked it (ran it, tested it, or opened it)
 - [ ] `npm run check` and `npm run test:e2e` pass (once the app exists, from task 09 on)
+- [ ] If the task touched the design (tokens, `type-*`, `ui/` or `site/` components), its samples are on `/dev/design` and `npm run test:design` passes
 - [ ] `document/task/task.md` has the learning doc linked and every step ticked except "Merge" (ticked by the bookkeeping commit in step 11)
 - [ ] The learning doc exists and answers Why, What and How
 - [ ] `readme.md` and `CLAUDE.md` are updated if the task changed how the repo works

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
-import { sansFont } from "@/app/fonts";
+import { fontVariables } from "@/app/fonts";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function GlobalNotFound() {
   const t = await getTranslations({ locale, namespace: "NotFound" });
   return (
-    <html lang={locale} className={cn("font-sans", sansFont.variable)}>
+    <html lang={locale} className={cn(fontVariables, "font-sans antialiased")}>
       <body>
         <main>
           <h1>{t("title")}</h1>

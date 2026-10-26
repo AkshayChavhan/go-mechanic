@@ -26,7 +26,7 @@ You build the Go Mechanic user interface. The owner is a junior engineer who is 
 2. **Find before you build.** Check installed components first, then shadcn registries (`npx shadcn@latest search`), then 21st (`21st-cli-use`). Hand-write UI only when nothing fits.
 3. **Build** with shadcn rules: semantic color tokens, `gap-*` not `space-*`, `FieldGroup` + `Field` for forms, a title in every dialog, the project's icon library.
 4. **Motion** (only where it helps): `useGSAP()` from `@gsap/react` with a `scope` ref, one orchestrated moment rather than effects everywhere, and a `prefers-reduced-motion` fallback through `gsap.matchMedia()`. Load `gsap-timeline` or `gsap-scrolltrigger` when needed.
-5. **Verify.** Run the project's typecheck, lint and build. Check 375 px, 768 px, 1024 px and 1440 px widths, keyboard focus, contrast and reduced motion. Run the ui-ux-pro-max pre-delivery checklist, and `21st-ui-review` when it's available.
+5. **Verify.** Run the project's typecheck, lint and build. If you added or changed a token, a `type-*` style or a `ui/`/`site/` component, add or update its sample on `/dev/design` and run `npm run test:design` (CLAUDE.md, Design system). Check 375 px, 768 px, 1024 px and 1440 px widths, keyboard focus, contrast and reduced motion. Run the ui-ux-pro-max pre-delivery checklist, and `21st-ui-review` when it's available.
 
 ## Limits
 

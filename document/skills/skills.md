@@ -53,7 +53,7 @@ A searchable database (CSV files plus a Python search script) of styles, color p
   python3 .claude/skills/ui-ux-pro-max/scripts/search.py "form error validation" --domain ux
   python3 .claude/skills/ui-ux-pro-max/scripts/search.py "suspense streaming" --stack nextjs
   ```
-- **Saving a design system:** add `--persist --output-dir .` to write `design-system/go-mechanic/MASTER.md`. Don't add `--force` unless you mean to overwrite earlier decisions.
+- **Saving a design system:** `--persist --output-dir .` would write `design-system/go-mechanic/MASTER.md`. Don't use it here: in task 11 its suggestions (slate and red, or black and gold) contradicted the owner's brief, so MASTER.md is written by hand. Use the search for data and checklists, and never add `--force` without the owner's OK.
 - **Try:** *"Use ui-ux-pro-max to check this form against its UX rules."*
 
 ### shadcn (shadcn/ui)

@@ -34,6 +34,17 @@ test.describe("pages that don't exist", () => {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
   });
 
+  test("/dev/design is a 404 with noindex in production (it exists only under next dev)", async ({ page }) => {
+    // devOnly() in src/lib/dev-only.ts: production builds bake in the 404.
+    const response = await page.goto("/dev/design");
+    expect(response?.status()).toBe(404);
+    const robots = await page.locator('meta[name="robots"]').evaluateAll((tags) =>
+      tags.map((tag) => tag.getAttribute("content") ?? ""),
+    );
+    expect(robots.length).toBeGreaterThan(0);
+    for (const content of robots) expect(content).toContain("noindex");
+  });
+
   test("/hi is a 404 until Hindi is switched on", async ({ page }) => {
     // Flip this test when Hindi ships.
     const response = await page.request.get("/hi", { maxRedirects: 0 });

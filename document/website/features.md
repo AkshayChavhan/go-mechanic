@@ -11,7 +11,7 @@ This is the product plan: who the site is for, what it does, and what's left for
 - **Not in version 1:** online payments and GST invoices.
 - **Paid services** (OTP SMS, WhatsApp, email) use free stand-ins until the launch tasks.
 
-**Owner decision pending:** "GoMechanic" is already a well-known Indian car-service brand. That's a trademark risk, and it makes ranking for the name hard. Decide before the logo (task 11) and the domain (task 42).
+**Owner decision (task 11):** keep the name "GoMechanic" for now. It's already a well-known Indian car-service brand, so it carries a trademark risk and is hard to rank for; the owner accepted that on condition that a rename stays small. So the logo is a text wordmark plus a letter icon, and a rename means editing `messages/en.json` and redrawing one letter (checklist in `design-system/go-mechanic/MASTER.md`). The domain is still open (task 42).
 
 ## Who uses it
 
@@ -71,7 +71,7 @@ This is the product plan: who the site is for, what it does, and what's left for
 
 ## Design direction: Apple-like
 
-The owner asked for an Apple-style site with smooth animation. Task 11 turns this into exact design tokens (`design-system/go-mechanic/MASTER.md`). The principles:
+The owner asked for an Apple-style site with smooth animation. Task 11 turned this into exact design tokens, approved by the owner on 2026-10-26: [`design-system/go-mechanic/MASTER.md`](../../design-system/go-mechanic/MASTER.md). Developers see all of it on one page at `/dev/design` (development only), the living catalogue every later UI task keeps up to date. The principles:
 
 - **Calm and spacious:** white and very light grey (`#f5f5f7`-style) sections, near-black text, one blue accent for actions, and the occasional full-black "showcase" section.
 - **Big, confident type:** a clean sans-serif (the system's San Francisco font on Apple devices, Inter elsewhere), very large headlines with tight letter-spacing, and short sentences.

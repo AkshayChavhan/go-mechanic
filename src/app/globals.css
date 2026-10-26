@@ -7,131 +7,398 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* dark: classes apply inside a .dark section (the black showcase bands). */
 @custom-variant dark (&:is(.dark *));
 
+/* The site's design system. Components use these tokens by name
+   (bg-primary, text-muted-foreground, rounded-xl, type-title...), never raw
+   values. design-tokens.test.ts checks the colours' contrast. */
+
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: var(--font-sans);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
+    /* Font classes (font-sans, font-heading, font-brand). The stacks are plain
+       variables in :root below, so tests and pages can always read them. */
+    --font-sans: var(--font-sans-stack);
+    --font-heading: var(--font-sans-stack);
+    --font-brand: var(--font-brand-stack);
+
+    /* Colour classes (bg-*, text-*, border-*). "inline" makes each class read
+       the variable where it's used, so a .surface-grey or .dark section
+       repaints every component inside it. */
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
-    --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-hover: var(--primary-hover);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-link: var(--link);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    /* Radius, one fixed value per class. Buttons are made pills in
+       button.tsx: making rounded-lg a pill here would also round the inputs
+       and popovers that share it. */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 12px; /* inputs, popovers */
+    --radius-xl: 18px; /* cards and tiles */
+    --radius-2xl: 24px;
+    --radius-3xl: 28px;
+    --radius-4xl: 9999px; /* badges (pill) */
+
+    /* A plain transition-* class (shadcn uses transition-all and
+       transition-colors) moves at the base speed with the standard ease. */
+    --default-transition-duration: var(--duration-base);
+    --default-transition-timing-function: var(--ease-standard);
 }
 
+@theme {
+    /* Elevation. Tiles and fields stay flat (shadow-xs is none); the soft
+       shadows are only for layers that float over the page: the sheet,
+       popovers and, later, the sticky action bar. */
+    --shadow-xs: 0 0 #0000;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.04), 0 2px 8px rgb(0 0 0 / 0.06);
+    --shadow-md: 0 2px 6px rgb(0 0 0 / 0.04), 0 8px 24px rgb(0 0 0 / 0.08);
+    --shadow-lg: 0 4px 12px rgb(0 0 0 / 0.06), 0 16px 48px rgb(0 0 0 / 0.12);
+
+    /* Content widths: max-w-content for text and most sections, max-w-wide
+       for galleries and grids. */
+    --container-content: 61.25rem; /* 980px */
+    --container-wide: 80rem; /* 1280px */
+
+    /* Easing (ease-standard, ease-emphasized, ease-exit classes): close
+       matches of GSAP's power2.out, power4.out and power2.in. The same values
+       are in src/lib/motion.ts for GSAP; motion.test.ts keeps them equal. */
+    --ease-standard: cubic-bezier(0.33, 1, 0.68, 1); /* most motion */
+    --ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1); /* big entrances */
+    --ease-exit: cubic-bezier(0.32, 0, 0.67, 0); /* things leaving */
+}
+
+/* The white page: the default surface tone. */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    /* Light-only site: form controls and scrollbars use light colours. */
+    color-scheme: light;
+
+    /* Text: San Francisco on Apple devices (-apple-system in Safari,
+       BlinkMacSystemFont in Chrome), Inter everywhere else, Noto Sans
+       Devanagari for Hindi letters. Browsers skip names they don't have and
+       pick a font per character, so Hindi letters fall through to Noto.
+       --font-inter and --font-devanagari come from src/app/fonts.ts. */
+    --font-sans-stack: -apple-system, BlinkMacSystemFont, var(--font-inter), var(--font-devanagari), sans-serif;
+    /* The wordmark: always Inter, so the logo looks the same on every device. */
+    --font-brand-stack: var(--font-inter), var(--font-devanagari), sans-serif;
+
+    /* Colours. Hex, so the contrast test can read them directly. */
+    --background: #ffffff;
+    --foreground: #1d1d1f; /* near-black text */
+    --card: #f5f5f7; /* tiles are grey on the white page */
+    --card-foreground: #1d1d1f;
+    --popover: #ffffff;
+    --popover-foreground: #1d1d1f;
+    --primary: #0071e3; /* the one blue: actions only */
+    --primary-foreground: #ffffff;
+    /* Darker on hover, not lighter: white text keeps 4.5:1. */
+    --primary-hover: #0060c0;
+    --secondary: #e8e8ed;
+    --secondary-foreground: #1d1d1f;
+    --muted: #f5f5f7;
+    /* Secondary text. A touch darker than Apple's #6e6e73, so it still
+       reads on the #e8e8ed fills. */
+    --muted-foreground: #636366;
+    --accent: #e8e8ed;
+    --accent-foreground: #1d1d1f;
+    --destructive: #d70015;
+    /* Text on a solid destructive fill (the destructive button and badge).
+       A light red tint behind red text stays under 4.5:1, so they're solid. */
+    --destructive-foreground: #ffffff;
+    /* Status only ("Open now"), never for actions: blue stays the one accent. */
+    --success: #007a33;
+    --success-foreground: #ffffff;
+    /* Text links: a darker blue than --primary, which is too light for small
+       text on the grey band. */
+    --link: #0066cc;
+    /* A decorative hairline (dividers), so it doesn't need 3:1. */
+    --border: #d2d2d7;
+    /* Form field outlines: 3:1 on every surface, because the border is what
+       shows there's a field (WCAG 1.4.11). */
+    --input: #808085;
+    --ring: #0071e3; /* the focus outline */
+
+    /* For future charts and a sidebar: the same neutrals and blue. */
+    --chart-1: #0071e3;
+    --chart-2: #2997ff;
+    --chart-3: #636366;
+    --chart-4: #98989d;
+    --chart-5: #d2d2d7;
+    --sidebar: #f5f5f7;
+    --sidebar-foreground: #1d1d1f;
+    --sidebar-primary: #0071e3;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e8e8ed;
+    --sidebar-accent-foreground: #1d1d1f;
+    --sidebar-border: #d2d2d7;
+    --sidebar-ring: #0071e3;
+
+    /* shadcn's base radius, kept for components that read it directly. The
+       radius classes use the fixed steps in @theme inline above. */
+    --radius: 0.75rem;
+
+    /* Spacing: the space above and below each page section, and the side
+       padding of the content. Both grow with the screen. Used as
+       py-(--section-space) and px-(--gutter). */
+    --section-space: clamp(4rem, 2.5rem + 6vw, 8rem);
+    --gutter: clamp(1.25rem, 0.75rem + 2vw, 2.5rem);
+
+    /* Durations, used as duration-(--duration-base). The same values, in
+       seconds, are in src/lib/motion.ts for GSAP. */
+    --duration-fast: 150ms; /* press and hover feedback */
+    --duration-base: 250ms; /* menus, small transitions */
+    --duration-slow: 450ms; /* sheets and overlays */
+    --duration-reveal: 800ms; /* scroll reveals */
 }
 
+/* The grey band: only the variables that change. Tiles turn white. */
+.surface-grey {
+    --background: #f5f5f7;
+    --card: #ffffff;
+    --muted: #e8e8ed;
+}
+
+/* The black showcase band (and shadcn's dark: variant inside it). */
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    color-scheme: dark;
+    --background: #000000;
+    --foreground: #f5f5f7;
+    --card: #1d1d1f;
+    --card-foreground: #f5f5f7;
+    --popover: #1d1d1f;
+    --popover-foreground: #f5f5f7;
+    --secondary: #2c2c2e;
+    --secondary-foreground: #f5f5f7;
+    --muted: #1d1d1f;
+    --muted-foreground: #98989d;
+    --accent: #2c2c2e;
+    --accent-foreground: #f5f5f7;
+    --destructive: #ff453a;
+    /* White on this brighter red is only 3.4:1, so black, like --success-foreground. */
+    --destructive-foreground: #000000;
+    --success: #30d158;
+    --success-foreground: #000000;
+    --link: #2997ff;
+    --border: #424245;
+    --ring: #2997ff;
+    --chart-1: #2997ff;
+    --chart-2: #0071e3;
+    --chart-3: #98989d;
+    --chart-4: #636366;
+    --chart-5: #424245;
+    --sidebar: #1d1d1f;
+    --sidebar-foreground: #f5f5f7;
+    --sidebar-accent: #2c2c2e;
+    --sidebar-accent-foreground: #f5f5f7;
+    --sidebar-border: #424245;
+    --sidebar-ring: #2997ff;
+}
+
+/* Type scale. Utilities, not text-* theme keys: cn() would mistake an unknown
+   text-display for a colour and drop it next to text-muted-foreground.
+   - Sizes use clamp(min, rem + vw, max). The rem part keeps text growing
+     with the browser's zoom and font-size settings.
+   - Letter-spacing is in em, so it scales with the size.
+   - Hindi (:lang(hi)) gets no negative letter-spacing, which would break the
+     line that joins Devanagari letters, and more line height for the vowel
+     marks above and below. */
+@utility type-hero {
+    font-size: clamp(3rem, 2rem + 5vw, 5.5rem); /* 48-88px */
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    &:lang(hi) {
+        letter-spacing: 0;
+        line-height: 1.25;
+    }
+}
+
+@utility type-display {
+    font-size: clamp(2.5rem, 1.75rem + 3.5vw, 4rem); /* 40-64px */
+    font-weight: 600;
+    line-height: 1.07;
+    letter-spacing: -0.02em;
+    &:lang(hi) {
+        letter-spacing: 0;
+        line-height: 1.25;
+    }
+}
+
+@utility type-headline {
+    font-size: clamp(2rem, 1.5rem + 2vw, 3rem); /* 32-48px */
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    &:lang(hi) {
+        letter-spacing: 0;
+        line-height: 1.3;
+    }
+}
+
+@utility type-title {
+    font-size: clamp(1.5rem, 1.25rem + 1vw, 2rem); /* 24-32px */
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    &:lang(hi) {
+        letter-spacing: 0;
+        line-height: 1.35;
+    }
+}
+
+@utility type-lead {
+    font-size: clamp(1.1875rem, 1.05rem + 0.6vw, 1.5rem); /* 19-24px */
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    &:lang(hi) {
+        letter-spacing: 0;
+        line-height: 1.6;
+    }
+}
+
+@utility type-body {
+    font-size: 1.0625rem; /* 17px, Apple's reading size */
+    font-weight: 400;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    &:lang(hi) {
+        letter-spacing: 0;
+        line-height: 1.75;
+    }
+}
+
+@utility type-callout {
+    font-size: 0.9375rem; /* 15px */
+    font-weight: 400;
+    line-height: 1.45;
+    letter-spacing: -0.005em;
+    &:lang(hi) {
+        letter-spacing: 0;
+        line-height: 1.7;
+    }
+}
+
+@utility type-caption {
+    font-size: 0.8125rem; /* 13px: the smallest text on the site */
+    font-weight: 400;
+    line-height: 1.4;
+    letter-spacing: 0;
+    &:lang(hi) {
+        line-height: 1.6;
+    }
+}
+
+/* A see-through bar (the header, later): the page shows through, blurred.
+   Solid where the browser can't blur, or when the visitor asks for less
+   transparency. Put only foreground text on it. */
+@utility frosted {
+    background-color: color-mix(in srgb, var(--background) 72%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    @supports not (backdrop-filter: blur(1px)) {
+        background-color: var(--background);
+    }
+    @media (prefers-reduced-transparency: reduce) {
+        background-color: var(--background);
+        backdrop-filter: none;
+    }
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
     }
+  html {
+    @apply font-sans;
+    }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground type-body;
+    }
+  /* Hindi text inside an English page (a lang="hi" element without a type-*
+     class) would otherwise inherit the body's negative letter-spacing. */
+  :lang(hi) {
+    letter-spacing: 0;
     }
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
     }
-  html {
-    @apply font-sans;
+  /* Visitors who ask their device for less motion get no CSS motion: every
+     animation and transition jumps to its end. 0.01ms, not "none": the
+     animation still runs for an instant, so its end state applies (something
+     that fades in from opacity 0 ends up visible) and animationend and
+     transitionend still fire for code that waits for them. !important inside
+     @layer base beats any class, even one with !important. */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
     }
+  }
+}
+
+/* Keyboard focus: a solid 2px outline in --ring, 2px away from the control.
+   Outside any @layer, so it wins over the outline-none in shadcn's classes
+   without !important. It replaces shadcn's half-transparent focus ring
+   (about 2:1 on white; a focus indicator needs 3:1). */
+:is(
+    a[href],
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [role="button"],
+    [role="link"],
+    [role="tab"],
+    [role="checkbox"],
+    [role="radio"],
+    [role="switch"],
+    [role="slider"],
+    [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
+    [role="option"],
+    [role="combobox"],
+    [role="treeitem"],
+    [role="gridcell"],
+    [role="spinbutton"],
+    [tabindex]:not([tabindex="-1"])
+):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    --tw-ring-shadow: 0 0 #0000;
 }
