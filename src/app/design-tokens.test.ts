@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 
 import { describe, expect, test } from "vitest";
 
@@ -72,16 +72,55 @@ const linePairs: [string, string][] = [
 // use them: bg-destructive/90 is the destructive colour at 90% opacity, so the
 // surface behind it shows through. [text, fill, opacity], checked on the page
 // background and on a card. Fills that only appear inside .dark (dark:...) are
-// checked in every tone, which is stricter than needed.
+// checked in every tone, which is stricter than needed. The "see-through
+// colours" test below fails if a component uses a fill missing from this list.
 const tintPairs: [string, string, number][] = [
   ["destructive-foreground", "destructive", 0.9], // destructive button and badge link, on hover
   ["secondary-foreground", "secondary", 0.8], // secondary badge link, on hover
   ["foreground", "input", 0.3], // outline button inside .dark
-  ["foreground", "input", 0.5], // outline button inside .dark, on hover
-  ["foreground", "muted", 0.5], // ghost button inside .dark, on hover
+  ["foreground", "input", 0.5], // outline button inside .dark, on hover (also a disabled field, exempt)
+  ["foreground", "muted", 0.5], // ghost button inside .dark on hover, card footer, choice card on hover
   ["muted-foreground", "muted", 0.5], // ghost badge inside .dark, on hover
-  ["foreground", "primary", 0.1], // a checked choice card (field.tsx) inside .dark
+  ["foreground", "primary", 0.05], // a checked choice card (field.tsx)
+  ["foreground", "primary", 0.1], // a checked choice card inside .dark
 ];
+
+// See-through borders, rings and outlines in src/components/ui that carry
+// meaning on their own, so they need 3:1 against the surface. [line, opacity].
+// None today: the solid --input and --ring tokens do that job.
+const lineTints: [string, number][] = [];
+
+// See-through colours in src/components/ui that are only decoration, so they
+// need no contrast minimum. Each one says why.
+const decorativeTints: Record<string, string> = {
+  "ring-ring/50": "shadcn's focus ring; the solid 2px outline in globals.css replaces it",
+  "ring-destructive/20": "a glow around an invalid control; its full red border marks the problem",
+  "ring-destructive/40": "the same glow inside .dark",
+  "border-destructive/40": "a destructive button's border while focused; the focus outline marks focus",
+  "border-primary/30": "a checked choice card's border; its checkbox or radio shows the state",
+  "border-primary/20": "the same border inside .dark",
+  "bg-black/10": "the sheet's dim overlay; no text sits on it",
+};
+
+// Every see-through colour class in src/components/ui (with any prefix, such
+// as hover: or dark:), as "kind-token/percent": "bg-destructive/90".
+const uiFolder = new URL("../components/ui/", import.meta.url);
+const uiTints = [
+  ...new Set(
+    readdirSync(uiFolder)
+      .filter((file) => file.endsWith(".tsx") && !file.includes(".test."))
+      .flatMap((file) => [
+        ...readFileSync(new URL(file, uiFolder), "utf8").matchAll(/\b(?:bg|text|border|ring|outline)-[a-z][a-z0-9-]*\/\d+\b/g),
+      ])
+      .map(([match]) => match),
+  ),
+];
+
+/** "bg-destructive/90" -> { kind: "bg", token: "destructive", opacity: 0.9 } */
+function parseTint(tint: string) {
+  const [, kind, token, percent] = /^([a-z]+)-(.+)\/(\d+)$/.exec(tint) ?? [];
+  return { kind, token, opacity: Number(percent) / 100 };
+}
 
 // Every variable shadcn components read, plus our own colour tokens.
 const requiredTokens = [
@@ -97,6 +136,30 @@ const requiredTokens = [
 const checkedTokens = [
   ...new Set([...textPairs, ...linePairs, ...tintPairs.map(([text, fill]) => [text, fill])].flat()),
 ];
+
+describe("see-through colours in src/components/ui", () => {
+  test("every one is contrast-checked or listed as decoration", () => {
+    expect(uiTints.length).toBeGreaterThan(10); // the scan really reads the files
+    const unchecked = uiTints.filter((tint) => {
+      if (tint in decorativeTints) return false;
+      const { kind, token, opacity } = parseTint(tint);
+      if (kind === "bg") return !tintPairs.some(([, fill, o]) => fill === token && o === opacity);
+      if (kind === "text") return true; // see-through text: add a check before using it
+      return !lineTints.some(([line, o]) => line === token && o === opacity);
+    });
+    // Add text-on-fill pairs to tintPairs (4.5:1), meaningful lines to
+    // lineTints (3:1), or pure decoration to decorativeTints with a reason.
+    expect(unchecked).toEqual([]);
+  });
+
+  test("the lists hold no leftovers that no component uses any more", () => {
+    const used = new Set(uiTints.map((tint) => { const { kind, token, opacity } = parseTint(tint); return `${kind}-${token}/${opacity}`; }));
+    const staleDecorative = Object.keys(decorativeTints).filter((tint) => !uiTints.includes(tint));
+    const staleFills = tintPairs.filter(([, fill, opacity]) => !used.has(`bg-${fill}/${opacity}`));
+    expect(staleDecorative).toEqual([]);
+    expect(staleFills).toEqual([]);
+  });
+});
 
 describe("colour tokens in globals.css", () => {
   test("the grey band and the black showcase each change the page colour", () => {
@@ -128,6 +191,15 @@ describe("colour tokens in globals.css", () => {
     test.each(linePairs)("--%s on --%s reaches 3:1", (line, surface) => {
       const ratio = contrastRatio(tokens[line], tokens[surface]);
       expect(ratio, `${tokens[line]} on ${tokens[surface]} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+    });
+
+    test("see-through lines (lineTints) reach 3:1", () => {
+      for (const [line, opacity] of lineTints) {
+        for (const surface of ["background", "card"]) {
+          const ratio = contrastRatio(blend(tokens[line], opacity, tokens[surface]), tokens[surface]);
+          expect(ratio, `--${line} at ${opacity} over --${surface} is ${ratio.toFixed(2)}:1`).toBeGreaterThanOrEqual(3);
+        }
+      }
     });
 
     test.each(tintPairs)("--%s on --%s at %s opacity reaches 4.5:1", (text, fill, opacity) => {
