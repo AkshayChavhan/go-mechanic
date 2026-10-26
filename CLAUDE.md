@@ -80,7 +80,7 @@ npx shadcn@latest add <component>   # add a shadcn/ui component
   - Page slugs never contain a dot: the proxy treats dotted paths as files and skips them.
   - Component tests render with `renderWithIntl` from `@/i18n/test-utils`.
 - **Secrets** come from environment variables, read on the server only. Never prefix a secret with `NEXT_PUBLIC_`: those values are built into the JavaScript every visitor downloads. Add every variable to `.env.example` with a fake value.
-- **npm install scripts:** npm 11 *skips* packages' install scripts until you approve them (`npm install-scripts approve <pkg>`) and prints an `install-scripts` warning. Don't approve one unless something is actually broken without it. `unrs-resolver` and `fsevents` are left unapproved; `check` and `test:e2e` pass without them.
+- **npm install scripts:** npm 11 *skips* packages' install scripts until you approve them (`npm install-scripts approve <pkg>`) and prints an `install-scripts` warning. Don't approve one unless something is actually broken without it. `unrs-resolver`, `fsevents`, and next-intl's `@swc/core` and `@parcel/watcher` are left unapproved; `check` and `test:e2e` pass without them.
 
 ## Task workflow: the Compound Engineering loop (always follow)
 
