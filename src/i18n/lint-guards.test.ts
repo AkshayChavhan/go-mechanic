@@ -25,6 +25,10 @@ async function errorRules(code: string, filePath = PAGE): Promise<string[]> {
 }
 
 /** Wraps JSX in a small component so each snippet is a valid module. */
+// Made-up components for snippets that use our own components' props
+// (without an import, lint reports react/jsx-no-undef and an "allows" case fails).
+const withDemoComponents = 'import { useTranslations } from "next-intl";\nimport { Badge, Chart, Menu } from "./demo";';
+
 function component(jsx: string, imports = 'import { useTranslations } from "next-intl";') {
   return `${imports}
 export function Example({ isOpen }: { isOpen: boolean }) {
@@ -46,6 +50,10 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
     ["text in a condition inside a condition", component('<p>{isOpen ? t("title") : isOpen === false ? "Closed today" : "Closed"}</p>'), "no-restricted-syntax"],
     ["an aria-label chosen by a condition", component('<button aria-label={isOpen ? "Close menu" : "Open menu"} />'), "no-restricted-syntax"],
     ["a typed aria-roledescription", component('<section aria-roledescription="carousel" />'), "no-restricted-syntax"],
+    // Our components' label props end up as an aria-label or on screen.
+    ["a typed label prop ending in Label", component('<Menu closeLabel="Close" />', withDemoComponents), "no-restricted-syntax"],
+    ["a typed label prop in braces", component('<Menu openLabel={"Open the menu"} />', withDemoComponents), "no-restricted-syntax"],
+    ["a label prop chosen by a condition", component('<Chart label={isOpen ? "A" : "B"} />', withDemoComponents), "no-restricted-syntax"],
   ])("rejects %s", async (_name, code, rule) => {
     expect(await errorRules(code)).toContain(rule);
   });
@@ -65,6 +73,16 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
     ["numbers inside a condition", component("<p>{isOpen ? 1 : 0}</p>")],
     ["a key chosen by a condition inside t()", component('<p>{t(isOpen ? "title" : "tagline")}</p>')],
     ["non-text aria attributes", component('<button aria-hidden="true" aria-expanded={isOpen} aria-current="page" />')],
+    ["a label prop from t()", component('<Menu closeLabel={t("title")} label={t("tagline")} />', withDemoComponents)],
+    // Settings and ids, not text: none of these may trip the label-prop rule.
+    [
+      "className, aria-labelledby, htmlFor and variant",
+      component(
+        '<label className="type-caption" htmlFor="phone"><Badge variant="secondary" aria-labelledby="x" /></label>',
+        withDemoComponents,
+      ),
+    ],
+    ["a label prop that isn't text", component("<Chart showLabel={true} maxLabel={3} />", withDemoComponents)],
   ])("allows %s", async (_name, code) => {
     expect(await errorRules(code)).toEqual([]);
   });

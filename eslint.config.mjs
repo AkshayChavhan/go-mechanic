@@ -5,10 +5,13 @@ import nextTs from "eslint-config-next/typescript";
 // Selector pieces for the "no text in JSX" rule below.
 // Attributes whose text people read, or hear from a screen reader. Not every
 // aria-* attribute: aria-hidden="true" or aria-current="page" aren't text.
+// Our own components' props count too when they're named label or end in
+// "Label" (closeLabel, openLabel): they end up as an aria-label or on screen.
+// Case-sensitive on purpose: aria-labelledby holds an element's id, not text.
 const readAttributes =
-  "/^(alt|title|placeholder|aria-label|aria-description|aria-valuetext|aria-roledescription|aria-placeholder)$/";
+  "/^(alt|title|placeholder|aria-label|aria-description|aria-valuetext|aria-roledescription|aria-placeholder|label|[a-z][A-Za-z0-9]*Label)$/";
 const readAttributeMessage =
-  "Text people read or hear (alt, title, placeholder, aria-label...) goes in messages/en.json.";
+  "Text people read or hear (alt, title, placeholder, aria-label, label, closeLabel...) goes in messages/en.json.";
 const condition = ":matches(ConditionalExpression, LogicalExpression)";
 // A non-blank string or a template string
 const text = ":matches(Literal[value=/\\S/], TemplateLiteral)";
