@@ -178,9 +178,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] next-intl with `src/app/[locale]/` and `localePrefix: 'as-needed'`
 - [x] `messages/en.json`; ₹, date and time formatters (`en-IN`, `Asia/Kolkata`)
 - [x] Check it works with Cache Components
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Write the learning doc
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [lint guards lesson](../solutions/conventions/lint-guards-test-real-jsx-shapes.md)
 - [ ] Merge into `main`
 
 ### 11_design_system

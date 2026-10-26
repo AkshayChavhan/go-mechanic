@@ -35,7 +35,7 @@ Next.js's own notes for coding agents (kept up to date by `next dev`): @AGENTS.m
 | `src/app/global-not-found.tsx` | The 404 page for unknown URLs (has its own `<html>`; uses `next/link` on purpose) |
 | `src/app/globals.css`, `fonts.ts`, `icon.svg` | Global styles, the shared font, the site icon |
 | `src/proxy.ts` | Runs before each request: next-intl picks the language and redirects `/en/...` to `/...` |
-| `src/i18n/` | Languages: `config.ts` (locales, IST time zone), `routing.ts`, `request.ts`, `navigation.ts` (links and redirects), `format.ts` (₹, dates), `localized-text.ts`, `test-utils.tsx` (`renderWithIntl`) |
+| `src/i18n/` | Languages: `config.ts` (locales, IST time zone), `routing.ts`, `request.ts`, `navigation.ts` (links and redirects), `global.ts` (typed message keys), `format.ts` (₹, dates), `localized-text.ts`, `test-utils.tsx` (`renderWithIntl`), `lint-guards.test.ts` |
 | `messages/en.json` | Every piece of UI text, by namespace (Hindi goes in `messages/hi.json` later) |
 | `src/lib/` | Small shared helpers (`utils.ts` has `cn()`) |
 | `e2e/` | Playwright browser tests (`*.spec.ts`) |
@@ -72,12 +72,12 @@ npx shadcn@latest add <component>   # add a shadcn/ui component
 - **Tests sit next to the code:** `*.test.ts` runs in Node (logic), `*.test.tsx` runs in jsdom (React components). Browser tests go in `e2e/`. Import `test`/`expect` from `vitest` (no globals).
 - **Tailwind only scans `src/`, minus test files** (`source("../")` and `@source not` in `src/app/globals.css`). Put anything that uses Tailwind classes inside `src/`, and not in a `*.test.*` file.
 - **Languages (next-intl).** The site is English-only for now but must stay Hindi-ready:
-  - UI text goes in `messages/en.json` and is read with `useTranslations` (pages stay non-async). Async server code (`generateMetadata`, layouts) uses `getTranslations`. Lint rejects text typed into JSX in `src/app/` and `src/components/` (except `ui/`): between tags, inside conditions (`{ok ? "Yes" : "No"}`) and in `alt`, `title`, `placeholder` and `aria-*`. `src/i18n/lint-guards.test.ts` keeps these rules working. Lint doesn't check page metadata, so put its text in messages too.
+  - UI text goes in `messages/en.json` and is read with `useTranslations` (pages stay non-async). Async server code (`generateMetadata`, layouts) uses `getTranslations`. Lint rejects text typed into JSX in `src/app/` and `src/components/` (except `ui/`): between tags, inside conditions (`{ok ? "Yes" : "No"}`, one level nested too) and in `alt`, `title`, `placeholder`, `aria-label`, `aria-description`, `aria-valuetext`, `aria-roledescription` and `aria-placeholder`. `src/i18n/lint-guards.test.ts` keeps these rules working; add a case there for any new guard (`document/solutions/conventions/lint-guards-test-real-jsx-shapes.md`). Lint doesn't check page metadata, so put its text in messages too.
   - `Link`, `redirect`, `useRouter` and `usePathname` come from `@/i18n/navigation`, not `next/link` or `next/navigation` (lint enforces it), so the `/hi` prefix is kept.
   - Money is stored and passed as integer paise and shown with `formatRupees` (`₹1,23,456`). Dates and times are shown with `formatDate` and `formatTime`, always in India time (`Asia/Kolkata`). Format first, then pass the string to `t()`: don't use ICU `{n, number}` or `{d, date}` in messages, because next-intl formats those with plain `en` (`₹123,456`, US date order).
   - Text stored in the database is a `LocalizedText` (`{ en, hi? }`), shown with `localize(text, locale)`.
   - Route Handlers and Server Actions pass the locale explicitly (`getTranslations({ locale, namespace })`): there's no `[locale]` page around them.
-  - Page slugs never contain a dot: the proxy treats dotted paths as files and skips them.
+  - Page slugs never contain a dot or start with `api`: the proxy skips those paths (dotted ones are treated as files), so they never reach a page.
   - Component tests render with `renderWithIntl` from `@/i18n/test-utils`.
 - **Secrets** come from environment variables, read on the server only. Never prefix a secret with `NEXT_PUBLIC_`: those values are built into the JavaScript every visitor downloads. Add every variable to `.env.example` with a fake value.
 - **npm install scripts:** npm 11 *skips* packages' install scripts until you approve them (`npm install-scripts approve <pkg>`) and prints an `install-scripts` warning. Don't approve one unless something is actually broken without it. `unrs-resolver`, `fsevents`, and next-intl's `@swc/core` and `@parcel/watcher` are left unapproved; `check` and `test:e2e` pass without them.
