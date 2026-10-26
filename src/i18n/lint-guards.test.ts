@@ -87,9 +87,9 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
     expect(await errorRules(code)).toEqual([]);
   });
 
-  test("allows next/link in global-not-found.tsx (outside next-intl's routing)", async () => {
+  test("rejects next/link in global-not-found.tsx too (it has next-intl's provider since task 12)", async () => {
     const code = 'import Link from "next/link";\nexport const x = Link;\n';
-    expect(await errorRules(code, "src/app/global-not-found.tsx")).toEqual([]);
+    expect(await errorRules(code, "src/app/global-not-found.tsx")).toContain("no-restricted-imports");
   });
 
   test("leaves shadcn's components/ui alone", async () => {

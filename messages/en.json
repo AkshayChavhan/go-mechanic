@@ -8,6 +8,7 @@
     "tagline": "Car and two-wheeler service. Our new website is on its way."
   },
   "NotFound": {
+    "metaTitle": "Page not found | {brand}",
     "title": "Page not found",
     "description": "This page doesn't exist or has moved.",
     "backHome": "Go to the home page"

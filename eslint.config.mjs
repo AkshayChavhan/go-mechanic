@@ -36,11 +36,10 @@ const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   // Links and redirects must keep the language in the URL. A plain next/link
-  // would quietly drop "/hi" once Hindi exists. global-not-found.tsx is outside
-  // next-intl's routing, so it uses next/link on purpose.
+  // would quietly drop "/hi" once Hindi exists. No exceptions: even
+  // global-not-found.tsx, outside [locale], has next-intl's provider (task 12).
   {
     files: ["src/**/*.{ts,tsx}"],
-    ignores: ["src/app/global-not-found.tsx"],
     rules: {
       "no-restricted-imports": [
         "error",

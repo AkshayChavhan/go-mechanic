@@ -34,12 +34,18 @@ import { MotionDemo } from "./_components/motion-demo";
 // 404 in production builds. Demo text is typed here on purpose (eslint.config.mjs
 // lets dev pages do that); real product text still comes from messages.
 
-export const metadata: Metadata = {
-  title: "Design system",
-  // devOnly() already answers with a 404 and noindex in production. This
-  // keeps the page out of search results even if that gate ever changes.
-  robots: { index: false, follow: false },
-};
+// devOnly() comes first here too. A 404 from the page alone would keep this
+// page's own title on the production 404; a 404 thrown while the metadata is
+// worked out gives it the 404 page's title instead ([locale]/not-found.tsx).
+export function generateMetadata(): Metadata {
+  devOnly();
+  return {
+    title: "Design system",
+    // devOnly() already answers with a 404 and noindex in production. This
+    // keeps the page out of search results even if that gate ever changes.
+    robots: { index: false, follow: false },
+  };
+}
 
 // The pairs design-tokens.test.ts checks, in plain words.
 const textPairs = [

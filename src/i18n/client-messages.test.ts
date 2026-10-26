@@ -146,7 +146,7 @@ describe("client components only ask for namespaces the browser gets", () => {
 });
 
 describe("the providers send only the client messages", () => {
-  test.each(["src/app/[locale]/layout.tsx"])("%s passes messages to NextIntlClientProvider", (file) => {
+  test.each(["src/app/[locale]/layout.tsx", "src/app/global-not-found.tsx"])("%s passes messages to NextIntlClientProvider", (file) => {
     const code = readFileSync(path.join(repoRoot, file), "utf8");
     // Without a messages prop, next-intl sends every message to the browser.
     expect(code).toMatch(/<NextIntlClientProvider\b[^>]*\bmessages=\{/);

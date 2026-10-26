@@ -52,6 +52,22 @@ function devPages(): string[] {
     .filter((file) => /^[^/]+\/dev\/(?:.+\/)?page\.(?:tsx|ts|jsx|js)$/.test(file));
 }
 
+const guardedPage = "export default function Page() {\n  devOnly();\n  return null;\n}\n";
+const guardedMetadata = "export function generateMetadata(): Metadata {\n  devOnly();\n  return {};\n}\n";
+
+/** What a dev page gets wrong about calling devOnly() first. */
+function devOnlyProblems(code: string): string[] {
+  const problems: string[] = [];
+  // "{" then devOnly(); as the first statement of the function.
+  const callsFirst = (head: string) => new RegExp(`${head}\\s*\\([^)]*\\)[^{]*\\{\\s*devOnly\\(\\);`).test(code);
+  if (!callsFirst("export\\s+default\\s+(?:async\\s+)?function\\s*\\w*")) problems.push("the page doesn't call devOnly() first");
+  if (/export\s+const\s+metadata\b/.test(code)) problems.push("static metadata export: use generateMetadata");
+  if (/export\s+(?:async\s+)?function\s+generateMetadata\b/.test(code) && !callsFirst("export\\s+(?:async\\s+)?function\\s+generateMetadata")) {
+    problems.push("generateMetadata doesn't call devOnly() first");
+  }
+  return problems;
+}
+
 describe("development-only pages", () => {
   test("every page under src/app/*/dev/ calls devOnly()", () => {
     const pages = devPages();
@@ -64,4 +80,28 @@ describe("development-only pages", () => {
     });
     expect(unguarded, "call devOnly() first in these pages").toEqual([]);
   });
+
+  // The page's 404 alone isn't enough. A notFound() from the page body keeps
+  // the page's own title ("Design system") on the production 404. Only a
+  // notFound() thrown while Next.js works out the metadata swaps in the 404's
+  // title, so dev pages put their metadata in a generateMetadata that calls
+  // devOnly() first, never in a static `metadata` export.
+  test("every page under src/app/*/dev/ calls devOnly() first, in the page and in generateMetadata", () => {
+    const problems = devPages().flatMap((file) => {
+      const code = readFileSync(path.join(appFolder, file), "utf8").replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, "");
+      return devOnlyProblems(code).map((problem) => `${file}: ${problem}`);
+    });
+    expect(problems).toEqual([]);
+  });
+
+  test.each([
+    ["a guarded page with guarded metadata", guardedPage + guardedMetadata, []],
+    ["a page that calls devOnly() after other code", "export default function Page() {\n  const x = 1;\n  devOnly();\n}", ["the page doesn't call devOnly() first"]],
+    ["a static metadata export", guardedPage + 'export const metadata = { title: "Demo" };', ["static metadata export: use generateMetadata"]],
+    ["a generateMetadata without devOnly()", guardedPage + "export function generateMetadata() {\n  return {};\n}", ["generateMetadata doesn't call devOnly() first"]],
+    ["an async page and generateMetadata", "export default async function Page() {\n  devOnly();\n}\nexport async function generateMetadata(): Promise<Metadata> {\n  devOnly();\n  return {};\n}", []],
+  ])("the check reads %s", (_case, code, expected) => {
+    expect(devOnlyProblems(code)).toEqual(expected);
+  });
 });
+
