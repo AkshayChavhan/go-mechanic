@@ -8,8 +8,20 @@ import { routing } from "./i18n/routing";
 export default createMiddleware(routing);
 
 export const config = {
-  // Skip API routes, Next.js internals and any path with a dot (files such as
-  // /icon.svg, later /robots.txt and /sitemap.xml). So page slugs must never
-  // contain a dot.
-  matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
+  // Which paths the proxy runs on: everything except
+  // - api, _next and _vercel: API routes and Next.js's own files;
+  // - real files: paths ending in one of the extensions below (images,
+  //   icons, txt, xml, webmanifest, fonts, js, css, map, pdf). They're served
+  //   from public/ or src/app/ (icon.svg; later robots.txt, sitemap.xml) and
+  //   must not be rewritten to /en/..., where they don't exist.
+  // Any other path with a dot, such as /index.html or /contact.php (old links
+  // to a previous website), runs through the proxy like a page, so it gets
+  // the branded 404 instead of Next.js's bare one.
+  //
+  // Written out in full: Next.js reads this value as text when it builds,
+  // so it can't come from a variable. A new kind of file (say .json in
+  // public/) needs its extension here: src/proxy.test.ts fails until it is.
+  matcher: [
+    "/((?!api|_next|_vercel|.*\\.(?:svg|png|jpe?g|gif|webp|avif|ico|txt|xml|webmanifest|woff2?|ttf|otf|eot|js|css|map|pdf)$).*)",
+  ],
 };

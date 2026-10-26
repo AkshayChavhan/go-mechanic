@@ -51,15 +51,18 @@ test.describe("pages that don't exist", () => {
     expect(response.status()).toBe(404);
   });
 
-  test("a path with a dot is a 404, not a server error", async ({ page }) => {
-    // Dotted paths skip the proxy (it treats them as files) and reach
-    // [locale] with "foo.bar" as the locale; request.ts must answer 404.
-    // The body is Next.js's bare error page, not our 404 design: notFound()
-    // runs inside the root layout itself. Accepted in task 10 (still 404 +
-    // noindex); task 12 weighs narrowing the proxy matcher.
-    const response = await page.request.get("/foo.bar", { maxRedirects: 0 });
-    expect(response.status()).toBe(404);
-  });
+  // Since task 12 the proxy skips only known file types (src/proxy.ts), so
+  // other dotted paths, such as old links to a previous website, run through
+  // it like pages and get the branded 404 with the full shell.
+  for (const path of ["/foo.bar", "/index.html"]) {
+    test(`a path with a dot (${path}) gets the branded 404`, async ({ page }) => {
+      const response = await page.goto(path);
+      expect(response?.status()).toBe(404);
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(messages.NotFound.title);
+      await expect(page.getByRole("banner")).toBeVisible();
+      await expect(page.getByRole("contentinfo")).toBeVisible();
+    });
+  }
 });
 
 test.describe("static files", () => {
