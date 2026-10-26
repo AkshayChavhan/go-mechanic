@@ -5,6 +5,9 @@
 //   light red tint stayed under 4.5:1.
 // - default links darken on hover with --primary-hover; link uses the --link blue.
 // It stays a pill: rounded-4xl is pinned to 9999px in globals.css.
+// - Text size: still shadcn's stock text-xs until a task restyles it.
+//   Change its size through a variant, not a type-* class (a passed type-* class
+//   loses to these stock sizes in the CSS).
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"

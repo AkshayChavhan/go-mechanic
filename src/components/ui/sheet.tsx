@@ -4,6 +4,9 @@
 //   the Common namespace. It's required whenever the close button shows.
 // - The close button is the icon-sm button size: 36px with a mouse, 44px on
 //   touch screens (see button.tsx).
+// - Text sizes: still shadcn's stock text-sm and text-base until a task restyles it.
+//   Change its size through a variant, not a type-* class (a passed type-* class
+//   loses to these stock sizes in the CSS).
 "use client"
 
 import * as React from "react"

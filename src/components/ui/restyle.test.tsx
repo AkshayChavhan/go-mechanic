@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 import { Badge, badgeVariants } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
+import { FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
@@ -63,8 +64,9 @@ describe("Button", () => {
     } else {
       expect(heightPx(classes, "pointer-coarse:")).toBeGreaterThanOrEqual(TOUCH);
     }
-    // No size-specific radius may undo the pill.
-    expect(classes.filter((name) => name.startsWith("rounded-"))).toEqual(["rounded-full"]);
+    // No size-specific radius may undo the pill, not even behind a prefix
+    // such as in-data-[slot=button-group]:rounded-lg.
+    expect(classes.filter((name) => /(^|:)rounded-/.test(name))).toEqual(["rounded-full"]);
   });
 
   test("the main button darkens on hover with --primary-hover", () => {
@@ -84,6 +86,12 @@ describe("Button", () => {
     expect(classes).toContain("bg-destructive");
     expect(classes).toContain("text-destructive-foreground");
   });
+
+  test("an invalid button keeps the full red border inside .dark sections", () => {
+    // shadcn's 50% red border is about 2.2:1 on black; a border that marks a
+    // problem needs 3:1.
+    expect(split(buttonVariants())).not.toContain("dark:aria-invalid:border-destructive/50");
+  });
 });
 
 describe("Input", () => {
@@ -95,6 +103,19 @@ describe("Input", () => {
     // Nothing shrinks the text below 16px, on any screen size.
     expect(classes.filter((name) => /^(?:(?:sm|md|lg|xl|2xl):)?text-(?:xs|sm)$/.test(name))).toEqual([]);
     expect(classes).toEqual(expect.arrayContaining(["rounded-lg", "border-input"]));
+  });
+
+  test("an invalid field keeps the full red border inside .dark sections", () => {
+    render(<Input aria-label="Phone number" />);
+    // shadcn's 50% red border is about 2.2:1 on black; it needs 3:1.
+    expect(classesOf(screen.getByRole("textbox"))).not.toContain("dark:aria-invalid:border-destructive/50");
+  });
+
+  test("has no grey fill inside .dark sections, so placeholder text stays readable", () => {
+    render(<Input aria-label="Phone number" />);
+    const classes = classesOf(screen.getByRole("textbox"));
+    expect(classes).not.toContain("dark:bg-input/30");
+    expect(classes).not.toContain("dark:disabled:bg-input/80");
   });
 });
 
@@ -115,6 +136,20 @@ describe("Badge", () => {
     const classes = split(badgeVariants({ variant: "link" }));
     expect(classes).toContain("text-link");
     expect(classes).not.toContain("text-primary");
+  });
+
+  test('variant="destructive" is a solid fill, not red text on a light red tint', () => {
+    const classes = split(badgeVariants({ variant: "destructive" }));
+    expect(classes).toEqual(
+      expect.arrayContaining(["bg-destructive", "text-destructive-foreground", "[a]:hover:bg-destructive/90"]),
+    );
+    expect(classes).not.toContain("bg-destructive/10");
+  });
+
+  test("a default badge used as a link darkens on hover with --primary-hover", () => {
+    const classes = split(badgeVariants());
+    expect(classes).toContain("[a]:hover:bg-primary-hover");
+    expect(classes).not.toContain("[a]:hover:bg-primary/80");
   });
 });
 
@@ -141,10 +176,38 @@ describe("Card", () => {
     expect(classesOf(description)).toContain("type-callout");
     // Tailwind puts these after type-* in the CSS, so on the same element they
     // would win over it (and over a type-* class a page passes in).
-    const overrides = /^(?:text-(?:xs|sm|base|lg|[2-9]?xl)|leading-.+|font-(?:light|normal|medium|semibold|bold))$/;
+    const overrides = /^(?:text-(?:xs|sm|base|lg|[2-9]?xl)|leading-.+|tracking-.+)$/;
     for (const element of [card, title, description]) {
       expect(classesOf(element).filter((name) => overrides.test(name))).toEqual([]);
     }
+  });
+});
+
+describe("Card, small", () => {
+  test('a size="sm" card has a 17px semibold title from the type scale', () => {
+    render(
+      <Card size="sm">
+        <CardTitle>Wheel alignment</CardTitle>
+      </Card>,
+    );
+    const classes = classesOf(screen.getByText("Wheel alignment"));
+    expect(classes).toEqual(
+      expect.arrayContaining(["group-data-[size=sm]/card:type-body", "group-data-[size=sm]/card:font-semibold"]),
+    );
+    expect(classes.filter((name) => name.startsWith("group-data-[size=sm]/card:text-"))).toEqual([]);
+  });
+});
+
+describe("Field", () => {
+  test("a link in a description turns --link blue on hover, not --primary", () => {
+    render(
+      <FieldDescription>
+        We send booking updates by SMS. <a href="#settings">Change it</a>
+      </FieldDescription>,
+    );
+    const classes = classesOf(screen.getByText(/We send booking updates/));
+    expect(classes).toContain("[&>a:hover]:text-link");
+    expect(classes).not.toContain("[&>a:hover]:text-primary");
   });
 });
 
@@ -158,7 +221,9 @@ describe("Sheet", () => {
         </SheetContent>
       </Sheet>,
     );
-    expect(screen.getByRole("button", { name: "Close menu" })).toBeTruthy();
+    const close = screen.getByRole("button", { name: "Close menu" });
     expect(screen.queryByText("Close")).toBeNull();
+    // icon-sm: 36px with a mouse, 44px on touch screens (see the Button tests).
+    expect(close.getAttribute("data-size")).toBe("icon-sm");
   });
 });

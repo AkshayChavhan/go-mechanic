@@ -1,3 +1,7 @@
+// Our changes to shadcn's radix-nova label: none to its classes.
+// - Text size: still shadcn's stock text-sm until a task restyles it.
+//   Change its size through a variant, not a type-* class (a passed type-* class
+//   loses to these stock sizes in the CSS).
 "use client"
 
 import * as React from "react"

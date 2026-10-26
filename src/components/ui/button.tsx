@@ -1,5 +1,6 @@
 // Our changes to shadcn's radix-nova button (restyle.test.tsx checks them):
-// - A pill on every size: rounded-full, and no size-specific radius.
+// - A pill on every size: rounded-full, and no size-specific radius, not even
+//   inside a button group (shadcn's in-data-[slot=button-group]:rounded-lg is gone).
 // - Touch targets: default and icon are 44px, lg and icon-lg 48px. xs (32px),
 //   sm (36px) and their icon sizes grow to 44px on touch screens (pointer-coarse:).
 // - Text from the type scale instead of text-sm: 17px (type-body) on default
@@ -8,13 +9,15 @@
 // - default darkens on hover with --primary-hover, so white text keeps 4.5:1.
 // - destructive is a solid fill with --destructive-foreground: red text on a
 //   light red tint stayed under 4.5:1. link uses the --link blue.
+// - An invalid button keeps the full --destructive border inside .dark sections
+//   (shadcn faded it to 50%, about 2.2:1 on black; a border needs 3:1).
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
 import { Slot } from "radix-ui"
 
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-full border border-transparent bg-clip-padding font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -32,14 +35,14 @@ const buttonVariants = cva(
       size: {
         default:
           "h-11 gap-2 px-5 type-body has-data-[icon=inline-end]:pr-4 has-data-[icon=inline-start]:pl-4 [&_svg:not([class*='size-'])]:size-5",
-        xs: "h-8 gap-1 px-3 type-caption pointer-coarse:h-11 in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 [&_svg:not([class*='size-'])]:size-3.5",
-        sm: "h-9 gap-1.5 px-4 type-callout pointer-coarse:h-11 in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
+        xs: "h-8 gap-1 px-3 type-caption pointer-coarse:h-11 has-data-[icon=inline-end]:pr-2.5 has-data-[icon=inline-start]:pl-2.5 [&_svg:not([class*='size-'])]:size-3.5",
+        sm: "h-9 gap-1.5 px-4 type-callout pointer-coarse:h-11 has-data-[icon=inline-end]:pr-3 has-data-[icon=inline-start]:pl-3",
         lg: "h-12 gap-2 px-6 type-body has-data-[icon=inline-end]:pr-5 has-data-[icon=inline-start]:pl-5 [&_svg:not([class*='size-'])]:size-5",
         icon: "size-11 [&_svg:not([class*='size-'])]:size-5",
         "icon-xs":
-          "size-8 pointer-coarse:size-11 in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3.5",
+          "size-8 pointer-coarse:size-11 [&_svg:not([class*='size-'])]:size-3.5",
         "icon-sm":
-          "size-9 pointer-coarse:size-11 in-data-[slot=button-group]:rounded-lg",
+          "size-9 pointer-coarse:size-11",
         "icon-lg": "size-12 [&_svg:not([class*='size-'])]:size-5",
       },
     },
