@@ -14,7 +14,7 @@ Decisions from the owner:
 
 The repo has its rules, skills, agents and Compound Engineering set up (tasks 01–06), but no app code. This plan replaces the old backlog (07–10). Every task keeps the repo workflow: one `NN_name` branch, the Compound Engineering loop (ce-plan → work → ce-code-review + `code-reviewer` → ce-compound lightweight), a learning doc in `document/learning/NN_name.md`, merge `--no-ff`, then a "mark done" commit.
 
-**Flag for the owner:** "GoMechanic" is already a well-known Indian car-service brand (gomechanic.in). That's a trademark risk and makes ranking for the name hard. Decide before the logo (task 11) and the domain (task 42).
+**Owner decision (task 11):** keep "GoMechanic" for now. It's already a well-known Indian car-service brand (gomechanic.in), a trademark risk and hard to rank for; the owner accepted that on condition that a rename stays small. The logo is a text wordmark plus a letter icon, so a rename means editing `messages/en.json` and redrawing one letter (`design-system/go-mechanic/MASTER.md`). The domain is still open (task 42).
 
 ## Who uses it
 
@@ -93,7 +93,7 @@ The repo has its rules, skills, agents and Compound Engineering set up (tasks 01
 
 ## Architecture
 
-**Design:** Apple-like, see "Design direction" in [features.md](../website/features.md); exact tokens in `design-system/go-mechanic/MASTER.md` (task 11).
+**Design:** Apple-like, see "Design direction" in [features.md](../website/features.md); exact tokens in [`design-system/go-mechanic/MASTER.md`](../../design-system/go-mechanic/MASTER.md) (task 11, approved 2026-10-26), shown live at `/dev/design` in development.
 
 **Stack:** Next.js 16.4 (App Router, Cache Components), TypeScript, Tailwind v4, shadcn/ui (Radix), GSAP, npm.
 

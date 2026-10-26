@@ -5,6 +5,7 @@ GoMechanic is the website and booking system for one garage in India that repair
 - What it does: [document/website/features.md](document/website/features.md)
 - How it's built, and all tasks: [the master plan](document/plans/2026-10-24-gomechanic-master-plan.md) and the [task tracker](document/task/task.md)
 - Languages: English now, Hindi later. All the text people read lives in [messages/en.json](messages/en.json), so Hindi only needs a `messages/hi.json`.
+- Design: colours, type, components and motion are in [design-system/go-mechanic/MASTER.md](design-system/go-mechanic/MASTER.md). Run `npm run dev` and open http://localhost:3000/dev/design to see all of it on one page.
 
 ## How we work
 
@@ -37,13 +38,14 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `.compound-engineering/` | Compound Engineering settings: `config.yaml` (ours) and `config.example.yaml` (every option explained). |
 | `document/plans/` | Plans: the project's master plan, plus one plan per task written by Compound Engineering's `ce-plan`. |
 | `document/solutions/` | Reusable lessons, written by `ce-compound`. Claude reads them before similar work. |
-| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/i18n/` the language setup and the ₹ and date helpers, `src/lib/` small helpers. |
+| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/components/` the shared components (`ui/` from shadcn/ui, `site/` our own), `src/i18n/` the language setup and the ₹ and date helpers, `src/lib/` small helpers. |
+| `design-system/` | The design system written out for people: tokens, rules and the brand. |
 | `messages/` | The website's text, one file per language (`en.json` for now). |
-| `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. |
+| `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. `e2e/dev/` checks the development-only `/dev/design` page. |
 | `package.json`, `package-lock.json` | The app's dependencies and commands. |
 | `.nvmrc` | The Node.js version the project uses (24). |
 | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `components.json` | Settings for Next.js, TypeScript, ESLint and shadcn/ui. |
-| `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts` | Test settings. |
+| `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright.dev.config.ts` | Test settings. |
 | `AGENTS.md` | Notes from Next.js for AI coding agents. |
 
 ## Run the website
@@ -60,6 +62,7 @@ Open http://localhost:3000. Other commands:
 | --- | --- |
 | `npm run check` | Lint, type check and unit tests in one go. Run it before you call any work done. |
 | `npm run test:e2e` | Builds the site and opens it in your Chrome to check it really works. Run it before merging. |
+| `npm run test:design` | Checks the `/dev/design` page in Chrome (sizes, contrast, focus, motion) and saves screenshots. Run it after any design change. |
 | `npm run build` / `npm start` | Build the production version / run it |
 | `npm run lint`, `npm run typecheck`, `npm run test` | The three parts of `check`, one at a time |
 

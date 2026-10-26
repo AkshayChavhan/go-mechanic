@@ -20,7 +20,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 08 | `08_seo_reviewer` | SEO reviewer agent + Stop hook that runs it after every page change | Done | [08_seo_reviewer.md](../learning/08_seo_reviewer.md) |
 | 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | Done | [09_app_setup.md](../learning/09_app_setup.md) |
 | 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | Done | [10_i18n_foundation.md](../learning/10_i18n_foundation.md) |
-| 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/design` preview | In progress |  |
+| 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/dev/design` preview | In progress |  |
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | To do |  |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | To do |  |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | To do |  |
@@ -187,11 +187,11 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `11_design_system`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-26-1312-feat-design-system-plan.md)
-- [ ] Design direction with frontend-design + ui-ux-pro-max (Apple-like)
-- [ ] Tokens in `globals.css`: colors, type scale, radius, shadows, motion
-- [ ] Fonts: Inter + system San Francisco, plus a Devanagari font with `next/font` for Hindi (SEO check in task 09: Geist has no Hindi letters)
-- [ ] Restyle shadcn controls (44 px touch targets, pill buttons)
-- [ ] `design-system/go-mechanic/MASTER.md` and a `/dev/design` preview page (development only)
+- [x] Design direction with frontend-design + ui-ux-pro-max (Apple-like)
+- [x] Tokens in `globals.css`: colors, type scale, radius, shadows, motion
+- [x] Fonts: Inter + system San Francisco, plus a Devanagari font with `next/font` for Hindi (SEO check in task 09: Geist has no Hindi letters)
+- [x] Restyle shadcn controls (44 px touch targets, pill buttons)
+- [x] `design-system/go-mechanic/MASTER.md` and a `/dev/design` preview page (development only). The owner approved the look on 2026-10-26, with no changes
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -202,10 +202,11 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `12_layout_shell`
 - [ ] Plan with `ce-plan`
 - [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
-- [ ] Frosted sticky header with navigation and mobile menu
+- [ ] Frosted sticky header with navigation and mobile menu: the header uses the `frosted` class; the mobile menu is `Sheet` with `closeLabel={t("close")}` (task 11)
 - [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and decide whether to narrow the `src/proxy.ts` matcher so dotted URLs like `/index.html` reach this page instead of a blank error page. Trade-off (`ce-code-review` in task 10): with a hand-made list of file extensions, any public file type missing from the list returns 404
 - [ ] Pass `NextIntlClientProvider` only the message namespaces client components use (SEO check in task 10: today every page ships all of `messages/en.json`)
-- [ ] Open-now badge and offer banner
+- [ ] Open-now badge and offer banner: open-now uses `Badge variant="success"` (task 11)
+- [ ] Add `src/app/[locale]/not-found.tsx`, sharing its content with `global-not-found.tsx`. Pages that call `notFound()` (`/dev/design` in production, later unknown service slugs) get a bare, unbranded page today (SEO check in task 11)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -216,7 +217,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `13_home_page`
 - [ ] Plan with `ce-plan`
 - [ ] Hero, trust stats, services bento grid, how it works, reviews preview, final call to action (labelled placeholder content until tasks 18 and 37; sample reviews marked as samples)
-- [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback
+- [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback: timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11)
 - [ ] Check at 375, 768, 1024 and 1440 px and with reduced motion
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
@@ -513,6 +514,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `42_local_seo`
 - [ ] Plan with `ce-plan`
 - [ ] Metadata, sitemap, robots, social image, AutoRepair structured data
+- [ ] An `apple-icon` PNG (180×180) from the same letter design as `src/app/icon.svg`, plus `theme-color` (task 11)
 - [ ] One source of hreflang for when Hindi ships: `alternates.languages` in metadata and the sitemap with `alternateLinks: false` in `src/i18n/routing.ts`, or next-intl's `Link` header alone (SEO check in task 10). A canonical on `/` also settles the `/en` 307 redirect
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
