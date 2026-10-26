@@ -1,11 +1,13 @@
 import { expect, test } from "@playwright/test";
 
+import messages from "../messages/en.json";
+
 // Smoke test: the most basic "is the site alive?" check in a real browser.
 
 test("home page loads with its heading", async ({ page }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("GoMechanic");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(messages.HomePage.title);
 });
 
 test("the page language is English", async ({ page }) => {
