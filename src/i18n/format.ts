@@ -1,8 +1,11 @@
-// Formatting for money, dates and times, the Indian way.
+// Formatting for money, dates, times and addresses, the Indian way.
 // Plain functions (no next-intl or Next.js imports), so they work in server
 // and client components, tests, and later in SMS, email and CSV code.
 
+import { minutesAfterMidnight, WEEKDAYS, type Weekday } from "@/domain/opening-hours";
+
 import { GARAGE_TIME_ZONE, intlLocales, type Locale } from "./config";
+import { localize, type LocalizedText } from "./localized-text";
 
 /**
  * Shows an amount of money stored as integer paise (100 paise = ₹1).
@@ -47,4 +50,41 @@ export function formatTime(date: Date, locale: Locale): string {
     timeStyle: "short",
     timeZone: GARAGE_TIME_ZONE,
   }).format(date);
+}
+
+// The next two format opening hours, which have no date and no time zone of
+// their own: "monday", "19:00". Each builds a stand-in date in UTC and
+// formats it in UTC, so the computer's own time zone can't shift the result.
+
+/** "monday" -> "Monday" (long) or "Mon" (short). Hindi gets its names from Intl too. */
+export function formatWeekday(weekday: Weekday, locale: Locale, width: "long" | "short" = "long"): string {
+  // 26 Oct 2026 is a Monday, so adding 0 to 6 days lands on each weekday.
+  const date = new Date(Date.UTC(2026, 9, 26 + WEEKDAYS.indexOf(weekday)));
+  return new Intl.DateTimeFormat(intlLocales[locale], { weekday: width, timeZone: "UTC" }).format(date);
+}
+
+/**
+ * A time of day stored as 24-hour "HH:MM", shown the Indian way:
+ * "10:00" -> "10:00 am", "19:00" -> "7:00 pm".
+ * Text it can't read is shown as stored instead of throwing: this runs while
+ * a page renders.
+ */
+export function formatTimeOfDay(time: string, locale: Locale): string {
+  const minutes = minutesAfterMidnight(time);
+  if (minutes === null) return time;
+  // Any date works: only the time is shown. Date.UTC turns 600 minutes into 10:00.
+  const date = new Date(Date.UTC(2026, 0, 1, 0, minutes));
+  return new Intl.DateTimeFormat(intlLocales[locale], { timeStyle: "short", timeZone: "UTC" }).format(date);
+}
+
+/**
+ * An address with its PIN code at the end, the way Indian addresses are
+ * written: "Mukai Chowk, Kiwale, Pune, Maharashtra 412101".
+ * The PIN code is stored apart from the text because search engines (task 42)
+ * want it as its own field.
+ */
+export function formatAddress(address: { text: LocalizedText; postalCode: string }, locale: Locale): string {
+  const postalCode = address.postalCode.trim();
+  const text = localize(address.text, locale);
+  return postalCode ? `${text} ${postalCode}` : text;
 }

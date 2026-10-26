@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "vitest";
 
-import { formatDate, formatRupees, formatTime } from "./format";
+import { formatAddress, formatDate, formatRupees, formatTime, formatTimeOfDay, formatWeekday } from "./format";
 
 // The expected strings below were copied from a real run of Node 24's Intl,
 // not typed from memory.
@@ -68,5 +68,54 @@ describe("formatDate and formatTime (always India time)", () => {
   test("rejects an invalid date", () => {
     expect(() => formatDate(new Date("not a date"), "en")).toThrow(RangeError);
     expect(() => formatTime(new Date("not a date"), "en")).toThrow(RangeError);
+  });
+});
+
+describe("formatWeekday and formatTimeOfDay (for opening hours)", () => {
+  const originalTz = process.env.TZ;
+  afterEach(() => {
+    if (originalTz === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTz;
+  });
+
+  test("weekday names, long and short", () => {
+    expect(formatWeekday("monday", "en")).toBe("Monday");
+    expect(formatWeekday("tuesday", "en", "short")).toBe("Tue");
+    expect(formatWeekday("sunday", "en")).toBe("Sunday");
+  });
+
+  test("a 24-hour time of day in 12-hour form", () => {
+    expect(formatTimeOfDay("10:00", "en")).toBe("10:00 am");
+    expect(formatTimeOfDay("19:00", "en")).toBe("7:00 pm");
+    expect(formatTimeOfDay("00:00", "en")).toBe("12:00 am");
+    expect(formatTimeOfDay("12:30", "en")).toBe("12:30 pm");
+  });
+
+  test.each(["Asia/Kolkata", "America/New_York", "Pacific/Kiritimati"])(
+    "the result doesn't depend on the computer's time zone (TZ=%s)",
+    (timeZone) => {
+      process.env.TZ = timeZone;
+      expect(formatWeekday("monday", "en")).toBe("Monday");
+      expect(formatWeekday("tuesday", "en", "short")).toBe("Tue");
+      expect(formatTimeOfDay("10:00", "en")).toBe("10:00 am");
+      expect(formatTimeOfDay("19:00", "en")).toBe("7:00 pm");
+    },
+  );
+
+  test("a time it can't read is shown as stored, without throwing", () => {
+    expect(formatTimeOfDay("7pm", "en")).toBe("7pm");
+    expect(formatTimeOfDay("", "en")).toBe("");
+  });
+});
+
+describe("formatAddress", () => {
+  const address = { text: { en: "Mukai Chowk, Kiwale, Pune, Maharashtra" }, postalCode: "412101" };
+
+  test("puts the PIN code after the address", () => {
+    expect(formatAddress(address, "en")).toBe("Mukai Chowk, Kiwale, Pune, Maharashtra 412101");
+  });
+
+  test("shows the address alone when the PIN code is blank", () => {
+    expect(formatAddress({ ...address, postalCode: " " }, "en")).toBe("Mukai Chowk, Kiwale, Pune, Maharashtra");
   });
 });

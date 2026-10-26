@@ -15,6 +15,13 @@
   "Common": {
     "close": "Close"
   },
+  "Contact": {
+    "call": "Call",
+    "whatsapp": "WhatsApp",
+    "opensWhatsApp": "(opens WhatsApp)",
+    "whatsappMessage": "Hi, I have a question about my vehicle.",
+    "bookingMessage": "Hi, I'd like to book a service for my vehicle."
+  },
   "Brand": {
     "name": "GoMechanic"
   }
