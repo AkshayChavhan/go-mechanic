@@ -4,7 +4,7 @@
 
 ## In one minute
 
-The site now has a **design system**: one agreed set of fonts, colours, text sizes, corner radii, shadows, spacing and motion timings. Each one is a **design token**, a named value such as `--primary` or `type-title`, kept in `src/app/globals.css`. Seven shadcn components were restyled to use the tokens (pill buttons, 44px touch targets, flat tiles), and we added two components of our own: `Wordmark` (the brand name as a logo) and `Section` (one page band). A development-only page, `/dev/design`, shows all of it on one page. The owner approved the look there on 2026-10-26, with no changes. Full details: [the plan](../plans/2026-10-26-1312-feat-design-system-plan.md) (R1–R17, KTD1–KTD15, units U1–U11) and the spec written for people, [MASTER.md](../../design-system/go-mechanic/MASTER.md).
+The site now has a **design system**: one agreed set of fonts, colours, text sizes, corner radii, shadows, spacing and motion timings. Each one is a **design token**, a named value such as `--primary` or `type-title`, kept in `src/app/globals.css`. Six shadcn components were restyled to use the tokens (pill buttons, 44px touch targets, flat tiles), and we added two components of our own: `Wordmark` (the brand name as a logo) and `Section` (one page band). A development-only page, `/dev/design`, shows all of it on one page. The owner approved the look there on 2026-10-26, with no changes. Full details: [the plan](../plans/2026-10-26-1312-feat-design-system-plan.md) (R1–R17, KTD1–KTD15, units U1–U11) and the spec written for people, [MASTER.md](../../design-system/go-mechanic/MASTER.md).
 
 ## Why: the problem we solved
 
@@ -92,7 +92,7 @@ Before this task the app still used shadcn's grey defaults and an unused `.dark`
    - **Space:** `--section-space`, `--gutter`, `max-w-content` (980px) and `max-w-wide` (1280px). The `frosted` class makes a see-through, blurred bar for the header.
    - **Focus** is one `:focus-visible` rule outside any `@layer`: a 2px solid `--ring` outline, 2px away from the control. CSS outside a cascade layer beats everything inside one, and Tailwind's classes live in a layer, so this rule overrides shadcn's `outline-none` without `!important`. shadcn's half-transparent ring measures 2.09:1 on white, under the 3:1 a focus indicator needs.
 
-7. **Motion.** `src/lib/motion.ts` holds the durations (in seconds) and the GSAP ease names. `globals.css` repeats them as `--duration-*` and `--ease-*`, and `motion.test.ts` fails if the two ever differ. When a visitor asks for reduced motion, durations become `0.01ms`, not `animation: none`. Radix waits for `animationend` before it removes a closed Sheet, and an animation that never runs never ends. GSAP code goes inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced`. `motion-demo.tsx` is the pattern task 13 will copy.
+7. **Motion.** `src/lib/motion.ts` holds the durations (in seconds) and the GSAP ease names. `globals.css` repeats them as `--duration-*` and `--ease-*`, and `motion.test.ts` fails if the two ever differ. When a visitor asks for reduced motion, durations become `0.01ms`, not `animation: none`: the animation still runs for an instant, so its end state applies and `animationend`/`transitionend` still fire. With `none`, an element that animates in from invisible would stay invisible, and code waiting for those events would never run. (The first version of this doc said Radix needed it to remove a closed Sheet. The code-reviewer checked Radix's code: with no animation, Radix removes it at once.) GSAP code goes inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced`. `motion-demo.tsx` is the pattern task 13 will copy.
 
 8. **Restyle the components.**
    - **Button:** a pill. `default` is 44px tall (`h-11`: one Tailwind step is 4px) and `lg` is 48px. `sm` (36px) and `xs` (32px) grow to 44px under `pointer-coarse:`, which matches when the main pointer is a finger.
@@ -151,7 +151,7 @@ Before this task the app still used shadcn's grey defaults and an unused `.dark`
 | --- | --- | --- |
 | Light only; `.dark` is a black band, not a dark mode | One look to get right, like apple.com's marketing pages | No dark theme that follows the phone's setting |
 | Hex values, not OKLCH | The contrast test reads hex directly | Mixing colours in OKLCH isn't available |
-| `type-*` utilities, not `--text-*` keys | `cn()` won't drop them | Never stack `text-*`, `leading-*` or `font-*` on them; lint catches only stock sizes |
+| `type-*` utilities, not `--text-*` keys | `cn()` won't drop them | Never put a stock `text-*` size, or `leading-*`/`tracking-*`, next to them (a weight is fine), and never pass a second `type-*` to a component that sets one; lint catches only stock sizes |
 | Inter preloaded for everyone | Android needs it; the wordmark uses it on Apple devices too | Apple visitors download one font file mostly used by the logo |
 | Solid destructive buttons and badges | shadcn's tinted version failed 4.5:1 | A louder red than shadcn's default |
 | A `devOnly()` gate, not `pageExtensions` or a proxy rule | One tested function, and the route stays static | Showing dev pages on staging later means changing it (tasks 15 and 20) |
@@ -220,7 +220,8 @@ To look for yourself, run `npm run dev` and open http://localhost:3000/dev/desig
 - **Two blue buttons side by side.** One `default` button per group; the others are `secondary`, `outline` or `ghost`.
 - **`npx shadcn add --overwrite` on an edited component.** It wipes the restyle, and `restyle.test.tsx` fails.
 - **Typing the brand name.** Use `Wordmark` or `t()`, or `brand-name.test.ts` fails.
-- **`animation: none` for reduced motion.** A closed Sheet would never be removed.
+- **`animation: none` for reduced motion.** Animations then never reach their end state, so something that fades in from invisible stays invisible. Use the `0.01ms` rule in `globals.css`.
+- **Passing a `type-*` class to a component that sets its own** (`<CardTitle className="type-headline">`). Tailwind's CSS order decides the winner, not your class order, so it silently stays `type-title`. Use a variant or size prop.
 - **Expecting to see Inter on a Mac.** Your Mac picks San Francisco first. Use the font switch on `/dev/design`.
 - **A CSS change missing from a build.** Delete `.next/cache/turbopack` and build again.
 - **Timing an animation with waits in a test.** Sample it frame by frame, as `e2e/dev/design-preview.spec.ts` does.

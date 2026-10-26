@@ -82,6 +82,7 @@ npx shadcn@latest add <component>   # add a shadcn/ui component
   - Text size comes only from `type-*` classes (Tailwind writes stock classes after them, so a stock class on the same element wins):
     - Banned: stock `text-*` sizes (lint rejects them), and `leading-*` or `tracking-*` next to a `type-*` class, except inside a component's own definition (such as Wordmark's tracking).
     - Allowed: a weight next to a `type-*` class (`type-callout font-semibold`, Button's `font-medium`). It wins, which is the point.
+    - Never put two `type-*` classes on one element, so never pass a `type-*` class to a component that sets its own (Button, Card, CardTitle, CardDescription, Input): Tailwind's CSS order picks the winner, not your class order.
     - A `type-*` class passed to a component doesn't beat stock sizes the component sets itself. Badge, Sheet, Field and Label keep shadcn's sizes until a task restyles them, so change a component's size through its variant or size prop.
     - Lint misses arbitrary sizes (`text-[17px]`) and stacked `leading-*`/`tracking-*`: check those by hand.
   - Page sections use `Section` (`tone`: white, grey or dark; `width`). There is no site-wide dark mode.
