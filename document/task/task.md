@@ -186,7 +186,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 11_design_system
 
 - [x] Create branch `11_design_system`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-26-1312-feat-design-system-plan.md)
 - [ ] Design direction with frontend-design + ui-ux-pro-max (Apple-like)
 - [ ] Tokens in `globals.css`: colors, type scale, radius, shadows, motion
 - [ ] Fonts: Inter + system San Francisco, plus a Devanagari font with `next/font` for Hindi (SEO check in task 09: Geist has no Hindi letters)
