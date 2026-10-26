@@ -16,7 +16,7 @@ import { useSyncExternalStore } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { openStatusAt, type OpenStatus as Status, type WeeklyHours } from "@/domain/opening-hours";
-import { formatTime, formatWeekday } from "@/i18n/format";
+import { formatTime, formatWeekday, keepTogether } from "@/i18n/format";
 
 const MINUTE = 60_000; // milliseconds
 
@@ -35,12 +35,13 @@ export function OpenStatusView({ status }: { status: Status }) {
 
   // Times and weekdays are formatted first (India time, en-IN), then passed
   // to t() as plain text: next-intl's own date formatting would use plain "en".
+  // keepTogether: the line may wrap before "10:00 am", never inside it.
   let detail: string | null = null;
   if (status.isOpen) {
-    detail = t("until", { time: formatTime(status.closesAt, locale) });
+    detail = t("until", { time: keepTogether(formatTime(status.closesAt, locale)) });
   } else if (status.nextOpening) {
     const { at, when, weekday } = status.nextOpening;
-    const time = formatTime(at, locale);
+    const time = keepTogether(formatTime(at, locale));
     if (when === "today") detail = t("opensToday", { time });
     else if (when === "tomorrow") detail = t("opensTomorrow", { time });
     else detail = t("opensOn", { day: formatWeekday(weekday, locale, "short"), time });

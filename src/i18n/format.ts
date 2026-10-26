@@ -88,3 +88,13 @@ export function formatAddress(address: { text: LocalizedText; postalCode: string
   const text = localize(address.text, locale);
   return postalCode ? `${text} ${postalCode}` : text;
 }
+
+/**
+ * Joins the words of a short phrase with no-break spaces (U+00A0), so a line
+ * never ends inside it: "10:00 am" stays together instead of leaving "am"
+ * alone on the next line in a narrow menu. For short phrases such as a
+ * formatted time, never for whole sentences.
+ */
+export function keepTogether(phrase: string): string {
+  return phrase.replace(/ /g, " ");
+}

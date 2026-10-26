@@ -75,6 +75,19 @@ describe("OpenStatusView (one status, as the visitor sees it)", () => {
     expect(container.textContent).toBe(text.closed);
   });
 
+  test("never breaks a line inside a time (no lone \"am\" in a narrow menu)", () => {
+    const opensTomorrow: Status = {
+      isOpen: false,
+      nextOpening: { at: new Date("2026-10-27T04:30:00Z"), when: "tomorrow", weekday: "tuesday" },
+    };
+    const { container, unmount } = renderWithIntl(<OpenStatusView status={opensTomorrow} />);
+    // U+00A0 is a no-break space: the browser may wrap before "10:00", never before "am".
+    expect(container.textContent).toContain("10:00\u00A0am");
+    unmount();
+    renderWithIntl(<OpenStatusView status={{ isOpen: true, closesAt: new Date("2026-10-27T13:30:00Z") }} />);
+    expect(screen.getByText(/until/).textContent).toBe("until 7:00\u00A0pm");
+  });
+
   test("marks the state for tests and styles", () => {
     const { container } = renderWithIntl(
       <OpenStatusView status={{ isOpen: true, closesAt: new Date("2026-10-27T13:30:00Z") }} />,

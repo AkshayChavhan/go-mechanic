@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, test } from "vitest";
 
-import { formatAddress, formatDate, formatRupees, formatTime, formatTimeOfDay, formatWeekday } from "./format";
+import {
+  formatAddress,
+  formatDate,
+  formatRupees,
+  formatTime,
+  formatTimeOfDay,
+  formatWeekday,
+  keepTogether,
+} from "./format";
 
 // The expected strings below were copied from a real run of Node 24's Intl,
 // not typed from memory.
@@ -117,5 +125,16 @@ describe("formatAddress", () => {
 
   test("shows the address alone when the PIN code is blank", () => {
     expect(formatAddress({ ...address, postalCode: " " }, "en")).toBe("Mukai Chowk, Kiwale, Pune, Maharashtra");
+  });
+});
+
+describe("keepTogether", () => {
+  test("joins a time's words with no-break spaces, so a line never ends inside it", () => {
+    expect(keepTogether("10:00 am")).toBe("10:00\u00A0am");
+    expect(keepTogether("10:00 am")).not.toContain(" ");
+  });
+
+  test("leaves a single word alone", () => {
+    expect(keepTogether("Tue")).toBe("Tue");
   });
 });
