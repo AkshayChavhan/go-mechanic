@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { contrastRatio } from "@/lib/color-contrast";
+import { cn } from "@/lib/utils";
 
 // A colour swatch that measures its own contrast in the browser, adapted from
 // the shadcn skill's showcase helper (.claude/skills/shadcn/assets/showcase/).
@@ -80,7 +81,14 @@ export function ColorPair({ label, surface, foreground, kind = "text" }: ColorPa
             className="block h-10 w-16 rounded-lg border-2"
           />
         )}
-        <span className="type-caption rounded-full border border-current/25 px-2 py-0.5 tabular-nums">
+        {/* On a line swatch the line colour only needs 3:1, too faint for text,
+            so the label uses the text colour instead. */}
+        <span
+          className={cn(
+            "type-caption rounded-full border border-current/25 px-2 py-0.5 tabular-nums",
+            kind === "line" && "text-foreground",
+          )}
+        >
           {ratio === null ? "…" : `${ratio.toFixed(2)}:1 ${passes ? "pass" : "fail"}`}
         </span>
       </div>

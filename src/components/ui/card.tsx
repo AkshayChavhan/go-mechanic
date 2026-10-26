@@ -3,9 +3,12 @@
 //   white page, or white on the grey band, is what sets it apart.
 // - Text sizes from the type scale: the card and CardDescription use
 //   type-callout (15px), CardTitle type-title (24-32px). A small card
-//   (size="sm") has a 17px semibold title. No text-sm, leading-* or
-//   font-medium next to them: Tailwind puts those after type-* in the CSS, so
-//   they would win, also over a type-* class a page passes in.
+//   (size="sm") has a 17px semibold title. No stock text-*, leading-* or
+//   tracking-* classes next to them: Tailwind puts those after type-* in the CSS.
+// - To change a card's text size, use a variant or the size prop. A type-*
+//   class passed in doesn't work: of two type-* classes on one element, the one
+//   later in Tailwind's CSS wins, whichever order they're written in, so
+//   <CardTitle className="type-headline"> stays type-title.
 import * as React from "react"
 import { cn } from "cn"
 
