@@ -131,7 +131,15 @@ Before this task the app still used shadcn's grey defaults and an unused `.dark`
     - **Task 12:** add `src/app/[locale]/not-found.tsx`. Pages that call `notFound()` (`/dev/design` in production, and later unknown service pages) show a bare, unbranded page today.
     - **Task 42:** an `apple-icon` PNG (180×180) from the same letter design, plus `theme-color`.
 
-17. **Review: *Pending*.** `ce-code-review` and then the `code-reviewer` agent haven't run yet. Their verdicts and fixes go here.
+17. **Review.**
+    - **`ce-code-review`: "Ready with fixes".** Eight reviewer personas, nothing serious, four medium and three small findings. All fixed, with no change to the approved look:
+      - An invalid field's red border was 50% see-through inside black sections: about 2.2:1, under the 3:1 minimum. shadcn's `dark:aria-invalid:border-destructive/50` is gone from Input and Button.
+      - The contrast test checked a hand-typed list of see-through colours, so a component edit could slip past it. It now reads every see-through colour class in `src/components/ui/` and fails unless each is contrast-checked or on a commented "decorative" list. Changing `/90` to `/70` turned it red.
+      - `restyle.test.tsx` didn't guard every change the file headers promise, and its pill check missed prefixed radius classes like `in-data-[slot=button-group]:rounded-lg`. Both are fixed, and small buttons now stay pills inside button groups.
+      - The text-size rule banned a weight next to `type-*`, but Button, Wordmark and the preview page all do that, on purpose. We settled it: a weight is allowed (it wins, which is the point); stock sizes, and `leading-*`/`tracking-*` next to `type-*`, are not. `CLAUDE.md` and MASTER.md now say the same.
+      - The Inter switch didn't reach the Sheet, which renders outside the page wrapper. It now sets the font on `<html>`.
+      - Two testing gaps closed: every page under `src/app/*/dev/` must call `devOnly()` (task 15's `/dev/outbox` will show fake OTP codes), and `Section`'s paint classes are tested.
+    - **`code-reviewer` agent: *Pending*.** Its verdict goes here.
 
 18. **Compound: *Pending*.** We'll ask the counterfactual question after the review.
 
@@ -167,14 +175,14 @@ Before this task the app still used shadcn's grey defaults and an unused `.dark`
 
 ## Check that it works
 
-Real output from the work session (trimmed). `build` and `test:e2e` ran at commit `01b2ebf`; the last commit, `46a8ad4`, changed only `e2e/dev/design-preview.spec.ts`. `test:design` and `npm run check` (which lints that spec) ran again at `46a8ad4`, with the same counts.
+Real output from the work session (trimmed). `check`, `test:e2e` and `test:design` ran on the final code, after the review fixes (commit `23741ee`); the build's route list is from commit `01b2ebf` (no route changed since).
 
 ```bash
 npm run check
 ```
 ```
  Test Files  15 passed (15)
-      Tests  371 passed (371)
+      Tests  389 passed (389)
 ```
 
 `npm run build` lists the preview page. Under production it's a static 404:
@@ -190,7 +198,7 @@ npm run test:e2e      # production build: fonts, 404s, the icon
 ```
   ✓   4 e2e/i18n.spec.ts:37:7 › pages that don't exist › /dev/design is a 404 with noindex in production (it exists only under next dev) (7.5s)
   ✓  14 e2e/smoke.spec.ts:138:5 › a price (₹) is drawn in Inter, so it never downloads the Hindi font (4.4s)
-  16 passed (45.7s)
+  16 passed (20.9s)
 ```
 
 ```bash
@@ -198,8 +206,8 @@ npm run test:design   # /dev/design under next dev, plus the screenshots
 ```
 ```
 Running 17 tests using 2 workers
-  ✓   8 e2e/dev/design-preview.spec.ts:153:7 › on a phone (375px, touch screen) › every visible button, button link and field is at least 44px tall; icon buttons are 44px wide (4.5s)
-  17 passed (58.9s)
+  ✓   8 e2e/dev/design-preview.spec.ts:170:7 › on a phone (375px, touch screen) › every visible button, button link and field is at least 44px tall; icon buttons are 44px wide (2.4s)
+  17 passed (38.7s)
 ```
 
 To look for yourself, run `npm run dev` and open http://localhost:3000/dev/design.
