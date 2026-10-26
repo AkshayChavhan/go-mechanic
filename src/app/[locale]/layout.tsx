@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 
@@ -14,6 +14,15 @@ import "@/app/globals.css";
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
+
+// The <meta name="viewport"> tag. Next.js already sends width=device-width
+// and initial-scale=1; this adds viewport-fit=cover, which lets the page
+// reach under an iPhone's rounded corners and home indicator. globals.css
+// then keeps text and buttons clear of them with env(safe-area-inset-*)
+// (--gutter, --action-bar-padding-bottom).
+export const viewport: Viewport = {
+  viewportFit: "cover",
+};
 
 // Placeholder metadata. Task 42 adds full SEO metadata.
 export async function generateMetadata(): Promise<Metadata> {

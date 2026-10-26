@@ -13,7 +13,8 @@
     "backHome": "Go to the home page"
   },
   "Common": {
-    "close": "Close"
+    "close": "Close",
+    "skipToContent": "Skip to main content"
   },
   "Contact": {
     "call": "Call",

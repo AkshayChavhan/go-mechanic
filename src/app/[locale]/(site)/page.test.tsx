@@ -2,7 +2,7 @@ import { screen } from "@testing-library/react";
 import { describe, expect, onTestFinished, test } from "vitest";
 
 import { renderWithIntl } from "@/i18n/test-utils";
-import messages from "../../../messages/en.json";
+import messages from "../../../../messages/en.json";
 
 import Home from "./page";
 

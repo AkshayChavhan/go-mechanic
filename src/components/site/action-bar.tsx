@@ -15,9 +15,10 @@ import { WhatsAppLink } from "./whatsapp-link";
 // under its icon but not beside it.
 // Layout classes only. cn() inside Button lets them replace the small
 // button's own height (h-9, and h-11 on touch screens) and side padding.
-// The colours, text size and focus ring stay the button's.
+// The colours, text size and focus ring stay the button's. The height is a
+// token from globals.css, because the bar's total height is added up there.
 const stacked =
-  "h-auto min-h-11 w-full flex-col gap-0.5 px-1 py-1.5 pointer-coarse:h-auto has-data-[icon=inline-start]:px-1";
+  "h-(--action-bar-item-height) w-full flex-col gap-0.5 px-1 py-1.5 pointer-coarse:h-(--action-bar-item-height) has-data-[icon=inline-start]:px-1";
 
 type ActionBarProps = {
   /** Where "Book" goes (bookTarget() in navigation.ts). */
@@ -45,9 +46,10 @@ export function ActionBar({ book, garage }: ActionBarProps) {
       aria-label={t("label")}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background shadow-md md:hidden"
     >
-      {/* --action-bar-padding-bottom is in globals.css: at least the top
-          padding, more where the phone has a home indicator. */}
-      <ul className="grid grid-cols-3 gap-2 px-(--gutter) pt-2 pb-(--action-bar-padding-bottom)">
+      {/* The bar's parts are tokens in globals.css (--action-bar-*), added up
+          there as --action-bar-height. The bottom padding grows on phones
+          with a home indicator. */}
+      <ul className="grid grid-cols-3 gap-2 px-(--gutter) pt-(--action-bar-padding-top) pb-(--action-bar-padding-bottom)">
         <li>
           <Button asChild variant="secondary" size="sm" className={stacked}>
             <a href={telHref(garage.phone)}>

@@ -171,9 +171,27 @@
 
     /* Spacing: the space above and below each page section, and the side
        padding of the content. Both grow with the screen. Used as
-       py-(--section-space) and px-(--gutter). */
+       py-(--section-space) and px-(--gutter). The gutter never gets thinner
+       than an iPhone's rounded corners or notch when it's turned sideways
+       (env(safe-area-inset-*) is 0 everywhere else; the root layout's
+       viewport-fit=cover is what lets the page reach under them). */
     --section-space: clamp(4rem, 2.5rem + 6vw, 8rem);
-    --gutter: clamp(1.25rem, 0.75rem + 2vw, 2.5rem);
+    --gutter: max(clamp(1.25rem, 0.75rem + 2vw, 2.5rem), env(safe-area-inset-left), env(safe-area-inset-right));
+
+    /* The layout shell (src/components/site/). */
+    /* The sticky header (site-header.tsx). */
+    --header-height: 3.5rem; /* 56px */
+    /* The phone action bar (action-bar.tsx), part by part. The sum,
+       --action-bar-height, sizes the spacer after the footer and the page's
+       scroll padding, so the bar never covers the end of the page. */
+    --action-bar-item-height: 3.375rem; /* 54px: a 16px icon over a 15px label */
+    --action-bar-padding-top: 0.5rem;
+    /* At least the top padding; more on iPhones, to clear the home indicator. */
+    --action-bar-padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    /* 1px: the bar's top border. */
+    --action-bar-height: calc(
+        1px + var(--action-bar-padding-top) + var(--action-bar-item-height) + var(--action-bar-padding-bottom)
+    );
 
     /* Durations, used as duration-(--duration-base). The same values, in
        seconds, are in src/lib/motion.ts for GSAP. */
@@ -342,7 +360,17 @@
     }
   html {
     @apply font-sans;
+    /* When the browser scrolls to an anchor (#main) or to a control that
+       gets keyboard focus, it stops this far below the top, so the sticky
+       header never hides it or its focus outline. */
+    scroll-padding-top: calc(var(--header-height) + 0.5rem);
     }
+  /* Below 768px the action bar covers the bottom of the screen too. */
+  @media (width < 48rem) {
+    html {
+      scroll-padding-bottom: calc(var(--action-bar-height) + 0.5rem);
+    }
+  }
   body {
     @apply bg-background text-foreground type-body;
     }
