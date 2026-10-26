@@ -16,6 +16,12 @@ describe("NotFoundContent (both 404 pages)", () => {
     expect(screen.getByText(messages.NotFound.description)).toBeTruthy();
   });
 
+  test("can show its heading as h2, for a sample on a page that has its own h1", () => {
+    renderWithIntl(<NotFoundContent garage={garage} titleAs="h2" />);
+    expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
+    expect(screen.getByRole("heading", { level: 2 }).textContent).toBe(messages.NotFound.title);
+  });
+
   test("leads home with the one blue button", () => {
     renderWithIntl(<NotFoundContent garage={garage} />);
     const home = screen.getByRole("link", { name: messages.NotFound.backHome });

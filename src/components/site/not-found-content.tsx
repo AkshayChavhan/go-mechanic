@@ -17,14 +17,22 @@ import { WhatsAppLink } from "./whatsapp-link";
  * the full shell, and by src/app/[locale]/not-found.tsx (a page that called
  * notFound()) under a slim bar.
  */
-export function NotFoundContent({ garage }: { garage: Pick<Garage, "phone" | "whatsapp"> }) {
+type NotFoundContentProps = {
+  /** The garage's numbers, for Call and WhatsApp. */
+  garage: Pick<Garage, "phone" | "whatsapp">;
+  /** The heading's level: h1 on the 404 pages, h2 in the /dev/design sample (a page has one h1). */
+  titleAs?: "h1" | "h2";
+};
+
+export function NotFoundContent({ garage, titleAs: Title = "h1" }: NotFoundContentProps) {
   const t = useTranslations("NotFound");
   const tContact = useTranslations("Contact");
 
   return (
-    <Section>
+    // wide: its left edge lines up with the header's Wordmark and the footer.
+    <Section width="wide">
       <div className="flex max-w-2xl flex-col gap-6">
-        <h1 className="type-display text-balance">{t("title")}</h1>
+        <Title className="type-display text-balance">{t("title")}</Title>
         <p className="type-lead text-muted-foreground">{t("description")}</p>
         <div className="flex flex-wrap gap-3">
           {/* The one blue button: home. */}

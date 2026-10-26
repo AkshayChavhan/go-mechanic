@@ -79,7 +79,7 @@ export function SiteHeader({ items, book, garage }: SiteHeaderProps) {
           </div>
           <div className="md:hidden">
             <MobileMenu openLabel={t("openMenu")} title={t("menuTitle")} closeLabel={tCommon("close")}>
-              <MenuContent items={items} garage={garage} />
+              <MobileMenuContent items={items} garage={garage} />
             </MobileMenu>
           </div>
         </div>
@@ -91,9 +91,10 @@ export function SiteHeader({ items, book, garage }: SiteHeaderProps) {
 /**
  * What the phone menu holds: the live pages, whether the garage is open, its
  * hours and address, and buttons to call or WhatsApp. Rendered on the server
- * and handed to the MobileMenu island as its children.
+ * and handed to the MobileMenu island as its children. Exported for the
+ * /dev/design sample.
  */
-function MenuContent({ items, garage }: Pick<SiteHeaderProps, "items" | "garage">) {
+export function MobileMenuContent({ items, garage }: Pick<SiteHeaderProps, "items" | "garage">) {
   const t = useTranslations("Header");
   const tNav = useTranslations("Nav");
   const tHours = useTranslations("Hours");

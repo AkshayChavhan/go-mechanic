@@ -59,6 +59,14 @@ describe("ActionBar (the phone bar)", () => {
     expect(variants).toEqual(["secondary", "secondary", "default"]);
   });
 
+  test("className can show it in place (the /dev/design sample): static, and not hidden from 768px", () => {
+    renderWithIntl(<ActionBar book={whatsappBook} garage={garage} className="static md:block" />);
+    const classes = [...screen.getByRole("navigation", { name: messages.ActionBar.label }).classList];
+    expect(classes).toEqual(expect.arrayContaining(["static", "md:block"]));
+    expect(classes).not.toContain("fixed");
+    expect(classes).not.toContain("md:hidden");
+  });
+
   test("icons are decorative", () => {
     const bar = renderBar();
     for (const icon of bar.querySelectorAll("svg")) expect(icon.getAttribute("aria-hidden")).toBe("true");

@@ -14,6 +14,9 @@ const PORT = 3000;
 
 export default defineConfig({
   testDir: "./e2e/dev",
+  // Loads every page once before the tests, so `next dev` never compiles a
+  // page while a test has another one open (see the file for why).
+  globalSetup: "./e2e/dev/warm-up.ts",
   // Screenshots and failure traces go here (git-ignored, like test-results/).
   outputDir: "./test-results/design",
   // A forgotten test.only would silently skip every other test: fail instead.

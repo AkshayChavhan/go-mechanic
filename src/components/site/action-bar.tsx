@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import type { Garage } from "@/content/garage";
 import { Link } from "@/i18n/navigation";
 import { telHref, whatsappHref } from "@/lib/contact-links";
+import { cn } from "@/lib/utils";
 
 import type { BookTarget } from "./navigation";
 import { WhatsAppLink } from "./whatsapp-link";
@@ -25,6 +26,11 @@ type ActionBarProps = {
   book: BookTarget;
   /** The garage's numbers. */
   garage: Pick<Garage, "phone" | "whatsapp">;
+  /**
+   * Extra layout classes. /dev/design passes "static md:block" to show the
+   * bar in place, in a phone-sized frame, instead of fixed and phone-only.
+   */
+  className?: string;
 };
 
 /**
@@ -37,14 +43,14 @@ type ActionBarProps = {
  * Its bottom padding grows to clear the iPhone's home indicator, and a spacer
  * after the footer (SiteChrome) keeps it from covering the end of the page.
  */
-export function ActionBar({ book, garage }: ActionBarProps) {
+export function ActionBar({ book, garage, className }: ActionBarProps) {
   const t = useTranslations("ActionBar");
   const tContact = useTranslations("Contact");
 
   return (
     <nav
       aria-label={t("label")}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background shadow-md md:hidden"
+      className={cn("fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background shadow-md md:hidden", className)}
     >
       {/* The bar's parts are tokens in globals.css (--action-bar-*), added up
           there as --action-bar-height. The bottom padding grows on phones

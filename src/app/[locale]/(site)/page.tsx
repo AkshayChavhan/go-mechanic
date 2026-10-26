@@ -9,8 +9,9 @@ import { Section } from "@/components/site/section";
 export default function Home() {
   const t = useTranslations("HomePage");
   return (
-    <Section>
-      <div className="flex flex-col gap-4">
+    // wide: its left edge lines up with the header's Wordmark and the footer.
+    <Section width="wide">
+      <div className="flex max-w-3xl flex-col gap-4">
         <h1 className="type-display text-balance">{t("title")}</h1>
         <p className="type-lead text-muted-foreground">{t("tagline")}</p>
       </div>

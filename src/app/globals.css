@@ -176,7 +176,10 @@
        (env(safe-area-inset-*) is 0 everywhere else; the root layout's
        viewport-fit=cover is what lets the page reach under them). */
     --section-space: clamp(4rem, 2.5rem + 6vw, 8rem);
-    --gutter: max(clamp(1.25rem, 0.75rem + 2vw, 2.5rem), env(safe-area-inset-left), env(safe-area-inset-right));
+    /* The gutter on the narrowest phones. /dev/design uses it to show the
+       phone bar as a 320px phone draws it, whatever the window's width. */
+    --gutter-min: 1.25rem;
+    --gutter: max(clamp(var(--gutter-min), 0.75rem + 2vw, 2.5rem), env(safe-area-inset-left), env(safe-area-inset-right));
 
     /* The layout shell (src/components/site/). */
     /* The sticky header (site-header.tsx). */
