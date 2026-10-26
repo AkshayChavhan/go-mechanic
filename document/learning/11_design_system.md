@@ -139,11 +139,24 @@ Before this task the app still used shadcn's grey defaults and an unused `.dark`
       - The text-size rule banned a weight next to `type-*`, but Button, Wordmark and the preview page all do that, on purpose. We settled it: a weight is allowed (it wins, which is the point); stock sizes, and `leading-*`/`tracking-*` next to `type-*`, are not. `CLAUDE.md` and MASTER.md now say the same.
       - The Inter switch didn't reach the Sheet, which renders outside the page wrapper. It now sets the font on `<html>`.
       - Two testing gaps closed: every page under `src/app/*/dev/` must call `devOnly()` (task 15's `/dev/outbox` will show fake OTP codes), and `Section`'s paint classes are tested.
-    - **`code-reviewer` agent: *Pending*.** Its verdict goes here.
+    - **`code-reviewer` agent: "Needs changes".** No code bugs, and it confirmed each `ce-code-review` fix. Five must-fixes, all in docs and the tracker, and all fixed:
+      - The tracker didn't link or tick the learning doc.
+      - This doc said the branch hadn't been pushed, but GitHub had it (step 19).
+      - The Decisions table still banned the weight next to `type-*` that we had just allowed.
+      - The reduced-motion reason was wrong. We had written that Radix needs an animation to remove a closed Sheet; the reviewer read Radix's code, and with no animation Radix removes it at once. The real reason is in step 7. A reason written from memory, never checked, had reached the code, this doc and the plan.
+      - "Seven components restyled" contradicted the What table's six.
 
-18. **Compound: *Pending*.** We'll ask the counterfactual question after the review.
+      We also took four of its five suggestions:
+      - A new rule: never pass a `type-*` class to a component that sets its own. Tailwind's CSS order picks the winner, so `<CardTitle className="type-headline">` silently stays `type-title`.
+      - The stock-size lint now also covers `.ts` files and dev pages.
+      - Line swatches on `/dev/design` draw their contrast label in the text colour; it was 3.2–4.3:1.
+      - The focus outline covers six more ARIA roles and `[tabindex]`.
 
-19. **Pull request: *Pending*.** We'll push the branch after asking the owner, and the owner merges the pull request on GitHub.
+      The fifth (gating Route Handlers under `dev/`) is noted under task 15, which creates the first one.
+
+18. **Compound.** Would a future session repeat this without a written lesson? For one thing, clearly yes: `ce-plan` hung after writing its plan in both task 10 (about 21 hours lost) and task 11 (caught by a watcher in 10 minutes). We ran `ce-compound` (lightweight). It wrote `document/solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md`: start ce-plan in the background, start an idle watcher on the plan file at once, and stop the process when the file has been quiet for 10 minutes. Its watcher script was new, so we tested it before committing (exited, idle and still-waiting cases). The `type-*` ordering and the reduced-motion reason didn't get lessons: `CLAUDE.md`, MASTER.md, lint and the corrected comments now carry them.
+
+19. **Pull request.** The owner pushed the branch to GitHub four times during the task, from VS Code, right after Claude's commits (13:36, 15:22, 15:31 and 15:39 on 2026-10-26; the first came before the look was approved). Claude didn't push during the task. The plan's "no push before approval" rule bound Claude, and the owner may push their own branch whenever they like. After the reviews, Claude asked who should push the rest, and the owner chose Claude. The owner then opens and merges the pull request on GitHub (CLAUDE.md step 11).
 
 ## Decisions worth knowing
 

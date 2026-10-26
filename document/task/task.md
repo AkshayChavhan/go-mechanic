@@ -193,8 +193,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Restyle shadcn controls (44 px touch targets, pill buttons)
 - [x] `design-system/go-mechanic/MASTER.md` and a `/dev/design` preview page (development only). The owner approved the look on 2026-10-26, with no changes
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [ce-plan hang lesson](../solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md)
 - [ ] Merge into `main`
 
 ### 12_layout_shell
