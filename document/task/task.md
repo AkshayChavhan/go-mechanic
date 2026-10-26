@@ -200,7 +200,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 12_layout_shell
 
 - [x] Create branch `12_layout_shell`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-26-1937-feat-layout-shell-plan.md)
 - [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
 - [ ] Frosted sticky header with navigation and mobile menu: the header uses the `frosted` class; the mobile menu is `Sheet` with `closeLabel={t("close")}` (task 11)
 - [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and decide whether to narrow the `src/proxy.ts` matcher so dotted URLs like `/index.html` reach this page instead of a blank error page. Trade-off (`ce-code-review` in task 10): with a hand-made list of file extensions, any public file type missing from the list returns 404
