@@ -14,6 +14,10 @@ export default defineConfig({
   test: {
     // A forgotten test.only would silently skip every other test: fail instead.
     allowOnly: false,
+    // Run every test in UTC, like most servers. The owner's computer is set to
+    // India time, which would hide a bug that reads the computer's own clock
+    // instead of Asia/Kolkata. A test that needs another zone sets TZ itself.
+    env: { TZ: "UTC" },
     projects: [
       {
         extends: true,
