@@ -1,6 +1,11 @@
-// GoMechanic changes to shadcn's radix-nova card (restyle.test.tsx checks them):
+// Our changes to shadcn's radix-nova card (restyle.test.tsx checks them):
 // - A flat tile: no ring around it (and no shadow). The grey --card fill on the
 //   white page, or white on the grey band, is what sets it apart.
+// - Text sizes from the type scale: the card and CardDescription use
+//   type-callout (15px), CardTitle type-title (24-32px). A small card
+//   (size="sm") has a 17px semibold title. No text-sm, leading-* or
+//   font-medium next to them: Tailwind puts those after type-* in the CSS, so
+//   they would win, also over a type-* class a page passes in.
 import * as React from "react"
 import { cn } from "cn"
 
@@ -14,7 +19,7 @@ function Card({
       data-slot="card"
       data-size={size}
       className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) text-sm text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-xl bg-card py-(--card-spacing) type-callout text-card-foreground [--card-spacing:--spacing(4)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(3)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         className
       )}
       {...props}
@@ -40,7 +45,7 @@ function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="card-title"
       className={cn(
-        "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
+        "font-heading type-title group-data-[size=sm]/card:type-body group-data-[size=sm]/card:font-semibold",
         className
       )}
       {...props}
@@ -52,7 +57,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-sm text-muted-foreground", className)}
+      className={cn("type-callout text-muted-foreground", className)}
       {...props}
     />
   )

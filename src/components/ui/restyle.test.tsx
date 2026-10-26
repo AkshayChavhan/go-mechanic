@@ -4,14 +4,14 @@ import { describe, expect, test } from "vitest";
 
 import { Badge, badgeVariants } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
-// Locks in the GoMechanic restyle of the shadcn components (see the
-// "GoMechanic changes" comment at the top of each file). Re-adding a component
-// with `npx shadcn add --overwrite` would quietly bring back shadcn's
-// defaults; these tests fail if that happens.
+// Locks in our restyle of the shadcn components (see the "Our changes to
+// shadcn's ..." comment at the top of each file). Re-adding a component with
+// `npx shadcn add --overwrite` would quietly bring back shadcn's defaults;
+// these tests fail if that happens.
 
 const classesOf = (element: Element) => [...element.classList];
 const split = (classes: string) => classes.split(/\s+/).filter(Boolean);
@@ -124,6 +124,27 @@ describe("Card", () => {
     const classes = classesOf(screen.getByTestId("card"));
     expect(classes.filter((name) => /^(?:shadow|ring)-/.test(name))).toEqual([]);
     expect(classes).toEqual(expect.arrayContaining(["rounded-xl", "bg-card"]));
+  });
+
+  test("its text sizes come from type-* classes, with nothing that would override them", () => {
+    render(
+      <Card data-testid="card">
+        <CardTitle>Brake service</CardTitle>
+        <CardDescription>Pads, discs and brake fluid</CardDescription>
+      </Card>,
+    );
+    const card = screen.getByTestId("card");
+    const title = screen.getByText("Brake service");
+    const description = screen.getByText("Pads, discs and brake fluid");
+    expect(classesOf(card)).toContain("type-callout");
+    expect(classesOf(title)).toContain("type-title");
+    expect(classesOf(description)).toContain("type-callout");
+    // Tailwind puts these after type-* in the CSS, so on the same element they
+    // would win over it (and over a type-* class a page passes in).
+    const overrides = /^(?:text-(?:xs|sm|base|lg|[2-9]?xl)|leading-.+|font-(?:light|normal|medium|semibold|bold))$/;
+    for (const element of [card, title, description]) {
+      expect(classesOf(element).filter((name) => overrides.test(name))).toEqual([]);
+    }
   });
 });
 

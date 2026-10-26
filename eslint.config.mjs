@@ -13,6 +13,12 @@ const condition = ":matches(ConditionalExpression, LogicalExpression)";
 // A non-blank string or a template string
 const text = ":matches(Literal[value=/\\S/], TemplateLiteral)";
 
+// A stock Tailwind text size (text-xs ... text-9xl) as a class, with or
+// without prefixes (md:text-lg, hover:text-sm, !text-sm). text-muted-foreground,
+// text-link and text-center don't match. No "/" allowed inside: esquery
+// ends a regex at the first one.
+const stockTextSize = "(?:^|[\\s:!])text-(?:xs|sm|base|lg|[2-9]?xl)(?![\\w-])";
+
 // Points people to the language-aware versions in src/i18n/navigation.ts.
 const useI18nNavigation =
   "Use the version from @/i18n/navigation: it keeps the language prefix (/hi/...) in the URL.";
@@ -86,6 +92,12 @@ const eslintConfig = defineConfig([
           // ...or chosen by a condition: {isOpen ? "Close menu" : "Open menu"}
           selector: `JSXAttribute[name.name=${readAttributes}] > JSXExpressionContainer > ${condition} > ${text}`,
           message: readAttributeMessage,
+        },
+        {
+          // className="md:text-lg", cn("text-sm", ...), `text-base ${extra}`
+          selector: `:matches(Literal[value=/${stockTextSize}/], TemplateElement[value.raw=/${stockTextSize}/])`,
+          message:
+            "Use a type-* class (type-body, type-callout, type-title...) for text size. Tailwind puts text-sm, text-lg... after type-* in the CSS, so they would win.",
         },
       ],
     },

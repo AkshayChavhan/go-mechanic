@@ -94,6 +94,34 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
     expect(await errorRules(component("<p>Hello</p>"), filePath)).toContain("react/jsx-no-literals");
   });
 
+  // Text sizes come from the type-* classes in globals.css. Tailwind puts its
+  // own text-sm, text-lg... after them in the CSS, so a stock size would win
+  // over a type-* class on the same element.
+  test.each([
+    ["a size inside cn()", 'import { cn } from "@/lib/utils";\nexport const classes = cn("text-sm", "font-bold");\n'],
+    ["a size with a screen prefix", component('<p className="md:text-lg">{t("title")}</p>')],
+    ["a size with a state prefix", component('<p className="hover:text-2xl">{t("title")}</p>')],
+    ["a size in a template string", "export const classes = (extra: string) => `text-base ${extra}`;\n"],
+    ["text-xs", component('<p className="text-xs text-muted-foreground">{t("title")}</p>')],
+    ["text-9xl", component('<p className="text-9xl">{t("title")}</p>')],
+  ])("rejects a stock text size: %s", async (_name, code) => {
+    expect(await errorRules(code)).toContain("no-restricted-syntax");
+  });
+
+  test.each([
+    ["type-* sizes", component('<p className="type-title">{t("title")}</p>')],
+    ["text colours", component('<p className="text-muted-foreground hover:text-link text-white">{t("title")}</p>')],
+    ["text alignment", component('<p className="text-center md:text-left">{t("title")}</p>')],
+    ["text colours in cn()", 'import { cn } from "@/lib/utils";\nexport const classes = cn("text-link", "text-foreground");\n'],
+  ])("allows %s", async (_name, code) => {
+    expect(await errorRules(code)).toEqual([]);
+  });
+
+  test("leaves stock text sizes alone in shadcn's components/ui", async () => {
+    const code = 'import { cn } from "cn";\nexport const classes = cn("text-sm");\n';
+    expect(await errorRules(code, "src/components/ui/example.tsx")).toEqual([]);
+  });
+
   test("still rejects next/link on dev pages", async () => {
     const code = 'import Link from "next/link";\nexport const x = Link;\n';
     expect(await errorRules(code, "src/app/[locale]/dev/design/page.tsx")).toContain("no-restricted-imports");
