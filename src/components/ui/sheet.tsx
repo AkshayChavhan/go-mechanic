@@ -1,3 +1,9 @@
+// GoMechanic changes to shadcn's radix-nova sheet (restyle.test.tsx checks them):
+// - The close button's screen-reader label is the closeLabel prop, not typed
+//   English ("Close"), so it can be translated: closeLabel={t("close")} with
+//   the Common namespace. It's required whenever the close button shows.
+// - The close button is the icon-sm button size: 36px with a mouse, 44px on
+//   touch screens (see button.tsx).
 "use client"
 
 import * as React from "react"
@@ -45,16 +51,27 @@ function SheetOverlay({
   )
 }
 
+// Either the close button is switched off and the label is optional, or it
+// shows (the default) and needs a label people hear. (This order makes
+// TypeScript's error say "closeLabel is missing" when you forget it.)
+type SheetCloseButtonProps =
+  | { showCloseButton: false; closeLabel?: string }
+  | {
+      showCloseButton?: true
+      /** What screen readers say for the close button: pass t("close"). */
+      closeLabel: string
+    }
+
 function SheetContent({
   className,
   children,
   side = "right",
   showCloseButton = true,
+  closeLabel,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: "top" | "right" | "bottom" | "left"
-  showCloseButton?: boolean
-}) {
+} & SheetCloseButtonProps) {
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -77,7 +94,7 @@ function SheetContent({
             >
               <XIcon
               />
-              <span className="sr-only">Close</span>
+              <span className="sr-only">{closeLabel}</span>
             </Button>
           </SheetPrimitive.Close>
         )}

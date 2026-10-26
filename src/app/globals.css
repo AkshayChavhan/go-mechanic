@@ -40,6 +40,7 @@
     --color-accent: var(--accent);
     --color-accent-foreground: var(--accent-foreground);
     --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
     --color-success: var(--success);
     --color-success-foreground: var(--success-foreground);
     --color-link: var(--link);
@@ -133,6 +134,9 @@
     --accent: #e8e8ed;
     --accent-foreground: #1d1d1f;
     --destructive: #d70015;
+    /* Text on a solid destructive fill (the destructive button and badge).
+       A light red tint behind red text stays under 4.5:1, so they're solid. */
+    --destructive-foreground: #ffffff;
     /* Status only ("Open now"), never for actions: blue stays the one accent. */
     --success: #007a33;
     --success-foreground: #ffffff;
@@ -202,6 +206,8 @@
     --accent: #2c2c2e;
     --accent-foreground: #f5f5f7;
     --destructive: #ff453a;
+    /* White on this brighter red is only 3.4:1, so black, like --success-foreground. */
+    --destructive-foreground: #000000;
     --success: #30d158;
     --success-foreground: #000000;
     --link: #2997ff;

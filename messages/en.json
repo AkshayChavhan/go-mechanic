@@ -11,5 +11,8 @@
     "title": "Page not found",
     "description": "This page doesn't exist or has moved.",
     "backHome": "Go to the home page"
+  },
+  "Common": {
+    "close": "Close"
   }
 }

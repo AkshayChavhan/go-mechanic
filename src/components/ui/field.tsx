@@ -1,3 +1,6 @@
+// GoMechanic changes to shadcn's radix-nova field:
+// - A link inside a FieldDescription turns --link blue on hover, not
+//   --primary: --primary is too light for small text on the grey band (4.3:1).
 "use client"
 
 import { useMemo } from "react"
@@ -135,7 +138,7 @@ function FieldDescription({ className, ...props }: React.ComponentProps<"p">) {
       className={cn(
         "text-left text-sm leading-normal font-normal text-muted-foreground group-has-data-horizontal/field:text-balance [[data-variant=legend]+&]:-mt-1.5",
         "last:mt-0 nth-last-2:-mt-1",
-        "[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-primary",
+        "[&>a]:underline [&>a]:underline-offset-4 [&>a:hover]:text-link",
         className
       )}
       {...props}

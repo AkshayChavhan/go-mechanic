@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { contrastRatio } from "@/lib/color-contrast";
+import { blend, contrastRatio } from "@/lib/color-contrast";
 
 describe("contrastRatio (WCAG 2.2)", () => {
   test("black on white is 21:1, in either order", () => {
@@ -25,5 +25,20 @@ describe("contrastRatio (WCAG 2.2)", () => {
   test.each(["red", "#12", "#gggggg", "#ffff", "ffffff", "oklch(1 0 0)", ""])("rejects %j", (color) => {
     expect(() => contrastRatio(color, "#ffffff")).toThrow();
     expect(() => contrastRatio("#ffffff", color)).toThrow();
+  });
+});
+
+describe("blend (a see-through colour over a backdrop)", () => {
+  test("half-transparent black on white is mid grey", () => {
+    expect(blend("#000000", 0.5, "#ffffff")).toBe("#808080");
+  });
+
+  test("fully opaque shows the colour, fully transparent shows the backdrop", () => {
+    expect(blend("#0071e3", 1, "#ffffff")).toBe("#0071e3");
+    expect(blend("#0071e3", 0, "#f5f5f7")).toBe("#f5f5f7");
+  });
+
+  test.each([-0.1, 1.1, Number.NaN])("rejects opacity %s", (opacity) => {
+    expect(() => blend("#000000", opacity, "#ffffff")).toThrow();
   });
 });

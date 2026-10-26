@@ -1,3 +1,10 @@
+// GoMechanic changes to shadcn's radix-nova badge (restyle.test.tsx checks them):
+// - A new success variant (bg-success, text-success-foreground) for status,
+//   such as the "Open now" badge. Green marks status only, never an action.
+// - destructive is a solid fill with --destructive-foreground: red text on a
+//   light red tint stayed under 4.5:1.
+// - default links darken on hover with --primary-hover; link uses the --link blue.
+// It stays a pill: rounded-4xl is pinned to 9999px in globals.css.
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "cn"
@@ -8,16 +15,17 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+        default: "bg-primary text-primary-foreground [a]:hover:bg-primary-hover",
         secondary:
           "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:
-          "bg-destructive/10 text-destructive focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/20",
+          "bg-destructive text-destructive-foreground focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/90",
+        success: "bg-success text-success-foreground",
         outline:
           "border-border text-foreground [a]:hover:bg-muted [a]:hover:text-muted-foreground",
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
-        link: "text-primary underline-offset-4 hover:underline",
+        link: "text-link underline-offset-4 hover:underline",
       },
     },
     defaultVariants: {

@@ -22,6 +22,19 @@ function relativeLuminance(hex: string): number {
   return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
 }
 
+/**
+ * The colour you see when `color` at `opacity` (0 to 1) sits on `backdrop`,
+ * as hex. bg-destructive/90 is the destructive colour at 0.9 opacity, so
+ * blend(destructive, 0.9, background) is what the eye gets. Browsers mix the
+ * two in plain sRGB numbers, as here.
+ */
+export function blend(color: string, opacity: number, backdrop: string): string {
+  if (!(opacity >= 0 && opacity <= 1)) throw new Error(`Expected an opacity from 0 to 1, got ${opacity}`);
+  const back = hexToRgb(backdrop);
+  const mixed = hexToRgb(color).map((value, index) => Math.round(opacity * value + (1 - opacity) * back[index]));
+  return `#${mixed.map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+}
+
 // From 1 (no contrast) to 21 (black on white). The order of the two colours
 // doesn't matter. AA needs 4.5 for text and 3 for borders and focus outlines.
 export function contrastRatio(foreground: string, background: string): number {
