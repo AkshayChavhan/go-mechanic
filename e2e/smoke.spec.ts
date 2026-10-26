@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 
 import messages from "../messages/en.json";
 
@@ -56,67 +56,116 @@ for (const path of ["/", "/this-page-does-not-exist"]) {
   });
 }
 
-test("Inter is preloaded; the Hindi font is neither preloaded nor downloaded on an English page", async ({ page }) => {
-  await page.goto("/");
-  await page.waitForLoadState("networkidle");
-  const families = await page.evaluate(() => {
+// The first family name in each next/font variable.
+async function fontFamilies(page: Page) {
+  const variables = await page.evaluate(() => {
     const root = getComputedStyle(document.documentElement);
-    return {
-      inter: root.getPropertyValue("--font-inter").trim(),
-      devanagari: root.getPropertyValue("--font-devanagari").trim(),
-    };
+    return { inter: root.getPropertyValue("--font-inter"), devanagari: root.getPropertyValue("--font-devanagari") };
   });
-  const inter = firstFamily(families.inter);
-  const devanagari = firstFamily(families.devanagari);
+  return { inter: firstFamily(variables.inter), devanagari: firstFamily(variables.devanagari) };
+}
 
-  const fonts = await page.evaluate(async () => {
-    await document.fonts.ready;
-    // The font file URLs of every @font-face rule, by family name. A url() in
-    // CSS is relative to the stylesheet's own address, not the page's.
+// The font file paths of every @font-face rule on the page, by family name.
+function fontFilesByFamily(page: Page) {
+  return page.evaluate(() => {
     const files: Record<string, string[]> = {};
     for (const sheet of document.styleSheets) {
       for (const rule of sheet.cssRules) {
         if (!(rule instanceof CSSFontFaceRule)) continue;
         const family = rule.style.getPropertyValue("font-family").replace(/["']/g, "");
         const urls = [...rule.style.getPropertyValue("src").matchAll(/url\(["']?([^"')]+)/g)];
+        // A url() in CSS is relative to the stylesheet's own address, not the page's.
         const base = sheet.href ?? location.href;
         files[family] = [...(files[family] ?? []), ...urls.map(([, url]) => new URL(url, base).pathname)];
       }
     }
-    return {
-      files,
-      preloaded: [...document.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="font"]')].map(
-        (link) => new URL(link.href).pathname,
-      ),
-      downloaded: performance.getEntriesByType("resource").map((entry) => new URL(entry.name).pathname),
-      // "loaded" means the browser downloaded and used that face.
-      faceStatuses: [...document.fonts].map((face) => ({
-        family: face.family.replace(/["']/g, ""),
-        status: face.status,
-      })),
-    };
+    return files;
   });
+}
 
-  const interFiles = fonts.files[inter] ?? [];
-  const devanagariFiles = fonts.files[devanagari] ?? [];
+// The path of every file the page has downloaded so far.
+function downloadedFiles(page: Page) {
+  return page.evaluate(() => performance.getEntriesByType("resource").map((entry) => new URL(entry.name).pathname));
+}
+
+// The faces of one family the browser has downloaded and used ("loaded").
+function loadedFaces(page: Page, family: string) {
+  return page.evaluate(
+    (family) =>
+      [...document.fonts]
+        .filter((face) => face.family.replace(/["']/g, "") === family && face.status === "loaded")
+        .map((face) => ({ unicodeRange: face.unicodeRange })),
+    family,
+  );
+}
+
+// Whether a unicode-range such as "U+0-FF, U+20B9, U+1F??" covers a character.
+// In "U+1F??" each ? stands for any hex digit (U+1F00 to U+1FFF).
+function covers(unicodeRange: string, codePoint: number) {
+  return unicodeRange.split(",").some((part) => {
+    const [start, end = start] = part.trim().replace(/^U\+/i, "").split("-");
+    const low = parseInt(start.replace(/\?/g, "0"), 16);
+    const high = parseInt(end.replace(/\?/g, "F"), 16);
+    return codePoint >= low && codePoint <= high;
+  });
+}
+
+test("Inter is preloaded; the Hindi font is neither preloaded nor downloaded on an English page", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() => document.fonts.ready);
+  const { inter, devanagari } = await fontFamilies(page);
+  const files = await fontFilesByFamily(page);
+  const interFiles = files[inter] ?? [];
+  const devanagariFiles = files[devanagari] ?? [];
   // Both fonts are on the page; otherwise the checks below would prove nothing.
   expect(interFiles.length).toBeGreaterThan(0);
   expect(devanagariFiles.length).toBeGreaterThan(0);
 
-  expect(fonts.preloaded.length).toBeGreaterThan(0);
-  for (const file of fonts.preloaded) expect(interFiles).toContain(file);
-  for (const file of devanagariFiles) expect(fonts.downloaded).not.toContain(file);
+  const preloaded = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLLinkElement>('link[rel="preload"][as="font"]')].map(
+      (link) => new URL(link.href).pathname,
+    ),
+  );
+  expect(preloaded.length).toBeGreaterThan(0);
+  for (const file of preloaded) expect(interFiles).toContain(file);
 
-  const devanagariFaces = fonts.faceStatuses.filter((face) => face.family === devanagari);
-  expect(devanagariFaces.length).toBeGreaterThan(0);
-  expect(devanagariFaces.map((face) => face.status)).not.toContain("loaded");
+  const downloaded = await downloadedFiles(page);
+  for (const file of devanagariFiles) expect(downloaded).not.toContain(file);
+  expect(await loadedFaces(page, devanagari)).toEqual([]);
+});
+
+test("a price (₹) is drawn in Inter, so it never downloads the Hindi font", async ({ page }) => {
+  // Assumption A3: Inter's latin-ext face covers the rupee sign (U+20B9) and
+  // loads only when a ₹ appears. Noto Sans Devanagari covers ₹ too, so if Inter
+  // didn't, every price on an English page would download the Hindi font.
+  await page.goto("/");
+  const { inter, devanagari } = await fontFamilies(page);
+  // Draw a price the way Android and Windows do: the text stack without
+  // Apple's system font. On a Mac, San Francisco would draw it and prove nothing.
+  await page.evaluate(() => {
+    const stack = getComputedStyle(document.documentElement).getPropertyValue("--font-sans-stack");
+    const price = document.createElement("p");
+    price.style.fontFamily = stack.replace(/-apple-system,\s*BlinkMacSystemFont,\s*/, "");
+    price.textContent = "₹1,499";
+    document.body.append(price);
+  });
+
+  // An Inter face whose unicode-range covers ₹ gets loaded...
+  await expect
+    .poll(async () => (await loadedFaces(page, inter)).some((face) => covers(face.unicodeRange, 0x20b9)))
+    .toBe(true);
+  // ...and none of the Hindi font's files are downloaded.
+  await page.evaluate(() => document.fonts.ready);
+  const devanagariFiles = (await fontFilesByFamily(page))[devanagari] ?? [];
+  expect(devanagariFiles.length).toBeGreaterThan(0);
+  const downloaded = await downloadedFiles(page);
+  for (const file of devanagariFiles) expect(downloaded).not.toContain(file);
 });
 
 test("the Hindi font loads when Devanagari text needs it", async ({ page }) => {
   await page.goto("/");
-  const devanagari = firstFamily(
-    await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--font-devanagari")),
-  );
+  const { devanagari } = await fontFamilies(page);
   // Asks the browser for the font as a Hindi page would ("namaste").
   const loaded = await page.evaluate(
     (family) => document.fonts.load(`16px "${family}"`, "नमस्ते").then((faces) => faces.map((face) => face.status)),
