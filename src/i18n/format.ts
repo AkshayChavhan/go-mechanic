@@ -18,6 +18,8 @@ export function formatRupees(paise: number, locale: Locale): string {
   return new Intl.NumberFormat(intlLocales[locale], {
     style: "currency",
     currency: "INR",
+    // Show "-" only for amounts below zero, so -0 prints "₹0", not "-₹0".
+    signDisplay: "negative",
     minimumFractionDigits: hasPaise ? 2 : 0,
     maximumFractionDigits: hasPaise ? 2 : 0,
   }).format(paise / 100);

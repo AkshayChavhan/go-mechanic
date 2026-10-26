@@ -24,6 +24,10 @@ describe("formatRupees (money is stored as integer paise)", () => {
     expect(formatRupees(-10_000, "en")).toBe("-₹100");
   });
 
+  test("minus zero (say, a zero discount negated) shows as ₹0", () => {
+    expect(formatRupees(-0, "en")).toBe("₹0");
+  });
+
   test.each([1.5, Number.NaN, Number.POSITIVE_INFINITY, 2 ** 53])(
     "rejects %s: paise must be a safe whole number",
     (value) => {
@@ -35,7 +39,9 @@ describe("formatRupees (money is stored as integer paise)", () => {
 describe("formatDate and formatTime (always India time)", () => {
   const originalTz = process.env.TZ;
   afterEach(() => {
-    process.env.TZ = originalTz;
+    // Setting process.env.TZ = undefined would store the text "undefined".
+    if (originalTz === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTz;
   });
 
   test("a UTC evening is already the next day in India", () => {

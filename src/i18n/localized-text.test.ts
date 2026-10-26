@@ -22,4 +22,9 @@ describe("localize (text stored in several languages)", () => {
   test("falls back to English for a language we don't support", () => {
     expect(localize({ en: "Oil change" }, "mr")).toBe("Oil change");
   });
+
+  test("falls back to English for names every object has, like constructor", () => {
+    expect(localize({ en: "Oil change" }, "constructor")).toBe("Oil change");
+    expect(localize({ en: "Oil change" }, "toString")).toBe("Oil change");
+  });
 });
