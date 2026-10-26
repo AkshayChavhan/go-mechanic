@@ -77,4 +77,25 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
   test("leaves shadcn's components/ui alone", async () => {
     expect(await errorRules(component("<p>Close</p>"), "src/components/ui/example.tsx")).toEqual([]);
   });
+
+  // Development-only pages (/dev/design...) may type demo text: devOnly()
+  // makes them a 404 in production, so no visitor ever reads it.
+  test.each([
+    ["the dev page itself", "src/app/[locale]/dev/design/page.tsx"],
+    ["a component next to a dev page", "src/app/[locale]/dev/design/_components/demo.tsx"],
+  ])("allows typed text on %s", async (_name, filePath) => {
+    expect(await errorRules(component('<button aria-label="Play the demo">Play</button>'), filePath)).toEqual([]);
+  });
+
+  test.each([
+    ["a page whose name starts with dev", "src/app/[locale]/devices/page.tsx"],
+    ["a dev folder deeper in the site", "src/app/[locale]/services/dev/page.tsx"],
+  ])("still rejects typed text on %s", async (_name, filePath) => {
+    expect(await errorRules(component("<p>Hello</p>"), filePath)).toContain("react/jsx-no-literals");
+  });
+
+  test("still rejects next/link on dev pages", async () => {
+    const code = 'import Link from "next/link";\nexport const x = Link;\n';
+    expect(await errorRules(code, "src/app/[locale]/dev/design/page.tsx")).toContain("no-restricted-imports");
+  });
 });

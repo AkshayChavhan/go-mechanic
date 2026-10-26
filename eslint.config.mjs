@@ -49,7 +49,15 @@ const eslintConfig = defineConfig([
   // style code. src/i18n/lint-guards.test.ts checks these rules still fire.
   {
     files: ["src/app/**/*.tsx", "src/components/**/*.tsx"],
-    ignores: ["**/*.test.tsx", "src/components/ui/**"],
+    ignores: [
+      "**/*.test.tsx",
+      "src/components/ui/**",
+      // Development-only pages (/dev/design...) may type demo text: devOnly()
+      // makes them a 404 in production. Only src/app/[locale]/dev/, not any
+      // folder named dev. Kept here, not in a new block: a second block with
+      // its own no-restricted-syntax list would replace this one's.
+      "src/app/*/dev/**",
+    ],
     rules: {
       "react/jsx-no-literals": ["error", { noStrings: true, ignoreProps: true }],
       "no-restricted-syntax": [
