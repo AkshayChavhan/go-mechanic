@@ -135,7 +135,12 @@ There was also a technical risk. The usual next-intl setup reads a request heade
 
 13. **Docs.** `CLAUDE.md` gained repo-map rows and a "Languages (next-intl)" list of rules. `readme.md` gained one line on languages. `task.md` ticks the build steps and points task 12's 404 at `global-not-found.tsx`. The work session also ran `npm run dev`: `/` gave 200, `/en` 307 and `/nope` 404, and `next dev` didn't rewrite `AGENTS.md`.
 
-14. **SEO check.** *Pending: filled in after the `seo-reviewer` agent runs on the changed page files.*
+14. **SEO check.** The SEO Stop hook listed the changed page files, and the `seo-reviewer` agent checked `/`, the 404 page and the language URLs on the production build. **All three pass**, with only nice-to-have suggestions. None was applied (repo rule); they were added to later tasks in `task.md` instead:
+    - Every page ships all of `messages/en.json`, because `NextIntlClientProvider` gets every message by default. Pass only what client components need (task 12).
+    - The 404 title is just "Page not found": `global-not-found.tsx` doesn't get the layout's title template, so add the brand (task 12).
+    - `/foo.bar` (or an old `/index.html` link) shows a blank error page. Narrowing the proxy matcher to real file extensions would send those to the designed 404 (task 12).
+    - When Hindi ships, next-intl's proxy starts sending an hreflang `Link` header. Pick one source of hreflang, that header or metadata, not both (task 42).
+    - Title, description, canonical, Open Graph, JSON-LD, robots and sitemap are waiting for task 42, as planned.
 
 15. **Review.** *Pending: filled in after `ce-code-review` and the `code-reviewer` agent run, with their real verdicts and what was fixed.*
 
