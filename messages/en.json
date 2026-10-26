@@ -1,0 +1,15 @@
+{
+  "Metadata": {
+    "title": "GoMechanic",
+    "description": "GoMechanic is a car and two-wheeler service and repair garage. Our new website is on its way."
+  },
+  "HomePage": {
+    "title": "GoMechanic",
+    "tagline": "Car and two-wheeler service. Our new website is on its way."
+  },
+  "NotFound": {
+    "title": "Page not found",
+    "description": "This page doesn't exist or has moved.",
+    "backHome": "Go to the home page"
+  }
+}
