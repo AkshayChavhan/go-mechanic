@@ -203,7 +203,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
 - [ ] Frosted sticky header with navigation and mobile menu
-- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and narrow the `src/proxy.ts` matcher to real file extensions so old links like `/index.html` reach this page instead of a blank error page
+- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and decide whether to narrow the `src/proxy.ts` matcher so dotted URLs like `/index.html` reach this page instead of a blank error page. Trade-off (`ce-code-review` in task 10): with a hand-made list of file extensions, any public file type missing from the list returns 404
 - [ ] Pass `NextIntlClientProvider` only the message namespaces client components use (SEO check in task 10: today every page ships all of `messages/en.json`)
 - [ ] Open-now badge and offer banner
 - [ ] Write the learning doc
@@ -566,7 +566,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Online payments (UPI, cards) and GST invoices
 - Referral rewards
 - Revenue and GST reports, spare-parts inventory
-- Hindi translation of all text (the site is built Hindi-ready from task 10)
+- Hindi translation of all text (the site is built Hindi-ready from task 10). Also make `src/i18n/messages.test.ts` check that `hi.json` has exactly the keys of `en.json`
 - Upgrade ESLint 9 (end-of-life; `npm ci` prints a deprecation warning) to ESLint 10 once `eslint-config-next`'s plugins support it
 - App-like install for customers, roadside-assistance dispatch, more branches
 
