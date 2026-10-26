@@ -224,19 +224,29 @@ test.describe("motion demo", () => {
     test("Play moves the tile over time, to the end", async ({ page }) => {
       await open(page);
       const start = await positions(page);
+      // Record the tile's right edge on every animation frame, inside the
+      // page. Timing it from the test with waits was flaky on a busy machine:
+      // the ease-out curve covers most of the distance early.
+      await page.evaluate(() => {
+        const tile = document.querySelector("[data-motion-tile]")!;
+        const frames: number[] = [];
+        (window as unknown as { tileFrames: number[] }).tileFrames = frames;
+        const record = () => {
+          frames.push(tile.getBoundingClientRect().right);
+          if (frames.length < 600) requestAnimationFrame(record);
+        };
+        requestAnimationFrame(record);
+      });
       await page.getByRole("button", { name: "Play" }).click();
-      await page.waitForTimeout(150);
-      const early = await positions(page);
-      await page.waitForTimeout(150);
-      const later = await positions(page);
-      // Moving, and not there yet after 150ms of an 800ms move.
-      expect(early.tileEnd).toBeGreaterThan(start.tileEnd);
-      expect(later.tileEnd).toBeGreaterThan(early.tileEnd);
-      expect(later.trackEnd - later.tileEnd).toBeGreaterThan(1);
       await expect.poll(async () => {
         const end = await positions(page);
         return Math.abs(end.trackEnd - end.tileEnd);
       }).toBeLessThan(1);
+      const { trackEnd } = await positions(page);
+      const frames = await page.evaluate(() => (window as unknown as { tileFrames: number[] }).tileFrames);
+      // It moved gradually: at least two frames caught it partway, not a jump.
+      const partway = frames.filter((right) => right > start.tileEnd + 1 && right < trackEnd - 1);
+      expect(partway.length).toBeGreaterThanOrEqual(2);
     });
   });
 });
