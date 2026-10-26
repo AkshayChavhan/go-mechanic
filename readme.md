@@ -36,11 +36,36 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `.compound-engineering/` | Compound Engineering settings: `config.yaml` (ours) and `config.example.yaml` (every option explained). |
 | `document/plans/` | Plans: the project's master plan, plus one plan per task written by Compound Engineering's `ce-plan`. |
 | `document/solutions/` | Reusable lessons, written by `ce-compound`. Claude reads them before similar work. |
+| `src/` | The website's code. `src/app/` holds the pages (one folder per URL), `src/lib/` small helpers. |
+| `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. |
+| `package.json`, `package-lock.json` | The app's dependencies and commands. |
+| `.nvmrc` | The Node.js version the project uses (24). |
+| `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `components.json` | Settings for Next.js, TypeScript, ESLint and shadcn/ui. |
+| `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts` | Test settings. |
+| `AGENTS.md` | Notes from Next.js for AI coding agents. |
+
+## Run the website
+
+```bash
+fnm use                # switch to the Node version in .nvmrc (24)
+npm install            # install dependencies (first time, or after package.json changes)
+npm run dev            # start the dev server
+```
+
+Open http://localhost:3000. Other commands:
+
+| Command | What it does |
+| --- | --- |
+| `npm run check` | Lint, type check and unit tests in one go. Run it before you call any work done. |
+| `npm run test:e2e` | Builds the site and opens it in your Chrome to check it really works. Run it before merging. |
+| `npm run build` / `npm start` | Build the production version / run it |
+| `npm run lint`, `npm run typecheck`, `npm run test` | The three parts of `check`, one at a time |
 
 ## Prerequisites
 
 - Git
-- Node.js 20 or newer (check with `node -v`)
+- Node.js 24, the version in `.nvmrc` (check with `node -v`). With [fnm](https://github.com/Schniz/fnm), run `fnm use` in the project folder.
+- Google Chrome, for the browser tests (`npm run test:e2e`)
 - Python 3.9 or newer (check with `python3 --version`), for the UI/UX Pro Max search script and the automatic SEO check
 - [Claude Code](https://code.claude.com/docs/en/overview). The first time you open the repo, accept the "trust this folder" prompt. That's what lets the Compound Engineering plugin load from `.claude/settings.json`.
 - Optional: a [21st.dev](https://21st.dev) account for the 21st skills. Run `npx @21st-dev/cli login` once.

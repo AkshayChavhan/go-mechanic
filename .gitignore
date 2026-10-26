@@ -11,6 +11,10 @@ next-env.d.ts
 
 # Test output
 coverage/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
 
 # Secrets and local environment values
 # Commit a `.env.example` with fake values instead.
@@ -33,6 +37,10 @@ __pycache__/
 CLAUDE.local.md
 # SEO hook state: fingerprints of the last reviewed page files
 .claude/.seo-reviewed.json
+
+# Deployment and certificates
+.vercel
+*.pem
 
 # OS and editor clutter
 .DS_Store

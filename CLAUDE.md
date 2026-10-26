@@ -2,10 +2,13 @@
 
 Claude Code reads this file at the start of every session. Follow it for all work in this repo.
 
+Next.js's own notes for coding agents (kept up to date by `next dev`): @AGENTS.md
+
 ## The project
 
 - **GoMechanic**: a website and booking system for **one garage in India** that repairs cars and two-wheelers. Features: `document/website/features.md`. Full plan, architecture and tasks 07–46: `document/plans/2026-10-24-gomechanic-master-plan.md` (approved by the owner).
-- **Stack (in the approved plan):** Next.js 16 (App Router, Cache Components), TypeScript, Tailwind v4, shadcn/ui (Radix), GSAP, Drizzle + Postgres (PGlite in development), Better Auth phone OTP, next-intl (English now, Hindi-ready). SMS, WhatsApp and email use fake providers until the launch tasks (44–45).
+- **Stack, installed (task 09):** Node 24 LTS (`.nvmrc`), Next.js 16.4.3 (App Router, Cache Components), React 19.3, TypeScript 5, Tailwind CSS 4, shadcn/ui 4 (Radix base, nova preset), GSAP 3.15, Vitest 5, Playwright 1.64.
+- **Stack, planned for later tasks:** Drizzle + Postgres (PGlite in development, task 14), Better Auth phone OTP (15), next-intl (10; English now, Hindi-ready). SMS, WhatsApp and email use fake providers until the launch tasks (44–45).
 - **Design:** Apple-like, calm and spacious, with smooth GSAP scroll animation (see "Design direction" in `features.md`). Version 1 has no online payments or GST invoices.
 - **The owner is learning.** Every task must teach. Write explanations for a junior software engineer.
 
@@ -28,6 +31,43 @@ Claude Code reads this file at the start of every session. Follow it for all wor
 | `.compound-engineering/config.yaml` | Compound Engineering team settings (`config.example.yaml` lists every option) |
 | `document/plans/` | The master plan (`2026-10-24-gomechanic-master-plan.md`) plus per-task plans written by `ce-plan` / `ce-brainstorm` |
 | `document/solutions/` | Lessons written by `ce-compound`: read the relevant ones before starting a task |
+| `src/app/` | Pages and layouts (Next.js App Router: one folder per URL) |
+| `src/lib/` | Small shared helpers (`utils.ts` has `cn()`) |
+| `e2e/` | Playwright browser tests (`*.spec.ts`) |
+| `AGENTS.md` | Next.js's notes for AI agents; imported above. `next dev` may rewrite its block: commit what it writes |
+| `package.json`, `package-lock.json` | Dependencies and npm scripts (always commit the lockfile) |
+| `.nvmrc` | Node version (24); fnm switches to it automatically |
+| `next.config.ts`, `tsconfig.json`, `eslint.config.mjs` | Next.js, TypeScript and ESLint settings (TypeScript and ESLint skip `.claude/`) |
+| `components.json` | shadcn/ui settings |
+| `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts` | Test settings |
+
+## Commands
+
+Run them with Node 24 (`.nvmrc`; `fnm use` if your shell is on another version).
+
+```bash
+npm run dev          # dev server on http://localhost:3000
+npm run check        # lint + typecheck (next typegen + tsc) + unit tests; must pass before every commit you call done
+npm run test:e2e     # Playwright on a production build (port 3210, your installed Chrome); must pass before every merge
+npm run build        # production build
+npm run lint         # ESLint only
+npm run typecheck    # next typegen, then tsc --noEmit
+npm run test         # Vitest once (npm run test:watch to keep it running)
+npx shadcn@latest add <component>   # add a shadcn/ui component
+```
+
+`test:e2e` isn't part of `check` because it needs a production build (slow). Never run `npx playwright install`: it downloads browsers; the tests use the Chrome already installed.
+
+## Code conventions
+
+- **Next.js 16 is newer than your training data.** Before using a Next.js API, read its guide in `node_modules/next/dist/docs/` (see `document/solutions/conventions/nextjs-16-read-bundled-docs-image-priority.md`). Cache Components is on (`cacheComponents: true`).
+- **Server Components by default.** Add `"use client"` only to components that need state, effects, event handlers or browser APIs, and keep them small.
+- **Imports** use the `@/` alias (`@/lib/utils`).
+- **Code layout** (from the master plan): `src/app/` routes, `src/components/{ui,site,account,admin}`, `src/domain/` pure logic with no Next.js or database imports, `src/server/` database, data access, actions and providers, `src/lib/` small helpers.
+- **Tests sit next to the code:** `*.test.ts` runs in Node (logic), `*.test.tsx` runs in jsdom (React components). Browser tests go in `e2e/`. Import `test`/`expect` from `vitest` (no globals).
+- **Tailwind only scans `src/`, minus test files** (`source("../")` and `@source not` in `src/app/globals.css`). Put anything that uses Tailwind classes inside `src/`, and not in a `*.test.*` file.
+- **Secrets** come from environment variables, read on the server only. Never prefix a secret with `NEXT_PUBLIC_`: those values are built into the JavaScript every visitor downloads. Add every variable to `.env.example` with a fake value.
+- **npm install scripts:** npm 11 asks before running a package's install script. Don't approve one unless something is actually broken without it (`unrs-resolver` is left unapproved; ESLint works without it).
 
 ## Task workflow: the Compound Engineering loop (always follow)
 
@@ -142,6 +182,7 @@ A task is done when all of these are true:
 - [ ] The work is on its own `NN_short_name` branch, in small commits
 - [ ] Bigger tasks have a plan in `document/plans/`, linked from `task.md`
 - [ ] It works, and you checked it (ran it, tested it, or opened it)
+- [ ] `npm run check` and `npm run test:e2e` pass (once the app exists, from task 09 on)
 - [ ] `document/task/task.md` has the learning doc linked and every step ticked except "Merge" (ticked by the bookkeeping commit in step 11)
 - [ ] The learning doc exists and answers Why, What and How
 - [ ] `readme.md` and `CLAUDE.md` are updated if the task changed how the repo works
