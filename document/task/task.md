@@ -175,9 +175,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `10_i18n_foundation`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-25-1448-feat-i18n-foundation-plan.md)
-- [ ] next-intl with `src/app/[locale]/` and `localePrefix: 'as-needed'`
-- [ ] `messages/en.json`; ₹, date and time formatters (`en-IN`, `Asia/Kolkata`)
-- [ ] Check it works with Cache Components
+- [x] next-intl with `src/app/[locale]/` and `localePrefix: 'as-needed'`
+- [x] `messages/en.json`; ₹, date and time formatters (`en-IN`, `Asia/Kolkata`)
+- [x] Check it works with Cache Components
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -203,7 +203,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
 - [ ] Frosted sticky header with navigation and mobile menu
-- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom `not-found.tsx` 404 page with its own title (SEO check in task 09: the built-in 404 gets two `<title>` tags)
+- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design)
 - [ ] Open-now badge and offer banner
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
