@@ -96,7 +96,10 @@ Every task goes **plan → work → review → compound**, inside our task and b
 8. **Write the learning doc** at `document/learning/NN_short_name.md` from `document/learning/TEMPLATE.md` (see Learning docs; the `learning-doc-writer` agent can draft it).
 9. **Review.** If the task changed code, run `ce-code-review` (it only reports), unless `ce-work` already ran it for this change. Then run the `code-reviewer` agent: it checks the repo rules and is the final gate. Fix every "must fix", **then** add the real verdict and what you fixed to the learning doc. Never write that a review (or test, or merge) happened before it did. See `document/solutions/conventions/run-commands-before-documenting-output.md`.
 10. **Compound.** Ask: *"If this lesson weren't written down, would a future session repeat the mistake or redo the investigation?"* Mistakes the review caught are the usual source. If yes, run exactly `/compound-engineering:ce-compound mode:non-interactive depth:lightweight <one-line summary>` (never plain `/ce-compound`; see the privacy rule). It writes one lesson to `document/solutions/`. If no, skip it and say why in the learning doc.
-11. **Merge, then mark it done.** `git switch main && git merge --no-ff NN_short_name` (unless the user asked for a pull request). Then make one bookkeeping commit on `main`, `docs(NN): mark task NN done`: tick "Merge into `main`" and set `Done` in `task.md` and in the learning doc's header. This is the only kind of commit made directly on `main`.
+11. **Hand over through a pull request, then mark it done.** The owner merges every task on GitHub (their choice from task 10 on; tasks 01–09 were merged locally with `git merge --no-ff`).
+    - Ask, then push the task branch (`git push -u origin NN_short_name`) and check that a pull request into `main` exists (`gh pr list`). The owner usually opens it; open one with `gh pr create` only if they ask. Then stop: never merge it yourself.
+    - After the owner merges it, sync: `git switch main && git pull --ff-only origin main`.
+    - Mark it done in one bookkeeping commit, `docs(NN): mark task NN done`: tick "Merge into `main`" and set `Done` in `task.md` and in the learning doc's header. Make it the first commit on the next task's branch, so `main` only ever changes through pull requests. Never commit directly on `main`.
 12. **One task at a time.** Don't start the next task on the same branch. If you find unrelated work, add it to the backlog in `task.md` instead of doing it.
 
 ## Learning docs
@@ -156,7 +159,7 @@ A **learning doc** teaches the owner (a junior engineer) what one task did. A **
 
 **Rules (these override the plugin's defaults):**
 
-- **Our shipping process wins.** In this repo, a Compound Engineering skill's shipping step means **commit on the task branch, then stop**. Merging into `main` happens only at Task workflow step 11, after the learning doc, review and compound steps. No Compound Engineering skill may push, open or update a pull request, start PR babysitting, merge, or create branches other than the task branch, unless the user asks in this session. Don't use `lfg`, `ce-commit-push-pr`, `ce-babysit-pr` or `ce-resolve-pr-feedback` unless the user asks for them by name. These rules are the real protection: the config switches only cover some of these paths.
+- **Our shipping process wins.** In this repo, a Compound Engineering skill's shipping step means **commit on the task branch, then stop**. Merging into `main` happens only at Task workflow step 11, when the owner merges the pull request, after the learning doc, review and compound steps. No Compound Engineering skill may push, open or update a pull request, start PR babysitting, merge, or create branches other than the task branch, unless the user asks in this session. Don't use `lfg`, `ce-commit-push-pr`, `ce-babysit-pr` or `ce-resolve-pr-feedback` unless the user asks for them by name. These rules are the real protection: the config switches only cover some of these paths.
 - **No other AI vendors.** `cross_model_review_mode: off` stops `ce-code-review` and `ce-doc-review` from sending diffs to another model on their own. Never send code or docs to another model provider (Codex, Grok, Antigravity, Cursor, OpenCode), and never hand implementation to one, unless the user asks.
 - **Privacy:** only ever run `ce-compound` as `mode:non-interactive depth:lightweight`. Plain `/ce-compound`, and the calls that `lfg`, `ce-debug`, `ce-optimize`, `ce-polish` and `ce-pov` make to it, run Full mode, which scans recent session transcripts in your home folder. If a skill offers to run `ce-compound`, decline and run the lightweight command yourself. Never read other projects' session files (`~/.claude/projects/`, `~/.codex/`, `~/.cursor/`).
 - **Don't publish** to Proof (`ce-proof`) or anywhere else outside this machine without asking.
@@ -202,7 +205,7 @@ A task is done when all of these are true:
 - [ ] No secrets, no generated folders committed
 - [ ] `code-reviewer` reports "Ready to merge" (or every "must fix" is fixed)
 - [ ] The compound question was asked: a lesson is in `document/solutions/`, or the learning doc says why none was needed
-- [ ] Merged into `main` with `--no-ff` (or a pull request is open, if the user asked for one), then the `docs(NN): mark task NN done` commit sets `Done`
+- [ ] The task branch is pushed and the owner merged its pull request into `main`; the `docs(NN): mark task NN done` commit (first commit of the next task's branch) sets `Done`
 
 ## Talking to the user
 

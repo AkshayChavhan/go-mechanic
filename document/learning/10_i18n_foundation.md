@@ -157,6 +157,8 @@ There was also a technical risk. The usual next-intl setup reads a request heade
 
 16. **Compound.** Would a future session repeat this without a written lesson? Yes. The plan's hand check ("add `<p>Hello</p>`, see lint fail") passed while the guard missed most real text, and it took two review rounds to find every hole. So we ran `ce-compound` (lightweight). Its helper session wasn't allowed to write into the repo and left a draft. We copied it to `document/solutions/conventions/lint-guards-test-real-jsx-shapes.md` after re-running its two unchecked claims: switching the rule off fails exactly 7 tests, and the `:matches` selector mistake above really happened. The doubled `x-nextjs-prerender` header and the dotted-URL 404 didn't get lessons: the test comment, this doc and the task 12 note already cover them.
 
+17. **Hand-over through a pull request.** GitHub had moved on: the owner had merged task 09 there as PR #2, from an older copy of its branch, and had opened PR #3 for this task. Asked how to merge, the owner chose the pull request. So from this task on, Claude pushes the task branch (after asking) and the owner merges the pull request on GitHub, instead of Claude running `git merge --no-ff` locally. The "mark done" commit becomes the first commit on the next task's branch, so `main` only changes through pull requests. `CLAUDE.md` step 11, `task.md`'s "How to add a task" and the `code-reviewer` agent now say so.
+
 ## Decisions worth knowing
 
 | Choice | Why | What it costs |

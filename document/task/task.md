@@ -585,9 +585,10 @@ Not in version 1. See [features.md](../website/features.md).
 5. **Set the status to `In progress`** and do the work in small commits.
 6. **Write the learning doc**: copy [TEMPLATE.md](../learning/TEMPLATE.md) to `document/learning/NN_short_name.md` and fill it in.
 7. **Link the learning doc** in the table. Tick "Review" only after the review really happened.
-8. **Merge into `main`** (or open a pull request):
+8. **Merge into `main` through a pull request.** Push the branch and make sure a pull request into `main` exists; the owner merges it on GitHub (from task 10 on; tasks 01–09 were merged locally with `git merge --no-ff`):
    ```bash
-   git switch main
-   git merge --no-ff NN_short_name
+   git push -u origin NN_short_name   # ask the owner first
+   gh pr list                          # is there a pull request for the branch?
    ```
-9. **Mark it done** in one bookkeeping commit on `main`: tick "Merge into `main`", set the status to `Done` here and in the learning doc's header, then `git commit -m "docs(NN): mark task NN done"`. A step can't honestly be ticked before it happens, which is why this comes after the merge.
+   After the owner merges it, update your `main`: `git switch main && git pull --ff-only origin main`.
+9. **Mark it done** in one bookkeeping commit, `docs(NN): mark task NN done`: tick "Merge into `main`", set the status to `Done` here and in the learning doc's header. Make it the first commit on the next task's branch, so `main` only changes through pull requests. A step can't honestly be ticked before it happens, which is why this comes after the merge.
