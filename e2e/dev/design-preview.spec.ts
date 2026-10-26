@@ -27,7 +27,17 @@ async function open(page: Page) {
 async function useInter(page: Page) {
   await page.getByRole("button", { name: "Inter", exact: true }).click();
   await expect(page.getByRole("button", { name: "Inter", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.evaluate(() => document.fonts.ready);
+  // The switch sets the font on <html> in an effect, just after the click.
+  // Wait for that, then make the browser lay the page out (which starts the
+  // font downloads) before waiting for the fonts: otherwise fonts.ready can
+  // resolve too early and a screenshot catches text mid-swap.
+  await expect
+    .poll(() => page.evaluate(() => getComputedStyle(document.body).fontFamily))
+    .not.toMatch(/^-apple-system/);
+  await page.evaluate(async () => {
+    void document.body.offsetHeight;
+    await document.fonts.ready;
+  });
 }
 
 /** Whether the page is wider than the screen (it scrolls sideways). */
@@ -109,10 +119,17 @@ test("the font switch shows Inter, the font of most Android visitors", async ({ 
   );
   // On this Mac, San Francisco comes first...
   expect(await heading.evaluate((element) => getComputedStyle(element).fontFamily)).toMatch(/^-apple-system/);
-  // ...and with the switch on Inter, the stack starts with Inter.
+  // ...and with the switch on Inter, the stack starts with Inter: on the page,
+  // on <body>, and in the sheet, which renders outside the page (a portal).
   await useInter(page);
-  const family = await heading.evaluate((element) => getComputedStyle(element).fontFamily);
-  expect(noQuotes(family.split(",")[0])).toBe(inter);
+  const firstFont = async (element: ReturnType<Page["locator"]>) =>
+    noQuotes((await element.evaluate((node) => getComputedStyle(node).fontFamily)).split(",")[0]);
+  expect(await firstFont(heading)).toBe(inter);
+  expect(await firstFont(page.locator("body"))).toBe(inter);
+  await page.getByRole("button", { name: "Open the menu" }).click();
+  const sheetTitle = page.getByRole("dialog", { name: "Menu" }).getByRole("heading", { name: "Menu" });
+  await expect(sheetTitle).toBeVisible();
+  expect(await firstFont(sheetTitle)).toBe(inter);
 });
 
 test("pressing Tab to the first main button shows a solid 2px outline in the ring colour", async ({ page }) => {
