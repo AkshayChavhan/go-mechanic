@@ -1,6 +1,6 @@
 # 09_app_setup: A working Next.js app, and one command that checks it
 
-> **Branch:** `09_app_setup` · **Date:** 2026-10-25 · **Status:** In progress (review pending)
+> **Branch:** `09_app_setup` · **Date:** 2026-10-25 · **Status:** Done
 
 ## In one minute
 
@@ -51,7 +51,7 @@ This attempt fixes all three, and a check or test now guards each one. Planning 
    ^22.12.0 || ^24.0.0 || >=26.0.0
    ^22.22.2 || ^24.15.0 || >=26.0.0
    ```
-   Node 20 is in neither range. Switching Node is a machine-wide change, so Claude asked first, and the owner chose **Node 24 LTS**. `fnm install 24` printed `Installing Node v24.22.1 (arm64)`, then `warning: Version already installed at ...`. Node 24 was already installed, and was even fnm's default, so nothing new was installed. The version is pinned in `.nvmrc` (`24`) and in `engines` (`>=24.15.0`, jsdom's lowest). `@types/node` moved to `^24`, because Vitest 5 expects `^22 || >=24`.
+   Node 20 is in neither range. Switching Node is a machine-wide change, so Claude asked first, and the owner chose **Node 24 LTS**. `fnm install 24` printed `Installing Node v24.22.1 (arm64)`, then `warning: Version already installed at ...`. Node 24 was already installed, and was even fnm's default, so nothing new was installed. The version is pinned in `.nvmrc` (`24`) and in `engines` (`^24.15.0 || >=26.0.0`: jsdom's lowest Node 24, and skipping Node 25, which Vitest and jsdom reject). `@types/node` moved to `^24`, because Vitest 5 expects `^22 || >=24`.
 
 3. **Delete the leftovers.** A removed scaffold had left `node_modules/`, `.next/`, `next-env.d.ts` and `tsconfig.tsbuildinfo` behind. Before deleting them, we checked that git ignores them and tracks none. The command (re-run now that the install has created them again):
    ```bash
@@ -81,7 +81,7 @@ This attempt fixes all three, and a check or test now guards each one. Planning 
    - made `typecheck` run `next typegen` first;
    - wrote an honest placeholder page.
 
-   `npm install` (npm 11) printed `npm warn install-scripts 1 package has install scripts not yet covered by allowScripts: unrs-resolver@1.12.2 (postinstall: node postinstall.js)`. We left that script unapproved, and lint works without it.
+   `npm install` (npm 11) printed `npm warn install-scripts 1 package has install scripts not yet covered by allowScripts: unrs-resolver@1.12.2 (postinstall: node postinstall.js)`. We left that script unapproved, and lint works without it. (On a fresh clone `npm ci` also lists `fsevents`, a macOS file-watching helper; it stays unapproved too. `npm ci` also warns that ESLint 9 is end-of-life. Upgrading to ESLint 10 is on the backlog, for when `eslint-config-next`'s plugins support it.)
 
 5. **shadcn/ui and GSAP.** We ran `shadcn init` with these flags:
    - `--base radix`: use the Radix primitives;
@@ -131,11 +131,33 @@ This attempt fixes all three, and a check or test now guards each one. Planning 
 
 10. **Learning doc.** This file. The outputs marked "re-run" were run again while writing it. Steps 2, 4, 6, 7 and 8 also quote output from the work session that wasn't re-run, because re-running it would install packages or change files.
 
-11. **SEO check.** (filled in after it happens)
+11. **SEO check.** The page files were new, so we ran the SEO hook script by hand (it records what it reviewed, as the automatic hook would) and then the `seo-reviewer` agent. It built the site, fetched the pages with `curl` as a visitor and as Googlebot, and reported **2 pages checked: 2 pass, 0 need work**:
+    - **`/`: Pass.** One `<h1>`, real text in the HTML, `lang="en"`, and the page is built ahead of time, so Google gets the same HTML as a visitor.
+    - **404 page: Pass.** It returns status 404 with `noindex`. *Nice to have:* it has two `<title>` tags (Next.js's built-in 404 title plus ours). Task 12's custom `not-found.tsx` fixes that.
+    - **Heads-up for task 11:** Geist has no Hindi (Devanagari) letters, so task 11 should load a Devanagari font too.
+    - **Waiting for task 42:** title template, longer description, canonical URL, social tags, sitemap, robots, JSON-LD.
 
-12. **Review.** (filled in after it happens)
+    No fixes were applied (they're the owner's choice); the two follow-ups went into tasks 11 and 12 in `task.md`.
 
-13. **Compound.** (filled in after it happens)
+12. **Review.** Two reviews ran, plus an extra SEO check when `globals.css` changed. That one passed: the change only removed three unused CSS rules.
+    - **`code-reviewer`: Needs changes.** It re-ran everything on a fresh clone (including `test:e2e`) and confirmed the numbers in this doc. Its two must-fixes were paperwork: the tracker hadn't ticked "Write the learning doc", and this doc didn't record the SEO check (now step 11). We also took its suggestions:
+      - `engines` let in Node 25, which Vitest and jsdom reject: now `^24.15.0 || >=26.0.0`.
+      - The clean-up test only proved something when it ran after the other test: rewritten.
+      - `CLAUDE.md` now names both held-back install scripts (`fsevents` and `unrs-resolver`) and explains when fnm switches Node by itself.
+      - Upgrading the end-of-life ESLint 9 is on the backlog.
+    - **`ce-code-review`: Ready to merge.** Five reviewer personas (correctness, adversarial, project standards, testing, past lessons) found nothing at any severity, and every plan requirement was met. We still took three cheap suggestions:
+      - Vitest and Playwright now **fail on a forgotten `test.only`**, instead of silently skipping every other test (checked: a `test.only` file now fails).
+      - The `cn()` test imports through `@/`, so the alias is tested too.
+      - The font browser test compares against `--font-sans` itself instead of the name "Geist", so it won't break when task 11 changes the font. Its first version failed, because browsers drop the quotes around simple font names (`"Geist"` becomes `Geist`); it now ignores quotes.
+    - The **cleanup test fix** was proven both ways: run on its own, it passes; with the setup file switched off, it fails.
+    - **Commit types:** two commits used `test:` for what was mostly config, and one hid an app fix (the icon) in a test commit. They weren't rewritten, because the branch was already pushed (from outside this session; Claude doesn't push). Next time: `chore(09):` for config, `test(09):` for tests, `fix(09):` for app fixes.
+    - The final head passed `npm run check` and all 4 browser tests, with no browser download.
+
+13. **Compound.** The counterfactual question: *would a future session repeat a mistake from this task?* The two most likely repeats now live **in the code itself**, where a future session can't miss them:
+    - the Tailwind leak, in commented `source()` / `@source not` lines in `globals.css`;
+    - the `@vitejs/plugin-react` clash, in a comment in `vitest.config.mts`.
+
+    `CLAUDE.md` repeats both as rules. So no new solution doc. We did **refresh** the existing Next.js lesson, whose "docs come from a leftover `node_modules`" note was now out of date.
 
 ## Decisions worth knowing
 

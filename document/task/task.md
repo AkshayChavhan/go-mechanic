@@ -18,8 +18,8 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 06 | `06_compound_engineering` | Install the Compound Engineering plugin and fit its plan, work, review, compound loop into our workflow | Done | [06_compound_engineering.md](../learning/06_compound_engineering.md) |
 | 07 | `07_website_plan` | Save the approved website plan: features doc, master plan, tasks 07–46 | Done | [07_website_plan.md](../learning/07_website_plan.md) |
 | 08 | `08_seo_reviewer` | SEO reviewer agent + Stop hook that runs it after every page change | Done | [08_seo_reviewer.md](../learning/08_seo_reviewer.md) |
-| 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | In progress | [09_app_setup.md](../learning/09_app_setup.md) |
-| 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | To do |  |
+| 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | Done | [09_app_setup.md](../learning/09_app_setup.md) |
+| 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | In progress | [10_i18n_foundation.md](../learning/10_i18n_foundation.md) |
 | 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/design` preview | To do |  |
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | To do |  |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | To do |  |
@@ -166,18 +166,18 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] `shadcn init` (Radix); install GSAP
 - [x] Vitest + Playwright smoke tests; `npm run check`
 - [x] Update `CLAUDE.md` (stack, commands, `@AGENTS.md`) and `readme.md`
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
-- [ ] Merge into `main`
+- [x] Write the learning doc
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Merge into `main`
 
 ### 10_i18n_foundation
 
-- [ ] Create branch `10_i18n_foundation`
-- [ ] Plan with `ce-plan`
-- [ ] next-intl with `src/app/[locale]/` and `localePrefix: 'as-needed'`
-- [ ] `messages/en.json`; ₹, date and time formatters (`en-IN`, `Asia/Kolkata`)
-- [ ] Check it works with Cache Components
+- [x] Create branch `10_i18n_foundation`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-25-1448-feat-i18n-foundation-plan.md)
+- [x] next-intl with `src/app/[locale]/` and `localePrefix: 'as-needed'`
+- [x] `messages/en.json`; ₹, date and time formatters (`en-IN`, `Asia/Kolkata`)
+- [x] Check it works with Cache Components
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -189,10 +189,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Design direction with frontend-design + ui-ux-pro-max (Apple-like)
 - [ ] Tokens in `globals.css`: colors, type scale, radius, shadows, motion
-- [ ] Fonts: Inter + system San Francisco, Devanagari-ready
+- [ ] Fonts: Inter + system San Francisco, plus a Devanagari font with `next/font` for Hindi (SEO check in task 09: Geist has no Hindi letters)
 - [ ] Restyle shadcn controls (44 px touch targets, pill buttons)
 - [ ] `design-system/go-mechanic/MASTER.md` and a `/dev/design` preview page (development only)
-- [ ] Also load a Devanagari font with `next/font` for Hindi later (SEO check in task 09: Geist has no Hindi letters)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -204,9 +203,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
 - [ ] Frosted sticky header with navigation and mobile menu
-- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, 404 page
+- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and narrow the `src/proxy.ts` matcher to real file extensions so old links like `/index.html` reach this page instead of a blank error page
+- [ ] Pass `NextIntlClientProvider` only the message namespaces client components use (SEO check in task 10: today every page ships all of `messages/en.json`)
 - [ ] Open-now badge and offer banner
-- [ ] Custom `src/app/not-found.tsx` with its own title (SEO check in task 09: the built-in 404 gets two `<title>` tags)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -514,6 +513,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `42_local_seo`
 - [ ] Plan with `ce-plan`
 - [ ] Metadata, sitemap, robots, social image, AutoRepair structured data
+- [ ] One source of hreflang for when Hindi ships: `alternates.languages` in metadata and the sitemap with `alternateLinks: false` in `src/i18n/routing.ts`, or next-intl's `Link` header alone (SEO check in task 10). A canonical on `/` also settles the `/en` 307 redirect
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -567,6 +567,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Referral rewards
 - Revenue and GST reports, spare-parts inventory
 - Hindi translation of all text (the site is built Hindi-ready from task 10)
+- Upgrade ESLint 9 (end-of-life; `npm ci` prints a deprecation warning) to ESLint 10 once `eslint-config-next`'s plugins support it
 - App-like install for customers, roadside-assistance dispatch, more branches
 
 ## How to add a task

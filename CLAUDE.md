@@ -7,8 +7,8 @@ Next.js's own notes for coding agents (kept up to date by `next dev`): @AGENTS.m
 ## The project
 
 - **GoMechanic**: a website and booking system for **one garage in India** that repairs cars and two-wheelers. Features: `document/website/features.md`. Full plan, architecture and tasks 07–46: `document/plans/2026-10-24-gomechanic-master-plan.md` (approved by the owner).
-- **Stack, installed (task 09):** Node 24 LTS (`.nvmrc`), Next.js 16.4.3 (App Router, Cache Components), React 19.3, TypeScript 5, Tailwind CSS 4, shadcn/ui 4 (Radix base, nova preset), GSAP 3.15, Vitest 5, Playwright 1.64.
-- **Stack, planned for later tasks:** Drizzle + Postgres (PGlite in development, task 14), Better Auth phone OTP (15), next-intl (10; English now, Hindi-ready). SMS, WhatsApp and email use fake providers until the launch tasks (44–45).
+- **Stack, installed (task 09):** Node 24 LTS (`.nvmrc`), Next.js 16.4.3 (App Router, Cache Components), React 19.3, TypeScript 5, Tailwind CSS 4, shadcn/ui 4 (Radix base, nova preset), GSAP 3.15, Vitest 5, Playwright 1.64; next-intl 4.14 (task 10: English now, Hindi-ready).
+- **Stack, planned for later tasks:** Drizzle + Postgres (PGlite in development, task 14), Better Auth phone OTP (15). SMS, WhatsApp and email use fake providers until the launch tasks (44–45).
 - **Design:** Apple-like, calm and spacious, with smooth GSAP scroll animation (see "Design direction" in `features.md`). Version 1 has no online payments or GST invoices.
 - **The owner is learning.** Every task must teach. Write explanations for a junior software engineer.
 
@@ -31,12 +31,17 @@ Next.js's own notes for coding agents (kept up to date by `next dev`): @AGENTS.m
 | `.compound-engineering/config.yaml` | Compound Engineering team settings (`config.example.yaml` lists every option) |
 | `document/plans/` | The master plan (`2026-10-24-gomechanic-master-plan.md`) plus per-task plans written by `ce-plan` / `ce-brainstorm` |
 | `document/solutions/` | Lessons written by `ce-compound`: read the relevant ones before starting a task |
-| `src/app/` | Pages and layouts (Next.js App Router: one folder per URL) |
+| `src/app/[locale]/` | Pages and the root layout (Next.js App Router: one folder per URL). `[locale]` is the language; English URLs have no prefix |
+| `src/app/global-not-found.tsx` | The 404 page for unknown URLs (has its own `<html>`; uses `next/link` on purpose) |
+| `src/app/globals.css`, `fonts.ts`, `icon.svg` | Global styles, the shared font, the site icon |
+| `src/proxy.ts` | Runs before each request: next-intl picks the language and redirects `/en/...` to `/...` |
+| `src/i18n/` | Languages: `config.ts` (locales, IST time zone), `routing.ts`, `request.ts`, `navigation.ts` (links and redirects), `format.ts` (₹, dates), `localized-text.ts`, `test-utils.tsx` (`renderWithIntl`) |
+| `messages/en.json` | Every piece of UI text, by namespace (Hindi goes in `messages/hi.json` later) |
 | `src/lib/` | Small shared helpers (`utils.ts` has `cn()`) |
 | `e2e/` | Playwright browser tests (`*.spec.ts`) |
 | `AGENTS.md` | Next.js's notes for AI agents; imported above. `next dev` may rewrite its block: commit what it writes |
 | `package.json`, `package-lock.json` | Dependencies and npm scripts (always commit the lockfile) |
-| `.nvmrc` | Node version (24); fnm switches to it automatically |
+| `.nvmrc` | Node version (24): fnm switches to it on `cd` if set up with `fnm env --use-on-cd`, otherwise run `fnm use` |
 | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs` | Next.js, TypeScript and ESLint settings (TypeScript and ESLint skip `.claude/`) |
 | `components.json` | shadcn/ui settings |
 | `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts` | Test settings |
@@ -56,7 +61,7 @@ npm run test         # Vitest once (npm run test:watch to keep it running)
 npx shadcn@latest add <component>   # add a shadcn/ui component
 ```
 
-`test:e2e` isn't part of `check` because it needs a production build (slow). Never run `npx playwright install`: it downloads browsers; the tests use the Chrome already installed.
+`test:e2e` isn't part of `check` because it needs a production build (slow). Never run `npx playwright install`: it downloads browsers; the tests use the Chrome already installed. If `typecheck` fails with an error inside `.next/dev/types/` after you moved a route, delete `.next/dev` (stale types from an earlier `npm run dev`) and run it again.
 
 ## Code conventions
 
@@ -66,8 +71,16 @@ npx shadcn@latest add <component>   # add a shadcn/ui component
 - **Code layout** (from the master plan): `src/app/` routes, `src/components/{ui,site,account,admin}`, `src/domain/` pure logic with no Next.js or database imports, `src/server/` database, data access, actions and providers, `src/lib/` small helpers.
 - **Tests sit next to the code:** `*.test.ts` runs in Node (logic), `*.test.tsx` runs in jsdom (React components). Browser tests go in `e2e/`. Import `test`/`expect` from `vitest` (no globals).
 - **Tailwind only scans `src/`, minus test files** (`source("../")` and `@source not` in `src/app/globals.css`). Put anything that uses Tailwind classes inside `src/`, and not in a `*.test.*` file.
+- **Languages (next-intl).** The site is English-only for now but must stay Hindi-ready:
+  - UI text goes in `messages/en.json` and is read with `useTranslations` (pages stay non-async). Async server code (`generateMetadata`, layouts) uses `getTranslations`. Lint rejects text typed into JSX (`react/jsx-no-literals`).
+  - `Link`, `redirect`, `useRouter` and `usePathname` come from `@/i18n/navigation`, not `next/link` or `next/navigation` (lint enforces it), so the `/hi` prefix is kept.
+  - Money is stored and passed as integer paise and shown with `formatRupees` (`₹1,23,456`). Dates and times are shown with `formatDate` and `formatTime`, always in India time (`Asia/Kolkata`).
+  - Text stored in the database is a `LocalizedText` (`{ en, hi? }`), shown with `localize(text, locale)`.
+  - Route Handlers and Server Actions pass the locale explicitly (`getTranslations({ locale, namespace })`): there's no `[locale]` page around them.
+  - Page slugs never contain a dot: the proxy treats dotted paths as files and skips them.
+  - Component tests render with `renderWithIntl` from `@/i18n/test-utils`.
 - **Secrets** come from environment variables, read on the server only. Never prefix a secret with `NEXT_PUBLIC_`: those values are built into the JavaScript every visitor downloads. Add every variable to `.env.example` with a fake value.
-- **npm install scripts:** npm 11 asks before running a package's install script. Don't approve one unless something is actually broken without it (`unrs-resolver` is left unapproved; ESLint works without it).
+- **npm install scripts:** npm 11 *skips* packages' install scripts until you approve them (`npm install-scripts approve <pkg>`) and prints an `install-scripts` warning. Don't approve one unless something is actually broken without it. `unrs-resolver`, `fsevents`, and next-intl's `@swc/core` and `@parcel/watcher` are left unapproved; `check` and `test:e2e` pass without them.
 
 ## Task workflow: the Compound Engineering loop (always follow)
 

@@ -4,6 +4,7 @@ GoMechanic is the website and booking system for one garage in India that repair
 
 - What it does: [document/website/features.md](document/website/features.md)
 - How it's built, and all tasks: [the master plan](document/plans/2026-10-24-gomechanic-master-plan.md) and the [task tracker](document/task/task.md)
+- Languages: English now, Hindi later. All the text people read lives in [messages/en.json](messages/en.json), so Hindi only needs a `messages/hi.json`.
 
 ## How we work
 
@@ -36,7 +37,8 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `.compound-engineering/` | Compound Engineering settings: `config.yaml` (ours) and `config.example.yaml` (every option explained). |
 | `document/plans/` | Plans: the project's master plan, plus one plan per task written by Compound Engineering's `ce-plan`. |
 | `document/solutions/` | Reusable lessons, written by `ce-compound`. Claude reads them before similar work. |
-| `src/` | The website's code. `src/app/` holds the pages (one folder per URL), `src/lib/` small helpers. |
+| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/i18n/` the language setup and the ₹ and date helpers, `src/lib/` small helpers. |
+| `messages/` | The website's text, one file per language (`en.json` for now). |
 | `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. |
 | `package.json`, `package-lock.json` | The app's dependencies and commands. |
 | `.nvmrc` | The Node.js version the project uses (24). |
