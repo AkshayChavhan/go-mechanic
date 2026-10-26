@@ -9,6 +9,9 @@ const PORT = 3210;
 
 export default defineConfig({
   testDir: "./e2e",
+  // Development-only pages are tested against `next dev` instead
+  // (playwright.dev.config.ts, npm run test:design).
+  testIgnore: "**/e2e/dev/**",
   // A forgotten test.only would silently skip every other test: fail instead.
   forbidOnly: true,
   fullyParallel: true,
