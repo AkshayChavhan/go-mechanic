@@ -20,7 +20,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 08 | `08_seo_reviewer` | SEO reviewer agent + Stop hook that runs it after every page change | Done | [08_seo_reviewer.md](../learning/08_seo_reviewer.md) |
 | 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | Done | [09_app_setup.md](../learning/09_app_setup.md) |
 | 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | Done | [10_i18n_foundation.md](../learning/10_i18n_foundation.md) |
-| 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/design` preview | To do |  |
+| 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/design` preview | In progress |  |
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | To do |  |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | To do |  |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | To do |  |
@@ -185,7 +185,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 11_design_system
 
-- [ ] Create branch `11_design_system`
+- [x] Create branch `11_design_system`
 - [ ] Plan with `ce-plan`
 - [ ] Design direction with frontend-design + ui-ux-pro-max (Apple-like)
 - [ ] Tokens in `globals.css`: colors, type scale, radius, shadows, motion
