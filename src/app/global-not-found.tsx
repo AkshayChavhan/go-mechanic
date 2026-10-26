@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 
+import { sansFont } from "@/app/fonts";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
-import { sansFont } from "./fonts";
-import "./globals.css";
+import "@/app/globals.css";
 
 // The 404 page for any URL that matches no route. Because the root layout lives
 // inside [locale], Next.js needs this separate page (experimental.globalNotFound

@@ -21,7 +21,8 @@ export default getRequestConfig(async ({ locale: explicitLocale }) => {
   return {
     locale,
     messages: (await import(`../../messages/${locale}.json`)).default,
-    // Dates inside messages render in India time on server and browser alike.
+    // Anything next-intl formats uses India time. Still show dates with
+    // formatDate/formatTime and pass strings to t() (see CLAUDE.md).
     timeZone: GARAGE_TIME_ZONE,
   };
 });

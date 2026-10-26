@@ -31,6 +31,7 @@ There was also a technical risk. The usual next-intl setup reads a request heade
 | `src/i18n/format.ts` + test | Added | `formatRupees`, `formatDate`, `formatTime` |
 | `src/i18n/localized-text.ts` + test | Added | `LocalizedText` type and `localize()` for text stored in the database |
 | `src/i18n/messages.test.ts` | Added | Every message in `en.json` is a non-empty string |
+| `src/i18n/lint-guards.test.ts` | Added | Lints bad and good snippets with the real config, so the lint guards can't quietly stop working (added after review) |
 | `src/i18n/test-utils.tsx` | Added | `renderWithIntl`: renders a component with the real English messages |
 | `messages/en.json` | Added | All UI text, in three groups: `Metadata`, `HomePage`, `NotFound` |
 | `src/app/layout.tsx` | Removed | Replaced by `src/app/[locale]/layout.tsx`, the new root layout |
@@ -38,9 +39,10 @@ There was also a technical risk. The usual next-intl setup reads a request heade
 | `src/app/[locale]/page.tsx` + test | Moved | Same page, text now from `useTranslations("HomePage")` |
 | `src/app/fonts.ts` | Added | One Geist font definition shared by the layout and the 404 page |
 | `src/app/global-not-found.tsx` | Added | The 404 page for any URL that matches no route |
-| `eslint.config.mjs` | Changed | Two guards: no plain `next/link`, no text typed into JSX |
-| `e2e/i18n.spec.ts` | Added | 6 browser tests: `/en` redirect, 404s, the icon, prerendering |
+| `eslint.config.mjs` | Changed | Guards: no plain `next/link` or locale-dropping redirects, no text typed into JSX (between tags, in conditions, in reader-facing attributes) |
+| `e2e/i18n.spec.ts` | Added | 7 browser tests: `/en` and `/en/<page>` redirects, 404s, the icon, prerendering |
 | `e2e/smoke.spec.ts` | Changed | Reads the expected heading from `messages/en.json` |
+| `document/solutions/conventions/lint-guards-test-real-jsx-shapes.md` | Added | The compound lesson (step 16) |
 | `CLAUDE.md`, `readme.md`, `document/task/task.md` | Changed | Repo map, the new language rules, tracker ticks; task 12's 404 step now names `global-not-found.tsx` |
 
 ## How: step by step
@@ -101,9 +103,11 @@ There was also a technical risk. The usual next-intl setup reads a request heade
 
 10. **Lint guards** (`eslint.config.mjs`):
     - `no-restricted-imports` blocks `next/link`, and `redirect`, `permanentRedirect`, `useRouter` and `usePathname` from `next/navigation`. Use `@/i18n/navigation` instead. A plain link would silently drop `/hi` once Hindi exists, and on an English-only site nobody would notice.
-    - `react/jsx-no-literals` (`noStrings`, `ignoreProps`) rejects text typed into JSX in `src/app/**` and `src/components/{site,account,admin}/**`, except test files. Props like `className` or `href` aren't text people read, so they're allowed.
+    - `react/jsx-no-literals` (`noStrings`, `ignoreProps`) rejects text typed between tags in `src/app/**` and `src/components/**`, except test files and shadcn's `src/components/ui/`. `ignoreProps` lets `className` and `href` through, because they aren't text people read.
+    - `no-restricted-syntax` fills the holes `jsx-no-literals` leaves (both reviews found them, step 15): text chosen by a condition (`{isOpen ? "Open now" : "Closed"}`, `{error && "Oops"}`, and one condition inside another), and text in attributes people read or hear: `alt`, `title`, `placeholder`, `aria-label` and four other `aria-` text attributes, typed or chosen by a condition. Not all `aria-*`: `aria-hidden="true"` is a setting, not text.
+    - `src/i18n/lint-guards.test.ts` lints small snippets with the real config (`new ESLint().lintText(...)`), so a later config change can't switch the guards off unnoticed.
 
-    Checked for this doc by piping a bad page into ESLint (`--stdin` lints text as if it were that file, so nothing was edited):
+    Checked for this doc, before the review added the `no-restricted-syntax` part, by piping a bad page into ESLint (`--stdin` lints text as if it were that file, so nothing was edited):
     ```
        2:1   error  'next/link' import is restricted from being used. Use the version from @/i18n/navigation: it keeps the language prefix (/hi/...) in the URL         no-restricted-imports
        3:10  error  'useRouter' import from 'next/navigation' is restricted. Use the version from @/i18n/navigation: it keeps the language prefix (/hi/...) in the URL  no-restricted-imports
@@ -142,9 +146,18 @@ There was also a technical risk. The usual next-intl setup reads a request heade
     - When Hindi ships, next-intl's proxy starts sending an hreflang `Link` header. Pick one source of hreflang, that header or metadata, not both (task 42).
     - Title, description, canonical, Open Graph, JSON-LD, robots and sitemap are waiting for task 42, as planned.
 
-15. **Review.** *Pending: filled in after `ce-code-review` and the `code-reviewer` agent run, with their real verdicts and what was fixed.*
+15. **Review.** Two reviews, in order:
+    - **`ce-code-review`: "Ready with fixes".** Seven reviewer personas, no serious findings, three medium and two small. Fixed:
+      - The text guard let `{isOpen ? "Open now" : "Closed"}` and typed `alt`, `aria-label`, `placeholder` and `title` through. Added `no-restricted-syntax`, widened the guard to all of `src/components/` except `ui/`, and added `src/i18n/lint-guards.test.ts`. Switching the new parts off (the selectors and the wider folder list) made 5 of its tests fail, which proves they test something.
+      - `../fonts` imports instead of `@/app/fonts`, and a time-zone test that left the text `"undefined"` in `process.env.TZ`.
+      - Two of its "residual risks", each with a test written first and seen failing: `formatRupees(-0)` printed `"-₹0"` (fixed with `signDisplay: "negative"`), and `localize(text, "constructor")` crashed instead of falling back to English (fixed with `Object.hasOwn`).
+      - A new browser test: `/en/services` redirects to `/services`.
+      - One finding was a choice: dotted URLs like `/foo.bar` get Next's bare error page (step 12). We kept next-intl's standard matcher. The alternative, a hand-made list of file extensions, would make any public file type missing from the list return 404 with no warning. The trade-off is noted under task 12.
+    - **`code-reviewer` agent: "Needs changes".** The code passed, including security checks: no open redirect, and a URL can't load any file except a messages file. Two must-fixes: this doc still described the code before the fixes above, and the tracker's "Write the learning doc" box wasn't ticked. Both are fixed. We also took its suggestions: the guard now catches a condition inside a condition, `aria-label={isOpen ? "Close menu" : "Open menu"}`, `aria-roledescription` and `aria-placeholder`. `CLAUDE.md` adds "slugs never start with `api`" and lists `global.ts`. It agreed with the dotted-URL decision. My first try at the conditional-`aria-label` selector was wrong, and the new lint-guards test caught it before the commit.
 
-16. **Compound.** *Pending: the counterfactual question is answered after the review.*
+16. **Compound.** Would a future session repeat this without a written lesson? Yes. The plan's hand check ("add `<p>Hello</p>`, see lint fail") passed while the guard missed most real text, and it took two review rounds to find every hole. So we ran `ce-compound` (lightweight). Its helper session wasn't allowed to write into the repo and left a draft. We copied it to `document/solutions/conventions/lint-guards-test-real-jsx-shapes.md` after re-running its two unchecked claims: switching the rule off fails exactly 7 tests, and the `:matches` selector mistake above really happened. The doubled `x-nextjs-prerender` header and the dotted-URL 404 didn't get lessons: the test comment, this doc and the task 12 note already cover them.
+
+17. **Hand-over through a pull request.** GitHub had moved on: the owner had merged task 09 there as PR #2, from an older copy of its branch, and had opened PR #3 for this task. Asked how to merge, the owner chose the pull request. So from this task on, Claude pushes the task branch (after asking) and the owner merges the pull request on GitHub, instead of Claude running `git merge --no-ff` locally. The "mark done" commit becomes the first commit on the next task's branch, so `main` only changes through pull requests. `CLAUDE.md` step 11, `task.md`'s "How to add a task" and the `code-reviewer` agent now say so.
 
 ## Decisions worth knowing
 
@@ -175,26 +188,26 @@ There was also a technical risk. The usual next-intl setup reads a request heade
 
 ## Check that it works
 
-Re-run while writing this doc, with Node 24 (output trimmed):
+Re-run on the final code after the review fixes, with Node 24 (output trimmed):
 
 ```bash
 npm run check
 ```
 ```
- Test Files  5 passed (5)
-      Tests  26 passed (26)
+ Test Files  6 passed (6)
+      Tests  49 passed (49)
 ```
 
 ```bash
 npm run test:e2e
 ```
 ```
-Running 10 tests using 4 workers
+Running 11 tests using 4 workers
   ...
-  10 passed (12.2s)
+  11 passed (15.4s)
 ```
 
-That is the 4 smoke tests plus 6 in `e2e/i18n.spec.ts`. To poke the production server yourself, run `npm run build`, then `npm run start -- -p 3213` (`--` passes `-p 3213`, the port, through to `next start`), and in a second terminal:
+That is the 4 smoke tests plus 7 in `e2e/i18n.spec.ts`. To poke the production server yourself, run `npm run build`, then `npm run start -- -p 3213` (`--` passes `-p 3213`, the port, through to `next start`), and in a second terminal:
 
 ```bash
 curl -sI http://localhost:3213/      # -I: headers only
@@ -228,8 +241,9 @@ location: /
 - **`date.toLocaleDateString()` without a `timeZone`.** It uses the server's zone and shows the wrong day near midnight. Use `formatDate`.
 - **Formatting with `"en"` directly.** You get `₹123,456`. Go through `formatRupees`, which maps to `en-IN`.
 - **Adding `src/app/layout.tsx` "to share something".** It would become the root layout, and `locale` would stop being a root param.
-- **A dot in a page slug** (`/v1.2-notes`). The proxy skips it, so the first part of the path is read as a language and the page returns 404. Use dashes.
+- **A dot in a page slug** (`/v1.2-notes`), **or a slug starting with `api`** (`/apiary`). The proxy skips both, so the first part of the path is read as a language and the page returns 404. Use dashes, and another first word.
 - **Asserting an exact `x-nextjs-prerender` value.** It arrives as `1, 1`.
+- **Trusting a lint guard tested only with `<p>Hello</p>`.** Test the shapes real code uses (conditions, `aria-label`), as `src/i18n/lint-guards.test.ts` does.
 - **Moving `icon.svg` into `[locale]/`.** Its URL becomes `/-/icon.svg`.
 
 ## Try it yourself

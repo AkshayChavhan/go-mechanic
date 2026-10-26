@@ -178,9 +178,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] next-intl with `src/app/[locale]/` and `localePrefix: 'as-needed'`
 - [x] `messages/en.json`; ₹, date and time formatters (`en-IN`, `Asia/Kolkata`)
 - [x] Check it works with Cache Components
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Write the learning doc
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [lint guards lesson](../solutions/conventions/lint-guards-test-real-jsx-shapes.md)
 - [ ] Merge into `main`
 
 ### 11_design_system
@@ -203,7 +203,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
 - [ ] Frosted sticky header with navigation and mobile menu
-- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and narrow the `src/proxy.ts` matcher to real file extensions so old links like `/index.html` reach this page instead of a blank error page
+- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and decide whether to narrow the `src/proxy.ts` matcher so dotted URLs like `/index.html` reach this page instead of a blank error page. Trade-off (`ce-code-review` in task 10): with a hand-made list of file extensions, any public file type missing from the list returns 404
 - [ ] Pass `NextIntlClientProvider` only the message namespaces client components use (SEO check in task 10: today every page ships all of `messages/en.json`)
 - [ ] Open-now badge and offer banner
 - [ ] Write the learning doc
@@ -566,7 +566,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Online payments (UPI, cards) and GST invoices
 - Referral rewards
 - Revenue and GST reports, spare-parts inventory
-- Hindi translation of all text (the site is built Hindi-ready from task 10)
+- Hindi translation of all text (the site is built Hindi-ready from task 10). Also make `src/i18n/messages.test.ts` check that `hi.json` has exactly the keys of `en.json`
 - Upgrade ESLint 9 (end-of-life; `npm ci` prints a deprecation warning) to ESLint 10 once `eslint-config-next`'s plugins support it
 - App-like install for customers, roadside-assistance dispatch, more branches
 
@@ -585,9 +585,10 @@ Not in version 1. See [features.md](../website/features.md).
 5. **Set the status to `In progress`** and do the work in small commits.
 6. **Write the learning doc**: copy [TEMPLATE.md](../learning/TEMPLATE.md) to `document/learning/NN_short_name.md` and fill it in.
 7. **Link the learning doc** in the table. Tick "Review" only after the review really happened.
-8. **Merge into `main`** (or open a pull request):
+8. **Merge into `main` through a pull request.** Push the branch and make sure a pull request into `main` exists; the owner merges it on GitHub (from task 10 on; tasks 01–09 were merged locally with `git merge --no-ff`):
    ```bash
-   git switch main
-   git merge --no-ff NN_short_name
+   git push -u origin NN_short_name   # ask the owner first
+   gh pr list                          # is there a pull request for the branch?
    ```
-9. **Mark it done** in one bookkeeping commit on `main`: tick "Merge into `main`", set the status to `Done` here and in the learning doc's header, then `git commit -m "docs(NN): mark task NN done"`. A step can't honestly be ticked before it happens, which is why this comes after the merge.
+   After the owner merges it, update your `main`: `git switch main && git pull --ff-only origin main`.
+9. **Mark it done** in one bookkeeping commit, `docs(NN): mark task NN done`: tick "Merge into `main`", set the status to `Done` here and in the learning doc's header. Make it the first commit on the next task's branch, so `main` only changes through pull requests. A step can't honestly be ticked before it happens, which is why this comes after the merge.
