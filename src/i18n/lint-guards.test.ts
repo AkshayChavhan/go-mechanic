@@ -117,6 +117,22 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
     expect(await errorRules(code)).toEqual([]);
   });
 
+  // The stock-size rule also covers plain .ts files (class lists kept in
+  // constants) and the dev-page catalogue, which the main text block skips.
+  test.each([
+    ["a .ts file (a class list in a constant)", 'export const sizes = "type-body text-sm";\n', "src/components/site/sizes.ts"],
+    ["a dev page", component('<p className="text-sm">Demo</p>'), "src/app/[locale]/dev/design/page.tsx"],
+  ])("rejects a stock text size in %s", async (_name, code, filePath) => {
+    expect(await errorRules(code, filePath)).toContain("no-restricted-syntax");
+  });
+
+  test.each([
+    ["a .ts test file", 'export const sizes = "text-sm";\n', "src/components/site/sizes.test.ts"],
+    ["a .tsx test file", component('<p className="text-sm">{t("title")}</p>'), "src/components/site/sizes.test.tsx"],
+  ])("leaves stock text sizes alone in %s", async (_name, code, filePath) => {
+    expect(await errorRules(code, filePath)).toEqual([]);
+  });
+
   test("leaves stock text sizes alone in shadcn's components/ui", async () => {
     const code = 'import { cn } from "cn";\nexport const classes = cn("text-sm");\n';
     expect(await errorRules(code, "src/components/ui/example.tsx")).toEqual([]);

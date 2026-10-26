@@ -18,6 +18,12 @@ const text = ":matches(Literal[value=/\\S/], TemplateLiteral)";
 // text-link and text-center don't match. No "/" allowed inside: esquery
 // ends a regex at the first one.
 const stockTextSize = "(?:^|[\\s:!])text-(?:xs|sm|base|lg|[2-9]?xl)(?![\\w-])";
+// className="md:text-lg", cn("text-sm", ...), `text-base ${extra}`
+const stockTextSizeRule = {
+  selector: `:matches(Literal[value=/${stockTextSize}/], TemplateElement[value.raw=/${stockTextSize}/])`,
+  message:
+    "Use a type-* class (type-body, type-callout, type-title...) for text size. Tailwind puts text-sm, text-lg... after type-* in the CSS, so they would win.",
+};
 
 // Points people to the language-aware versions in src/i18n/navigation.ts.
 const useI18nNavigation =
@@ -93,13 +99,21 @@ const eslintConfig = defineConfig([
           selector: `JSXAttribute[name.name=${readAttributes}] > JSXExpressionContainer > ${condition} > ${text}`,
           message: readAttributeMessage,
         },
-        {
-          // className="md:text-lg", cn("text-sm", ...), `text-base ${extra}`
-          selector: `:matches(Literal[value=/${stockTextSize}/], TemplateElement[value.raw=/${stockTextSize}/])`,
-          message:
-            "Use a type-* class (type-body, type-callout, type-title...) for text size. Tailwind puts text-sm, text-lg... after type-* in the CSS, so they would win.",
-        },
+        stockTextSizeRule,
       ],
+    },
+  },
+  // The stock text-size rule alone, for files the block above doesn't cover:
+  // plain .ts files (class lists kept in constants) and the dev pages, which
+  // may type demo text but must still show the real type scale. These files
+  // never match the block above, so this block's no-restricted-syntax list
+  // doesn't replace that block's list (flat config replaces, never merges,
+  // two lists for one file).
+  {
+    files: ["src/**/*.ts", "src/app/*/dev/**/*.tsx"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx", "**/*.d.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", stockTextSizeRule],
     },
   },
   // Override default ignores of eslint-config-next.
