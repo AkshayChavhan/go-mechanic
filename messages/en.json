@@ -14,5 +14,8 @@
   },
   "Common": {
     "close": "Close"
+  },
+  "Brand": {
+    "name": "GoMechanic"
   }
 }

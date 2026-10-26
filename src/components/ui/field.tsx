@@ -1,4 +1,4 @@
-// GoMechanic changes to shadcn's radix-nova field:
+// Our changes to shadcn's radix-nova field:
 // - A link inside a FieldDescription turns --link blue on hover, not
 //   --primary: --primary is too light for small text on the grey band (4.3:1).
 "use client"

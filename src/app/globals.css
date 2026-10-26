@@ -10,7 +10,7 @@
 /* dark: classes apply inside a .dark section (the black showcase bands). */
 @custom-variant dark (&:is(.dark *));
 
-/* The GoMechanic design system. Components use these tokens by name
+/* The site's design system. Components use these tokens by name
    (bg-primary, text-muted-foreground, rounded-xl, type-title...), never raw
    values. design-tokens.test.ts checks the colours' contrast. */
 

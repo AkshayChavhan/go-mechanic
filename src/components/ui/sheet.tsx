@@ -1,4 +1,4 @@
-// GoMechanic changes to shadcn's radix-nova sheet (restyle.test.tsx checks them):
+// Our changes to shadcn's radix-nova sheet (restyle.test.tsx checks them):
 // - The close button's screen-reader label is the closeLabel prop, not typed
 //   English ("Close"), so it can be translated: closeLabel={t("close")} with
 //   the Common namespace. It's required whenever the close button shows.

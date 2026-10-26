@@ -1,4 +1,4 @@
-// GoMechanic changes to shadcn's radix-nova input (restyle.test.tsx checks them):
+// Our changes to shadcn's radix-nova input (restyle.test.tsx checks them):
 // - 44px tall (h-11), the same height as the default button.
 // - 17px text (type-body) on every screen: shadcn's md:text-sm made it 14px on
 //   wider screens, and iOS Safari zooms into fields with text under 16px.

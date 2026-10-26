@@ -1,4 +1,4 @@
-// GoMechanic changes to shadcn's radix-nova button (restyle.test.tsx checks them):
+// Our changes to shadcn's radix-nova button (restyle.test.tsx checks them):
 // - A pill on every size: rounded-full, and no size-specific radius.
 // - Touch targets: default and icon are 44px, lg and icon-lg 48px. xs (32px),
 //   sm (36px) and their icon sizes grow to 44px on touch screens (pointer-coarse:).

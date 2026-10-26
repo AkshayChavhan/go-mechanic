@@ -1,4 +1,4 @@
-// GoMechanic changes to shadcn's radix-nova badge (restyle.test.tsx checks them):
+// Our changes to shadcn's radix-nova badge (restyle.test.tsx checks them):
 // - A new success variant (bg-success, text-success-foreground) for status,
 //   such as the "Open now" badge. Green marks status only, never an action.
 // - destructive is a solid fill with --destructive-foreground: red text on a
