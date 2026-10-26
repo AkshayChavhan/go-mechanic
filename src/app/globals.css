@@ -355,10 +355,11 @@
     cursor: pointer;
     }
   /* Visitors who ask their device for less motion get no CSS motion: every
-     animation and transition jumps to its end. 0.01ms, not "none": Radix
-     waits for an animation to end before it removes a closed sheet, and an
-     animation that never runs never ends. !important inside @layer base
-     beats any class, even one with !important. */
+     animation and transition jumps to its end. 0.01ms, not "none": the
+     animation still runs for an instant, so its end state applies (something
+     that fades in from opacity 0 ends up visible) and animationend and
+     transitionend still fire for code that waits for them. !important inside
+     @layer base beats any class, even one with !important. */
   @media (prefers-reduced-motion: reduce) {
     *, ::before, ::after {
       animation-duration: 0.01ms !important;
@@ -388,8 +389,14 @@
     [role="switch"],
     [role="slider"],
     [role="menuitem"],
+    [role="menuitemcheckbox"],
+    [role="menuitemradio"],
     [role="option"],
-    [role="combobox"]
+    [role="combobox"],
+    [role="treeitem"],
+    [role="gridcell"],
+    [role="spinbutton"],
+    [tabindex]:not([tabindex="-1"])
 ):focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
