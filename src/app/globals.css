@@ -10,8 +10,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: var(--font-sans);
+    /* Font classes (font-sans, font-heading, font-brand). The stacks are plain
+       variables in :root below, so tests and pages can always read them. */
+    --font-sans: var(--font-sans-stack);
+    --font-heading: var(--font-sans-stack);
+    --font-brand: var(--font-brand-stack);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -53,6 +56,14 @@
 }
 
 :root {
+    /* Text: San Francisco on Apple devices (-apple-system in Safari,
+       BlinkMacSystemFont in Chrome), Inter everywhere else, Noto Sans
+       Devanagari for Hindi letters. Browsers skip names they don't have and
+       pick a font per character, so Hindi letters fall through to Noto.
+       --font-inter and --font-devanagari come from src/app/fonts.ts. */
+    --font-sans-stack: -apple-system, BlinkMacSystemFont, var(--font-inter), var(--font-devanagari), sans-serif;
+    /* The wordmark: always Inter, so the logo looks the same on every device. */
+    --font-brand-stack: var(--font-inter), var(--font-devanagari), sans-serif;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);

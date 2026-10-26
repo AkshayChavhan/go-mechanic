@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 
-import { sansFont } from "@/app/fonts";
+import { fontVariables } from "@/app/fonts";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +25,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[locale]">)
   // Unknown locales never get here: src/i18n/request.ts calls notFound().
   const locale = await getLocale();
   return (
-    <html lang={locale} className={cn("font-sans", sansFont.variable)}>
+    <html lang={locale} className={cn(fontVariables, "font-sans antialiased")}>
       <body>
         {/* Gives client components the language, text and time zone. */}
         <NextIntlClientProvider>{children}</NextIntlClientProvider>
