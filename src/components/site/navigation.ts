@@ -31,6 +31,18 @@ export const navItems: readonly NavItem[] = [
 /** The booking page (task 23). Not in the menu: "Book a service" is the header's own button. */
 export const bookPage: SitePage = { href: "/book", live: false };
 
+/** Every page the shell can link to: the menu items and the booking page. */
+export const sitePages: readonly SitePage[] = [...navItems, bookPage];
+
+/**
+ * Whether `href` is a page that exists: one of `pages` with `live: true`.
+ * A link to anything else (a page not in this file, or not built yet) should
+ * be left out, as the offer banner does.
+ */
+export function isLivePage(href: string, pages: readonly SitePage[] = sitePages): boolean {
+  return pages.some((page) => page.href === href && page.live);
+}
+
 /** The items whose page exists, in menu order. */
 export function liveNavItems(items: readonly NavItem[] = navItems): NavItem[] {
   return items.filter((item) => item.live);

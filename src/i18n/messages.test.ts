@@ -25,6 +25,9 @@ describe("messages/en.json", () => {
         "Header",
         "Hours",
         "OpenStatus",
+        "Footer",
+        "ActionBar",
+        "Offer",
         "Brand",
       ]),
     );

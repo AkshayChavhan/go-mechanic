@@ -49,6 +49,17 @@
     "opensTomorrow": "Opens tomorrow at {time}",
     "opensOn": "Opens {day} at {time}"
   },
+  "Footer": {
+    "pages": "Pages"
+  },
+  "ActionBar": {
+    "label": "Call, WhatsApp or book",
+    "book": "Book"
+  },
+  "Offer": {
+    "label": "Current offer",
+    "more": "See details"
+  },
   "Brand": {
     "name": "GoMechanic"
   }

@@ -6,7 +6,7 @@ import { describe, expect, test } from "vitest";
 
 import messages from "../../../messages/en.json";
 
-import { bookPage, bookTarget, liveNavItems, navItems, type NavItem } from "./navigation";
+import { bookPage, bookTarget, isLivePage, liveNavItems, navItems, sitePages, type NavItem } from "./navigation";
 
 // The shell must never link to a page that doesn't exist (and must show the
 // link once it does). So each `live` flag in navigation.ts is checked against
@@ -38,7 +38,7 @@ describe("the navigation registry", () => {
     expect([...pageUrls()]).toEqual(expect.arrayContaining(["/", "/dev/design"]));
   });
 
-  test.each([...navItems, bookPage].map((page) => [page.href, page] as const))(
+  test.each(sitePages.map((page) => [page.href, page] as const))(
     "%s is live exactly when its page.tsx exists",
     (href, page) => {
       const exists = pageUrls().has(href);
@@ -52,6 +52,20 @@ describe("the navigation registry", () => {
     for (const item of navItems) {
       expect(messages.Nav[item.label], item.label).toBeTruthy();
     }
+  });
+
+  test("sitePages lists the menu items and the booking page", () => {
+    expect(sitePages).toEqual([...navItems, bookPage]);
+  });
+
+  test("isLivePage: only a listed page with live: true", () => {
+    const pages = [
+      { href: "/packages", live: true },
+      { href: "/about", live: false },
+    ];
+    expect(isLivePage("/packages", pages)).toBe(true);
+    expect(isLivePage("/about", pages)).toBe(false);
+    expect(isLivePage("/not-in-the-list", pages)).toBe(false);
   });
 
   test("liveNavItems keeps only live items, in order", () => {
