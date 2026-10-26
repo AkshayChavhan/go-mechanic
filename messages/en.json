@@ -22,6 +22,33 @@
     "whatsappMessage": "Hi, I have a question about my vehicle.",
     "bookingMessage": "Hi, I'd like to book a service for my vehicle."
   },
+  "Nav": {
+    "services": "Services",
+    "prices": "Prices",
+    "about": "About",
+    "contact": "Contact"
+  },
+  "Header": {
+    "navLabel": "Main",
+    "book": "Book a service",
+    "openMenu": "Open the menu",
+    "menuTitle": "Menu"
+  },
+  "Hours": {
+    "title": "Opening hours",
+    "dayRange": "{from} to {to}",
+    "times": "{opens} to {closes}",
+    "closed": "Closed",
+    "indiaTime": "Times are India time (IST)"
+  },
+  "OpenStatus": {
+    "open": "Open now",
+    "closed": "Closed",
+    "until": "until {time}",
+    "opensToday": "Opens today at {time}",
+    "opensTomorrow": "Opens tomorrow at {time}",
+    "opensOn": "Opens {day} at {time}"
+  },
   "Brand": {
     "name": "GoMechanic"
   }

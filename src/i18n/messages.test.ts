@@ -15,7 +15,18 @@ function leaves(value: unknown, path = ""): [string, unknown][] {
 describe("messages/en.json", () => {
   test("has the namespaces the app uses", () => {
     expect(Object.keys(messages)).toEqual(
-      expect.arrayContaining(["Metadata", "HomePage", "NotFound", "Common", "Contact", "Brand"]),
+      expect.arrayContaining([
+        "Metadata",
+        "HomePage",
+        "NotFound",
+        "Common",
+        "Contact",
+        "Nav",
+        "Header",
+        "Hours",
+        "OpenStatus",
+        "Brand",
+      ]),
     );
   });
 

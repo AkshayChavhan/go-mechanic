@@ -18,6 +18,11 @@ export default defineConfig({
     // India time, which would hide a bug that reads the computer's own clock
     // instead of Asia/Kolkata. A test that needs another zone sets TZ itself.
     env: { TZ: "UTC" },
+    // Let Vite load next-intl instead of Node. next-intl's Link imports
+    // "next/navigation" with no ".js" at the end; Node refuses that (the next
+    // package doesn't list its files in an "exports" map), so any test that
+    // rendered a Link from @/i18n/navigation failed with "Cannot find module".
+    server: { deps: { inline: ["next-intl"] } },
     projects: [
       {
         extends: true,
