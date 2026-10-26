@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getTranslations } from "next-intl/server";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 
 import { fontVariables } from "@/app/fonts";
+import { pickClientMessages } from "@/i18n/client-messages";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -33,11 +34,14 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: LayoutProps<"/[locale]">) {
   // Unknown locales never get here: src/i18n/request.ts calls notFound().
   const locale = await getLocale();
+  const messages = await getMessages();
   return (
     <html lang={locale} className={cn(fontVariables, "font-sans antialiased")}>
       <body>
-        {/* Gives client components the language, text and time zone. */}
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        {/* Gives client components the language, time zone and their text:
+            only the namespaces they use (src/i18n/client-messages.ts), not
+            the whole of messages/en.json. */}
+        <NextIntlClientProvider messages={pickClientMessages(messages)}>{children}</NextIntlClientProvider>
       </body>
     </html>
   );
