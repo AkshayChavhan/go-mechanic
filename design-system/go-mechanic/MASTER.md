@@ -112,14 +112,16 @@ Text sizes come only from these `type-*` classes (see the rule below). Sizes gro
 
 ### The text-size rule
 
-Text size comes only from `type-*` classes. Never put a `type-*` class and a stock `text-*`, `leading-*` or font-weight class (`font-medium`...) on one element. Tailwind writes those after the `type-*` classes in the CSS, so they win, and `cn()` doesn't know they clash. To change a component's text size, give it a variant or size, not an extra class. (One deliberate exception: a component may add a weight next to its own `type-*` class, as the button and the wordmark do.)
+Text size comes only from `type-*` classes. Tailwind writes stock classes after the `type-*` classes in the CSS, so on the same element the stock class wins, and `cn()` doesn't know they clash.
 
-Lint enforces part of this: stock sizes (`text-xs` to `text-9xl`, with or without prefixes like `md:`) fail `npm run lint` in `src/app` and `src/components` (not `ui/` or dev pages). It does **not** catch:
+- **Banned:** stock `text-*` sizes, and `leading-*` or `tracking-*` next to a `type-*` class, except inside a component's own definition (such as Wordmark's tracking).
+- **Allowed:** a weight next to a `type-*` class (`type-callout font-semibold`, Button's `font-medium`). It wins, which is the point: that's how to emphasise text.
+- **Components:** a `type-*` class passed to a component doesn't beat stock sizes the component sets itself. Badge, Sheet, Field and Label keep shadcn's sizes until a task restyles them, so change a component's size through its variant or size prop.
+
+Lint enforces the stock sizes (`text-xs` to `text-9xl`, with or without prefixes like `md:`) in `src/app` and `src/components` (not `ui/` or dev pages). It does **not** catch these, so reviewers check them by hand:
 
 - arbitrary sizes such as `text-[17px]`;
-- `leading-*` or font-weight classes stacked on a `type-*` class.
-
-Reviewers check those by hand.
+- `leading-*` or `tracking-*` stacked on a `type-*` class.
 
 ## Space and layout
 

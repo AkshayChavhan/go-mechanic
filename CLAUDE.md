@@ -79,7 +79,11 @@ npx shadcn@latest add <component>   # add a shadcn/ui component
 - **Tailwind only scans `src/`, minus test files** (`source("../")` and `@source not` in `src/app/globals.css`). Put anything that uses Tailwind classes inside `src/`, and not in a `*.test.*` file.
 - **Design system** (`design-system/go-mechanic/MASTER.md`; `globals.css` wins if they disagree):
   - Colours, radius, shadows and spacing only through token classes (`bg-card`, `text-link`, `rounded-xl`, `py-(--section-space)`). No raw values outside `globals.css` and `src/components/ui/`.
-  - Text size only from `type-*` classes. Never put a `type-*` class and a stock `text-*`, `leading-*` or font-weight class on one element: those come later in the CSS and win. To change a component's text size, give it a variant or size, not an extra class. Lint rejects stock `text-*` sizes; it misses arbitrary sizes (`text-[17px]`) and stacked `leading-*`/`font-*`, so check those by hand.
+  - Text size comes only from `type-*` classes (Tailwind writes stock classes after them, so a stock class on the same element wins):
+    - Banned: stock `text-*` sizes (lint rejects them), and `leading-*` or `tracking-*` next to a `type-*` class, except inside a component's own definition (such as Wordmark's tracking).
+    - Allowed: a weight next to a `type-*` class (`type-callout font-semibold`, Button's `font-medium`). It wins, which is the point.
+    - A `type-*` class passed to a component doesn't beat stock sizes the component sets itself. Badge, Sheet, Field and Label keep shadcn's sizes until a task restyles them, so change a component's size through its variant or size prop.
+    - Lint misses arbitrary sizes (`text-[17px]`) and stacked `leading-*`/`tracking-*`: check those by hand.
   - Page sections use `Section` (`tone`: white, grey or dark; `width`). There is no site-wide dark mode.
   - Buttons and fields keep 44px touch targets. One blue (`default`) button per group.
   - The brand name lives only in `messages/en.json`; pages show it through `Wordmark` (`brand-name.test.ts` enforces it).
