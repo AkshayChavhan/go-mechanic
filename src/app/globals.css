@@ -70,6 +70,11 @@
     --radius-2xl: 24px;
     --radius-3xl: 28px;
     --radius-4xl: 9999px; /* badges (pill) */
+
+    /* A plain transition-* class (shadcn uses transition-all and
+       transition-colors) moves at the base speed with the standard ease. */
+    --default-transition-duration: var(--duration-base);
+    --default-transition-timing-function: var(--ease-standard);
 }
 
 @theme {
@@ -85,6 +90,13 @@
        for galleries and grids. */
     --container-content: 61.25rem; /* 980px */
     --container-wide: 80rem; /* 1280px */
+
+    /* Easing (ease-standard, ease-emphasized, ease-exit classes): close
+       matches of GSAP's power2.out, power4.out and power2.in. The same values
+       are in src/lib/motion.ts for GSAP; motion.test.ts keeps them equal. */
+    --ease-standard: cubic-bezier(0.33, 1, 0.68, 1); /* most motion */
+    --ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1); /* big entrances */
+    --ease-exit: cubic-bezier(0.32, 0, 0.67, 0); /* things leaving */
 }
 
 /* The white page: the default surface tone. */
@@ -158,6 +170,13 @@
        py-(--section-space) and px-(--gutter). */
     --section-space: clamp(4rem, 2.5rem + 6vw, 8rem);
     --gutter: clamp(1.25rem, 0.75rem + 2vw, 2.5rem);
+
+    /* Durations, used as duration-(--duration-base). The same values, in
+       seconds, are in src/lib/motion.ts for GSAP. */
+    --duration-fast: 150ms; /* press and hover feedback */
+    --duration-base: 250ms; /* menus, small transitions */
+    --duration-slow: 450ms; /* sheets and overlays */
+    --duration-reveal: 800ms; /* scroll reveals */
 }
 
 /* The grey band: only the variables that change. Tiles turn white. */
@@ -329,6 +348,19 @@
   button:not(:disabled), [role="button"]:not(:disabled) {
     cursor: pointer;
     }
+  /* Visitors who ask their device for less motion get no CSS motion: every
+     animation and transition jumps to its end. 0.01ms, not "none": Radix
+     waits for an animation to end before it removes a closed sheet, and an
+     animation that never runs never ends. !important inside @layer base
+     beats any class, even one with !important. */
+  @media (prefers-reduced-motion: reduce) {
+    *, ::before, ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 /* Keyboard focus: a solid 2px outline in --ring, 2px away from the control.
