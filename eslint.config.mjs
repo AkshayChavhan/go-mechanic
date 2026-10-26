@@ -2,6 +2,17 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+// Selector pieces for the "no text in JSX" rule below.
+// Attributes whose text people read, or hear from a screen reader. Not every
+// aria-* attribute: aria-hidden="true" or aria-current="page" aren't text.
+const readAttributes =
+  "/^(alt|title|placeholder|aria-label|aria-description|aria-valuetext|aria-roledescription|aria-placeholder)$/";
+const readAttributeMessage =
+  "Text people read or hear (alt, title, placeholder, aria-label...) goes in messages/en.json.";
+const condition = ":matches(ConditionalExpression, LogicalExpression)";
+// A non-blank string or a template string
+const text = ":matches(Literal[value=/\\S/], TemplateLiteral)";
+
 // Points people to the language-aware versions in src/i18n/navigation.ts.
 const useI18nNavigation =
   "Use the version from @/i18n/navigation: it keeps the language prefix (/hi/...) in the URL.";
@@ -45,21 +56,28 @@ const eslintConfig = defineConfig([
         "error",
         {
           // {isOpen ? "Open now" : "Closed"}, {error && "Oops"}, {name ?? "Guest"}
-          selector:
-            ":matches(JSXElement, JSXFragment) > JSXExpressionContainer > :matches(ConditionalExpression, LogicalExpression) > :matches(Literal[value=/\\S/], TemplateLiteral)",
+          selector: `:matches(JSXElement, JSXFragment) > JSXExpressionContainer > ${condition} > ${text}`,
           message: "Put text people read in messages/en.json and show it with t().",
         },
         {
-          // alt="...", aria-label="...", placeholder="...", title="..."
-          selector:
-            "JSXAttribute[name.name=/^(alt|aria-label|aria-description|aria-valuetext|placeholder|title)$/] > Literal[value=/\\S/]",
-          message: "Text people read or hear (alt, title, placeholder, aria-*) goes in messages/en.json.",
+          // One condition inside another: {a ? t("x") : b ? "Closed today" : "Closed"}
+          selector: `:matches(JSXElement, JSXFragment) > JSXExpressionContainer > ${condition} > ${condition} > ${text}`,
+          message: "Put text people read in messages/en.json and show it with t().",
         },
         {
-          // The same attributes written as {"..."} or {`...`}
-          selector:
-            "JSXAttribute[name.name=/^(alt|aria-label|aria-description|aria-valuetext|placeholder|title)$/] > JSXExpressionContainer > :matches(Literal[value=/\\S/], TemplateLiteral)",
-          message: "Text people read or hear (alt, title, placeholder, aria-*) goes in messages/en.json.",
+          // aria-label="Open menu", placeholder="Phone"...
+          selector: `JSXAttribute[name.name=${readAttributes}] > Literal[value=/\\S/]`,
+          message: readAttributeMessage,
+        },
+        {
+          // The same written as {"..."} or {`...`}
+          selector: `JSXAttribute[name.name=${readAttributes}] > JSXExpressionContainer > ${text}`,
+          message: readAttributeMessage,
+        },
+        {
+          // ...or chosen by a condition: {isOpen ? "Close menu" : "Open menu"}
+          selector: `JSXAttribute[name.name=${readAttributes}] > JSXExpressionContainer > ${condition} > ${text}`,
+          message: readAttributeMessage,
         },
       ],
     },

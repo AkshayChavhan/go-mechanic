@@ -43,6 +43,9 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
     ["text after &&", component('<p>{isOpen && "Open now"}</p>'), "no-restricted-syntax"],
     ["a typed aria-label", component('<button aria-label="Open menu" />'), "no-restricted-syntax"],
     ["a placeholder in braces", component('<input placeholder={"Phone"} />'), "no-restricted-syntax"],
+    ["text in a condition inside a condition", component('<p>{isOpen ? t("title") : isOpen === false ? "Closed today" : "Closed"}</p>'), "no-restricted-syntax"],
+    ["an aria-label chosen by a condition", component('<button aria-label={isOpen ? "Close menu" : "Open menu"} />'), "no-restricted-syntax"],
+    ["a typed aria-roledescription", component('<section aria-roledescription="carousel" />'), "no-restricted-syntax"],
   ])("rejects %s", async (_name, code, rule) => {
     expect(await errorRules(code)).toContain(rule);
   });
@@ -60,6 +63,8 @@ describe("lint guards (eslint.config.mjs)", { timeout: 30_000 }, () => {
     ["a className chosen by a condition", component('<p className={isOpen ? "text-green-700" : "text-red-700"}>{t("title")}</p>')],
     ["a condition between t() and nothing", component('<p>{isOpen ? t("title") : null}</p>')],
     ["numbers inside a condition", component("<p>{isOpen ? 1 : 0}</p>")],
+    ["a key chosen by a condition inside t()", component('<p>{t(isOpen ? "title" : "tagline")}</p>')],
+    ["non-text aria attributes", component('<button aria-hidden="true" aria-expanded={isOpen} aria-current="page" />')],
   ])("allows %s", async (_name, code) => {
     expect(await errorRules(code)).toEqual([]);
   });
