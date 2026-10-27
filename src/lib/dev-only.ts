@@ -14,6 +14,8 @@ import { notFound } from "next/navigation";
 // - notFound() also adds <meta name="robots" content="noindex">, so search
 //   engines skip the URL.
 // To show a dev page on staging (a production build), change this one function.
+// Samples stay off even then: they have their own switch, showSamples()
+// (src/lib/samples.ts), and /dev/design reads them through it.
 export function devOnly(): void {
   if (process.env.NODE_ENV !== "development") notFound();
 }

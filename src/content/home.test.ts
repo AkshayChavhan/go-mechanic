@@ -1,3 +1,7 @@
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import messages from "../../messages/en.json";
@@ -149,5 +153,22 @@ describe("the sample canary", () => {
 
   test("isn't in the messages, which every build ships", () => {
     expect(JSON.stringify(messages)).not.toContain(sampleCanary);
+  });
+});
+
+describe("the samples are reached only through the selectors", () => {
+  // showSamples() is the one switch for samples (CLAUDE.md, src/lib/samples.ts).
+  // Code that used sampleTrustStats or sampleReviews directly would skip it:
+  // a dev page behind devOnly() would show them on a staging server that
+  // shows dev pages. So outside this file, only the selectors may be used.
+  const src = fileURLToPath(new URL("..", import.meta.url));
+
+  test("no file under src/ but home.ts uses sampleTrustStats or sampleReviews (tests aside)", () => {
+    const files = readdirSync(src, { recursive: true, encoding: "utf8" })
+      .map((file) => file.split(path.sep).join("/"))
+      .filter((file) => /\.(?:ts|tsx)$/.test(file) && !/\.test\.tsx?$/.test(file) && file !== "content/home.ts");
+    expect(files.length).toBeGreaterThan(10);
+    const users = files.filter((file) => /\bsample(?:TrustStats|Reviews)\b/.test(readFileSync(path.join(src, file), "utf8")));
+    expect(users, "read samples through selectTrustStats() and selectReviews()").toEqual([]);
   });
 });
