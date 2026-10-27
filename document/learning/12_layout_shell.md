@@ -89,7 +89,7 @@ The first commit on the branch, `9e9310e docs(11): mark task 11 done`, is task 1
 11. **Only client text goes to the browser.** With no `messages` prop, `NextIntlClientProvider` sends every message. Both layouts now pass `pickClientMessages(messages)`, which keeps only `OpenStatus`. `client-messages.test.ts` reads every `"use client"` file, and every `src/` file it imports, all the way down. It fails if one calls `useTranslations()` with no namespace, or with one that isn't listed.
 
 12. **Two branded 404s.** Both show `NotFoundContent`: a heading, a short line, "Go to the home page", plus Call and WhatsApp. Their title is "Page not found | GoMechanic", built from `Brand.name`.
-    - **Unknown URLs** get `global-not-found.tsx`. It's a whole document of its own, so it can carry the full shell without adding to other pages. It has no `[locale]` in its URL. In a production build, reading the root param gives nothing; under `next dev` the read fails with an error. So `request.ts` catches that and falls back to English. `unstable_rethrow(error)` first passes on Next.js's own signals (such as a `notFound()`), which are thrown errors too.
+    - **Unknown URLs** get `global-not-found.tsx`. It's a whole document of its own, so it can carry the full shell without adding to other pages. It has no `[locale]` in its URL. Reading the root param there gives nothing (`undefined`), in a production build and under `next dev` alike, so `request.ts` falls back to English. The plan expected the read to fail under `next dev`; a logged probe showed it just returns nothing. `request.ts` still catches one specific Next.js error (the `INSTANT_VALIDATION_ERROR` digest, for pages that opt into instant validation) and rethrows everything else, after `unstable_rethrow(error)` passes on Next.js's own signals. So a Server Action or Route Handler that forgets to pass the locale fails loudly instead of silently showing English (the code review caught the first version swallowing that).
     - **Pages that call `notFound()`** get `[locale]/not-found.tsx`, with only a slim Wordmark bar. Next.js sends that file's content along with every page under `[locale]`, just in case. The plan found this in `create-component-tree.js`. The full header and footer there would ride along on every page.
     - **The title rule:** a `notFound()` thrown only from the page body keeps the page's own title. So `/dev/design` now has a `generateMetadata` that calls `devOnly()` first, and `dev-only.test.ts` requires that of every dev page.
     - **Not fixed, written down:** a page that calls `notFound()` *while it's prebuilt* (only `/dev/design` in production today) sends Next.js's bare error HTML (`<html id="__next_error__">`). Status 404 and `noindex` are right, but the branded content appears only once JavaScript runs. The e2e test checks it as it really is, and task 18 has a note to check its unknown-slug 404 with `curl`.
@@ -115,7 +115,14 @@ The first commit on the branch, `9e9310e docs(11): mark task 11 done`, is task 1
 
 18. **Not done yet.** These steps come after this doc, so their results aren't in it:
     - **SEO check:** the SEO hook listed the changed page files, and the `seo-reviewer` agent checked `/`, the four URLs that share the global 404 (`/this-page-does-not-exist`, `/index.html`, `/contact.php`, `/hi`), `/dev/design` and `/icon.svg` on the production build. **All pass.** It confirmed the name, address and phone are real text in `<address>` and match `src/content/garage.ts` exactly, the layout shift is 0 at six widths, and `/` is still prerendered. Two suggestions were filed, not applied (repo rule): put the area in the home `h1` ("Car and bike service in Kiwale, Pune", task 13), and load the phone menu's code on first tap (about 32 KB gzipped on every page today, task 18).
-    - **Review** (`ce-code-review`, then `code-reviewer`): *Pending.*
+    - **Review.**
+      - **`ce-code-review`: "Ready with fixes".** Seven reviewer personas, no serious findings; one medium and two small. All fixed:
+        - The catch around the root-param read in `request.ts` swallowed every error, so a Server Action or Route Handler that forgot the locale would have silently shown English (and, once Hindi ships, English to Hindi visitors). It now rethrows everything except one specific Next.js digest. Three new tests failed against the old catch.
+        - No test rendered the slim 404 (`[locale]/not-found.tsx`). It now has one, which fails if its `main` or its home link breaks.
+        - The e2e "no console errors" checks ignored every "Failed to load resource: 404", so a missing asset passed. They now ignore only the page's own 404 line, matched by its URL, and wait for the network to go quiet. A throwaway missing preload proved they fail.
+        - Extras from its risk list: an e2e case for a missing `.pdf` (plain 404, `noindex`, by design), `openMinutes` reusing `checkDayHours`, and a stricter check that the 404 sends only the client messages.
+        - Honest note: while adding the console helper, the agent's find-and-replace made the helper call itself forever. Several test runs hung and left Playwright's Chrome processes behind; it found the loop, fixed it and stopped the leftovers.
+      - **`code-reviewer` agent:** *Pending.*
     - **Compound question:** *Pending.*
     - **Pull request and merge:** *Pending.*
 
@@ -153,14 +160,14 @@ The first commit on the branch, `9e9310e docs(11): mark task 11 done`, is task 1
 
 ## Check that it works
 
-Real output from the work session's final runs on 2026-10-27 (trimmed):
+Real output from the final runs on 2026-10-27, after the review fixes (trimmed; the build's route list is from the run before them, and no route changed since):
 
 ```bash
 npm run check
 ```
 ```
- Test Files  32 passed (32)
-      Tests  599 passed (599)
+ Test Files  33 passed (33)
+      Tests  607 passed (607)
 ```
 
 `npm run build` lists the routes. `○ /en` means the home page, now inside the shell, is still prebuilt:
@@ -180,21 +187,21 @@ Route (app)
 npm run test:e2e      # production build
 ```
 ```
-  ✓   7 e2e/i18n.spec.ts:58:9 › pages that don't exist › a path with a dot (/index.html) gets the branded 404 (1.6s)
-  ✓   9 e2e/i18n.spec.ts:80:7 › prerendering › the home page is built ahead of time, not rendered per request (1.1s)
-  ✓  19 e2e/layout-shell.spec.ts:153:11 › the open status, in India time › on a device set to America/Los_Angeles › Tuesday 11:00 IST is still open (1.3s)
-  ✓  21 e2e/layout-shell.spec.ts:160:7 › the open status, in India time › turns to closed at 19:00 IST while the page stays open (1.3s)
-  ✓  33 e2e/layout-shell.spec.ts:331:7 › the browser gets only the client components' messages › the page data on / holds the OpenStatus messages, not the home page's or the metadata's (933ms)
-  41 passed (31.7s)
+  ✓   8 e2e/i18n.spec.ts:66:9 › pages that don't exist › a path with a dot (/index.html) gets the branded 404 (2.1s)
+  ✓  10 e2e/i18n.spec.ts:88:7 › prerendering › the home page is built ahead of time, not rendered per request (1.7s)
+  ✓  20 e2e/layout-shell.spec.ts:168:11 › the open status, in India time › on a device set to America/Los_Angeles › Tuesday 11:00 IST is still open (2.4s)
+  ✓  22 e2e/layout-shell.spec.ts:175:7 › the open status, in India time › turns to closed at 19:00 IST while the page stays open (2.1s)
+  ✓  34 e2e/layout-shell.spec.ts:346:7 › the browser gets only the client components' messages › the page data on / holds the OpenStatus messages, not the home page's or the metadata's (1.7s)
+  42 passed (44.0s)
 ```
 
 ```bash
 npm run test:design   # /dev/design and the shell under next dev, plus screenshots
 ```
 ```
-  ✓  20 e2e/dev/shell-preview.spec.ts:80:9 › home page on a 320px phone › every phone bar label fits inside its button (16.2s)
-  ✓  27 e2e/dev/shell-preview.spec.ts:168:9 › an unknown URL on a 375px phone › shows the branded 404 inside the full shell, without console errors (9.1s)
-  28 passed (1.6m)
+  ✓  21 e2e/dev/shell-preview.spec.ts:95:9 › home page on a 320px phone › every phone bar label fits inside its button (3.3s)
+  ✓  27 e2e/dev/shell-preview.spec.ts:183:9 › an unknown URL on a 375px phone › shows the branded 404 inside the full shell, without console errors (3.0s)
+  28 passed (1.2m)
 ```
 
 For this doc I re-ran the four key unit-test files (opening hours, proxy, navigation, client messages):
