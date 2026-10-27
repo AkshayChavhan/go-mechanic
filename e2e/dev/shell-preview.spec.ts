@@ -18,9 +18,12 @@ import messages from "../../messages/en.json";
 // screenshots always show the same status.
 const TUESDAY_11_AM_IST = new Date("2026-10-27T05:30:00Z");
 
-// Chrome logs this for every page that answers 404, the 404 page included.
-// It's the browser reporting the status, not an error in the page.
-const OWN_404 = "Failed to load resource: the server responded with a status of 404 (Not Found)";
+// Chrome logs this line for every resource that answers 404, with that
+// resource's address as the message's location. For a 404 page it logs it
+// once for the page itself: that's the browser reporting the status, not an
+// error. The same line for anything else (a missing script, font, image...)
+// is a real error.
+const NOT_FOUND_LINE = "Failed to load resource: the server responded with a status of 404 (Not Found)";
 
 const phone = (width: number) => ({ viewport: { width, height: 812 }, hasTouch: true, isMobile: true });
 const desktop = { viewport: { width: 1440, height: 900 } };
@@ -29,10 +32,22 @@ const desktop = { viewport: { width: 1440, height: 900 } };
 function watchErrors(page: Page) {
   const errors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error" && message.text() !== OWN_404) errors.push(message.text());
+    if (message.type() !== "error") return;
+    const { url } = message.location();
+    const pagesOwnStatus = message.text() === NOT_FOUND_LINE && url === page.url();
+    if (!pagesOwnStatus) errors.push(`${message.text()} (${url})`);
   });
   page.on("pageerror", (error) => errors.push(error.message));
   return errors;
+}
+
+/**
+ * Expects no errors, once the page has no requests left in flight: a missing
+ * image or script fails, and is logged, after the page itself has loaded.
+ */
+async function expectNoErrors(page: Page, errors: string[]) {
+  await page.waitForLoadState("networkidle");
+  expect(errors).toEqual([]);
 }
 
 /** Opens a page and waits until the open status shows and the fonts have loaded. */
@@ -74,7 +89,7 @@ for (const width of [320, 375]) {
       await expect(page.getByRole("navigation", { name: messages.ActionBar.label })).toBeVisible();
       expect(await scrollsSideways(page)).toBe(false);
       await save(page, testInfo, `home-${width}`);
-      expect(errors).toEqual([]);
+      await expectNoErrors(page, errors);
     });
 
     test("every phone bar label fits inside its button", async ({ page }) => {
@@ -128,7 +143,7 @@ test.describe("home page on a 375px phone, more", () => {
     await save(page, testInfo, "menu-375");
     await menu.getByRole("button", { name: messages.Common.close }).click();
     await expect(menu).toBeHidden();
-    expect(errors).toEqual([]);
+    await expectNoErrors(page, errors);
   });
 
   test("scrolled to the bottom, the footer ends above the phone bar", async ({ page }, testInfo) => {
@@ -152,7 +167,7 @@ test.describe("home page on a desktop", () => {
     await expect(page.getByRole("banner").getByRole("link", { name: new RegExp(messages.Header.book) })).toBeVisible();
     await expect(page.getByRole("navigation", { name: messages.ActionBar.label })).toBeHidden();
     await save(page, testInfo, "home-1440");
-    expect(errors).toEqual([]);
+    await expectNoErrors(page, errors);
   });
 });
 
@@ -174,7 +189,7 @@ for (const [label, options, name] of [
       await expect(page.getByRole("contentinfo")).toBeAttached();
       await expect(page).toHaveTitle(new RegExp(messages.Brand.name));
       await save(page, testInfo, name);
-      expect(errors).toEqual([]);
+      await expectNoErrors(page, errors);
     });
   });
 }

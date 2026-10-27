@@ -51,6 +51,14 @@ test.describe("pages that don't exist", () => {
     expect(response.status()).toBe(404);
   });
 
+  test("a missing file with a listed extension gets Next.js's plain 404, with noindex", async ({ page }) => {
+    // The proxy skips .pdf (src/proxy.ts), so the path reaches [locale] with
+    // "old-brochure.pdf" as the language, and src/i18n/request.ts answers 404.
+    const response = await page.request.get("/old-brochure.pdf", { maxRedirects: 0 });
+    expect(response.status()).toBe(404);
+    expect(await response.text()).toMatch(/<meta name="robots" content="noindex"\s*\/?>/);
+  });
+
   // Since task 12 the proxy skips only known file types (src/proxy.ts), so
   // other dotted paths, such as old links to a previous website, run through
   // it like pages and get the branded 404 with the full shell.
