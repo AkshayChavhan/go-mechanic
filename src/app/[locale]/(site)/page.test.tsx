@@ -104,8 +104,9 @@ describe("Home page", () => {
 
     const call = links.filter((link) => link.getAttribute("href") === "tel:+919764750567");
     expect(call).toHaveLength(1);
-    expect(call[0].textContent).toContain(messages.Contact.call);
-    expect(call[0].textContent).toContain("+91 97647 50567");
+    // "Call +91 97647 50567", with the space: the number shows from 768px,
+    // and without a space search engines and screen readers read "Call+91".
+    expect(call[0].textContent).toBe(`${messages.Contact.call} +91 97647 50567`);
     expect(call[0].getAttribute("data-variant")).toBe("secondary");
   });
 
