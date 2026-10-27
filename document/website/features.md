@@ -26,7 +26,7 @@ This is the product plan: who the site is for, what it does, and what's left for
 ✅ = version 1 · 🔜 = later
 
 ### A. Public website
-1. ✅ **Home:** what GoMechanic does, trust signals (years, vehicles serviced, rating, warranty), big **Book / Call / WhatsApp** buttons.
+1. ✅ **Home:** what GoMechanic does, trust signals (years, vehicles serviced, rating, warranty), big **Book / Call / WhatsApp** buttons. The trust signals and the reviews preview appear once they're real: until the owner gives real numbers and task 37 brings real reviews, only `npm run dev` shows them, as labelled samples (owner, 2026-10-27). Built in task 13.
 2. ✅ **Prices by vehicle:** pick type (car or two-wheeler) → brand → model → fuel (petrol, diesel, CNG, electric) and see that vehicle's prices ("from ₹…").
 3. ✅ **Service packages:** Basic / Standard / Comprehensive, side by side with a checklist of what's included.
 4. ✅ **Service pages:** periodic service, AC, denting and painting, battery, tyres and alignment, brakes, clutch and suspension, engine, electricals, wash and detailing, insurance claim help.

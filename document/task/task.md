@@ -219,11 +219,23 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `13_home_page`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-27-1344-feat-home-page-plan.md)
-- [ ] Hero, trust stats, services bento grid, how it works, reviews preview, final call to action (labelled placeholder content until tasks 18 and 37; sample reviews marked as samples)
-- [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback: timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11)
-- [ ] Check at 375, 768, 1024 and 1440 px and with reduced motion
-- [ ] On phones, pinned and scroll-triggered sections start below the header (`--header-height`) and end above the phone bar (`--action-bar-height`, which includes the iPhone safe area) (task 12)
-- [ ] The `h1` or the opening line says where the garage is, e.g. "Car and bike service in Kiwale, Pune": people search for the service and the area, not the brand (SEO check in task 12)
+- [x] Owner's decisions, 2026-10-27:
+  - trust stats and sample reviews show only under `npm run dev`, marked "Sample", until they're real (the owner's numbers; task 37's reviews). A production build has no stats or reviews section, and none of their text in its HTML, page data or JavaScript;
+  - the services grid shows the usual eleven services (features.md, item 4), for cars and two-wheelers, with no prices and no links; AC is for cars only;
+  - neutral line-art visuals, no stock photos;
+  - no stand-in "facts" row in production: the live page is hero, story, services and call to action until real stats exist;
+  - the frosted header stays as it is over the black story band;
+  - the rating's one source (the owner's Google rating or the site's own average) stays task 37's decision
+- [x] Home content, the sample gate (`showSamples()`) and `formatNumber`: `src/content/home.ts`, `src/content/services.ts`, `src/lib/samples.ts`
+- [x] The scroll scene: `ScrollScene` loads its GSAP effects lazily, after load, only for visitors who allow motion; timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11); a sticky story instead of ScrollTrigger's `pin`
+- [x] Hero, how it works, services bento grid, trust stats and reviews preview (samples, `npm run dev` only), final call to action; shared blocks in `src/components/site/` (visual slot, illustration, service, stat and review tiles, sample badge)
+- [x] On phones, sticky and scroll-triggered parts start below the header (`--header-height`) and end above the phone bar (`--stage-height`, reveals start clear of the bar) (task 12)
+- [x] The `h1` says where the garage is: "Car and bike service in Kiwale, Pune" (SEO check in task 12)
+- [x] Checked at 375, 768, 1024 and 1440 px, with motion and with reduced motion: page-block samples on `/dev/design` and `e2e/dev/home-preview.spec.ts` (`npm run test:design`)
+- [x] End-to-end tests on a production build (`e2e/home.spec.ts`), including the no-samples scan of the HTML, page data and every script
+- [x] The owner approved the look and the draft copy as built on 2026-10-27, from `next dev` and production screenshots
+- [x] Docs: `MASTER.md` ("Page blocks and scroll motion"), `features.md` (Home), and the plan's "Deferred to Follow-Up Work" on tasks 17, 18, 37 and 42 and in the backlog
+- [x] Docs: `CLAUDE.md` (repo map and conventions for the home page)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -268,6 +280,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `17_vehicle_catalogue`
 - [ ] Plan with `ce-plan`
 - [ ] Vehicle types, brands, models; vehicle picker
+- [ ] If the owner names the brands the garage serves, consider a brands row on the home page (task 13)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -278,7 +291,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `18_services_pricing`
 - [ ] Plan with `ce-plan`
 - [ ] Services, packages, prices by vehicle; `/services`, `/packages`
-- [ ] Switch the home page services grid from placeholder content to database services
+- [ ] Switch the home page services grid from `src/content/services.ts` to database services. The table mirrors its fields (id, `LocalizedText` name and summary, vehicle kinds); `ServiceTile` gives an id it has no icon for a wrench (task 13)
+- [ ] Each home page service tile links to its `/services/[slug]` page (the ids are the slugs), and the hero gets "See prices" and the grid an "All services" link, each only once its page is live (`isLivePage`) (task 13)
+- [ ] An e2e test that goes from the home page to a service page and back: no console errors, and nothing left hidden (the scroll scene's reveals set themselves up again) (task 13)
 - [ ] Set `live: true` for `services` and `prices` in `src/components/site/navigation.ts` in the same commit as the pages (`navigation.test.ts` checks the flags) (task 12)
 - [ ] `aria-current` on the live navigation links, inside a `<Suspense>` with a plain-links fallback (`usePathname` suspends under Cache Components), with an e2e check for the attribute and for no hydration errors (task 12)
 - [ ] An unknown service slug calls `notFound()` in `generateMetadata` as well as in the page, before any `<Suspense>`, so the status is 404 and the title comes from `src/app/[locale]/not-found.tsx`. Add `src/app/[locale]/(site)/not-found.tsx` if that 404 should keep the full shell. Add an e2e status check for an unknown slug (task 12)
@@ -478,7 +493,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `37_reviews`
 - [ ] Plan with `ce-plan`
 - [ ] Customer reviews, `/reviews`, admin reply or hide
-- [ ] Switch the home page reviews preview and rating from sample content to real reviews
+- [ ] Switch the home page reviews preview and rating from sample content to real reviews: `selectReviews()` in `src/content/home.ts` reads the real ones; delete `sampleReviews`, and move the production no-samples scan in `e2e/home.spec.ts` off `sampleCanary`, which goes with them (task 13)
+- [ ] Decide the rating stat's one source, the owner's Google rating or the site's own average: two ratings that disagree would confuse visitors (task 13)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -535,6 +551,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] One source of hreflang for when Hindi ships: `alternates.languages` in metadata and the sitemap with `alternateLinks: false` in `src/i18n/routing.ts`, or next-intl's `Link` header alone (SEO check in task 10). A canonical on `/` also settles the `/en` 307 redirect
 - [ ] The 404 titles already include the brand (`NotFound.metaTitle`), so the title template must not add it twice. The PIN code (412101) is already in `src/content/garage.ts`; split the address text into street, area and city for the JSON-LD (task 12)
 - [ ] Decide whether to add a `favicon.ico`: today `/favicon.ico` gets Next.js's bare 404, because the proxy skips `.ico` paths (task 12)
+- [ ] The home page's title and description name Kiwale, Pune (task 13 changed only the h1 and the description's wording), with `AutoRepair` JSON-LD and a social image (task 13)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -590,6 +607,9 @@ Not in version 1. See [features.md](../website/features.md).
 - Hindi translation of all text (the site is built Hindi-ready from task 10). Also make `src/i18n/messages.test.ts` check that `hi.json` has exactly the keys of `en.json`
 - Upgrade ESLint 9 (end-of-life; `npm ci` prints a deprecation warning) to ESLint 10 once `eslint-config-next`'s plugins support it
 - Restyle Badge's text size: it's shadcn's stock 12px (`text-xs` in `src/components/ui/badge.tsx`), below MASTER.md's 13px floor. Its own small task (task 12)
+- Real trust numbers from the owner (years in business, vehicles serviced, rating, warranty): set `trustStats` in `src/content/home.ts`. They then show in every build, without the Sample badge. Years in business is a number the owner gives, never worked out from today's date (task 13)
+- Real photos of the garage: static imports from a new `src/assets/` folder, passed to the home page's visual slots (the hero's with `eager`), each with its alt text added to `messages/en.json` (task 13)
+- The lint text guard in `eslint.config.mjs` treats every `placeholder` prop as text people read, including next/image's `placeholder="blur"` setting; `src/components/site/visual-slot.tsx` works around it. Narrow that selector to form fields, with a case in `src/i18n/lint-guards.test.ts` (task 13)
 - App-like install for customers, roadside-assistance dispatch, more branches
 
 ## How to add a task
