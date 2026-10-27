@@ -6,7 +6,9 @@
 // ScrollScene loads this file lazily, in the browser, after the page has
 // loaded, and only for visitors who allow motion. It renders nothing: it finds
 // the elements the server marked (scroll-scene-attributes.ts) inside the
-// ScrollScene's wrapper, and animates their transform and opacity only.
+// ScrollScene's wrapper and animates their transform and opacity. The one
+// change to content: a counting number rewrites its digits while it counts,
+// and always ends on (or goes back to) the server's text.
 //
 // The rules that keep the page readable:
 // - Only elements entirely below the screen are hidden, at the moment this
@@ -17,6 +19,8 @@
 // - Nothing that holds a link or a button is ever hidden, so keyboard focus
 //   never lands on something invisible.
 // - Each reveal plays once, then its inline styles are removed.
+// - Whatever is waiting below the screen shows as soon as it's on screen,
+//   by scrolling or by the window growing taller.
 // - Undoing (leaving the page, or the motion setting changing) puts every
 //   element back the way the server drew it: useGSAP and gsap.matchMedia()
 //   revert everything they recorded.
@@ -73,23 +77,35 @@ export function ScrollSceneEffects({ scope }: { scope: HTMLElement }) {
       // the motion setting switched). It first undoes the previous setup, so
       // the new one starts from the page as the server drew it.
       const media = gsap.matchMedia();
-      media.add(
-        { allowed: motionAllowed, reduced: motionReduced, story: storyQuery, phone: phoneQuery },
-        (context, contextSafe) => {
-          const { allowed = false, story = false, phone = false } = context.conditions ?? {};
-          const safe = contextSafe as unknown as ContextSafe | undefined;
-          // Reduced motion: the end state is the page as the server drew it.
-          // (ScrollScene doesn't even load this file then; this is a backstop.)
-          if (!allowed || !safe) return;
+      try {
+        media.add(
+          { allowed: motionAllowed, reduced: motionReduced, story: storyQuery, phone: phoneQuery },
+          (context, contextSafe) => {
+            const { allowed = false, story = false, phone = false } = context.conditions ?? {};
+            const safe = contextSafe as unknown as ContextSafe | undefined;
+            // Reduced motion: the end state is the page as the server drew it.
+            // (ScrollScene doesn't even load this file then; this is a backstop.)
+            if (!allowed || !safe) return;
 
-          // No ScrollTrigger here pins anything (the story's visual is
-          // sticky in CSS, plan KTD4), so the order they're made in doesn't
-          // change where they start.
-          setUpReveals(scope, { phone, safe });
-          if (story) setUpStory(scope);
-          return setUpCounts(scope, locale, safe);
-        },
-      );
+            // No ScrollTrigger here pins anything (the story's visual is
+            // sticky in CSS, plan KTD4), so the order they're made in doesn't
+            // change where they start.
+            const undoReveals = setUpReveals(scope, { phone, safe });
+            if (story) setUpStory(scope);
+            const undoCounts = setUpCounts(scope, locale, safe);
+            return () => {
+              undoReveals();
+              undoCounts();
+            };
+          },
+        );
+      } catch (error) {
+        // Something broke halfway through: put back anything already hidden,
+        // then let the error reach ScrollScene's error boundary, which
+        // removes the effects. The page stays readable either way.
+        media.revert();
+        throw error;
+      }
 
       // Web fonts change where lines break, and so where everything sits.
       // Measure every trigger again once they've loaded.
@@ -111,8 +127,11 @@ export function ScrollSceneEffects({ scope }: { scope: HTMLElement }) {
 
 // --- Reveals ---------------------------------------------------------------
 
-/** Headings, text, tiles and visuals fade and rise in the first time they scroll into view. */
-function setUpReveals(scope: HTMLElement, { phone, safe }: { phone: boolean; safe: ContextSafe }) {
+/**
+ * Headings, text, tiles and visuals fade and rise in the first time they come
+ * into view. Returns the cleanup.
+ */
+function setUpReveals(scope: HTMLElement, { phone, safe }: { phone: boolean; safe: ContextSafe }): () => void {
   // Phones get a shorter rise, and their tiles come in as each one arrives,
   // without a stagger.
   const rise = phone ? distance.revealPhone : distance.reveal;
@@ -122,46 +141,71 @@ function setUpReveals(scope: HTMLElement, { phone, safe }: { phone: boolean; saf
   const singles = marked(scope, "reveal").filter(
     (element) => !element.parentElement?.matches(sceneSelector("revealGroup")),
   );
-  revealOnEnter(singles, { rise, stagger: 0, safe });
+  const cleanups = [revealOnEnter(singles, { rise, stagger: 0, safe })];
 
   // Tiles that come into view together reveal one after another.
   for (const group of groups) {
     const tiles = [...group.children].filter((child): child is HTMLElement => child instanceof HTMLElement);
-    revealOnEnter(tiles, { rise, stagger: phone ? 0 : distance.stagger, safe });
+    cleanups.push(revealOnEnter(tiles, { rise, stagger: phone ? 0 : distance.stagger, safe }));
   }
+  return () => cleanups.forEach((cleanup) => cleanup());
 }
 
+/** Hides the candidates that are below the screen, and reveals each once it's in view. Returns the cleanup. */
 function revealOnEnter(
   candidates: HTMLElement[],
   { rise, stagger, safe }: { rise: number; stagger: number; safe: ContextSafe },
-) {
+): () => void {
   const targets = candidates.filter((element) => canHide(element) && isBelowScreen(element));
-  if (targets.length === 0) return;
+  if (targets.length === 0) return () => {};
 
   // Hidden while they wait. opacity, not autoAlpha (which also sets
   // visibility: hidden and would hide the text from screen readers).
   gsap.set(targets, { opacity: 0, y: rise });
 
-  ScrollTrigger.batch(targets, {
+  const reveal = safe((entering: Element[]) => {
+    gsap.to(entering, {
+      opacity: 1,
+      y: 0,
+      duration: duration.reveal,
+      ease: ease.emphasized.gsap,
+      stagger,
+      overwrite: true,
+      // Done: remove the inline styles, so the element is exactly as the
+      // server drew it again.
+      clearProps: "opacity,transform",
+    });
+  });
+
+  // The targets still hidden, and the trigger each one waits on.
+  const waiting = new Map<Element, ScrollTrigger>();
+  const triggers = ScrollTrigger.batch(targets, {
     start: revealStart,
     // Each target reveals once. Jumping straight past one (the End key, a
     // link to further down) still reveals it: ScrollTrigger fires onEnter
     // for a start it skipped over.
     once: true,
     onEnter: safe((entering: Element[]) => {
-      gsap.to(entering, {
-        opacity: 1,
-        y: 0,
-        duration: duration.reveal,
-        ease: ease.emphasized.gsap,
-        stagger,
-        overwrite: true,
-        // Done: remove the inline styles, so the element is exactly as the
-        // server drew it again.
-        clearProps: "opacity,transform",
-      });
+      for (const element of entering) waiting.delete(element);
+      reveal(entering);
     }),
   });
+  targets.forEach((target, index) => waiting.set(target, triggers[index]));
+
+  // The screen can grow taller without any scrolling (a window maximised, or
+  // a renderer that opens a very tall window). ScrollTrigger only reveals on
+  // a scroll, so this reveals whatever waiting target is now on screen.
+  const revealWhatIsOnScreen = safe(() => {
+    const onScreen = [...waiting.keys()].filter((element) => !isBelowScreen(element));
+    if (onScreen.length === 0) return;
+    for (const element of onScreen) {
+      waiting.get(element)?.kill();
+      waiting.delete(element);
+    }
+    reveal(onScreen);
+  });
+  window.addEventListener("resize", revealWhatIsOnScreen);
+  return () => window.removeEventListener("resize", revealWhatIsOnScreen);
 }
 
 /**
@@ -255,8 +299,8 @@ function setUpStory(scope: HTMLElement) {
 function setUpCounts(scope: HTMLElement, locale: Locale, safe: ContextSafe): () => void {
   // The server's text for each number we change (its final value).
   const finalText = new Map<HTMLElement, string>();
-  // Numbers still waiting to count, and the trigger each waits on.
-  const waiting = new Map<HTMLElement, ScrollTrigger>();
+  // Numbers still waiting to count: how to start each, and the trigger it waits on.
+  const waiting = new Map<HTMLElement, { start: () => void; trigger: ScrollTrigger }>();
 
   for (const element of marked(scope, "count")) {
     const target = Number(element.getAttribute(sceneAttribute.count));
@@ -268,34 +312,30 @@ function setUpCounts(scope: HTMLElement, locale: Locale, safe: ContextSafe): () 
     finalText.set(element, element.textContent ?? "");
     element.textContent = formatNumber(0, locale, decimals);
 
-    const trigger = ScrollTrigger.create({
-      trigger: element,
-      start: revealStart,
-      once: true,
-      onEnter: safe(() => {
-        waiting.delete(element);
-        const counter = { value: 0 };
-        gsap.to(counter, {
-          value: target,
-          duration: countDuration,
-          ease: ease.standard.gsap,
-          onUpdate: () => {
-            element.textContent = formatNumber(counter.value, locale, decimals);
-          },
-          // End on the server's exact text.
-          onComplete: () => {
-            element.textContent = finalText.get(element) ?? "";
-          },
-        });
-      }),
+    const start = safe(() => {
+      waiting.delete(element);
+      const counter = { value: 0 };
+      gsap.to(counter, {
+        value: target,
+        duration: countDuration,
+        ease: ease.standard.gsap,
+        onUpdate: () => {
+          element.textContent = formatNumber(counter.value, locale, decimals);
+        },
+        // End on the server's exact text.
+        onComplete: () => {
+          element.textContent = finalText.get(element) ?? "";
+        },
+      });
     });
-    waiting.set(element, trigger);
+    const trigger = ScrollTrigger.create({ trigger: element, start: revealStart, once: true, onEnter: start });
+    waiting.set(element, { start, trigger });
   }
 
   // Printing before a number has counted would print its 0: show the final
   // value instead, and don't count it later.
   const finishWaiting = () => {
-    for (const [element, trigger] of waiting) {
+    for (const [element, { trigger }] of waiting) {
       trigger.kill();
       element.textContent = finalText.get(element) ?? "";
     }
@@ -303,8 +343,20 @@ function setUpCounts(scope: HTMLElement, locale: Locale, safe: ContextSafe): () 
   };
   window.addEventListener("beforeprint", finishWaiting);
 
+  // The window grew taller without a scroll: count the numbers now on screen,
+  // so a 0 never sits there waiting (the same reason as for reveals).
+  const countWhatIsOnScreen = () => {
+    for (const [element, { start, trigger }] of [...waiting]) {
+      if (isBelowScreen(element)) continue;
+      trigger.kill();
+      start();
+    }
+  };
+  window.addEventListener("resize", countWhatIsOnScreen);
+
   return () => {
     window.removeEventListener("beforeprint", finishWaiting);
+    window.removeEventListener("resize", countWhatIsOnScreen);
     for (const [element, text] of finalText) element.textContent = text;
   };
 }

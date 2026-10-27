@@ -39,6 +39,8 @@ export function HomeActions({ book, phone }: HomeActionsProps) {
         <a href={telHref(phone)}>
           <PhoneIcon data-icon="inline-start" />
           {tContact("call")}
+          {/* The space keeps "Call +91 ..." apart for screen readers and search
+              engines. It doesn't show: the button lays its parts out with a gap. */}{" "}
           <span className="hidden md:inline">{formatPhoneNumber(phone)}</span>
         </a>
       </Button>

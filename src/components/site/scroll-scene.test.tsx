@@ -11,6 +11,16 @@ import { motionAllowed, motionReduced } from "@/lib/motion";
 // loaded and when it mounts and unmounts.
 const effects = { loaded: vi.fn(), mounted: vi.fn(), unmounted: vi.fn() };
 
+// The App Router build swaps next/dynamic for its own version, React.lazy
+// underneath (node_modules/next/dist/build/create-compiler-aliases.js maps it
+// to next/dist/api/app-dynamic). Vitest would load the Pages Router version,
+// which swallows a failed load by itself, so these tests use the real one.
+vi.mock("next/dynamic", async () => {
+  const appDynamic = await import("next/dist/shared/lib/app-dynamic");
+  // A CommonJS file whose exports are the function itself.
+  return { default: appDynamic.default ?? appDynamic };
+});
+
 /**
  * Swaps scroll-scene-effects.tsx for the stand-in. vi.doMock (not vi.mock)
  * in beforeEach, with vi.resetModules(): each test then gets fresh modules,
@@ -157,6 +167,51 @@ describe("ScrollScene", () => {
     await waitFor(() => expect(effects.mounted).toHaveBeenCalledTimes(1));
     // Loaded here, by this test: each test gets a fresh copy of the modules.
     expect(effects.loaded).toHaveBeenCalledTimes(1);
+  });
+
+  // The effects are an extra: whatever goes wrong with them, the page stays.
+  // Without the guards in scroll-scene.tsx, React's error would replace the
+  // whole page with Next.js's error screen.
+  test("the effects file fails to load (offline, a blocker, an old file after a redeploy): the page stays", async () => {
+    vi.doMock("./scroll-scene-effects", () => {
+      throw new Error("Failed to load chunk");
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    stubMotionSetting("allow");
+    const ScrollScene = await importScrollScene();
+    render(
+      <ScrollScene>
+        <h2>How it works</h2>
+      </ScrollScene>,
+    );
+    await settle();
+    expect(screen.getByText("How it works")).toBeTruthy();
+  });
+
+  test("the effects throw while setting up: the page stays", async () => {
+    vi.doMock("./scroll-scene-effects", async () => {
+      const { useLayoutEffect } = await import("react");
+      return {
+        ScrollSceneEffects: function Broken() {
+          useLayoutEffect(() => {
+            throw new Error("setup failed");
+          }, []);
+          return null;
+        },
+      };
+    });
+    // React reports the caught error on the console: expected here.
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    stubMotionSetting("allow");
+    const ScrollScene = await importScrollScene();
+    render(
+      <ScrollScene>
+        <h2>How it works</h2>
+      </ScrollScene>,
+    );
+    await settle();
+    expect(screen.getByText("How it works")).toBeTruthy();
+    expect(consoleError).toHaveBeenCalled();
   });
 
   test("follows a change to the motion setting during the visit", async () => {

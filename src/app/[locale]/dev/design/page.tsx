@@ -38,7 +38,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { sampleReviews, sampleTrustStats } from "@/content/home";
+import { selectReviews, selectTrustStats } from "@/content/home";
 import { services } from "@/content/services";
 import { formatRupees } from "@/i18n/format";
 import { whatsappHref } from "@/lib/contact-links";
@@ -266,6 +266,11 @@ export default function DesignPage() {
   const tContact = useTranslations("Contact");
   const garage = readGarage();
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
+  // The samples, through the same switch the home page uses (showSamples()):
+  // devOnly() keeps this page out of production, but a staging server that
+  // shows dev pages must still show no samples. null there: the blocks below go.
+  const shownStats = selectTrustStats(null);
+  const shownReviews = selectReviews(null);
 
   return (
     <FontPreview>
@@ -810,27 +815,31 @@ export default function DesignPage() {
               </Section>
             </Block>
 
-            <Block
-              title="Trust stats"
-              description="The samples the home page shows under npm run dev. Screen readers hear the label and the final number; the number on screen is the one that counts up."
-            >
-              <dl data-sample="stat-tiles" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
-                {sampleTrustStats.map((stat) => (
-                  <StatTile key={stat.id} stat={stat} sample />
-                ))}
-              </dl>
-            </Block>
+            {shownStats && (
+              <Block
+                title="Trust stats"
+                description="The samples the home page shows under npm run dev. Screen readers hear the label and the final number; the number on screen is the one that counts up."
+              >
+                <dl data-sample="stat-tiles" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+                  {shownStats.items.map((stat) => (
+                    <StatTile key={stat.id} stat={stat} sample={shownStats.sample} />
+                  ))}
+                </dl>
+              </Block>
+            )}
 
-            <Block
-              title="Review card"
-              description="Stars for the eye, the rating in words for screen readers. A sample is credited to a vehicle, never a name."
-            >
-              <Section tone="grey" className="rounded-xl py-(--gutter)">
-                <div data-sample="review-card" className="max-w-md">
-                  <ReviewCard review={sampleReviews[2]} sample />
-                </div>
-              </Section>
-            </Block>
+            {shownReviews && (
+              <Block
+                title="Review card"
+                description="Stars for the eye, the rating in words for screen readers. A sample is credited to a vehicle, never a name."
+              >
+                <Section tone="grey" className="rounded-xl py-(--gutter)">
+                  <div data-sample="review-card" className="max-w-md">
+                    <ReviewCard review={shownReviews.items[2]} sample={shownReviews.sample} />
+                  </div>
+                </Section>
+              </Block>
+            )}
 
             <Block
               title="Sample badge"
@@ -858,9 +867,11 @@ export default function DesignPage() {
                         </li>
                       ))}
                     </ul>
-                    <dl className="grid max-w-xs">
-                      <StatTile stat={sampleTrustStats[1]} sample />
-                    </dl>
+                    {shownStats && (
+                      <dl className="grid max-w-xs">
+                        <StatTile stat={shownStats.items[1]} sample={shownStats.sample} />
+                      </dl>
+                    )}
                   </div>
                 </ScrollScene>
               </div>

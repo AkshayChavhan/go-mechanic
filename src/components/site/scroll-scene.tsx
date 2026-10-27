@@ -24,7 +24,7 @@
 // - visitors who ask their device for less motion never download it.
 
 import dynamic from "next/dynamic";
-import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { Component, useState, useSyncExternalStore, type ReactNode } from "react";
 
 import { motionAllowed } from "@/lib/motion";
 
@@ -35,10 +35,41 @@ import { sceneMark } from "./scroll-scene-attributes";
 // node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md). The chunk is
 // requested only when <ScrollSceneEffects> first renders, which happens only
 // while useMotionReady() below says yes.
+//
+// The effects are an extra: the page reads fully without them. So if their
+// file can't be downloaded (a weak signal, a content blocker, an old file
+// name after a redeploy), .catch() swaps in NoMotion, which renders nothing.
 const ScrollSceneEffects = dynamic(
-  () => import("./scroll-scene-effects").then((module) => module.ScrollSceneEffects),
+  () =>
+    import("./scroll-scene-effects")
+      .then((module) => module.ScrollSceneEffects)
+      .catch(() => NoMotion),
   { ssr: false },
 );
+
+/** What runs instead of the effects when their file couldn't be loaded: nothing. */
+function NoMotion() {
+  return null;
+}
+
+/**
+ * Catches an error the effects throw while they run (an error boundary, a
+ * React component that catches errors from the components inside it). Without
+ * it, the error would travel up to Next.js, which would replace the whole page
+ * with its error screen. With it, the effects quietly disappear, and the page
+ * stays as the server drew it. A class: React has no hook for this.
+ */
+class WithoutMotionOnError extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+
+  render() {
+    return this.state.failed ? null : this.props.children;
+  }
+}
 
 export function ScrollScene({ children }: { children: ReactNode }) {
   // The wrapper element, kept in state rather than a ref: the effects start
@@ -49,7 +80,11 @@ export function ScrollScene({ children }: { children: ReactNode }) {
   return (
     <div ref={setScope} {...sceneMark("root")}>
       {children}
-      {ready && scope && <ScrollSceneEffects scope={scope} />}
+      {ready && scope && (
+        <WithoutMotionOnError>
+          <ScrollSceneEffects scope={scope} />
+        </WithoutMotionOnError>
+      )}
     </div>
   );
 }

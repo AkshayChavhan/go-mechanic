@@ -168,14 +168,14 @@ The first commit on the branch, `665ee09 docs(12): mark task 12 done`, is task 1
 
 ## Check that it works
 
-Real output from runs for this doc, on 2026-10-27, with Node 24 (trimmed):
+Real output on 2026-10-27, with Node 24 (trimmed). `npm run check` is from the final code, after the review fixes; the build's route list is from before them (no route changed):
 
 ```bash
 npm run check
 ```
 ```
  Test Files  45 passed (45)
-      Tests  765 passed (765)
+      Tests  768 passed (768)
 ```
 
 `npm run build` lists the routes. `○ /en` means the home page is still built ahead of time:
@@ -210,16 +210,33 @@ for seed in 1 2 3 4 5; do npx vitest run src/components/site/scroll-scene.test.t
       Tests  7 passed (7)
 ```
 
-The browser suites weren't re-run for this doc: they take minutes, and the computer was overloaded. From the work session:
-- `npm run test:e2e` (production build): `56 passed (1.5m)`.
-- `npm run test:design` (under `next dev`, plus the screenshots): `39 passed (3.9m)`.
+The browser suites, from the work session's final runs after the review fixes:
+- `npm run test:e2e` (production build): `58 passed (1.1m)`.
+- `npm run test:design` (under `next dev`, plus the screenshots): `39 passed (1.6m)`.
 
 To look for yourself, run `npm run dev` and open http://localhost:3000. You should see the stats and reviews with "Sample" badges. Production (`npm run build && npm run start`) has neither.
 
 ## Checks and reviews
 
-- **SEO check:** *Pending.* The SEO hook will list the changed page files; `seo-reviewer` then checks `/`.
-- **`ce-code-review`:** *Pending.*
+- **SEO check:** the `seo-reviewer` agent checked `/`, `/dev/design` and the 404 on the production build. **All pass.** It confirmed:
+  - one `h1` with "Kiwale, Pune" and a clean heading outline;
+  - all text in the server HTML;
+  - CLS 0 on load and while scrolling, and the `h1` as the largest paint (about 0.5 s on a phone, localhost);
+  - GSAP not in the first-load scripts;
+  - no sample text anywhere in the build.
+
+  It also found three things, which the owner asked us to fix in this task:
+  1. **Blank sections after a resize.** Sections waiting below the fold stayed invisible if the window grew taller without scrolling. That happens when someone maximises a browser window, or when a renderer such as Google's uses a very tall window. A resize listener now reveals them, and an e2e test proves it: without the fix, 179 elements stayed hidden.
+  2. **A fuller meta description** that names bikes, the area and what visitors get.
+  3. **A missing space:** from 768px the Call link read "Call+91 97647 50567".
+- **`ce-code-review`: "Ready with fixes".** Nine reviewer personas confirmed the owner's rule holds: no path lets a sample stat or review reach a production build. One P1, all fixed:
+  - **The P1:** if the lazily loaded effects file failed to download (weak signal, an old file after a redeploy, a content blocker) or threw, Next.js's error screen replaced the whole home page. Now the loader falls back to no motion, an error boundary renders nothing on error, and a setup error reverts anything already hidden.
+  - **How it was proven:** in tests `next/dynamic` first resolved to the Pages Router version, which swallowed the failure and hid the bug. The test now uses the App Router version that the real build uses.
+  - **Other fixes:**
+    - `/dev/design` read the sample lists behind `devOnly()`; it now goes through `showSamples()`, and a test fails if any other file uses the lists directly;
+    - the mid-story scale check couldn't fail; it now compares readings and requires a scale below 1;
+    - the shell spec now uses reduced motion on `/`, because it fixes the clock;
+    - a duplicated test helper was removed, and a comment corrected.
 - **`code-reviewer` agent:** *Pending.*
 - **Compound:** *Pending.* Candidates so far: testing animated pages with Playwright (the clock, `toBeVisible()`), and `vi.mock` with `vi.resetModules()`. Both are already rules in `CLAUDE.md` or the code's comments, which may be enough.
 - **Pull request and merge:** *Pending*, after the reviews and the owner's go-ahead.
