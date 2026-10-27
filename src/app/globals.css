@@ -10,6 +10,12 @@
 /* dark: classes apply inside a .dark section (the black showcase bands). */
 @custom-variant dark (&:is(.dark *));
 
+/* story: classes apply on screens wide and tall enough for the home page's
+   story in two columns, with a sticky vehicle visual (story:grid-cols-2,
+   story:sticky). The same query is storyQuery in src/lib/motion.ts, which
+   picks the story's scroll animation; motion.test.ts keeps them equal. */
+@custom-variant story (@media (min-width: 64rem) and (min-height: 40rem));
+
 /* The site's design system. Components use these tokens by name
    (bg-primary, text-muted-foreground, rounded-xl, type-title...), never raw
    values. design-tokens.test.ts checks the colours' contrast. */
@@ -195,6 +201,12 @@
     --action-bar-height: calc(
         1px + var(--action-bar-padding-top) + var(--action-bar-item-height) + var(--action-bar-padding-bottom)
     );
+    /* The screen left for the page under the sticky header: the most a
+       full-height section or a sticky visual (the home page's story) should
+       take, so none of it hides under a bar. Phones also lose the action bar
+       (below, after .dark). svh: the height with the phone's address bar
+       showing, so it doesn't jump when that bar hides while scrolling. */
+    --stage-height: calc(100svh - var(--header-height));
 
     /* Durations, used as duration-(--duration-base). The same values, in
        seconds, are in src/lib/motion.ts for GSAP. */
@@ -245,6 +257,14 @@
     --sidebar-accent-foreground: #f5f5f7;
     --sidebar-border: #424245;
     --sidebar-ring: #2997ff;
+}
+
+/* Below 768px the action bar covers the bottom of the screen too. The same
+   query is phoneQuery in src/lib/motion.ts. */
+@media (width < 48rem) {
+    :root {
+        --stage-height: calc(100svh - var(--header-height) - var(--action-bar-height));
+    }
 }
 
 /* Type scale. Utilities, not text-* theme keys: cn() would mistake an unknown
@@ -432,4 +452,16 @@
     outline: 2px solid var(--ring);
     outline-offset: 2px;
     --tw-ring-shadow: 0 0 #0000;
+}
+
+/* Printing: scroll reveals that haven't played yet would print blank, since
+   GSAP hides them inline until they scroll into view. Print them visible
+   and in place (!important beats inline styles). The attribute names come
+   from src/components/site/scroll-scene-attributes.ts. */
+@media print {
+    [data-scene-reveal],
+    [data-scene-reveal-group] > * {
+        opacity: 1 !important;
+        transform: none !important;
+    }
 }

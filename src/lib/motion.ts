@@ -29,3 +29,40 @@ export const ease = {
 // Content must be visible before any JavaScript runs.
 export const motionAllowed = "(prefers-reduced-motion: no-preference)";
 export const motionReduced = "(prefers-reduced-motion: reduce)";
+
+// --- The scroll scene (task 13) --------------------------------------------
+// Used by src/components/site/scroll-scene-effects.tsx. These are GSAP only:
+// CSS never moves things this way, so globals.css has no copy.
+
+/** How far scroll animations move, and how they're paced. */
+export const distance = {
+  /** How far a reveal rises into place, in pixels, from 768px up. */
+  reveal: 24,
+  /** The same on phones (below 768px): a shorter move for a smaller screen. */
+  revealPhone: 12,
+  /** Seconds between tiles that reveal together, from 768px up. Phones don't stagger. */
+  stagger: 0.08,
+  /**
+   * The story visual's scale where its scroll range starts. It grows to 1,
+   * its natural size, and never past it, so it can't overflow sideways.
+   */
+  storyScale: 0.9,
+} as const;
+
+/** How long a number takes to count up, in seconds: about twice a reveal. */
+export const countDuration = duration.reveal * 2;
+
+/**
+ * Large screens: wide and tall enough for the story's two columns, with the
+ * vehicle visual staying in view (sticky) while the steps scroll past.
+ * Tablets, short laptop windows and phones turned sideways keep one column.
+ * globals.css has the same query as the `story:` variant (story:grid-cols-2),
+ * and motion.test.ts keeps the two equal.
+ */
+export const storyQuery = "(min-width: 64rem) and (min-height: 40rem)";
+
+/**
+ * Phones: below Tailwind's md breakpoint (768px), where the action bar covers
+ * the bottom of the screen. They get shorter reveals and no stagger.
+ */
+export const phoneQuery = "(width < 48rem)";
