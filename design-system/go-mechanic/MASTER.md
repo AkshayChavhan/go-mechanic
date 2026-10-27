@@ -242,7 +242,7 @@ The frame around every public page (task 12). Pages in `src/app/[locale]/(site)/
 
 ### Rename checklist
 
-1. In `messages/en.json`, change `Brand.name` and the page texts that mention the name (`Metadata`, `HomePage`).
+1. In `messages/en.json`, change `Brand.name` and `Metadata.title`, the only other message that types the name (the 404 title reads it through `{brand}`).
 2. Redraw the letter in `src/app/icon.svg` from the new name's first letter (Inter Bold outline, same tile).
 3. Run `npm run check`: `brand-name.test.ts` lists any file that still has the old name.
 

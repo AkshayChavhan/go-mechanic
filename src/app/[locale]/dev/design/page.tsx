@@ -11,9 +11,17 @@ import { NotFoundContent } from "@/components/site/not-found-content";
 import { OfferBanner } from "@/components/site/offer-banner";
 import { OpenStatusView } from "@/components/site/open-status";
 import { Section } from "@/components/site/section";
+import { ReviewCard } from "@/components/site/review-card";
+import { SampleBadge } from "@/components/site/sample-badge";
+import { ScrollScene } from "@/components/site/scroll-scene";
+import { sceneMark } from "@/components/site/scroll-scene-attributes";
+import { ServiceTile } from "@/components/site/service-tile";
 import { readGarage } from "@/components/site/site-chrome";
 import { SiteFooter } from "@/components/site/site-footer";
 import { MobileMenuContent, SiteHeader } from "@/components/site/site-header";
+import { StatTile } from "@/components/site/stat-tile";
+import { VehicleIllustration } from "@/components/site/vehicle-illustration";
+import { VisualSlot } from "@/components/site/visual-slot";
 import { Wordmark } from "@/components/site/wordmark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,10 +38,12 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { sampleReviews, sampleTrustStats } from "@/content/home";
+import { services } from "@/content/services";
 import { formatRupees } from "@/i18n/format";
 import { whatsappHref } from "@/lib/contact-links";
 import { devOnly } from "@/lib/dev-only";
-import { duration, ease } from "@/lib/motion";
+import { countDuration, distance, duration, ease } from "@/lib/motion";
 
 import { ColorPair } from "./_components/color-pair";
 import { FontPreview, FontToggle } from "./_components/font-switch";
@@ -129,6 +139,21 @@ const easeUse = {
   exit: "Things leaving",
 };
 
+// The scroll scene's GSAP-only values (distance and countDuration in @/lib/motion).
+const scrollValues = [
+  ["distance.reveal", `${distance.reveal}px`, "How far a reveal rises into place, from 768px up"],
+  ["distance.revealPhone", `${distance.revealPhone}px`, "The same on phones, below 768px"],
+  ["distance.stagger", `${Math.round(distance.stagger * 1000)}ms`, "Between tiles that reveal together (phones don't stagger)"],
+  ["distance.storyScale", `${distance.storyScale} to 1`, "The story's picture grows to its natural size, never past it"],
+  ["countDuration", `${Math.round(countDuration * 1000)}ms`, "A number counting up: about twice a reveal"],
+] as const;
+
+const tones = [
+  ["white", "On the white page"],
+  ["grey", "On the grey band"],
+  ["dark", "On the black showcase"],
+] as const;
+
 const sections = [
   ["brand", "Brand"],
   ["colour", "Colour"],
@@ -136,6 +161,7 @@ const sections = [
   ["shape", "Space and shape"],
   ["components", "Components"],
   ["shell", "Layout shell"],
+  ["blocks", "Page blocks"],
   ["motion", "Motion"],
   ["rules", "Rules"],
 ] as const;
@@ -325,8 +351,8 @@ export default function DesignPage() {
                 <CardContent>
                   <ol className="flex list-decimal flex-col gap-3 pl-5">
                     <li>
-                      In messages/en.json, change Brand.name and the page titles that mention the name (Metadata and
-                      HomePage).
+                      In messages/en.json, change Brand.name and Metadata.title, the only other message that types the
+                      name (the 404 title reads it through {"{brand}"}).
                     </li>
                     <li>Redraw the letter in src/app/icon.svg. It is an outline, so a new letter needs a new path.</li>
                     <li>Run npm run check. brand-name.test.ts lists any file that still types the old name.</li>
@@ -737,6 +763,111 @@ export default function DesignPage() {
           </div>
         </Section>
 
+        <Section width="wide" aria-labelledby="blocks">
+          <div className="flex flex-col gap-16">
+            <SectionIntro
+              id="blocks"
+              title="Page blocks"
+              lead="The pieces the home page is built from, ready for the service, about and review pages. Made-up stats and reviews carry a Sample badge: only npm run dev ever shows them."
+            />
+
+            <Block
+              title="Vehicle illustration"
+              description="Line art in the text colour around it, so it suits every tone. It stands in wherever there's no photo yet."
+            >
+              <div data-sample="illustrations" className="grid gap-4 md:grid-cols-3">
+                {tones.map(([tone, label]) => (
+                  <Section key={tone} tone={tone} className="rounded-xl border border-border py-(--gutter)">
+                    <div className="flex flex-col gap-3 text-muted-foreground">
+                      <VehicleIllustration className="w-full" />
+                      <span className="type-caption">{label}</span>
+                    </div>
+                  </Section>
+                ))}
+              </div>
+            </Block>
+
+            <Block
+              title="Visual slot"
+              description="A fixed 16:10 box, so nothing moves when a photo arrives. A photo fills it once there is one; until then, the illustration. The hero's slot loads its photo eagerly."
+            >
+              <VisualSlot data-sample="visual-slot" photo={null} sizes="(min-width: 48rem) 36rem, 100vw" className="max-w-xl" />
+            </Block>
+
+            <Block
+              title="Service tiles"
+              description="Flat tiles, not links: there are no service pages or prices yet. Periodic service gets the wide tile in the grid."
+            >
+              <Section tone="grey" className="rounded-xl py-(--gutter)">
+                <ul data-sample="service-tiles" className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                  <li className="sm:col-span-2">
+                    <ServiceTile service={services[0]} />
+                  </li>
+                  <li>
+                    <ServiceTile service={services[1]} />
+                  </li>
+                </ul>
+              </Section>
+            </Block>
+
+            <Block
+              title="Trust stats"
+              description="The samples the home page shows under npm run dev. Screen readers hear the label and the final number; the number on screen is the one that counts up."
+            >
+              <dl data-sample="stat-tiles" className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+                {sampleTrustStats.map((stat) => (
+                  <StatTile key={stat.id} stat={stat} sample />
+                ))}
+              </dl>
+            </Block>
+
+            <Block
+              title="Review card"
+              description="Stars for the eye, the rating in words for screen readers. A sample is credited to a vehicle, never a name."
+            >
+              <Section tone="grey" className="rounded-xl py-(--gutter)">
+                <div data-sample="review-card" className="max-w-md">
+                  <ReviewCard review={sampleReviews[2]} sample />
+                </div>
+              </Section>
+            </Block>
+
+            <Block
+              title="Sample badge"
+              description="On every made-up stat and review. Production builds never include samples, so they never show it."
+            >
+              <div data-sample="sample-badge">
+                <SampleBadge />
+              </div>
+            </Block>
+
+            <Block
+              title="Scroll scene"
+              description="ScrollScene wraps server-rendered markup and moves only what is marked: a line that rises into place, tiles that follow one another, a number that counts up. It plays once, the first time each part scrolls into view. With reduce motion on, nothing moves."
+            >
+              <div data-sample="scroll-scene">
+                <ScrollScene>
+                  <div className="flex flex-col gap-6 rounded-xl border border-border p-(--gutter)">
+                    <p {...sceneMark("reveal")} className="type-title">
+                      This line rises into place.
+                    </p>
+                    <ul {...sceneMark("revealGroup")} className="grid grid-cols-3 gap-3">
+                      {["One", "Two", "Three"].map((label) => (
+                        <li key={label} className="rounded-xl bg-card p-6 type-callout">
+                          {label}
+                        </li>
+                      ))}
+                    </ul>
+                    <dl className="grid max-w-xs">
+                      <StatTile stat={sampleTrustStats[1]} sample />
+                    </dl>
+                  </div>
+                </ScrollScene>
+              </div>
+            </Block>
+          </div>
+        </Section>
+
         <Section tone="grey" width="wide" aria-labelledby="motion">
           <div className="flex flex-col gap-12">
             <SectionIntro
@@ -774,6 +905,22 @@ export default function DesignPage() {
                 </dl>
               </Block>
             </div>
+            <Block
+              title="Scroll scene"
+              description="GSAP-only values for ScrollScene's reveals, stagger, story and counts. CSS never moves things this way, so it has no copy."
+            >
+              <dl data-sample="scroll-values" className="flex max-w-3xl flex-col">
+                {scrollValues.map(([name, value, use]) => (
+                  <div key={name} className="flex items-baseline justify-between gap-4 border-t border-border py-3">
+                    <dt className="flex flex-col">
+                      <span className="type-callout font-semibold">{name}</span>
+                      <span className="type-caption text-muted-foreground">{use}</span>
+                    </dt>
+                    <dd className="type-callout tabular-nums">{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </Block>
             <Block
               title="Try it"
               description="The tile uses duration.reveal and ease.emphasized. With reduce motion on, it jumps to the end."

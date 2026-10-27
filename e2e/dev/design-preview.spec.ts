@@ -3,6 +3,8 @@ import path from "node:path";
 import { expect, test, type Page } from "@playwright/test";
 
 import messages from "../../messages/en.json";
+import { sampleTrustStats } from "../../src/content/home";
+import { effectiveOpacities, gsapVersions } from "../helpers";
 
 // Real-browser checks of the /dev/design preview (src/app/[locale]/dev/design),
 // against `next dev`: npm run test:design. Unit tests can't see these things:
@@ -169,6 +171,59 @@ test("pressing Tab to the first main button shows a solid 2px outline in the rin
   await expect.poll(focusOutline).toEqual({ style: "solid", width: 2, sameAsRing: true });
 });
 
+test("the page blocks: illustrations in three tones, a slot, a wide and a normal tile, marked samples and the scroll values", async ({
+  page,
+}) => {
+  await open(page);
+  await expect(sample(page, "illustrations").locator("svg[aria-hidden='true']")).toHaveCount(3);
+  await expect(sample(page, "visual-slot").locator("svg")).toHaveCount(1);
+  const tiles = sample(page, "service-tiles").locator("li");
+  await expect(tiles).toHaveCount(2);
+  // The wide tile is twice as wide as the normal one (from 640px).
+  const [wide, normal] = await tiles.evaluateAll((items) => items.map((item) => item.getBoundingClientRect().width));
+  expect(wide).toBeGreaterThan(normal * 1.9);
+  await expect(sample(page, "stat-tiles").locator("[data-sample]")).toHaveCount(sampleTrustStats.length);
+  await expect(sample(page, "stat-tiles").getByText(messages.HomePage.sample, { exact: true })).toHaveCount(
+    sampleTrustStats.length,
+  );
+  await expect(sample(page, "review-card").getByText(messages.HomePage.sample, { exact: true })).toBeVisible();
+  await expect(sample(page, "sample-badge").getByText(messages.HomePage.sample, { exact: true })).toBeVisible();
+  await expect(sample(page, "scroll-values").locator("dt")).toHaveCount(5);
+});
+
+test.describe("the scroll scene demo", () => {
+  const targets = '[data-sample="scroll-scene"] :is([data-scene-reveal], [data-scene-reveal-group] > *)';
+
+  test.describe("with reduce motion off", () => {
+    test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: "no-preference" });
+
+    test("waits hidden below the screen, then rises in and counts once scrolled to", async ({ page }) => {
+      await open(page);
+      await expect.poll(() => gsapVersions(page)).not.toBeNull();
+      // Far below the first screen: hidden (opacity 0) while it waits, the number at 0.
+      await expect.poll(() => effectiveOpacities(page, targets)).toEqual([0, 0, 0, 0]);
+      const digits = sample(page, "scroll-scene").locator("[data-scene-count]");
+      await expect(digits).toHaveText("0");
+      await sample(page, "scroll-scene").scrollIntoViewIfNeeded();
+      await expect.poll(() => effectiveOpacities(page, targets)).toEqual([1, 1, 1, 1]);
+      await expect(digits).toHaveText("5,000");
+    });
+  });
+
+  test.describe("with reduce motion on", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("shows everything straight away: nothing waits hidden, the number is final", async ({ page }) => {
+      // (GSAP itself is on this page anyway: the motion demo above imports it.
+      // The home page's tests check that reduced motion never downloads it.)
+      await open(page);
+      await page.waitForLoadState("networkidle");
+      expect(await effectiveOpacities(page, targets)).toEqual([1, 1, 1, 1]);
+      await expect(sample(page, "scroll-scene").locator("[data-scene-count]")).toHaveText("5,000");
+    });
+  });
+});
+
 test.describe("on a phone (375px, touch screen)", () => {
   test.use({ viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true });
 
@@ -319,7 +374,14 @@ const shots = [
 
 for (const shot of shots) {
   test.describe(`screenshot at ${shot.width}px in ${shot.font}`, () => {
-    test.use({ viewport: { width: shot.width, height: shot.height }, hasTouch: shot.touch, isMobile: shot.touch });
+    // Reduced motion: a full-page capture doesn't scroll, so the scroll
+    // scene demo would still be waiting, hidden, below the first screen.
+    test.use({
+      viewport: { width: shot.width, height: shot.height },
+      hasTouch: shot.touch,
+      isMobile: shot.touch,
+      reducedMotion: "reduce",
+    });
 
     test("is saved", async ({ page }, testInfo) => {
       await open(page);
