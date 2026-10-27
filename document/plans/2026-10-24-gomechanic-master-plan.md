@@ -119,7 +119,8 @@ The repo has its rules, skills, agents and Compound Engineering set up (tasks 01
 **Cache Components rules** (from `node_modules/next/dist/docs/01-app/…`):
 - Public catalogue reads use `'use cache'` + `cacheTag`, and admin saves call `updateTag`.
 - Session reads go inside `<Suspense>`.
-- "Open now" and slots use `connection()`.
+- "Open now" is worked out in the browser, so the shell keeps public pages prerendered (task 12, KTD1 in the [layout shell plan](2026-10-26-1937-feat-layout-shell-plan.md)).
+- Request-time values such as slots use `io()` (Next.js 16.3+, preferred over `connection()`) inside `<Suspense>`.
 - Photos upload directly with signed URLs (Server Actions accept at most 1 MB).
 
 ## Tasks (07–46)

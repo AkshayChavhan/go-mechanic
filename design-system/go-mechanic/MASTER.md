@@ -3,6 +3,7 @@
 The site's look in one place: principles, tokens and rules. Built in task 11 ([plan](../../document/plans/2026-10-26-1312-feat-design-system-plan.md)).
 
 - **Status:** approved by the owner on **2026-10-26**, as built, with no changes.
+- **Site shell** (header, phone menu, footer, phone action bar, 404; task 12, [plan](../../document/plans/2026-10-26-1937-feat-layout-shell-plan.md)): approved by the owner on **2026-10-27** from screenshots, as built.
 - **The code wins.** The tokens live in [`src/app/globals.css`](../../src/app/globals.css) and [`src/lib/motion.ts`](../../src/lib/motion.ts). This page describes them for people. If the two ever disagree, the code is right and this page needs fixing.
 - **See it live:** `npm run dev`, then open http://localhost:3000/dev/design. It's the living catalogue: every token, type style and component, with real garage copy and live contrast numbers. Production builds answer that address with a 404.
 - **Page overrides:** if one page ever needs different rules, write them in a `pages/` folder next to this file (`pages/<page>.md`). They override this page for that page only. There are none yet.
@@ -129,11 +130,30 @@ Lint enforces the stock sizes (`text-xs` to `text-9xl`, with or without prefixes
 | Token | Value | Use |
 | --- | --- | --- |
 | `--section-space` | 64 to 128px (`clamp(4rem, 2.5rem + 6vw, 8rem)`) | Above and below every section (`py-(--section-space)`) |
-| `--gutter` | 20 to 40px (`clamp(1.25rem, 0.75rem + 2vw, 2.5rem)`) | The sides of the content (`px-(--gutter)`) |
+| `--gutter` | 20 to 40px (`clamp(var(--gutter-min), 0.75rem + 2vw, 2.5rem)`), never less than the side safe areas | The sides of the content (`px-(--gutter)`) |
+| `--gutter-min` | 20px | The gutter on the narrowest phones. `/dev/design` uses it to draw the phone bar as a 320px phone shows it |
 | `--container-content` | 980px (`max-w-content`) | Text and most sections |
 | `--container-wide` | 1280px (`max-w-wide`) | Grids and galleries |
 
-`Section` (`src/components/site/section.tsx`) applies all four: `<Section tone="grey" width="wide">`. The content box is centred, and the gutter sits outside its maximum width.
+`Section` (`src/components/site/section.tsx`) applies the section space, the gutter and the two widths: `<Section tone="grey" width="wide">`. The content box is centred, and the gutter sits outside its maximum width.
+
+**Safe areas.** The root layout and `global-not-found.tsx` set `viewportFit: "cover"`, so the page reaches under an iPhone's rounded corners, notch and home indicator. `env(safe-area-inset-*)` (0 on other screens) keeps content clear of them: in `--gutter` for the sides (a phone turned sideways) and in the action bar's bottom padding.
+
+### Site shell tokens
+
+For the parts in "Site shell" below.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--header-height` | 56px | The sticky header's height (`h-(--header-height)`), and the 404's slim bar |
+| `--action-bar-item-height` | 54px | Each phone-bar button: a 16px icon over a 15px label |
+| `--action-bar-padding-top` | 8px | Space above the phone-bar buttons |
+| `--action-bar-padding-bottom` | `max(0.5rem, env(safe-area-inset-bottom))` | Space below them; grows to clear the iPhone home indicator |
+| `--action-bar-height` | 1px border + the three above | The whole bar. Sizes the spacer after the footer and the scroll padding |
+
+**Scroll padding** on `html`: `scroll-padding-top` is the header's height plus 8px; below 768px, `scroll-padding-bottom` is the bar's height plus 8px. When the browser scrolls to an anchor (`#main`) or a focused control, it stops clear of both bars, so neither hides the focus outline.
+
+**Full-height and pinned sections** (task 13): on phones, start below `--header-height` and end above `--action-bar-height`.
 
 ## Shape and depth
 
@@ -148,8 +168,9 @@ Lint enforces the stock sizes (`text-xs` to `text-9xl`, with or without prefixes
 | `rounded-4xl` | Pill (9999px) | Badges |
 | `rounded-full` | Pill | Buttons (set in `button.tsx`) |
 
-- **Elevation:** tiles, cards, fields and bands are flat (`shadow-xs` is none). `shadow-sm`, `shadow-md` and `shadow-lg` are soft layered shadows for things that float: popovers, menus, the sheet, and later the sticky action bar.
+- **Elevation:** tiles, cards, fields and bands are flat (`shadow-xs` is none). `shadow-sm`, `shadow-md` and `shadow-lg` are soft layered shadows for things that float: popovers, menus, the sheet, the skip link and the phone action bar.
 - **Frosted:** the `frosted` class is the background at 72% with a blur, for the header. It falls back to a solid background where blur isn't supported or the visitor asks for less transparency. Put only `--foreground` text on it.
+- **Stacking** (`z-*`), lowest first: the page; the sticky header and the phone action bar (`z-40`); the skip link while it has focus (`z-45`); the sheet and its overlay (`z-50`, set in `sheet.tsx`). A new floating layer takes its place in this list.
 
 ## Motion
 
@@ -176,10 +197,42 @@ shadcn/ui components live in `src/components/ui/`. Ours are in `src/components/s
 - **Focus:** a solid 2px `--ring` outline, 2px away from the control, on every link, button, ARIA widget and field. It's one rule outside any `@layer` in `globals.css`.
 - **Fields:** 44px tall, 17px text (iOS zooms into anything under 16px), `--input` border. Use `FieldGroup` and `Field`; labels above, errors below with `FieldError`, written to say how to fix the problem.
 - **Cards:** flat tiles, `rounded-xl`, `type-callout` text, `type-title` titles.
-- **Badges:** pills. `success` for status (open now), `destructive` for problems.
+- **Badges:** pills. `success` for status (open now), `secondary` for a normal state such as closed, `destructive` for problems. Their text is still shadcn's 12px, under the 13px floor; a backlog task restyles it.
 - **Sheet:** `closeLabel` is required whenever the close button shows: pass `t("close")` from the `Common` messages.
 - **Section:** every page section, for its tone, spacing and width.
 - **Wordmark:** the only place code shows the brand name (see below).
+
+## Site shell
+
+The frame around every public page (task 12). Pages in `src/app/[locale]/(site)/` get it from that folder's `layout.tsx`; the components are in `src/components/site/`.
+
+| Component | What it does |
+| --- | --- |
+| `SiteChrome` (`site-chrome.tsx`) | The frame, in order: skip link, header, offer banner, the page in `<main id="main">`, footer, action bar, then a phone-only spacer the bar's height. The only code that reads `src/content/` (`readGarage()`) and `navigation.ts` |
+| `SiteHeader` (`site-header.tsx`) | Frosted, sticky. The Wordmark links home; from 768px, the live page links and one blue "Book a service"; below 768px, the menu button |
+| `MobileMenu` (`mobile-menu.tsx`) | Client island: the menu button and the sheet that slides in. Only holds the open state |
+| `MobileMenuContent` (`site-header.tsx`) | What the menu holds: live page links, open status, hours, address, Call and WhatsApp. Rendered on the server, passed to `MobileMenu` as children |
+| `SiteFooter` (`site-footer.tsx`) | A grey band: Wordmark, address, phone, WhatsApp, the hours with the open status, and the live page links once there are any. No copyright year (reading the date would stop prerendering) |
+| `ActionBar` (`action-bar.tsx`) | The phone bar: Call, WhatsApp, Book (rules below) |
+| `OfferBanner` (`offer-banner.tsx`) | A grey line under the header with the current offer; scrolls away with the page. Renders nothing when there's no offer (today). Links only to a live page |
+| `OpenStatus`, `OpenStatusView` (`open-status.tsx`) | Client island: the "Open now" / "Closed" badge and the next opening, in India time (rules below). `OpenStatusView` draws one given status, for `/dev/design` |
+| `OpeningHoursList` (`opening-hours-list.tsx`) | The week, with days of equal hours joined ("Tuesday to Sunday"), and "Times are India time (IST)". Plain server text: readable without JavaScript |
+| `WhatsAppLink` (`whatsapp-link.tsx`) | Every `wa.me` link: opens a new tab (`noopener noreferrer`), shows a chat icon and tells screen readers "(opens WhatsApp)" |
+| `NotFoundContent` (`not-found-content.tsx`) | Both 404 pages: heading, a short explanation, a blue "Go to the home page" and secondary Call and WhatsApp. Under the full shell for unknown URLs (`global-not-found.tsx`), under a slim Wordmark bar after `notFound()` (`[locale]/not-found.tsx`) |
+
+- **Server components fed by props.** Everything but the two islands renders on the server and takes the garage, the live links and the Book target as props, so `/dev/design` shows each part with demo data and task 14 changes only `readGarage()`.
+- **Client islands get labels as props.** A `"use client"` component gets its labels as props (`MobileMenu`'s `openLabel`, `title`, `closeLabel`) and its content as children from a server parent. Only the namespaces in `src/i18n/client-messages.ts` reach the browser (`OpenStatus` today), and `client-messages.test.ts` fails if a client file reads another.
+- **Only live links.** `navigation.ts` lists every page with a `live` flag, and the shell shows only live ones, so no link leads to a missing page. A page task sets its flag in the same commit as its page; `navigation.test.ts` checks every flag against the real `page.tsx` files.
+- **Open now** is worked out in the browser, so pages stay prerendered. The prebuilt HTML holds an empty slot of the badge's height (no layout shift); the badge appears when React starts and updates every minute. Green `success` "Open now"; grey `secondary` "Closed", because closed is normal. The weekly hours always sit next to it, in case the visitor's clock is wrong. Festival closures (Diwali, Ganeshotsav) aren't known until task 28, so the badge can say "Open now" on those days.
+
+### Phone action bar
+
+- **Phones only:** below 768px (`md:hidden`). From 768px the header has "Book a service" and the footer has the phone and WhatsApp.
+- **Three buttons, one blue:** Call and WhatsApp `secondary`, Book `default`. Until `/book` exists (task 23), Book opens WhatsApp with the booking message (owner, 2026-10-27).
+- **Tab-bar layout:** three equal columns, each icon above its label. At 320px "WhatsApp" doesn't fit beside its icon.
+- **Safe area:** the bottom padding grows to clear the iPhone home indicator (`--action-bar-padding-bottom`).
+- **Never covers the page:** a spacer of `--action-bar-height` follows the footer, and the scroll padding keeps focused controls above the bar.
+- **Floats, but never moves:** solid `bg-background`, top border, `shadow-md`, `z-40`. No animation, so reduced motion needs nothing extra.
 
 ## Brand
 
