@@ -21,8 +21,8 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | Done | [09_app_setup.md](../learning/09_app_setup.md) |
 | 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | Done | [10_i18n_foundation.md](../learning/10_i18n_foundation.md) |
 | 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/dev/design` preview | Done | [11_design_system.md](../learning/11_design_system.md) |
-| 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | In progress | [12_layout_shell.md](../learning/12_layout_shell.md) |
-| 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | To do |  |
+| 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | Done | [12_layout_shell.md](../learning/12_layout_shell.md) |
+| 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | In progress |  |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | To do |  |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | To do |  |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
@@ -213,12 +213,12 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds
 - [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [catch only expected Next.js errors](../solutions/conventions/nextjs-16-catch-only-expected-request-api-errors.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PRs #6, #7 and #8 on GitHub
 
 ### 13_home_page
 
-- [ ] Create branch `13_home_page`
-- [ ] Plan with `ce-plan`
+- [x] Create branch `13_home_page`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-27-1344-feat-home-page-plan.md)
 - [ ] Hero, trust stats, services bento grid, how it works, reviews preview, final call to action (labelled placeholder content until tasks 18 and 37; sample reviews marked as samples)
 - [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback: timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11)
 - [ ] Check at 375, 768, 1024 and 1440 px and with reduced motion
