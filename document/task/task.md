@@ -218,7 +218,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 13_home_page
 
 - [x] Create branch `13_home_page`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-27-1344-feat-home-page-plan.md)
 - [ ] Hero, trust stats, services bento grid, how it works, reviews preview, final call to action (labelled placeholder content until tasks 18 and 37; sample reviews marked as samples)
 - [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback: timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11)
 - [ ] Check at 375, 768, 1024 and 1440 px and with reduced motion
