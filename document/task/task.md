@@ -23,7 +23,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/dev/design` preview | Done | [11_design_system.md](../learning/11_design_system.md) |
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | Done | [12_layout_shell.md](../learning/12_layout_shell.md) |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | Done | [13_home_page.md](../learning/13_home_page.md) |
-| 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | To do |  |
+| 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | In progress |  |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | To do |  |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
@@ -243,7 +243,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 14_database_setup
 
-- [ ] Create branch `14_database_setup`
+- [x] Create branch `14_database_setup`
 - [ ] Plan with `ce-plan`
 - [ ] Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers
 - [ ] Move garage details and hours from `src/content/garage.ts` into the database; `readGarage()` in `src/components/site/site-chrome.tsx` (the one reader, also called by both 404 pages) reads the database
