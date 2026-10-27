@@ -12,19 +12,26 @@ import { routing } from "./routing";
  * Cache Components (the older header-based way would make them dynamic).
  *
  * The global 404 (src/app/global-not-found.tsx, for URLs that match no route)
- * sits outside [locale], so there's no such segment. A production render then
- * returns nothing, and `next dev` rejects the promise instead. Both mean "no
- * language in the URL", so the caller falls back to the default language.
+ * sits outside [locale], so there's no such segment: Next.js returns nothing,
+ * and the caller falls back to the default language.
  */
 async function localeFromUrl(): Promise<string | undefined> {
   try {
     return await rootLocale();
   } catch (error) {
     // Next.js uses thrown errors for its own signals (notFound(), a page
-    // pausing until request data arrives...). Pass those on; only a missing
-    // locale is handled here.
+    // pausing until request data arrives...). Pass those on first.
     unstable_rethrow(error);
-    return undefined;
+    // `next dev` can also reject instead of returning nothing: when a segment
+    // opts into instant validation and its samples have no locale. Next.js
+    // marks that error with this digest and recognises it by the digest
+    // itself (isInstantValidationError), so it's the most reliable sign.
+    // Inside this try, it can only mean "no locale in the URL".
+    if ((error as { digest?: unknown }).digest === "INSTANT_VALIDATION_ERROR") return undefined;
+    // Anything else is a real mistake, such as next/root-params used inside a
+    // Server Action or Route Handler (they must pass the locale themselves).
+    // Falling back to English would hide it, so it goes to the developer.
+    throw error;
   }
 }
 
