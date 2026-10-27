@@ -4,7 +4,16 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
+import { ActionBar } from "@/components/site/action-bar";
+import { MobileMenu } from "@/components/site/mobile-menu";
+import { bookTarget, navItems } from "@/components/site/navigation";
+import { NotFoundContent } from "@/components/site/not-found-content";
+import { OfferBanner } from "@/components/site/offer-banner";
+import { OpenStatusView } from "@/components/site/open-status";
 import { Section } from "@/components/site/section";
+import { readGarage } from "@/components/site/site-chrome";
+import { SiteFooter } from "@/components/site/site-footer";
+import { MobileMenuContent, SiteHeader } from "@/components/site/site-header";
 import { Wordmark } from "@/components/site/wordmark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +31,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { formatRupees } from "@/i18n/format";
+import { whatsappHref } from "@/lib/contact-links";
 import { devOnly } from "@/lib/dev-only";
 import { duration, ease } from "@/lib/motion";
 
@@ -34,12 +44,18 @@ import { MotionDemo } from "./_components/motion-demo";
 // 404 in production builds. Demo text is typed here on purpose (eslint.config.mjs
 // lets dev pages do that); real product text still comes from messages.
 
-export const metadata: Metadata = {
-  title: "Design system",
-  // devOnly() already answers with a 404 and noindex in production. This
-  // keeps the page out of search results even if that gate ever changes.
-  robots: { index: false, follow: false },
-};
+// devOnly() comes first here too. A 404 from the page alone would keep this
+// page's own title on the production 404; a 404 thrown while the metadata is
+// worked out gives it the 404 page's title instead ([locale]/not-found.tsx).
+export function generateMetadata(): Metadata {
+  devOnly();
+  return {
+    title: "Design system",
+    // devOnly() already answers with a 404 and noindex in production. This
+    // keeps the page out of search results even if that gate ever changes.
+    robots: { index: false, follow: false },
+  };
+}
 
 // The pairs design-tokens.test.ts checks, in plain words.
 const textPairs = [
@@ -119,11 +135,33 @@ const sections = [
   ["type", "Type"],
   ["shape", "Space and shape"],
   ["components", "Components"],
+  ["shell", "Layout shell"],
   ["motion", "Motion"],
   ["rules", "Rules"],
 ] as const;
 
 const price = formatRupees(249_900, "en");
+
+// Layout shell samples: every menu item as if its page were live, and a demo
+// offer whose link counts as live.
+const allPagesLive = navItems.map((item) => ({ ...item, live: true }));
+const demoOffer = { text: { en: "10% off every car service this week" }, href: "/packages" };
+// The open status in each state, at fixed times (26 Oct 2026 is a Monday).
+const statusSamples = [
+  ["Open, Tuesday 11:00", { isOpen: true, closesAt: new Date("2026-10-27T13:30:00Z") }],
+  [
+    "Before opening, Tuesday 09:00",
+    { isOpen: false, nextOpening: { at: new Date("2026-10-27T04:30:00Z"), when: "today", weekday: "tuesday" } },
+  ],
+  [
+    "Monday, closed all day",
+    { isOpen: false, nextOpening: { at: new Date("2026-10-27T04:30:00Z"), when: "tomorrow", weekday: "tuesday" } },
+  ],
+  [
+    "Sunday night",
+    { isOpen: false, nextOpening: { at: new Date("2026-11-03T04:30:00Z"), when: "later", weekday: "tuesday" } },
+  ],
+] as const;
 
 /** A titled group inside a section. */
 function Block({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
@@ -198,6 +236,10 @@ function Example({ verdict, rule, children }: { verdict: "Do" | "Don't"; rule: s
 export default function DesignPage() {
   devOnly();
   const tCommon = useTranslations("Common");
+  const tHeader = useTranslations("Header");
+  const tContact = useTranslations("Contact");
+  const garage = readGarage();
+  const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
 
   return (
     <FontPreview>
@@ -578,8 +620,8 @@ export default function DesignPage() {
 
             <Separator />
 
-            <Block title="Sheet" description="The phone menu in task 12. Its close button's label comes from messages.">
-              <div>
+            <Block title="Sheet" description="The plain component. The real phone menu is under Layout shell. Its close button's label comes from messages.">
+              <div data-sample="sheet">
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant="outline">
@@ -603,6 +645,93 @@ export default function DesignPage() {
                     </nav>
                   </SheetContent>
                 </Sheet>
+              </div>
+            </Block>
+          </div>
+        </Section>
+
+        {/* White, like the public pages, so the header and 404 samples show their real
+            colours (inside a grey band, bg-background turns grey too). */}
+        <Section width="wide" aria-labelledby="shell">
+          <div className="flex flex-col gap-16">
+            <SectionIntro
+              id="shell"
+              title="Layout shell"
+              lead="The frame around every public page, with the garage's real details. Here every menu item is shown as if its page were live, with a demo offer."
+            />
+
+            <Block
+              title="Header"
+              description="Frosted and sticky on the real pages. Links appear once their page is live. Below 768px they make way for the menu button."
+            >
+              {/* isolate: the header's z-40 stays inside this box, below this page's own sticky header. */}
+              <div data-sample="header" className="isolate overflow-hidden rounded-xl border border-border bg-background">
+                <SiteHeader items={allPagesLive} book={book} garage={garage} />
+              </div>
+            </Block>
+
+            <Block
+              title="Phone menu"
+              description="The menu button opens it on phones. It holds the live pages, the open status, the hours, the address, and Call and WhatsApp."
+            >
+              <div data-sample="phone-menu">
+                <MobileMenu openLabel={tHeader("openMenu")} title={tHeader("menuTitle")} closeLabel={tCommon("close")}>
+                  <MobileMenuContent items={allPagesLive} garage={garage} />
+                </MobileMenu>
+              </div>
+            </Block>
+
+            <div className="grid gap-10 md:grid-cols-2">
+              <Block
+                title="Open status"
+                description="Worked out in the visitor's browser, in India time, and updated every minute. These are fixed examples."
+              >
+                <dl className="flex flex-col gap-4">
+                  {statusSamples.map(([label, status]) => (
+                    <div key={label} className="flex flex-col gap-1">
+                      <dt className="type-caption text-muted-foreground">{label}</dt>
+                      <dd>
+                        <OpenStatusView status={status} />
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </Block>
+
+              <Block
+                title="Phone bar"
+                description="Fixed to the bottom of phones, below 768px. Shown here in place, 320px wide: the narrowest phone."
+              >
+                {/* A 320px phone screen: box-content keeps the border outside the
+                    320px. --gutter follows the window's width, so the phone's own
+                    gutter is set here: the bar then looks exactly as on a real phone. */}
+                <div
+                  data-sample="action-bar"
+                  className="box-content w-80 max-w-full overflow-hidden rounded-xl border border-border [--gutter:var(--gutter-min)]"
+                >
+                  <ActionBar book={book} garage={garage} className="static md:block" />
+                </div>
+              </Block>
+            </div>
+
+            <Block title="Offer banner" description="Under the header when there's an offer; nothing at all when there isn't (today).">
+              <div className="overflow-hidden rounded-xl border border-border">
+                <OfferBanner offer={demoOffer} pages={[{ href: "/packages", live: true }]} />
+              </div>
+            </Block>
+
+            <Block title="Footer" description="On every public page: contact details, the weekly hours with the live status, and the live pages.">
+              <div className="overflow-hidden rounded-xl border border-border">
+                <SiteFooter items={allPagesLive} garage={garage} />
+              </div>
+            </Block>
+
+            <Block
+              title="404 content"
+              description="Both 404 pages show this: inside the full shell for unknown URLs, under a slim bar for pages that call notFound()."
+            >
+              <div className="overflow-hidden rounded-xl border border-border bg-background">
+                <NotFoundContent garage={garage} titleAs="h2" />
               </div>
             </Block>
           </div>

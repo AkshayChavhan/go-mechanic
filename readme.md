@@ -38,7 +38,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `.compound-engineering/` | Compound Engineering settings: `config.yaml` (ours) and `config.example.yaml` (every option explained). |
 | `document/plans/` | Plans: the project's master plan, plus one plan per task written by Compound Engineering's `ce-plan`. |
 | `document/solutions/` | Reusable lessons, written by `ce-compound`. Claude reads them before similar work. |
-| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/components/` the shared components (`ui/` from shadcn/ui, `site/` our own), `src/i18n/` the language setup and the ₹ and date helpers, `src/lib/` small helpers. |
+| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/components/` the shared components (`ui/` from shadcn/ui, `site/` our own), `src/i18n/` the language setup and the ₹ and date helpers, `src/content/` the garage's details (address, phone, hours), `src/domain/` pure business logic such as opening hours, `src/lib/` small helpers. |
 | `design-system/` | The design system written out for people: tokens, rules and the brand. |
 | `messages/` | The website's text, one file per language (`en.json` for now). |
 | `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. `e2e/dev/` checks the development-only `/dev/design` page. |

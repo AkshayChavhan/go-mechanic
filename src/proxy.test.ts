@@ -1,0 +1,93 @@
+import { existsSync, readdirSync, statSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Next.js's own check of a proxy matcher, the same code the build uses.
+// The bundled docs call it unstable_doesProxyMatch; in Next.js 16.4.3 it is
+// still exported under its old name, unstable_doesMiddlewareMatch.
+import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
+import { describe, expect, test } from "vitest";
+
+import { config } from "./proxy";
+
+// The proxy rewrites "/x" to "/en/x". That's right for pages, and wrong for a
+// real file: "/en/icon.svg" doesn't exist. So the proxy must skip every file
+// the site serves, and run for everything else.
+
+const repoRoot = fileURLToPath(new URL("..", import.meta.url));
+
+/** Whether the proxy runs for `url`. */
+const runsFor = (url: string) => unstable_doesMiddlewareMatch({ config, url });
+
+/** Every file under a folder, as URL paths ("/images/hero.webp"). None if the folder doesn't exist. */
+function urlsOfFilesIn(folder: string): string[] {
+  const absolute = path.join(repoRoot, folder);
+  if (!existsSync(absolute)) return [];
+  return readdirSync(absolute, { recursive: true, encoding: "utf8" })
+    .filter((file) => statSync(path.join(absolute, file)).isFile())
+    .map((file) => `/${file.split(path.sep).join("/")}`);
+}
+
+/**
+ * The URLs of the metadata files directly in src/app/ (icon.svg today; later
+ * robots, sitemap, manifest, Open Graph images). They're served from the
+ * site's root, outside [locale]. A file that generates its output (icon.tsx,
+ * robots.ts) is served under the name Next.js gives it.
+ */
+function metadataUrls(): string[] {
+  const appFolder = path.join(repoRoot, "src", "app");
+  const generatedUrl: Record<string, string> = {
+    robots: "/robots.txt",
+    sitemap: "/sitemap.xml",
+    manifest: "/manifest.webmanifest",
+  };
+  return readdirSync(appFolder)
+    .map((file) => /^(favicon|icon\d*|apple-icon\d*|opengraph-image\d*|twitter-image\d*|robots|sitemap|manifest)\.(\w+)$/.exec(file))
+    .filter((match) => match !== null)
+    .map(([file, name, extension]) =>
+      /^(tsx?|jsx?|mjs)$/.test(extension) ? (generatedUrl[name] ?? `/${name}`) : `/${file}`,
+    );
+}
+
+describe("the proxy matcher (src/proxy.ts)", () => {
+  test.each(["/", "/services", "/en/anything", "/index.html", "/contact.php", "/foo.bar"])(
+    "runs for %s (a page, or a dotted URL that should get the branded 404)",
+    (url) => {
+      expect(runsFor(url)).toBe(true);
+    },
+  );
+
+  test.each([
+    "/icon.svg",
+    "/favicon.ico",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/manifest.webmanifest",
+    "/apple-icon.png",
+    "/images/hero.webp",
+    "/fonts/inter.woff2",
+    "/price-list.pdf",
+    "/_next/static/chunk.js",
+    "/_vercel/insights/script.js",
+    "/api/health",
+  ])("skips %s", (url) => {
+    expect(runsFor(url)).toBe(false);
+  });
+
+  test("skips every file in public/ (the folder may not exist yet)", () => {
+    const urls = urlsOfFilesIn("public");
+    if (!existsSync(path.join(repoRoot, "public"))) expect(urls).toEqual([]);
+    expect(urls.filter(runsFor), "add these files' extensions to the matcher in src/proxy.ts").toEqual([]);
+  });
+
+  test("skips every metadata file in src/app/", () => {
+    const urls = metadataUrls();
+    // icon.svg exists today, so the walk can't silently find nothing.
+    expect(urls).toContain("/icon.svg");
+    expect(urls.filter(runsFor), "add these files' extensions or paths to the matcher in src/proxy.ts").toEqual([]);
+  });
+
+  test("the folder walk handles a missing folder", () => {
+    expect(urlsOfFilesIn("no-such-folder")).toEqual([]);
+  });
+});

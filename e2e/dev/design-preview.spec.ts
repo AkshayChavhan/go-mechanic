@@ -40,6 +40,10 @@ async function useInter(page: Page) {
   });
 }
 
+// Two samples open a menu sheet with the same labels: the plain Sheet
+// component and the real phone menu (Layout shell). data-sample tells them apart.
+const sample = (page: Page, name: string) => page.locator(`[data-sample="${name}"]`);
+
 /** Whether the page is wider than the screen (it scrolls sideways). */
 const scrollsSideways = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
@@ -54,7 +58,7 @@ test("answers in development, in English, with one h1 and a noindex robots tag",
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
 });
 
-test("no console errors while loading, switching the font, opening the sheet and playing the motion demo", async ({
+test("no console errors while loading, switching the font, opening both sheets and playing the motion demo", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -65,11 +69,17 @@ test("no console errors while loading, switching the font, opening the sheet and
 
   await open(page);
   await useInter(page);
-  await page.getByRole("button", { name: "Open the menu" }).click();
+  await sample(page, "sheet").getByRole("button", { name: "Open the menu" }).click();
   const sheet = page.getByRole("dialog", { name: "Menu" });
   await expect(sheet).toBeVisible();
   await sheet.getByRole("button", { name: messages.Common.close }).click();
   await expect(sheet).toBeHidden();
+  // The real phone menu, with the open status, hours and contact buttons.
+  await sample(page, "phone-menu").getByRole("button", { name: messages.Header.openMenu }).click();
+  const menu = page.getByRole("dialog", { name: messages.Header.menuTitle });
+  await expect(menu.locator('[data-open-status]:not([data-open-status="pending"])')).toBeVisible();
+  await menu.getByRole("button", { name: messages.Common.close }).click();
+  await expect(menu).toBeHidden();
   await page.getByRole("button", { name: "Play" }).click();
   await page.waitForTimeout(1_000);
   expect(errors).toEqual([]);
@@ -126,7 +136,7 @@ test("the font switch shows Inter, the font of most Android visitors", async ({ 
     noQuotes((await element.evaluate((node) => getComputedStyle(node).fontFamily)).split(",")[0]);
   expect(await firstFont(heading)).toBe(inter);
   expect(await firstFont(page.locator("body"))).toBe(inter);
-  await page.getByRole("button", { name: "Open the menu" }).click();
+  await sample(page, "sheet").getByRole("button", { name: "Open the menu" }).click();
   const sheetTitle = page.getByRole("dialog", { name: "Menu" }).getByRole("heading", { name: "Menu" });
   await expect(sheetTitle).toBeVisible();
   expect(await firstFont(sheetTitle)).toBe(inter);
@@ -202,8 +212,37 @@ test.describe("on a phone (375px, touch screen)", () => {
   });
 });
 
+test.describe("on a tablet (768px, touch screen)", () => {
+  test.use({ viewport: { width: 768, height: 1024 }, hasTouch: true, isMobile: true });
+
+  test("the header sample fits every menu item on one line, without overflowing", async ({ page }) => {
+    await open(page);
+    const header = sample(page, "header").locator("header");
+    const layout = await header.evaluate((element) => {
+      const bar = element.firstElementChild as HTMLElement;
+      const links = [...element.querySelectorAll("nav a")].map((link) => link.getBoundingClientRect());
+      return {
+        // --header-height (56px) plus the 1px bottom border: nothing wrapped onto a second line.
+        height: element.getBoundingClientRect().height,
+        overflows: bar.scrollWidth > bar.clientWidth,
+        links: links.length,
+        rows: new Set(links.map((box) => Math.round(box.top))).size,
+      };
+    });
+    expect(layout).toEqual({ height: 57, overflows: false, links: 4, rows: 1 });
+  });
+});
+
 test.describe("on a desktop (1440px, mouse)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
+
+  test("the phone bar sample has the same 88px buttons as a real 320px phone", async ({ page }) => {
+    await open(page);
+    const widths = await sample(page, "action-bar")
+      .locator("a")
+      .evaluateAll((links) => links.map((link) => Math.round(link.getBoundingClientRect().width)));
+    expect(widths).toEqual([88, 88, 88]);
+  });
 
   test('a size="sm" button stays 36px tall with a mouse', async ({ page }) => {
     await open(page);

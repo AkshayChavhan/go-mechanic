@@ -19,6 +19,10 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     channel: "chrome",
+    // The browser runs in UTC, like a visitor abroad, not in this computer's
+    // India time, which would hide a bug that reads the device's own time
+    // zone. Tests that need another zone set timezoneId themselves.
+    timezoneId: "UTC",
   },
   webServer: {
     command: `npm run build && npm run start -- --port ${PORT}`,

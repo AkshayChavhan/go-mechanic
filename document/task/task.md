@@ -200,13 +200,16 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 12_layout_shell
 
 - [x] Create branch `12_layout_shell`
-- [ ] Plan with `ce-plan`
-- [ ] Garage details, hours and offer in typed placeholder content files (`src/content/`), replaced in tasks 14 and 38
-- [ ] Frosted sticky header with navigation and mobile menu: the header uses the `frosted` class; the mobile menu is `Sheet` with `closeLabel={t("close")}` (task 11)
-- [ ] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and decide whether to narrow the `src/proxy.ts` matcher so dotted URLs like `/index.html` reach this page instead of a blank error page. Trade-off (`ce-code-review` in task 10): with a hand-made list of file extensions, any public file type missing from the list returns 404
-- [ ] Pass `NextIntlClientProvider` only the message namespaces client components use (SEO check in task 10: today every page ships all of `messages/en.json`)
-- [ ] Open-now badge and offer banner: open-now uses `Badge variant="success"` (task 11)
-- [ ] Add `src/app/[locale]/not-found.tsx`, sharing its content with `global-not-found.tsx`. Pages that call `notFound()` (`/dev/design` in production, later unknown service slugs) get a bare, unbranded page today (SEO check in task 11)
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-26-1937-feat-layout-shell-plan.md)
+- [x] Garage details, hours and offer in typed content files (`src/content/garage.ts`, `src/content/offer.ts`) with the owner's real details, given 2026-10-26: phone and WhatsApp +91 97647 50567; "Mukai Chowk, Kiwale, Pune, Maharashtra 412101"; open 10:00–19:00 India time every day except Monday (closed); no current offer; no email. Task 14 moves the garage to the database, task 38 the offer
+- [x] Frosted sticky header with navigation and mobile menu: the header uses the `frosted` class; the mobile menu is `Sheet` with `closeLabel={t("close")}` (task 11)
+- [x] Footer, sticky Call/WhatsApp/Book bar on phones, custom 404 page built on `src/app/global-not-found.tsx` (task 10 made it the 404 for unknown URLs, with one `<title>`; give it the header, footer and design). SEO check in task 10: add the brand to its title (it doesn't get the layout's title template), and decide whether to narrow the `src/proxy.ts` matcher so dotted URLs like `/index.html` reach this page instead of a blank error page. Trade-off (`ce-code-review` in task 10): with a hand-made list of file extensions, any public file type missing from the list returns 404. Decided: narrowed; `src/proxy.test.ts` fails if a real file would go through the proxy
+- [x] Pass `NextIntlClientProvider` only the message namespaces client components use (SEO check in task 10: today every page ships all of `messages/en.json`)
+- [x] Open-now badge and offer banner: open-now uses `Badge variant="success"` (task 11)
+- [x] Add `src/app/[locale]/not-found.tsx`, sharing its content with `global-not-found.tsx`. Pages that call `notFound()` (`/dev/design` in production, later unknown service slugs) get a bare, unbranded page today (SEO check in task 11)
+- [x] Shell samples on `/dev/design` and screenshots (`npm run test:design`). The owner approved the look (header, menu, footer, phone bar, 404) as built on 2026-10-27, from screenshots. Owner decisions the same day: keep the three-button phone bar, Call, WhatsApp and Book (Book opens WhatsApp with a booking message until task 23); keep the draft WhatsApp messages ("Hi, I have a question about my vehicle." and "Hi, I'd like to book a service for my vehicle."); the garage closes on some festival days, entered in task 28
+- [x] End-to-end tests on a production build (`e2e/layout-shell.spec.ts`)
+- [x] Docs: `CLAUDE.md`, `MASTER.md` ("Site shell"), the master plan's Cache Components rules, and the notes from the plan's "Deferred to Follow-Up Work" on the later tasks below (`features.md` needed no change)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -219,6 +222,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Hero, trust stats, services bento grid, how it works, reviews preview, final call to action (labelled placeholder content until tasks 18 and 37; sample reviews marked as samples)
 - [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback: timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11)
 - [ ] Check at 375, 768, 1024 and 1440 px and with reduced motion
+- [ ] On phones, pinned and scroll-triggered sections start below the header (`--header-height`) and end above the phone bar (`--action-bar-height`, which includes the iPhone safe area) (task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -229,7 +233,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `14_database_setup`
 - [ ] Plan with `ce-plan`
 - [ ] Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers
-- [ ] Move garage details and hours from the placeholder content file into the database; layout reads the database
+- [ ] Move garage details and hours from `src/content/garage.ts` into the database; `readGarage()` in `src/components/site/site-chrome.tsx` (the one reader, also called by both 404 pages) reads the database
+- [ ] Read the garage with `'use cache'` and a `cacheTag`, and call `updateTag` on every save (tasks 28 and 40), so every prerendered page refreshes. Check phone numbers when they're saved (`isIndianPhoneNumber`, `isIndianMobileNumber` in `src/lib/contact-links.ts`): the shell's formatters never throw (task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -240,6 +245,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `15_auth_otp_login`
 - [ ] Plan with `ce-plan`
 - [ ] Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox`
+- [ ] A login or account entry in the header goes in a `<Suspense>` slot or a client island, never a cookie read in `SiteHeader` (every public page would turn dynamic). Decide whether the phone bar hides while a form field has focus (task 12)
 - [ ] `/dev/outbox` is a page under `src/app/[locale]/dev/` that calls `devOnly()` (`dev-only.test.ts` checks every dev page). If it needs a Route Handler too, gate that as well and extend `dev-only.test.ts` to `route.ts` files (code-reviewer in task 11)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
@@ -272,6 +278,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Services, packages, prices by vehicle; `/services`, `/packages`
 - [ ] Switch the home page services grid from placeholder content to database services
+- [ ] Set `live: true` for `services` and `prices` in `src/components/site/navigation.ts` in the same commit as the pages (`navigation.test.ts` checks the flags) (task 12)
+- [ ] `aria-current` on the live navigation links, inside a `<Suspense>` with a plain-links fallback (`usePathname` suspends under Cache Components), with an e2e check for the attribute and for no hydration errors (task 12)
+- [ ] An unknown service slug calls `notFound()` in `generateMetadata` as well as in the page, before any `<Suspense>`, so the status is 404 and the title comes from `src/app/[locale]/not-found.tsx`. Add `src/app/[locale]/(site)/not-found.tsx` if that 404 should keep the full shell. Add an e2e status check for an unknown slug (task 12)
+- [ ] A page that calls `notFound()` while it's prerendered serves Next.js's bare error HTML to clients without JavaScript; the branded 404 appears only after hydration. Check the unknown-slug 404 with `curl`, not only in a browser (task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -282,6 +292,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `19_info_pages`
 - [ ] Plan with `ce-plan`
 - [ ] Contact, about, FAQ, privacy and terms pages
+- [ ] Set `live: true` for `about` and `contact` in `src/components/site/navigation.ts` with the pages. A directions link needs the owner's exact map link: one built from the address text lands at Mukai Chowk, not the garage (task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -323,6 +334,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `23_booking_flow`
 - [ ] Plan with `ce-plan`
 - [ ] `/book` wizard with OTP, server-side prices, e2e test
+- [ ] Set `bookPage.live` to true in `src/components/site/navigation.ts`: "Book a service" and the phone bar's Book then go to `/book` instead of WhatsApp. Decide the phone bar on `/book`, where its Book repeats the page and can cover the wizard's own buttons (task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -373,6 +385,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `28_schedule_settings`
 - [ ] Plan with `ce-plan`
 - [ ] Edit hours, slot rules, holidays, pickup areas
+- [ ] The garage closes on some festival days (for example Diwali, Ganeshotsav): let the owner enter those dates, and make the open-status badge (`openStatusAt` in `src/domain/opening-hours.ts`) say "Closed" on them. Until then it can say "Open now" (owner, 2026-10-27)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -474,7 +487,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `38_offers_coupons`
 - [ ] Plan with `ce-plan`
 - [ ] Offers, banner, coupons at booking
-- [ ] Switch the offer banner from placeholder content to database offers
+- [ ] Switch the offer banner from `src/content/offer.ts` to database offers
+- [ ] A prerendered banner can't check an offer's end date when it renders: end it through cache expiry or a check in the browser, like the open status (task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -517,6 +531,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Metadata, sitemap, robots, social image, AutoRepair structured data
 - [ ] An `apple-icon` PNG (180×180) from the same letter design as `src/app/icon.svg`, plus `theme-color` (task 11)
 - [ ] One source of hreflang for when Hindi ships: `alternates.languages` in metadata and the sitemap with `alternateLinks: false` in `src/i18n/routing.ts`, or next-intl's `Link` header alone (SEO check in task 10). A canonical on `/` also settles the `/en` 307 redirect
+- [ ] The 404 titles already include the brand (`NotFound.metaTitle`), so the title template must not add it twice. The PIN code (412101) is already in `src/content/garage.ts`; split the address text into street, area and city for the JSON-LD (task 12)
+- [ ] Decide whether to add a `favicon.ico`: today `/favicon.ico` gets Next.js's bare 404, because the proxy skips `.ico` paths (task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -571,6 +587,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Revenue and GST reports, spare-parts inventory
 - Hindi translation of all text (the site is built Hindi-ready from task 10). Also make `src/i18n/messages.test.ts` check that `hi.json` has exactly the keys of `en.json`
 - Upgrade ESLint 9 (end-of-life; `npm ci` prints a deprecation warning) to ESLint 10 once `eslint-config-next`'s plugins support it
+- Restyle Badge's text size: it's shadcn's stock 12px (`text-xs` in `src/components/ui/badge.tsx`), below MASTER.md's 13px floor. Its own small task (task 12)
 - App-like install for customers, roadside-assistance dispatch, more branches
 
 ## How to add a task
