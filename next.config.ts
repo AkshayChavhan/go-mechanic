@@ -7,6 +7,10 @@ const withNextIntl = createNextIntlPlugin();
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  // Load PGlite (the local database, task 14) with Node's own require instead
+  // of bundling it. PGlite reads its .wasm and .data files from the folder
+  // next to its own code; a bundled copy looks in the wrong folder.
+  serverExternalPackages: ["@electric-sql/pglite"],
   experimental: {
     // Needed because the root layout lives inside [locale]: URLs that match
     // no route at all get src/app/global-not-found.tsx.
