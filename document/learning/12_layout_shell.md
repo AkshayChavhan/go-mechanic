@@ -113,7 +113,7 @@ The first commit on the branch, `9e9310e docs(11): mark task 11 done`, is task 1
     - The owner's computer slept mid-run, and a subagent stopped. It was resumed with its context, and no work was lost.
     - A subagent used `git mv`, which staged two moves despite the "no git changes" rule for agents. It reported this itself; it was harmless, and the main session committed the moves.
 
-18. **Not done yet.** These steps come after this doc, so their results aren't in it:
+18. **Checks and reviews.**
     - **SEO check:** the SEO hook listed the changed page files, and the `seo-reviewer` agent checked `/`, the four URLs that share the global 404 (`/this-page-does-not-exist`, `/index.html`, `/contact.php`, `/hi`), `/dev/design` and `/icon.svg` on the production build. **All pass.** It confirmed the name, address and phone are real text in `<address>` and match `src/content/garage.ts` exactly, the layout shift is 0 at six widths, and `/` is still prerendered. Two suggestions were filed, not applied (repo rule): put the area in the home `h1` ("Car and bike service in Kiwale, Pune", task 13), and load the phone menu's code on first tap (about 32 KB gzipped on every page today, task 18).
     - **Review.**
       - **`ce-code-review`: "Ready with fixes".** Seven reviewer personas, no serious findings; one medium and two small. All fixed:
@@ -122,9 +122,9 @@ The first commit on the branch, `9e9310e docs(11): mark task 11 done`, is task 1
         - The e2e "no console errors" checks ignored every "Failed to load resource: 404", so a missing asset passed. They now ignore only the page's own 404 line, matched by its URL, and wait for the network to go quiet. A throwaway missing preload proved they fail.
         - Extras from its risk list: an e2e case for a missing `.pdf` (plain 404, `noindex`, by design), `openMinutes` reusing `checkDayHours`, and a stricter check that the 404 sends only the client messages.
         - Honest note: while adding the console helper, the agent's find-and-replace made the helper call itself forever. Several test runs hung and left Playwright's Chrome processes behind; it found the loop, fixed it and stopped the leftovers.
-      - **`code-reviewer` agent:** *Pending.*
-    - **Compound question:** *Pending.*
-    - **Pull request and merge:** *Pending.*
+      - **`code-reviewer` agent: "Needs changes".** No code bugs; it checked the `request.ts` fix against the Next.js source, down to the exact misuse messages. One must-fix: `task.md` didn't link or tick this learning doc, the same miss as task 11. Fixed, and `CLAUDE.md` step 8 now says to link and tick the learning doc in the same commit as the doc. Its suggestions were taken too: a dated note under the plan's KTD7 (the real behaviour), an accurate `request.ts` comment, a JSDoc moved to its function, and `data-icon` on the phone bar's Call and Book icons so all three buttons follow the same Button rule. Not changed: `7367e1e` is typed `feat` but is mostly dev-only work; rewriting pushed history isn't worth it, so next time such work is split into `feat` and `chore`.
+    - **Compound.** Would a future session repeat the `request.ts` mistake without a written lesson? Yes: tasks 14, 15, 22 and 23 will wrap Next.js functions in `try`/`catch` inside Server Actions and data helpers. `ce-compound` (lightweight) wrote `document/solutions/conventions/nextjs-16-catch-only-expected-request-api-errors.md`: call `unstable_rethrow` first, catch only the one error you expect by its digest, rethrow the rest, and probe Next.js before building a fallback. The repeated `task.md` miss got a `CLAUDE.md` rule instead of a lesson.
+    - **Pull requests.** The owner opened and merged two pull requests for this branch on GitHub before the task was ready: PR #6 on 26 Oct, at the commit that only started the task, and PR #7 on 27 Oct, at `956efe7`, before the learning doc, both reviews and their fixes. Claude didn't push during the task; the branch's pushes came from the owner's VS Code, as in task 11. So `main` missed the review fixes, as happened with task 10's PR #3. The owner then chose one rule for the future: a task's pull request is merged once, only after Claude says it's ready (`CLAUDE.md` step 11). For this task, the owner asked Claude to push the remaining commits and open a follow-up pull request.
 
 ## Decisions worth knowing
 

@@ -211,8 +211,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] End-to-end tests on a production build (`e2e/layout-shell.spec.ts`)
 - [x] Docs: `CLAUDE.md`, `MASTER.md` ("Site shell"), the master plan's Cache Components rules, and the notes from the plan's "Deferred to Follow-Up Work" on the later tasks below (`features.md` needed no change)
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [catch only expected Next.js errors](../solutions/conventions/nextjs-16-catch-only-expected-request-api-errors.md)
 - [ ] Merge into `main`
 
 ### 13_home_page
