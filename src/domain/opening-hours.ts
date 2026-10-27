@@ -88,11 +88,11 @@ export function checkWeeklyHours(hours: WeeklyHours): { weekday: Weekday; proble
  * (tasks 28 and 40) call checkDayHours so bad hours never get stored.
  */
 function openMinutes(day: DayHours): { opens: number; closes: number } | null {
-  if (day === "closed") return null;
-  const opens = minutesAfterMidnight(day.opens);
-  const closes = minutesAfterMidnight(day.closes);
-  if (opens === null || closes === null || closes <= opens) return null;
-  return { opens, closes };
+  // The same rules as a save, from one place: a rule added to checkDayHours
+  // (a lunch break, say) reaches the badge too.
+  if (day === "closed" || checkDayHours(day) !== null) return null;
+  // checkDayHours has just confirmed both times are valid "HH:MM".
+  return { opens: minutesAfterMidnight(day.opens) as number, closes: minutesAfterMidnight(day.closes) as number };
 }
 
 // Reads the date and time shown on a clock in India. "en-US" only so the

@@ -146,10 +146,14 @@ describe("client components only ask for namespaces the browser gets", () => {
 });
 
 describe("the providers send only the client messages", () => {
-  test.each(["src/app/[locale]/layout.tsx", "src/app/global-not-found.tsx"])("%s passes messages to NextIntlClientProvider", (file) => {
-    const code = readFileSync(path.join(repoRoot, file), "utf8");
-    // Without a messages prop, next-intl sends every message to the browser.
-    expect(code).toMatch(/<NextIntlClientProvider\b[^>]*\bmessages=\{/);
-    expect(code).toContain("pickClientMessages(");
-  });
+  test.each(["src/app/[locale]/layout.tsx", "src/app/global-not-found.tsx"])(
+    "%s gives NextIntlClientProvider exactly pickClientMessages(...)",
+    (file) => {
+      const code = readFileSync(path.join(repoRoot, file), "utf8");
+      // Without a messages prop, next-intl sends every message to the browser;
+      // with messages={messages} it sends them all too. One pattern checks
+      // that the prop's value is the picker's result, not just that both exist.
+      expect(code).toMatch(/<NextIntlClientProvider\b[^>]*\bmessages=\{pickClientMessages\(/);
+    },
+  );
 });

@@ -21,9 +21,12 @@ const TUESDAY_09_59 = new Date("2026-10-27T04:29:00Z");
 const TUESDAY_18_59 = new Date("2026-10-27T13:29:00Z");
 const TUESDAY_18_59_30 = new Date("2026-10-27T13:29:30Z");
 
-// Chrome logs this for every page that answers 404, the 404 page included.
-// It's the browser reporting the status, not an error in the page.
-const OWN_404 = "Failed to load resource: the server responded with a status of 404 (Not Found)";
+// Chrome logs this line for every resource that answers 404, with that
+// resource's address as the message's location. For a 404 page it logs it
+// once for the page itself: that's the browser reporting the status, not an
+// error. The same line for anything else (a missing script, font, image...)
+// is a real error.
+const NOT_FOUND_LINE = "Failed to load resource: the server responded with a status of 404 (Not Found)";
 
 const phone = { viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true };
 const desktop = { viewport: { width: 1440, height: 900 } };
@@ -47,10 +50,22 @@ async function openAt(page: Page, url: string, time: Date) {
 function watchErrors(page: Page) {
   const errors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error" && message.text() !== OWN_404) errors.push(message.text());
+    if (message.type() !== "error") return;
+    const { url } = message.location();
+    const pagesOwnStatus = message.text() === NOT_FOUND_LINE && url === page.url();
+    if (!pagesOwnStatus) errors.push(`${message.text()} (${url})`);
   });
   page.on("pageerror", (error) => errors.push(error.message));
   return errors;
+}
+
+/**
+ * Expects no errors, once the page has no requests left in flight: a missing
+ * image or script fails, and is logged, after the page itself has loaded.
+ */
+async function expectNoErrors(page: Page, errors: string[]) {
+  await page.waitForLoadState("networkidle");
+  expect(errors).toEqual([]);
 }
 
 /** The text a wa.me link types into WhatsApp. */
@@ -213,7 +228,7 @@ test.describe("on a phone (375px, touch screen)", () => {
     await page.keyboard.press("Escape");
     await expect(menu).toBeHidden();
     await expect(button).toBeFocused();
-    expect(errors).toEqual([]);
+    await expectNoErrors(page, errors);
   });
 });
 
@@ -307,7 +322,7 @@ test.describe("the branded 404", () => {
       await expect(page.getByRole("link", { name: messages.NotFound.backHome })).toHaveAttribute("href", "/");
       await expect(page.getByRole("banner")).toBeVisible();
       await expect(page.getByRole("contentinfo")).toBeVisible();
-      expect(errors).toEqual([]);
+      await expectNoErrors(page, errors);
     });
   }
 

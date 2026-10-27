@@ -21,7 +21,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 09 | `09_app_setup` | Next.js 16 app, shadcn/ui (Radix), GSAP, Vitest + Playwright, `npm run check` | Done | [09_app_setup.md](../learning/09_app_setup.md) |
 | 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | Done | [10_i18n_foundation.md](../learning/10_i18n_foundation.md) |
 | 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/dev/design` preview | Done | [11_design_system.md](../learning/11_design_system.md) |
-| 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | In progress |  |
+| 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | In progress | [12_layout_shell.md](../learning/12_layout_shell.md) |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | To do |  |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | To do |  |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | To do |  |
@@ -210,9 +210,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Shell samples on `/dev/design` and screenshots (`npm run test:design`). The owner approved the look (header, menu, footer, phone bar, 404) as built on 2026-10-27, from screenshots. Owner decisions the same day: keep the three-button phone bar, Call, WhatsApp and Book (Book opens WhatsApp with a booking message until task 23); keep the draft WhatsApp messages ("Hi, I have a question about my vehicle." and "Hi, I'd like to book a service for my vehicle."); the garage closes on some festival days, entered in task 28
 - [x] End-to-end tests on a production build (`e2e/layout-shell.spec.ts`)
 - [x] Docs: `CLAUDE.md`, `MASTER.md` ("Site shell"), the master plan's Cache Components rules, and the notes from the plan's "Deferred to Follow-Up Work" on the later tasks below (`features.md` needed no change)
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Write the learning doc
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [catch only expected Next.js errors](../solutions/conventions/nextjs-16-catch-only-expected-request-api-errors.md)
 - [ ] Merge into `main`
 
 ### 13_home_page
@@ -223,6 +223,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback: timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11)
 - [ ] Check at 375, 768, 1024 and 1440 px and with reduced motion
 - [ ] On phones, pinned and scroll-triggered sections start below the header (`--header-height`) and end above the phone bar (`--action-bar-height`, which includes the iPhone safe area) (task 12)
+- [ ] The `h1` or the opening line says where the garage is, e.g. "Car and bike service in Kiwale, Pune": people search for the service and the area, not the brand (SEO check in task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -282,6 +283,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] `aria-current` on the live navigation links, inside a `<Suspense>` with a plain-links fallback (`usePathname` suspends under Cache Components), with an e2e check for the attribute and for no hydration errors (task 12)
 - [ ] An unknown service slug calls `notFound()` in `generateMetadata` as well as in the page, before any `<Suspense>`, so the status is 404 and the title comes from `src/app/[locale]/not-found.tsx`. Add `src/app/[locale]/(site)/not-found.tsx` if that 404 should keep the full shell. Add an e2e status check for an unknown slug (task 12)
 - [ ] A page that calls `notFound()` while it's prerendered serves Next.js's bare error HTML to clients without JavaScript; the branded 404 appears only after hydration. Check the unknown-slug 404 with `curl`, not only in a browser (task 12)
+- [ ] Once the menu has real links, load the phone menu's panel only on the first tap (`next/dynamic` inside `MobileMenu`; `node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md`): today its code, about 32 KB gzipped, loads on every page, desktop too (SEO check in task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question

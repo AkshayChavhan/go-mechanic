@@ -24,11 +24,11 @@ async function errorRules(code: string, filePath = PAGE): Promise<string[]> {
     .map((message) => message.ruleId ?? "parse error");
 }
 
-/** Wraps JSX in a small component so each snippet is a valid module. */
 // Made-up components for snippets that use our own components' props
 // (without an import, lint reports react/jsx-no-undef and an "allows" case fails).
 const withDemoComponents = 'import { useTranslations } from "next-intl";\nimport { Badge, Chart, Menu } from "./demo";';
 
+/** Wraps JSX in a small component so each snippet is a valid module. */
 function component(jsx: string, imports = 'import { useTranslations } from "next-intl";') {
   return `${imports}
 export function Example({ isOpen }: { isOpen: boolean }) {

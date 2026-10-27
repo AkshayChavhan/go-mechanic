@@ -17,6 +17,8 @@ export const config = {
   // Any other path with a dot, such as /index.html or /contact.php (old links
   // to a previous website), runs through the proxy like a page, so it gets
   // the branded 404 instead of Next.js's bare one.
+  // A missing file with a listed extension (/old-brochure.pdf) gets Next.js's
+  // plain 404 (status 404, noindex, no shell), by design: it's a file, not a page.
   //
   // Written out in full: Next.js reads this value as text when it builds,
   // so it can't come from a variable. A new kind of file (say .json in

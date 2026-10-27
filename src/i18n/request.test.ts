@@ -42,15 +42,45 @@ describe("request.ts (which language each request uses)", () => {
     expect((await configFor()).locale).toBe("en");
   });
 
-  test("no locale in the URL (the global 404 in a production build): the default language", async () => {
-    // Outside [locale], Next.js has no such root param and returns nothing.
+  test("no locale in the URL (the global 404): the default language", async () => {
+    // Outside [locale], Next.js has no such root param and returns nothing,
+    // both in a production build and under next dev (checked in task 12).
     rootParams.locale.mockResolvedValue(undefined as unknown as string);
     expect((await configFor()).locale).toBe("en");
   });
 
-  test("the root param rejects (the global 404 under next dev): the default language", async () => {
-    rootParams.locale.mockRejectedValue(new Error('Route "/_not-found" accessed root param "locale" which is not defined'));
+  test("next dev's instant validation finds no locale in its samples: the default language", async () => {
+    // What next dev throws (InstantValidationError, Next.js 16.4.3) when a
+    // segment opts into instant validation and its samples have no locale.
+    const missingInSamples = Object.assign(
+      new Error('Route "/_not-found" accessed root param "locale" which is not defined in the `unstable_samples` of `instant`.'),
+      { digest: "INSTANT_VALIDATION_ERROR" },
+    );
+    rootParams.locale.mockRejectedValue(missingInSamples);
     expect((await configFor()).locale).toBe("en");
+  });
+
+  // Next.js's errors for next/root-params used in the wrong place (wording
+  // from Next.js 16.4.3). They must reach the developer: they're the only
+  // runtime check that a Server Action or Route Handler passes its locale.
+  // Swallowed, the action would quietly get English.
+  test.each([
+    [
+      "a Server Action",
+      "`import('next/root-params').locale()` was used inside a Server Action. This is not supported. Functions from 'next/root-params' can only be called in the context of a route.",
+    ],
+    [
+      "a Route Handler",
+      "Route /api/book used `import('next/root-params').locale()` inside a Route Handler. Support for this API in Route Handlers is planned for a future version of Next.js.",
+    ],
+    [
+      "unstable_cache",
+      "Route /services used `import('next/root-params').locale()` inside `unstable_cache`. This is not supported. Use `\"use cache\"` instead.",
+    ],
+  ])("the root param used inside %s: the error is passed on, not turned into English", async (_place, message) => {
+    const misuse = new Error(message);
+    rootParams.locale.mockRejectedValue(misuse);
+    await expect(configFor()).rejects.toBe(misuse);
   });
 
   test("an unknown locale in the URL is a 404, not a page in the wrong language", async () => {
