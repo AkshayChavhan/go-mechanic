@@ -28,6 +28,27 @@ export function formatRupees(paise: number, locale: Locale): string {
   }).format(paise / 100);
 }
 
+/**
+ * A plain number, grouped the Indian way, with exactly `decimals` digits
+ * after the point: 123456 -> "1,23,456"; 4.8 with 1 decimal -> "4.8".
+ * The home page's counting numbers use it for the final value on the server
+ * and for every in-between value while they count, so both look the same.
+ * Throws RangeError for a value that isn't a finite number, or for decimals
+ * that aren't a whole number from 0 (Intl would quietly read 1.5 as 1).
+ */
+export function formatNumber(value: number, locale: Locale, decimals = 0): string {
+  if (!Number.isFinite(value)) {
+    throw new RangeError(`formatNumber: expected a finite number, got ${value}`);
+  }
+  if (!Number.isInteger(decimals) || decimals < 0) {
+    throw new RangeError(`formatNumber: expected whole decimals from 0, got ${decimals}`);
+  }
+  return new Intl.NumberFormat(intlLocales[locale], {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(value);
+}
+
 function assertValidDate(date: Date, name: string) {
   if (Number.isNaN(date.getTime())) {
     throw new RangeError(`${name}: invalid date`);

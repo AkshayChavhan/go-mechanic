@@ -3,6 +3,7 @@ import path from "node:path";
 import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import messages from "../../messages/en.json";
+import { expectNoErrors, scrollsSideways, showAsMostVisitorsSeeIt, watchErrors } from "../helpers";
 
 // The real layout shell (header, menu, footer, phone bar, 404) under
 // `next dev`: npm run test:design. It saves screenshots for the owner's review
@@ -18,53 +19,24 @@ import messages from "../../messages/en.json";
 // screenshots always show the same status.
 const TUESDAY_11_AM_IST = new Date("2026-10-27T05:30:00Z");
 
-// Chrome logs this line for every resource that answers 404, with that
-// resource's address as the message's location. For a 404 page it logs it
-// once for the page itself: that's the browser reporting the status, not an
-// error. The same line for anything else (a missing script, font, image...)
-// is a real error.
-const NOT_FOUND_LINE = "Failed to load resource: the server responded with a status of 404 (Not Found)";
-
-const phone = (width: number) => ({ viewport: { width, height: 812 }, hasTouch: true, isMobile: true });
-const desktop = { viewport: { width: 1440, height: 900 } };
-
-/** Collects console errors and page errors, except Chrome's note about a 404 page's own status. */
-function watchErrors(page: Page) {
-  const errors: string[] = [];
-  page.on("console", (message) => {
-    if (message.type() !== "error") return;
-    const { url } = message.location();
-    const pagesOwnStatus = message.text() === NOT_FOUND_LINE && url === page.url();
-    if (!pagesOwnStatus) errors.push(`${message.text()} (${url})`);
-  });
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
-
-/**
- * Expects no errors, once the page has no requests left in flight: a missing
- * image or script fails, and is logged, after the page itself has loaded.
- */
-async function expectNoErrors(page: Page, errors: string[]) {
-  await page.waitForLoadState("networkidle");
-  expect(errors).toEqual([]);
-}
+// Reduced motion: the home page's scroll animation (task 13) times itself
+// with Date.now(), which the fixed clock below freezes, so with motion on its
+// reveals would never finish and the screenshots would show blank sections
+// (plan KTD13). With reduced motion, GSAP never loads and the page is at rest.
+const phone = (width: number) => ({
+  viewport: { width, height: 812 },
+  hasTouch: true,
+  isMobile: true,
+  reducedMotion: "reduce" as const,
+});
+const desktop = { viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" as const };
 
 /** Opens a page and waits until the open status shows and the fonts have loaded. */
 async function open(page: Page, url: string) {
   await page.clock.setFixedTime(TUESDAY_11_AM_IST);
   const response = await page.goto(url);
   await expect(page.locator('[data-open-status]:not([data-open-status="pending"])').first()).toBeVisible();
-  // Inter, as on Android and Windows (most visitors). On this Mac the site
-  // would show San Francisco. The Next.js dev badge isn't part of the page.
-  await page.addStyleTag({
-    content: `:root:root { --font-sans-stack: var(--font-inter), var(--font-devanagari), sans-serif; }
-      nextjs-portal { display: none !important; }`,
-  });
-  await page.evaluate(async () => {
-    void document.body.offsetHeight;
-    await document.fonts.ready;
-  });
+  await showAsMostVisitorsSeeIt(page);
   return response;
 }
 
@@ -74,9 +46,6 @@ async function save(page: Page, testInfo: TestInfo, name: string) {
   await page.screenshot({ path: file });
   testInfo.annotations.push({ type: "screenshot", description: file });
 }
-
-const scrollsSideways = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 
 for (const width of [320, 375]) {
   test.describe(`home page on a ${width}px phone`, () => {

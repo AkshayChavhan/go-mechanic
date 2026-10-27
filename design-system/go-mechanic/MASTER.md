@@ -4,6 +4,7 @@ The site's look in one place: principles, tokens and rules. Built in task 11 ([p
 
 - **Status:** approved by the owner on **2026-10-26**, as built, with no changes.
 - **Site shell** (header, phone menu, footer, phone action bar, 404; task 12, [plan](../../document/plans/2026-10-26-1937-feat-layout-shell-plan.md)): approved by the owner on **2026-10-27** from screenshots, as built.
+- **Home page and page blocks** (task 13, [plan](../../document/plans/2026-10-27-1344-feat-home-page-plan.md)): the look and the draft copy approved by the owner on **2026-10-27** from `next dev` and production screenshots, as built. See "Page blocks and scroll motion" below.
 - **The code wins.** The tokens live in [`src/app/globals.css`](../../src/app/globals.css) and [`src/lib/motion.ts`](../../src/lib/motion.ts). This page describes them for people. If the two ever disagree, the code is right and this page needs fixing.
 - **See it live:** `npm run dev`, then open http://localhost:3000/dev/design. It's the living catalogue: every token, type style and component, with real garage copy and live contrast numbers. Production builds answer that address with a 404.
 - **Page overrides:** if one page ever needs different rules, write them in a `pages/` folder next to this file (`pages/<page>.md`). They override this page for that page only. There are none yet.
@@ -150,10 +151,11 @@ For the parts in "Site shell" below.
 | `--action-bar-padding-top` | 8px | Space above the phone-bar buttons |
 | `--action-bar-padding-bottom` | `max(0.5rem, env(safe-area-inset-bottom))` | Space below them; grows to clear the iPhone home indicator |
 | `--action-bar-height` | 1px border + the three above | The whole bar. Sizes the spacer after the footer and the scroll padding |
+| `--stage-height` | `100svh` minus `--header-height`; below 768px also minus `--action-bar-height` | The screen left for the page between the bars: the most a full-height section or a sticky visual takes (the home hero on large screens, the story's picture). `svh`: it doesn't jump when a phone's address bar hides |
 
 **Scroll padding** on `html`: `scroll-padding-top` is the header's height plus 8px; below 768px, `scroll-padding-bottom` is the bar's height plus 8px. When the browser scrolls to an anchor (`#main`) or a focused control, it stops clear of both bars, so neither hides the focus outline.
 
-**Full-height and pinned sections** (task 13): on phones, start below `--header-height` and end above `--action-bar-height`.
+**Full-height and sticky sections** (task 13): size them with `--stage-height` and stick them at `top-(--header-height)`, so on phones they start below the header and end above the phone bar.
 
 ## Shape and depth
 
@@ -185,6 +187,18 @@ For the parts in "Site shell" below.
 | exit | `ease-exit` `cubic-bezier(0.32, 0, 0.67, 0)` | `power2.in` | Things leaving (shorter than entering) |
 
 - CSS and GSAP share these values; `src/lib/motion.test.ts` keeps them equal.
+
+GSAP-only values for the scroll scene (task 13), also in `@/lib/motion`. CSS never moves things this way, so it has no copy:
+
+| Name | Value | Use |
+| --- | --- | --- |
+| `distance.reveal` | 24px | How far a reveal rises into place, from 768px up |
+| `distance.revealPhone` | 12px | The same on phones (below 768px) |
+| `distance.stagger` | 0.08s | Between tiles that reveal together (phones don't stagger) |
+| `distance.storyScale` | 0.9 | Where the story's picture starts; it grows to 1, never past it |
+| `countDuration` | 1.6s (twice `duration.reveal`) | A number counting up |
+| `storyQuery` | `(min-width: 64rem) and (min-height: 40rem)` | Large screens: the story's two columns and sticky picture. The same query is the `story:` variant in `globals.css` |
+| `phoneQuery` | `(width < 48rem)` | Phones: below Tailwind's `md`, where the action bar shows |
 - **Reduced motion:** when the visitor asks for less motion, every CSS animation and transition jumps to its end (0.01ms). GSAP code wraps its animations in `gsap.matchMedia()` with `motionAllowed` and `motionReduced` from `@/lib/motion`, and shows the end state for `motionReduced`. See `src/app/[locale]/dev/design/_components/motion-demo.tsx`.
 - Animate only transforms and opacity. Never hide content until a script runs.
 
@@ -208,7 +222,7 @@ The frame around every public page (task 12). Pages in `src/app/[locale]/(site)/
 
 | Component | What it does |
 | --- | --- |
-| `SiteChrome` (`site-chrome.tsx`) | The frame, in order: skip link, header, offer banner, the page in `<main id="main">`, footer, action bar, then a phone-only spacer the bar's height. The only code that reads `src/content/` (`readGarage()`) and `navigation.ts` |
+| `SiteChrome` (`site-chrome.tsx`) | The frame, in order: skip link, header, offer banner, the page in `<main id="main">`, footer, action bar, then a phone-only spacer the bar's height. It reads the garage (`readGarage()`, which the home page and both 404 pages call too), the offer and `navigation.ts`, and passes them down as props |
 | `SiteHeader` (`site-header.tsx`) | Frosted, sticky. The Wordmark links home; from 768px, the live page links and one blue "Book a service"; below 768px, the menu button |
 | `MobileMenu` (`mobile-menu.tsx`) | Client island: the menu button and the sheet that slides in. Only holds the open state |
 | `MobileMenuContent` (`site-header.tsx`) | What the menu holds: live page links, open status, hours, address, Call and WhatsApp. Rendered on the server, passed to `MobileMenu` as children |
@@ -234,6 +248,73 @@ The frame around every public page (task 12). Pages in `src/app/[locale]/(site)/
 - **Never covers the page:** a spacer of `--action-bar-height` follows the footer, and the scroll padding keeps focused controls above the bar.
 - **Floats, but never moves:** solid `bg-background`, top border, `shadow-md`, `z-40`. No animation, so reduced motion needs nothing extra.
 
+## Page blocks and scroll motion
+
+The home page (task 13) is built from Server Component sections and one client island, `ScrollScene`, which adds the scroll motion in the browser. The sections live in `src/app/[locale]/(site)/_components/`; the reusable pieces below live in `src/components/site/`, for the service, about and review pages to reuse. Every one has a sample on `/dev/design` ("Page blocks").
+
+| Component | What it does |
+| --- | --- |
+| `VehicleIllustration` (`vehicle-illustration.tsx`) | A car and a scooter in line art, inline (no network request), in `currentColor` so it suits every tone, hidden from screen readers. The stand-in for photos: no stock photos, which would pretend to be the garage (owner, 2026-10-27) |
+| `VisualSlot` (`visual-slot.tsx`) | A fixed 16:10 box (`rounded-2xl`, `bg-card`), so nothing moves when a photo arrives. With a photo (a static import), `next/image` fills it with `fill`, `sizes` and a blurred preview; the photo's alt text joins `messages/en.json` with the photo. Without one, the illustration. `eager` (the hero's slot only) loads the photo with `loading="eager"` and `fetchPriority="high"`, never the deprecated `priority` |
+| `ServiceTile` (`service-tile.tsx`) | A flat `Card`: icon, `h3` name, one-line summary, and which vehicles it's for. Not a link, so no hover effect, until task 18 adds the service pages. Every service id needs an icon (a `Record` over the ids: typecheck fails otherwise) |
+| `StatTile` (`stat-tile.tsx`) | One trust stat inside a `<dl>`: the label in `dt`, the number in `dd`, built for accessible counting (below) |
+| `ReviewCard` (`review-card.tsx`) | Stars (hidden from screen readers, which hear "Rated 4 out of 5"), the words in a `blockquote`, and the credit. A sample is credited to a vehicle, never a name |
+| `SampleBadge` (`sample-badge.tsx`) | The "Sample" pill (`Badge`, secondary) on every made-up stat and review |
+| `ScrollScene` (`scroll-scene.tsx`) | The client island a page wraps its sections in: a plain wrapper `div` around them, which loads the effects lazily (below) |
+| Effects (`scroll-scene-effects.tsx`) | The animations. The only file outside the dev pages that imports GSAP (`src/lib/gsap-imports.test.ts` checks) |
+| Attributes (`scroll-scene-attributes.ts`) | The attribute names, plus `sceneMark("reveal")`, `sceneCount(5000)` and `sceneSelector(...)` for marking markup and finding it |
+
+### Samples: `npm run dev` only
+
+Made-up trust stats and reviews let the owner judge the design before the real ones exist. They must never reach customers (owner, 2026-10-27):
+
+- `src/content/home.ts` holds the real data (`trustStats`, `reviews`: `null` until there is some) and the samples. Pages read it only through `selectTrustStats()` and `selectReviews()`: the real data in every build, else the samples when `showSamples()` (`src/lib/samples.ts`) says so, else `null`, and a section given `null` renders nothing.
+- `showSamples()` is true only when `NODE_ENV` is `development`. It's deliberately separate from `devOnly()`, whose comment invites showing dev pages on a staging server: staging must never show samples.
+- Each sample stat and review carries `data-sample` and a `SampleBadge`. `e2e/home.spec.ts` searches a production build's HTML, page data and every script the page loads for the sample text (a canary phrase in one sample review included).
+
+### What `ScrollScene` animates
+
+Server markup marks elements with these attributes. The effects find them inside the `ScrollScene` only, so a section holds no animation code, and another page gets scroll motion by wrapping its sections and marking them.
+
+| Mark (`sceneMark(...)`) | Put it on | What happens, with motion allowed |
+| --- | --- | --- |
+| `reveal` | A heading block, paragraph, tile or visual | Fades and rises into place the first time it scrolls into view |
+| `revealGroup` | A list or grid | Its direct children reveal like `reveal`, one after another (from 768px) |
+| `sceneCount(value, decimals)` | The digits of a number, nothing else, inside the hidden counting copy | Counts up from 0 the first time it scrolls into view |
+| `story` | The story section | Holds the two below |
+| `storyVisual` | The wrapper in the sticky column | Grows from `distance.storyScale` to 1 as the story scrolls past (large screens) |
+| `storyStep`, `storyRail` | Each step, and the vertical line inside it | The line fills from the top as its step passes the middle of the screen (large screens). It rests at `scale-y-0`, so without motion only its hairline track shows |
+
+### The reveal rules
+
+- **Loaded late, and only when wanted.** `ScrollScene` loads the effects and GSAP with `next/dynamic` and `ssr: false` (two files: about 117 KB, 46 KB compressed, measured in task 13), after the page's `load` event, only for visitors who allow motion (`motionAllowed`), and only in browsers with `matchMedia`. Never on the server: GSAP reads `Date.now()` when it loads, which would stop the page being built ahead of time. Reduced-motion visitors never download it.
+- **Nothing on screen moves on load.** When the effects start, only targets entirely below the screen are hidden. The hero, and anything a restored scroll position shows, stay exactly as the server drew them.
+- **Hidden means opacity 0**, never `visibility` or `display` (no `autoAlpha`): screen readers and find-in-page still reach the text while it waits.
+- **Never hide a control.** A reveal target holds no link or button and sits inside none, so keyboard focus never lands on something invisible. The effects also skip any target that breaks this rule, and the story's scaling picture.
+- **Once, then gone.** Each target reveals once (`ScrollTrigger.batch`, `once: true`), even when the visitor jumps straight past it; its inline styles are then removed.
+- **Clear of the bars.** A reveal starts when the target's top is 10% of the screen above the bottom edge, or above the phone bar (measured from the page's `scroll-padding-bottom`).
+- **Phones** (`phoneQuery`, below 768px): a 12px rise and no stagger. From 768px: 24px and 0.08s between tiles.
+- **Fonts and print.** Trigger positions are measured again once the fonts have loaded. A `@media print` rule prints every reveal target visible.
+- **Undone cleanly.** Leaving the page, a hidden route, or a change of motion setting or breakpoint reverts everything: inline styles removed, numbers back to their final value.
+- **No Tailwind `translate-*` or `scale-*`** on a reveal target or the story picture: GSAP sets `translate`, `rotate` and `scale` to `none` inline while it animates.
+
+### The sticky story
+
+- Two columns only on large screens: `storyQuery`, `(min-width: 64rem) and (min-height: 40rem)`, which is the `story:` variant in CSS. Tablets, short laptop windows and phones turned sideways keep one column.
+- The picture's column is `position: sticky` at `top-(--header-height)`, `--stage-height` tall, with the picture centred. CSS, not ScrollTrigger's `pin`: no pin-spacer, nothing moves when GSAP starts, and the layout is the same without JavaScript.
+- With motion allowed, the picture grows from 0.9 to 1 while the story scrolls past (scrubbed: it follows the scroll position), and each step's rail fills. With reduced motion the layout stays; nothing scales or fills. Step text is never dimmed.
+
+### Accessible counting
+
+- The number is drawn twice in one grid cell. The first copy shows the final value at opacity 0: it's what screen readers read, and it fixes the cell's width, so counting never pushes the text around it. The second copy is `aria-hidden`; its digits are the ones that count. There is no `aria-live`, so nothing is announced while it counts.
+- Only the digits change. The words around them come from messages with a tag around the digits (`"<number>{value}</number>+"`), so Hindi can put the words where it needs them.
+- `formatNumber` (`src/i18n/format.ts`) writes every value the Indian way (`5,000`, `1,23,456`), on the server and while counting. `tabular-nums` keeps the digits from wobbling.
+- A number below the screen waits at 0 and counts once, over `countDuration`, when it scrolls into view. One already on screen shows its final value. Printing before it has counted prints the final value. The rating counts with one decimal; the warranty is shown, not counted.
+
+### Section tones on the home page
+
+`homeTones()` (`src/app/[locale]/(site)/_components/home-tones.ts`) picks them, so neighbouring sections never share a tone, the grey footer included: hero white, story black, services grey; then stats and reviews, when they show, alternate white and grey; the final call to action is white after a grey band and black after a white one. Today that's white, black, grey, white in production, and white, black, grey, white, grey, white under `npm run dev`.
+
 ## Brand
 
 - **Name:** "GoMechanic" for now. The owner accepted the trademark risk on condition that a rename stays small. The name lives only in `messages/en.json`; `src/i18n/brand-name.test.ts` fails if it's typed anywhere in `src/` or `public/`.
@@ -242,7 +323,7 @@ The frame around every public page (task 12). Pages in `src/app/[locale]/(site)/
 
 ### Rename checklist
 
-1. In `messages/en.json`, change `Brand.name` and the page texts that mention the name (`Metadata`, `HomePage`).
+1. In `messages/en.json`, change `Brand.name` and `Metadata.title`, the only other message that types the name (the 404 title reads it through `{brand}`).
 2. Redraw the letter in `src/app/icon.svg` from the new name's first letter (Inter Bold outline, same tile).
 3. Run `npm run check`: `brand-name.test.ts` lists any file that still has the old name.
 

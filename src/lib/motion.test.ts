@@ -3,7 +3,16 @@ import { readFileSync } from "node:fs";
 import { gsap } from "gsap";
 import { describe, expect, test } from "vitest";
 
-import { duration, ease, motionAllowed, motionReduced } from "@/lib/motion";
+import {
+  countDuration,
+  distance,
+  duration,
+  ease,
+  motionAllowed,
+  motionReduced,
+  phoneQuery,
+  storyQuery,
+} from "@/lib/motion";
 
 // motion.ts (for GSAP) and globals.css (for CSS) hold the same motion values.
 // These tests keep the two equal, so CSS and GSAP motion always feel the same.
@@ -56,5 +65,42 @@ describe("motion tokens", () => {
     expect(block, "a @media (prefers-reduced-motion: reduce) block").toBeDefined();
     expect(block).toMatch(/animation-duration:\s*0\.01ms\s*!important/);
     expect(block).toMatch(/transition-duration:\s*0\.01ms\s*!important/);
+  });
+});
+
+// The scroll scene's values (task 13) are GSAP only, so there's no CSS copy
+// to compare. The media queries are the exception: CSS lays the page out with
+// them, GSAP picks its animations with them, and the two must agree.
+describe("scroll scene values", () => {
+  test.each(Object.entries(distance))("distance.%s is a positive number", (_name, value) => {
+    expect(Number.isFinite(value)).toBe(true);
+    expect(value).toBeGreaterThan(0);
+  });
+
+  test("phones get shorter reveals than larger screens", () => {
+    expect(distance.revealPhone).toBeLessThan(distance.reveal);
+  });
+
+  test("the story visual starts smaller than its natural size and never grows past it", () => {
+    // Scaling above 1 could push it sideways out of the page.
+    expect(distance.storyScale).toBeLessThan(1);
+  });
+
+  test("a number counts for longer than a reveal takes", () => {
+    expect(countDuration).toBeGreaterThan(duration.reveal);
+  });
+
+  test("the story query is the story: variant in globals.css", () => {
+    // @custom-variant story (@media <query>);
+    const variant = /@custom-variant\s+story\s+\(\s*@media\s+([^;]+?)\s*\)\s*;/.exec(css)?.[1];
+    expect(variant, "a @custom-variant story (@media ...) line").toBeDefined();
+    expect(withoutSpaces(variant!)).toBe(withoutSpaces(storyQuery));
+  });
+
+  test("the phone query is the one globals.css uses for the phone-only rules", () => {
+    // The scroll padding for the action bar, and --stage-height.
+    const phoneRules = [...css.matchAll(/@media\s*(\([^)]*\))\s*\{[^{}]*\{[^}]*(?:scroll-padding-bottom|--stage-height)/g)];
+    expect(phoneRules.length, "phone-only rules in globals.css").toBeGreaterThanOrEqual(2);
+    for (const [, query] of phoneRules) expect(withoutSpaces(query)).toBe(withoutSpaces(phoneQuery));
   });
 });
