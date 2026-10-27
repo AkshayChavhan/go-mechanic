@@ -238,7 +238,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Docs: `CLAUDE.md` (repo map and conventions for the home page)
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [test lazy islands with the App Router dynamic](../solutions/conventions/nextjs-16-test-lazy-islands-with-app-router-dynamic.md)
 - [ ] Merge into `main`
 
 ### 14_database_setup
