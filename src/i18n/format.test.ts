@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import {
   formatAddress,
   formatDate,
+  formatNumber,
   formatRupees,
   formatTime,
   formatTimeOfDay,
@@ -42,6 +43,35 @@ describe("formatRupees (money is stored as integer paise)", () => {
       expect(() => formatRupees(value, "en")).toThrow(RangeError);
     },
   );
+});
+
+describe("formatNumber (counts and ratings on the home page)", () => {
+  test("Indian digit grouping", () => {
+    expect(formatNumber(5000, "en")).toBe("5,000");
+    expect(formatNumber(123_456, "en")).toBe("1,23,456");
+    expect(formatNumber(10_000_000, "en")).toBe("1,00,00,000");
+  });
+
+  test("exactly the decimals asked for", () => {
+    expect(formatNumber(4.8, "en", 1)).toBe("4.8");
+    expect(formatNumber(5000, "en", 0)).toBe("5,000");
+    // A number counting up passes through in-between values: they round.
+    expect(formatNumber(2345.67, "en", 0)).toBe("2,346");
+  });
+
+  test("zero, where a count starts", () => {
+    expect(formatNumber(0, "en")).toBe("0");
+    expect(formatNumber(0, "en", 1)).toBe("0.0");
+  });
+
+  test.each([Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])("rejects %s: not a number to show", (value) => {
+    expect(() => formatNumber(value, "en")).toThrow(RangeError);
+  });
+
+  test.each([-1, 1.5])("rejects %s decimals: only whole numbers from 0", (decimals) => {
+    // Intl would quietly read 1.5 as 1.
+    expect(() => formatNumber(1, "en", decimals)).toThrow(RangeError);
+  });
 });
 
 describe("formatDate and formatTime (always India time)", () => {
