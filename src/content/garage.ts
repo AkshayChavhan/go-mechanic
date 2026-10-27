@@ -9,35 +9,12 @@
 //
 // The brand name isn't here: it lives in messages/en.json (Brand.name).
 
-import type { WeeklyHours } from "@/domain/opening-hours";
-import type { LocalizedText } from "@/i18n/localized-text";
+// The Garage type and its rules live in src/domain/garage.ts. The type is
+// re-exported here so the components that import it from this file keep
+// working until task 14 deletes this file (the database takes over).
+import type { Garage } from "@/domain/garage";
 
-export type Garage = {
-  /**
-   * The number visitors call, in E.164 form ("+91" and 10 digits). Any Indian
-   * number, a landline too. Shown with formatPhoneNumber, dialled with telHref
-   * (src/lib/contact-links.ts).
-   */
-  phone: string;
-  /**
-   * The WhatsApp number, in E.164 form. Must be a mobile. Kept apart from
-   * `phone`, so adding a landline later can't break WhatsApp.
-   */
-  whatsapp: string;
-  address: {
-    /**
-     * Street, area, city and state, exactly as the owner wrote them. Task 42
-     * splits them into parts for search engines; until then, nothing is guessed.
-     */
-    text: LocalizedText;
-    /** The 6-digit PIN code. formatAddress (src/i18n/format.ts) adds it to the text. */
-    postalCode: string;
-    /** The country, as an ISO 3166 code, for search engines (task 42). */
-    countryCode: "IN";
-  };
-  /** Opening hours, India time (Asia/Kolkata). Monday first. */
-  hours: WeeklyHours;
-};
+export type { Garage };
 
 // `satisfies` checks this object against the Garage type (a typo or a missing
 // field fails `npm run typecheck`) without forgetting the exact values.
