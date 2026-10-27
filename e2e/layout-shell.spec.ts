@@ -5,6 +5,8 @@ import { garage } from "../src/content/garage";
 import { clientNamespaces } from "../src/i18n/client-messages";
 import { formatPhoneNumber, telHref } from "../src/lib/contact-links";
 
+import { expectNoErrors, layoutShift, rscPayload, trackLayoutShift, watchErrors } from "./helpers";
+
 // The layout shell (task 12) on a real production build: header, footer,
 // phone bar, phone menu, open status, 404 pages. Expected text comes from
 // messages/en.json and src/content/garage.ts.
@@ -20,13 +22,6 @@ const SUNDAY_19_30 = new Date("2026-11-01T14:00:00Z");
 const TUESDAY_09_59 = new Date("2026-10-27T04:29:00Z");
 const TUESDAY_18_59 = new Date("2026-10-27T13:29:00Z");
 const TUESDAY_18_59_30 = new Date("2026-10-27T13:29:30Z");
-
-// Chrome logs this line for every resource that answers 404, with that
-// resource's address as the message's location. For a 404 page it logs it
-// once for the page itself: that's the browser reporting the status, not an
-// error. The same line for anything else (a missing script, font, image...)
-// is a real error.
-const NOT_FOUND_LINE = "Failed to load resource: the server responded with a status of 404 (Not Found)";
 
 const phone = { viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true };
 const desktop = { viewport: { width: 1440, height: 900 } };
@@ -44,28 +39,6 @@ async function openAt(page: Page, url: string, time: Date) {
   const response = await page.goto(url);
   await expect(footerStatus(page)).toBeVisible();
   return response;
-}
-
-/** Collects console errors and page errors, except Chrome's note about a 404 page's own status. */
-function watchErrors(page: Page) {
-  const errors: string[] = [];
-  page.on("console", (message) => {
-    if (message.type() !== "error") return;
-    const { url } = message.location();
-    const pagesOwnStatus = message.text() === NOT_FOUND_LINE && url === page.url();
-    if (!pagesOwnStatus) errors.push(`${message.text()} (${url})`);
-  });
-  page.on("pageerror", (error) => errors.push(error.message));
-  return errors;
-}
-
-/**
- * Expects no errors, once the page has no requests left in flight: a missing
- * image or script fails, and is logged, after the page itself has loaded.
- */
-async function expectNoErrors(page: Page, errors: string[]) {
-  await page.waitForLoadState("networkidle");
-  expect(errors).toEqual([]);
 }
 
 /** The text a wa.me link types into WhatsApp. */
@@ -262,20 +235,10 @@ test.describe("layout shift", () => {
       test("nothing moves while the page loads and the open status appears (CLS below 0.01)", async ({ page }) => {
         // Counted from before the first paint: the observer starts before any
         // of the page's own code runs, and `buffered` includes earlier shifts.
-        await page.addInitScript(() => {
-          const total = { value: 0 };
-          (window as unknown as { layoutShift: typeof total }).layoutShift = total;
-          new PerformanceObserver((list) => {
-            for (const entry of list.getEntries() as (PerformanceEntry & { value: number; hadRecentInput: boolean })[]) {
-              if (!entry.hadRecentInput) total.value += entry.value;
-            }
-          }).observe({ type: "layout-shift", buffered: true });
-        });
+        await trackLayoutShift(page);
         await openAt(page, "/", TUESDAY_11_00);
         // Two frames after the status appears: any shift it caused has been reported.
-        await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
-        const shift = await page.evaluate(() => (window as unknown as { layoutShift: { value: number } }).layoutShift.value);
-        expect(shift).toBeLessThan(0.01);
+        expect(await layoutShift(page)).toBeLessThan(0.01);
       });
     });
   }
@@ -350,16 +313,6 @@ test.describe("the browser gets only the client components' messages", () => {
     expect(sent).toEqual({ OpenStatus: messages.OpenStatus });
   });
 });
-
-/**
- * The React Server Components data in a page's HTML: the strings Next.js
- * pushes to self.__next_f, decoded and joined.
- */
-function rscPayload(html: string): string {
-  return [...html.matchAll(/self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g)]
-    .map(([, literal]) => JSON.parse(literal) as string)
-    .join("");
-}
 
 /** The JSON object right after `"key":` in `text`, or undefined if there's none. */
 function jsonObjectAfter(text: string, key: string): Record<string, unknown> | undefined {
