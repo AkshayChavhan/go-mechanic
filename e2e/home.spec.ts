@@ -171,6 +171,20 @@ test.describe("what the production build ships", () => {
   });
 });
 
+test.describe("from 768px, Call shows the number", () => {
+  test.use({ viewport: { width: 768, height: 1024 }, reducedMotion: "reduce" });
+
+  test("it reads \"Call +91 97647 50567\", with the space, in the hero and the call to action", async ({ page }) => {
+    await page.goto("/");
+    const name = `${messages.Contact.call} ${formatPhoneNumber(garage.phone)}`;
+    for (const section of [hero(page), cta(page)]) {
+      const call = section.locator(`a[href="${telHref(garage.phone)}"]`);
+      await expect(call).toHaveAccessibleName(name);
+      await expect(call).toHaveText(name);
+    }
+  });
+});
+
 test.describe("on a 375px phone, on first load", () => {
   test.use({ ...phone, reducedMotion: "reduce" });
 
@@ -259,6 +273,22 @@ test.describe("with motion allowed (no fixed clock)", () => {
     // Focus scrolled the section into view, so its heading reveals.
     const headingId = await cta(page).getAttribute("aria-labelledby");
     await expect.poll(() => effectiveOpacities(page, `#${headingId}`)).toEqual([1]);
+  });
+});
+
+test.describe("a window that grows taller without scrolling", () => {
+  test.use({ viewport: { width: 412, height: 732 }, reducedMotion: "no-preference" });
+
+  test("everything that was waiting below the fold shows, with no scroll at all", async ({ page }) => {
+    // A window maximised, or a renderer that opens a very tall window:
+    // nothing scrolls, so ScrollTrigger alone would never reveal anything.
+    await page.goto("/");
+    await waitForEffects(page);
+    const fullHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+    await page.setViewportSize({ width: 412, height: fullHeight });
+    await expect
+      .poll(async () => (await effectiveOpacities(page, "main *")).filter((opacity) => opacity !== 1).length)
+      .toBe(0);
   });
 });
 

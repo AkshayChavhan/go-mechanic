@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 import messages from "../../messages/en.json";
 import { sampleTrustStats } from "../../src/content/home";
-import { effectiveOpacities, gsapVersions } from "../helpers";
+import { effectiveOpacities, gsapVersions, scrollsSideways } from "../helpers";
 
 // Real-browser checks of the /dev/design preview (src/app/[locale]/dev/design),
 // against `next dev`: npm run test:design. Unit tests can't see these things:
@@ -45,10 +45,6 @@ async function useInter(page: Page) {
 // Two samples open a menu sheet with the same labels: the plain Sheet
 // component and the real phone menu (Layout shell). data-sample tells them apart.
 const sample = (page: Page, name: string) => page.locator(`[data-sample="${name}"]`);
-
-/** Whether the page is wider than the screen (it scrolls sideways). */
-const scrollsSideways = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
 
 const noQuotes = (family: string) => family.replace(/["']/g, "").trim();
 

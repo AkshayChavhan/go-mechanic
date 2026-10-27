@@ -117,30 +117,53 @@ test.describe("with motion allowed (no fixed clock)", () => {
     expect(partway.length).toBeGreaterThanOrEqual(2);
   });
 
-  test("mid-story: the picture stays below the header and on screen, scaled between its start and 1", async ({
+  test("mid-story: the picture stays below the header and on screen, and has grown since the top of the story, short of 1", async ({
     page,
   }, testInfo) => {
     const errors = watchErrors(page);
     await page.goto("/");
     await expect.poll(() => gsapVersions(page)).not.toBeNull();
-    await page.evaluate(() => {
-      const story = document.querySelector("[data-scene-story]")!;
-      const top = story.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo(0, top + story.clientHeight / 2 - window.innerHeight / 2);
-    });
-    // The scale follows the scroll position directly (scrub); give it a moment.
-    await page.waitForTimeout(500);
+
+    /** Scrolls so `share` of the story has passed the top of the screen. */
+    const scrollStory = (share: number) =>
+      page.evaluate((share) => {
+        const story = document.querySelector("[data-scene-story]")!;
+        const top = story.getBoundingClientRect().top + window.scrollY;
+        const header = document.querySelector("header")!.getBoundingClientRect().height;
+        window.scrollTo(0, top - header + story.clientHeight * share);
+      }, share);
+    const pictureScale = () =>
+      page
+        .locator("[data-scene-story-visual]")
+        .evaluate((element) => new DOMMatrixReadOnly(getComputedStyle(element).transform).a);
+
+    // At the top of the page the picture waits at its start scale. Polling
+    // for that also waits for the effects to set up: GSAP appears on the
+    // window a moment before they do, and an untouched picture reads 1.
+    await expect.poll(pictureScale).toBeLessThan(1);
+    const atLoad = await pictureScale();
+    expect(atLoad).toBeGreaterThanOrEqual(distance.storyScale);
+
+    // Near the top of the story: bigger than at load. The scale follows the
+    // scroll position (scrub), so wait for it to catch up.
+    await scrollStory(0);
+    await expect.poll(pictureScale).toBeGreaterThan(atLoad);
+    const nearTop = await pictureScale();
+
+    // Mid-story: bigger again, and still short of its natural size. A broken
+    // animation reads 1 (no transform at all) or stays put, and fails here.
+    await scrollStory(0.5);
+    await expect.poll(pictureScale).toBeGreaterThan(nearTop);
+    const midStory = await pictureScale();
+    expect(midStory).toBeLessThan(1);
 
     const visual = await page.locator("[data-scene-story-visual]").evaluate((element) => {
       const box = element.getBoundingClientRect();
-      const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
       const header = document.querySelector("header")!.getBoundingClientRect().bottom;
-      return { top: box.top, bottom: box.bottom, header, viewport: window.innerHeight, scale: matrix.a };
+      return { top: box.top, bottom: box.bottom, header, viewport: window.innerHeight };
     });
     expect(visual.top).toBeGreaterThanOrEqual(visual.header - 0.5);
     expect(visual.bottom).toBeLessThanOrEqual(visual.viewport + 0.5);
-    expect(visual.scale).toBeGreaterThan(distance.storyScale);
-    expect(visual.scale).toBeLessThanOrEqual(1);
     expect(await scrollsSideways(page)).toBe(false);
 
     await showAsMostVisitorsSeeIt(page);

@@ -23,8 +23,12 @@ const TUESDAY_09_59 = new Date("2026-10-27T04:29:00Z");
 const TUESDAY_18_59 = new Date("2026-10-27T13:29:00Z");
 const TUESDAY_18_59_30 = new Date("2026-10-27T13:29:30Z");
 
-const phone = { viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true };
-const desktop = { viewport: { width: 1440, height: 900 } };
+// Reduced motion: these tests fix the clock (for the open status), and the
+// home page's scroll animation times itself with Date.now(), which a fixed
+// clock freezes. With reduced motion, GSAP never loads (CLAUDE.md, "Playwright
+// and animation"). e2e/home.spec.ts tests the motion with the real clock.
+const phone = { viewport: { width: 375, height: 812 }, hasTouch: true, isMobile: true, reducedMotion: "reduce" as const };
+const desktop = { viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" as const };
 
 /** "Page not found | <brand>": the title both 404 pages must have. */
 const notFoundTitle = messages.NotFound.metaTitle.replace("{brand}", messages.Brand.name);
