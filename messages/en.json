@@ -1,11 +1,74 @@
 {
   "Metadata": {
     "title": "GoMechanic",
-    "description": "GoMechanic is a car and two-wheeler service and repair garage. Our new website is on its way."
+    "description": "Car and two-wheeler servicing and repairs at Mukai Chowk, Kiwale, Pune. Book on WhatsApp or call."
   },
   "HomePage": {
-    "title": "GoMechanic",
-    "tagline": "Car and two-wheeler service. Our new website is on its way."
+    "title": "Car and bike service in Kiwale, Pune",
+    "hero": {
+      "lead": "Servicing and repairs for cars and two-wheelers, at our garage on Mukai Chowk."
+    },
+    "story": {
+      "title": "How a visit works",
+      "lead": "Four steps, from your first message to collecting your vehicle.",
+      "steps": {
+        "book": {
+          "title": "Book on WhatsApp or call",
+          "text": "Tell us your vehicle and what it needs, and we'll agree a time."
+        },
+        "visit": {
+          "title": "Bring it to Mukai Chowk",
+          "text": "Drive or ride to our garage in Kiwale during opening hours."
+        },
+        "check": {
+          "title": "We check it and tell you the price",
+          "text": "A mechanic looks at your vehicle and tells you what it needs and what it costs, before any work starts."
+        },
+        "collect": {
+          "title": "Collect it and pay at the garage",
+          "text": "We let you know when it's ready. You pay at the garage when you collect it."
+        }
+      }
+    },
+    "services": {
+      "title": "What we work on",
+      "lead": "From a routine service to repairs after an accident.",
+      "vehicles": {
+        "car": "Cars",
+        "twoWheeler": "Two-wheelers",
+        "both": "Cars and two-wheelers"
+      }
+    },
+    "stats": {
+      "title": "The garage in numbers",
+      "years": {
+        "label": "Years in business",
+        "value": "<number>{value}</number>+"
+      },
+      "vehicles": {
+        "label": "Vehicles serviced",
+        "value": "<number>{value}</number>+"
+      },
+      "rating": {
+        "label": "Google rating",
+        "value": "<number>{value}</number>/5"
+      },
+      "warranty": {
+        "label": "Warranty on our work",
+        "value": "<number>{value}</number> months"
+      }
+    },
+    "reviews": {
+      "title": "What customers say",
+      "rating": "Rated {rating} out of 5",
+      "credit": "Customer with {vehicle, select, car {a car} other {a two-wheeler}}",
+      "sampleCredit": "Sample customer with {vehicle, select, car {a car} other {a two-wheeler}}"
+    },
+    "cta": {
+      "title": "Book your next service",
+      "lead": "Message us on WhatsApp or call, then bring your vehicle to Mukai Chowk."
+    },
+    "sample": "Sample"
   },
   "NotFound": {
     "metaTitle": "Page not found | {brand}",
