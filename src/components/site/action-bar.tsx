@@ -59,7 +59,7 @@ export function ActionBar({ book, garage, className }: ActionBarProps) {
         <li>
           <Button asChild variant="secondary" size="sm" className={stacked}>
             <a href={telHref(garage.phone)}>
-              <PhoneIcon />
+              <PhoneIcon data-icon="inline-start" />
               {tContact("call")}
             </a>
           </Button>
@@ -76,7 +76,7 @@ export function ActionBar({ book, garage, className }: ActionBarProps) {
           <Button asChild size="sm" className={stacked}>
             {book.kind === "page" ? (
               <Link href={book.href}>
-                <CalendarCheckIcon />
+                <CalendarCheckIcon data-icon="inline-start" />
                 {t("book")}
               </Link>
             ) : (

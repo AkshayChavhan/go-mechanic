@@ -26,7 +26,9 @@ async function localeFromUrl(): Promise<string | undefined> {
     // opts into instant validation and its samples have no locale. Next.js
     // marks that error with this digest and recognises it by the digest
     // itself (isInstantValidationError), so it's the most reliable sign.
-    // Inside this try, it can only mean "no locale in the URL".
+    // It means the instant-validation sample has no locale (as in the global
+    // 404). Next.js records this error itself before throwing, so the developer
+    // still sees it.
     if ((error as { digest?: unknown }).digest === "INSTANT_VALIDATION_ERROR") return undefined;
     // Anything else is a real mistake, such as next/root-params used inside a
     // Server Action or Route Handler (they must pass the locale themselves).
