@@ -22,7 +22,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 10 | `10_i18n_foundation` | next-intl with `[locale]` routes (English now, Hindi-ready), ₹ and date formatting | Done | [10_i18n_foundation.md](../learning/10_i18n_foundation.md) |
 | 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/dev/design` preview | Done | [11_design_system.md](../learning/11_design_system.md) |
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | Done | [12_layout_shell.md](../learning/12_layout_shell.md) |
-| 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | To do |  |
+| 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | In progress |  |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | To do |  |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | To do |  |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
@@ -217,7 +217,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 13_home_page
 
-- [ ] Create branch `13_home_page`
+- [x] Create branch `13_home_page`
 - [ ] Plan with `ce-plan`
 - [ ] Hero, trust stats, services bento grid, how it works, reviews preview, final call to action (labelled placeholder content until tasks 18 and 37; sample reviews marked as samples)
 - [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback: timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11)
