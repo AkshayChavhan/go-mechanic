@@ -41,7 +41,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/components/` the shared components (`ui/` from shadcn/ui, `site/` our own), `src/i18n/` the language setup and the ₹ and date helpers, `src/content/` the garage's details (address, phone, hours), `src/domain/` pure business logic such as opening hours, `src/lib/` small helpers. |
 | `design-system/` | The design system written out for people: tokens, rules and the brand. |
 | `messages/` | The website's text, one file per language (`en.json` for now). |
-| `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. `e2e/dev/` checks the development-only `/dev/design` page. |
+| `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. `e2e/dev/` checks the development-only `/dev/design` page and the home page under `npm run dev`. |
 | `package.json`, `package-lock.json` | The app's dependencies and commands. |
 | `.nvmrc` | The Node.js version the project uses (24). |
 | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `components.json` | Settings for Next.js, TypeScript, ESLint and shadcn/ui. |
@@ -62,7 +62,7 @@ Open http://localhost:3000. Other commands:
 | --- | --- |
 | `npm run check` | Lint, type check and unit tests in one go. Run it before you call any work done. |
 | `npm run test:e2e` | Builds the site and opens it in your Chrome to check it really works. Run it before merging. |
-| `npm run test:design` | Checks the `/dev/design` page in Chrome (sizes, contrast, focus, motion) and saves screenshots. Run it after any design change. |
+| `npm run test:design` | Checks the `/dev/design` page and the home page in Chrome (sizes, contrast, focus, motion) and saves screenshots. Run it after any design change. Note: `npm run dev` shows "Sample" stats and reviews on the home page that the live site never shows. |
 | `npm run build` / `npm start` | Build the production version / run it |
 | `npm run lint`, `npm run typecheck`, `npm run test` | The three parts of `check`, one at a time |
 
