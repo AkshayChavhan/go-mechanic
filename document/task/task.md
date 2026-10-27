@@ -244,7 +244,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 14_database_setup
 
 - [x] Create branch `14_database_setup`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-27-2221-feat-database-setup-plan.md)
 - [ ] Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers
 - [ ] Move garage details and hours from `src/content/garage.ts` into the database; `readGarage()` in `src/components/site/site-chrome.tsx` (the one reader, also called by both 404 pages) reads the database
 - [ ] Read the garage with `'use cache'` and a `cacheTag`, and call `updateTag` on every save (tasks 28 and 40), so every prerendered page refreshes. Check phone numbers when they're saved (`isIndianPhoneNumber`, `isIndianMobileNumber` in `src/lib/contact-links.ts`): the shell's formatters never throw (task 12)
