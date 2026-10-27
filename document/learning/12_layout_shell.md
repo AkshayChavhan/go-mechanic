@@ -114,7 +114,7 @@ The first commit on the branch, `9e9310e docs(11): mark task 11 done`, is task 1
     - A subagent used `git mv`, which staged two moves despite the "no git changes" rule for agents. It reported this itself; it was harmless, and the main session committed the moves.
 
 18. **Not done yet.** These steps come after this doc, so their results aren't in it:
-    - **SEO check:** *Pending.* The hook asks at the end of a reply.
+    - **SEO check:** the SEO hook listed the changed page files, and the `seo-reviewer` agent checked `/`, the four URLs that share the global 404 (`/this-page-does-not-exist`, `/index.html`, `/contact.php`, `/hi`), `/dev/design` and `/icon.svg` on the production build. **All pass.** It confirmed the name, address and phone are real text in `<address>` and match `src/content/garage.ts` exactly, the layout shift is 0 at six widths, and `/` is still prerendered. Two suggestions were filed, not applied (repo rule): put the area in the home `h1` ("Car and bike service in Kiwale, Pune", task 13), and load the phone menu's code on first tap (about 32 KB gzipped on every page today, task 18).
     - **Review** (`ce-code-review`, then `code-reviewer`): *Pending.*
     - **Compound question:** *Pending.*
     - **Pull request and merge:** *Pending.*

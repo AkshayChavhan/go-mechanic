@@ -223,6 +223,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] GSAP scroll storytelling (pinned section, reveals, counters) with a reduced-motion fallback: timings from `@/lib/motion`, every animation inside `gsap.matchMedia()` with `motionAllowed` and `motionReduced` (task 11)
 - [ ] Check at 375, 768, 1024 and 1440 px and with reduced motion
 - [ ] On phones, pinned and scroll-triggered sections start below the header (`--header-height`) and end above the phone bar (`--action-bar-height`, which includes the iPhone safe area) (task 12)
+- [ ] The `h1` or the opening line says where the garage is, e.g. "Car and bike service in Kiwale, Pune": people search for the service and the area, not the brand (SEO check in task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -282,6 +283,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] `aria-current` on the live navigation links, inside a `<Suspense>` with a plain-links fallback (`usePathname` suspends under Cache Components), with an e2e check for the attribute and for no hydration errors (task 12)
 - [ ] An unknown service slug calls `notFound()` in `generateMetadata` as well as in the page, before any `<Suspense>`, so the status is 404 and the title comes from `src/app/[locale]/not-found.tsx`. Add `src/app/[locale]/(site)/not-found.tsx` if that 404 should keep the full shell. Add an e2e status check for an unknown slug (task 12)
 - [ ] A page that calls `notFound()` while it's prerendered serves Next.js's bare error HTML to clients without JavaScript; the branded 404 appears only after hydration. Check the unknown-slug 404 with `curl`, not only in a browser (task 12)
+- [ ] Once the menu has real links, load the phone menu's panel only on the first tap (`next/dynamic` inside `MobileMenu`; `node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md`): today its code, about 32 KB gzipped, loads on every page, desktop too (SEO check in task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
