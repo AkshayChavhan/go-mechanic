@@ -237,7 +237,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Docs: `MASTER.md` ("Page blocks and scroll motion"), `features.md` (Home), and the plan's "Deferred to Follow-Up Work" on tasks 17, 18, 37 and 42 and in the backlog
 - [x] Docs: `CLAUDE.md` (repo map and conventions for the home page)
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
+- [x] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
@@ -299,6 +299,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] An unknown service slug calls `notFound()` in `generateMetadata` as well as in the page, before any `<Suspense>`, so the status is 404 and the title comes from `src/app/[locale]/not-found.tsx`. Add `src/app/[locale]/(site)/not-found.tsx` if that 404 should keep the full shell. Add an e2e status check for an unknown slug (task 12)
 - [ ] A page that calls `notFound()` while it's prerendered serves Next.js's bare error HTML to clients without JavaScript; the branded 404 appears only after hydration. Check the unknown-slug 404 with `curl`, not only in a browser (task 12)
 - [ ] Once the menu has real links, load the phone menu's panel only on the first tap (`next/dynamic` inside `MobileMenu`; `node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md`): today its code, about 32 KB gzipped, loads on every page, desktop too (SEO check in task 12)
+- [ ] If the scroll effects change, guard every setup run: GSAP re-runs `media.add` on a breakpoint change from its own listener, so move the `try`/`catch` in `scroll-scene-effects.tsx` inside the callback, undo what was set up, and test it (code-reviewer in task 13)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question

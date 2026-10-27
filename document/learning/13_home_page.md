@@ -69,10 +69,14 @@ The first commit on the branch, `665ee09 docs(12): mark task 12 done`, is task 1
 5. **The scroll scene island.** `ScrollScene` (`"use client"`) wraps every section. The sections are Server Components passed in as `children`, so they stay on the server. It loads the effects like this:
    ```tsx
    const ScrollSceneEffects = dynamic(
-     () => import("./scroll-scene-effects").then((module) => module.ScrollSceneEffects),
+     () =>
+       import("./scroll-scene-effects")
+         .then((module) => module.ScrollSceneEffects)
+         .catch(() => NoMotion),
      { ssr: false },
    );
    ```
+   - `.catch(() => NoMotion)`: if the file can't be downloaded, nothing renders instead of an error. The effects also sit inside a small error boundary, `WithoutMotionOnError`, that renders nothing if they throw. (The first version had neither; the code review caught it, see "Checks and reviews".)
    - `ssr: false` means "never render this on the server". Only a client component may use it.
    - It renders `<ScrollSceneEffects>` only when `useMotionReady()` says yes. That needs two things: the page has fired `load` (`document.readyState === "complete"`), and the visitor allows motion. Until then the browser doesn't even request the file.
    - **Why so careful?** GSAP calls `Date.now()` the moment it's imported (`node_modules/gsap/gsap-core.js`, lines 1269–1272). Reading the time during a prerender stops Next.js from building the page ahead of time. GSAP is also big: about 117 KB, 46 KB compressed (measured below). Loading it after `load` keeps it from competing with the text and fonts on 4G. Reduced-motion visitors never download it at all.
@@ -197,9 +201,9 @@ cd .next/static/chunks && for f in $(grep -l "gsapVersions\|ScrollTrigger" *.js)
 ```
 ```
 0q8wftpbx6kmh.js raw=   70919 gzip=   27352
-26u9e1w9hw4i_.js raw=   46223 gzip=   18556
+3z4nygglgispy.js raw=   46834 gzip=   18766
 ```
-Together: 117,142 bytes, 45,908 compressed. That matches MASTER.md's "about 117 KB, 46 KB compressed".
+Together: 117,753 bytes, 46,118 compressed (re-run after the review fixes). That still matches MASTER.md's "about 117 KB, 46 KB compressed".
 
 The shuffled-order check from bump 11 (`--sequence.shuffle` runs the tests in random order; `--sequence.seed` picks which order, so it can be repeated). All five seeds printed the same result:
 ```bash
@@ -207,8 +211,9 @@ for seed in 1 2 3 4 5; do npx vitest run src/components/site/scroll-scene.test.t
 ```
 ```
  Test Files  1 passed (1)
-      Tests  7 passed (7)
+      Tests  9 passed (9)
 ```
+(Re-run after the review fixes, which added two tests; every seed printed this.)
 
 The browser suites, from the work session's final runs after the review fixes:
 - `npm run test:e2e` (production build): `58 passed (1.1m)`.
@@ -230,16 +235,16 @@ To look for yourself, run `npm run dev` and open http://localhost:3000. You shou
   2. **A fuller meta description** that names bikes, the area and what visitors get.
   3. **A missing space:** from 768px the Call link read "Call+91 97647 50567".
 - **`ce-code-review`: "Ready with fixes".** Nine reviewer personas confirmed the owner's rule holds: no path lets a sample stat or review reach a production build. One P1, all fixed:
-  - **The P1:** if the lazily loaded effects file failed to download (weak signal, an old file after a redeploy, a content blocker) or threw, Next.js's error screen replaced the whole home page. Now the loader falls back to no motion, an error boundary renders nothing on error, and a setup error reverts anything already hidden.
+  - **The P1:** if the lazily loaded effects file failed to download (weak signal, an old file after a redeploy, a content blocker) or threw, Next.js's error screen replaced the whole home page. Now the loader falls back to no motion, an error boundary renders nothing on error, and an error during the first setup reverts anything already hidden. (That revert was checked by reading the code and in a throwaway jsdom harness, not by a committed test. GSAP re-runs the setup when a breakpoint changes, and those re-runs aren't guarded yet; nothing in today's setup throws, and task 18 has the follow-up.)
   - **How it was proven:** in tests `next/dynamic` first resolved to the Pages Router version, which swallowed the failure and hid the bug. The test now uses the App Router version that the real build uses.
   - **Other fixes:**
     - `/dev/design` read the sample lists behind `devOnly()`; it now goes through `showSamples()`, and a test fails if any other file uses the lists directly;
     - the mid-story scale check couldn't fail; it now compares readings and requires a scale below 1;
     - the shell spec now uses reduced motion on `/`, because it fixes the clock;
     - a duplicated test helper was removed, and a comment corrected.
-- **`code-reviewer` agent:** *Pending.*
+- **`code-reviewer` agent: "Needs changes", for the doc only.** No code bugs; it confirmed the ce-code-review fixes are real (the App Router `next/dynamic` in the tests, the loader fallback and error boundary, the resize listeners and their cleanup, the `showSamples()` gate on `/dev/design`). Two must-fixes, both in this doc: the loader example still showed the version without `.catch` (the P1 bug), and the shuffled-test output still said 7 tests. Both fixed with real re-runs. Its suggestions: `readme.md` now says `npm run dev` shows the home page's samples; the re-run guard for the effects setup went to task 18 as a follow-up.
 - **Compound:** *Pending.* Candidates so far: testing animated pages with Playwright (the clock, `toBeVisible()`), and `vi.mock` with `vi.resetModules()`. Both are already rules in `CLAUDE.md` or the code's comments, which may be enough.
-- **Pull request and merge:** *Pending*, after the reviews and the owner's go-ahead.
+- **Pull requests.** The branch was pushed from VS Code and merged on GitHub three times before Claude said the task was ready: PR #9 (the plan only), PR #10 (before the review fixes) and PR #11 (at `189e699`, before the final review). Claude didn't push during the task. The final review's doc fixes and the lesson come in one follow-up pull request. CLAUDE.md step 11's rule is still to merge once, after "ready".
 
 ## Common mistakes
 
