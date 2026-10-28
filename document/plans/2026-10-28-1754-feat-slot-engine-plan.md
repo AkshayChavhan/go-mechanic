@@ -87,7 +87,7 @@ Not built (considered; each line says what would change the call):
 
 #### Deferred to Follow-Up Work
 
-Recorded as steps in `document/task/task.md` by U6:
+Recorded at the end of the backlog in `document/task/task.md` by U6, each marked "(task 22)":
 
 - Task 20: seed the `slot_rules` row on Supabase, and run N parallel reservations against Postgres to prove the race (the master plan's "tested in parallel on staging").
 - Task 23: reserve the slot first, then create the booking, in one transaction, returning a non-ok answer before writing anything (KTD7); confirm with the owner that a pending booking holds a place from creation (assumed here); a test that counters equal active bookings; read slots inside `<Suspense>` (with `io()` if the clock is read before the first uncached query).
@@ -342,10 +342,10 @@ Bets made without the owner's confirmation (scoping confirmation was skipped):
 - **Goal:** The task's steps and the follow-up notes for later tasks are in `document/task/task.md`.
 - **Requirements:** Scope Boundaries (Deferred to Follow-Up Work).
 - **Dependencies:** none (can land first, with the plan link).
-- **Files:** modify `document/task/task.md` (task 22's step list; one step each under tasks 20, 23, 24, 25, 26, 27, 28 and 43).
-- **Approach:** link this plan from task 22's "Plan with `ce-plan`" step; add one step to each later task, each ending "(task 22)" like the existing forward notes. Edit only step lists, never another task's row.
+- **Files:** modify `document/task/task.md` (task 22's step list, and new lines at the end of the backlog).
+- **Approach:** link this plan from task 22's "Plan with `ce-plan`" step; add one backlog line per later task (20, 23, 24, 25 and 27, 26, 28, 43), each starting "For task NN" and ending "(task 22)". Three sessions work in parallel, and each may edit only its own task's row and steps, so the notes can't go into the later tasks' step lists.
 - **Test expectation:** none -- tracker only.
-- **Verification:** every item in "Deferred to Follow-Up Work" has a matching step.
+- **Verification:** every item in "Deferred to Follow-Up Work" has a matching backlog line.
 
 ---
 

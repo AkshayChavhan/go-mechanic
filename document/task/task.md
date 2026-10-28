@@ -361,10 +361,11 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `22_slot_engine`
 - [x] Plan with `ce-plan`: [2026-10-28-1754-feat-slot-engine-plan.md](../plans/2026-10-28-1754-feat-slot-engine-plan.md)
-- [ ] Time slots, capacity, holidays; atomic slot reservation
+- [x] Time slots, capacity, holidays; atomic slot reservation
 - [x] Notes for the tasks that build on the slot engine (20, 23 to 28, 43) at the end of the backlog: this task may edit only its own steps (three sessions work in parallel)
-- [ ] Slot rules from the owner (2026-10-28): 1-hour slots; customers book up to 7 days ahead, from tomorrow on (no same-day slots). Capacity is a **placeholder**: 2 vehicles per slot, cars and two-wheelers together, until the owner gives the real number
-- [ ] The slot engine reads the hours through the data-access layer (`readGarage()` or a new read in `src/server/dal/`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
+- [x] Slot rules from the owner (2026-10-28): 1-hour slots; customers book up to 7 days ahead, from tomorrow on (no same-day slots). Capacity is a **placeholder**: 2 vehicles per slot, cars and two-wheelers together, until the owner gives the real number
+- [x] The slot engine reads the hours through the data-access layer (`readSchedule` in `src/server/dal/slots.ts`, through `weeklyHours` from `garage.ts`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
+- [x] Rules for slot callers in `CLAUDE.md` ("Booking slots")
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
