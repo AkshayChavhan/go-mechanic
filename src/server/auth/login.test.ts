@@ -16,6 +16,7 @@ import { type Auth, createAuth } from "./auth";
 import { LoginServiceError } from "./errors";
 import {
   clientIpKey,
+  onVerifiedLogin,
   recordConsentsForVerifiedLogin,
   requestLoginCode,
   type RequestCodeInput,
@@ -37,6 +38,8 @@ vi.mock("@/server/db", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/server/db")>()),
   getDatabase: vi.fn(),
 }));
+// The settings, with an owner's number a test can change (OWNER_PHONE_NUMBER).
+const settings = vi.hoisted(() => ({ ownerPhoneNumber: "+919764750567" }));
 vi.mock("@/server/env", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/server/env")>()),
   serverEnv: () => ({
@@ -45,6 +48,7 @@ vi.mock("@/server/env", async (importOriginal) => ({
     authSecret: "test-secret-that-is-at-least-32-characters-long",
     smsProvider: "fake",
     e2eOutboxFile: undefined,
+    ownerPhoneNumber: settings.ownerPhoneNumber,
   }),
 }));
 vi.mock("next-intl/server", async () => {
@@ -78,7 +82,7 @@ beforeAll(async () => {
     secret: "test-secret-that-is-at-least-32-characters-long",
     secureCookies: false,
     sendCode: sendLoginCodeSms,
-    onVerified: recordConsentsForVerifiedLogin,
+    onVerified: onVerifiedLogin,
   });
 });
 afterAll(async () => {
@@ -91,6 +95,7 @@ let printed: ReturnType<typeof vi.spyOn>[] = [];
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  settings.ownerPhoneNumber = "+919764750567";
   printed = (["log", "info", "warn", "error", "debug"] as const).map((level) =>
     vi.spyOn(console, level).mockImplementation(() => {}),
   );
@@ -441,6 +446,43 @@ describe("checking a code", () => {
       return [strip(first), strip(again), wrong];
     };
     expect(await answers("90000 00002")).toEqual(await answers("90000 00003"));
+  });
+});
+
+describe("the owner (OWNER_PHONE_NUMBER)", () => {
+  /** The stored role of the user with `number`. */
+  async function storedRole(phoneNumber = number) {
+    const [user] = await db.select({ role: users.role }).from(users).where(eq(users.phoneNumber, phoneNumber));
+    return user?.role;
+  }
+
+  test("the owner's number is stored as the owner at its first login", async () => {
+    settings.ownerPhoneNumber = number;
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await storedRole()).toBe("owner");
+  });
+
+  test("any other number stays a customer", async () => {
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await storedRole()).toBe("customer");
+  });
+
+  test("a customer whose number becomes the owner's is stored as the owner at the next login", async () => {
+    await check(await askForCode(), await latestCode());
+    expect(await storedRole()).toBe("customer");
+    settings.ownerPhoneNumber = number;
+    moveTo(10 * 60);
+    await check(await askForCode(), await latestCode());
+    expect(await storedRole()).toBe("owner");
+  });
+
+  test("a login refused for its consent leaves the stored role alone", async () => {
+    settings.ownerPhoneNumber = number;
+    vi.mocked(recordLoginConsents).mockRejectedValueOnce(new Error("consent write failed"));
+    await expect(check(await askForCode(), await latestCode())).rejects.toBeInstanceOf(LoginServiceError);
+    // Better Auth created the user as a customer before the consent step failed.
+    expect(await storedRole()).toBe("customer");
+    expect(await db.$count(sessions)).toBe(0);
   });
 });
 

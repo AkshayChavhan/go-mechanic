@@ -1,11 +1,12 @@
+import { inspect } from "node:util";
+
 import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { closeDatabase, createDatabase, type Database } from "@/server/db";
 import { sessions, users, verifications } from "@/server/db/schema";
-
-import { inspect } from "node:util";
+import { ServerEnvError } from "@/server/env";
 
 import { type Auth, createAuth } from "./auth";
 import { LoginServiceError } from "./errors";
@@ -19,6 +20,18 @@ vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
 
 vi.mock("next/headers", () => ({ headers: vi.fn() }));
 vi.mock("./instance", () => ({ getAuth: vi.fn() }));
+// The settings: an owner's number a test can change, or an error to throw.
+const settings = vi.hoisted(() => ({ ownerPhoneNumber: "+919764750567", error: null as Error | null }));
+vi.mock("@/server/env", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/server/env")>();
+  return {
+    ...actual,
+    serverEnv: () => {
+      if (settings.error) throw settings.error;
+      return { ...actual.parseServerEnv({}), ownerPhoneNumber: settings.ownerPhoneNumber };
+    },
+  };
+});
 
 const number = "+919876543210";
 let db: Database;
@@ -41,6 +54,8 @@ afterAll(async () => {
   await closeDatabase(db);
 });
 beforeEach(async () => {
+  settings.ownerPhoneNumber = "+919764750567";
+  settings.error = null;
   vi.mocked(getAuth).mockResolvedValue(auth);
   await db.delete(sessions);
   await db.delete(users);
@@ -95,6 +110,33 @@ describe("getCurrentUser (who is logged in, for pages)", () => {
     vi.mocked(headers).mockResolvedValue(new Headers({ cookie: await logIn() }));
     await db.delete(sessions);
     expect(await getCurrentUser()).toBeNull();
+  });
+});
+
+describe("getCurrentUser: the owner rule on every read", () => {
+  test("a stored customer on the owner's number reads as the owner, with no new login", async () => {
+    vi.mocked(headers).mockResolvedValue(new Headers({ cookie: await logIn() }));
+    expect((await getCurrentUser())?.role).toBe("customer");
+    settings.ownerPhoneNumber = number;
+    expect((await getCurrentUser())?.role).toBe("owner");
+  });
+
+  test("a stored owner on any other number reads as a customer (the owner's number moved)", async () => {
+    vi.mocked(headers).mockResolvedValue(new Headers({ cookie: await logIn() }));
+    await db.update(users).set({ role: "owner" });
+    expect((await getCurrentUser())?.role).toBe("customer");
+  });
+
+  test("a stored manager stays a manager", async () => {
+    vi.mocked(headers).mockResolvedValue(new Headers({ cookie: await logIn() }));
+    await db.update(users).set({ role: "manager" });
+    expect((await getCurrentUser())?.role).toBe("manager");
+  });
+
+  test("a wrong setting surfaces as itself (ServerEnvError), not as a LoginServiceError", async () => {
+    vi.mocked(headers).mockResolvedValue(new Headers());
+    settings.error = new ServerEnvError([{ variable: "OWNER_PHONE_NUMBER", problem: "not-mobile" }]);
+    await expect(getCurrentUser()).rejects.toBeInstanceOf(ServerEnvError);
   });
 });
 

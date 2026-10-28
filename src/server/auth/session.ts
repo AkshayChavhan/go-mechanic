@@ -7,12 +7,18 @@ import "server-only";
 import { headers } from "next/headers";
 import { cache } from "react";
 
-import type { Role } from "@/domain/roles";
+import { effectiveRole, type Role } from "@/domain/roles";
+import { serverEnv } from "@/server/env";
 
 import { withoutDetails } from "./errors";
 import { getAuth } from "./instance";
 
-export type CurrentUser = { id: string; phoneNumber: string; role: Role };
+export type CurrentUser = {
+  id: string;
+  phoneNumber: string;
+  /** The role the user really has: the stored one, with the owner rule applied (effectiveRole). */
+  role: Role;
+};
 
 /**
  * The logged-in user, or null. Only what pages need: no session token.
@@ -23,6 +29,9 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   // signal, which must reach Next.js as it is (withoutDetails passes those
   // on too, but nothing here needs hiding).
   const requestHeaders = await headers();
+  // Before withoutDetails too: a wrong setting keeps its own message (it names
+  // the setting, never a value) instead of becoming a LoginServiceError.
+  const { ownerPhoneNumber } = serverEnv();
   // A database error's message holds the query's values (the session token).
   return withoutDetails("getCurrentUser", async () => {
     const auth = await getAuth();
@@ -37,6 +46,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     // types just don't know it.
     if (!session?.user.phoneNumber) return null;
     const { id, phoneNumber, role } = session.user;
-    return { id, phoneNumber, role: role as Role };
+    // The owner rule on every read, so a change of OWNER_PHONE_NUMBER applies
+    // on the next request, even to a login that is already open.
+    return { id, phoneNumber, role: effectiveRole(role as Role, phoneNumber, ownerPhoneNumber) };
   });
 });

@@ -41,7 +41,8 @@ import {
   type LoginAttempt,
   readLiveCode,
 } from "@/server/dal/login-codes";
-import type { AppEnv } from "@/server/env";
+import { syncOwnerRole } from "@/server/dal/users";
+import { type AppEnv, serverEnv } from "@/server/env";
 import { smsProvider } from "@/server/providers/sms";
 
 import type { Auth } from "./auth";
@@ -114,6 +115,17 @@ export async function recordConsentsForVerifiedLogin(userId: string, phoneNumber
     throw new Error("A login needs the consent from its own login attempt");
   }
   await recordLoginConsents(userId, attempt);
+}
+
+/**
+ * Everything Better Auth's callbackOnVerification does, in order: the
+ * consent records first (no consent, no login), then the owner rule on the
+ * stored role (the OWNER_PHONE_NUMBER setting). If either throws, there is
+ * no session.
+ */
+export async function onVerifiedLogin(userId: string, phoneNumber: string): Promise<void> {
+  await recordConsentsForVerifiedLogin(userId, phoneNumber);
+  await syncOwnerRole(userId, phoneNumber, serverEnv().ownerPhoneNumber);
 }
 
 // --- The service --------------------------------------------------------------
