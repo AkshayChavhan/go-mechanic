@@ -92,10 +92,17 @@ The owner decided the rules on 2026-10-28: **1-hour slots**, **book from tomorro
 
 ```bash
 npx vitest run src/domain/slots.test.ts src/domain/india-time.test.ts   # 58 + 19 tests
-npx vitest run src/server/dal/slots.test.ts src/server/db/database.test.ts   # 27 + 49 tests
-npm run check      # 75 files, 1193 tests passed after the review fixes
-npm run test:e2e   # 64 passed (before the review fixes; re-run below)
+npx vitest run src/server/dal/slots.test.ts src/server/db/database.test.ts   # 27 + 50 tests
+npm run check      # 75 files, 1194 tests passed on the final code
+npm run test:e2e   # 64 passed on the final code (1.2 minutes)
 ```
+
+The browser tests took four tries, none because of this task's code, which has no page:
+
+1. Before the review fixes: 64 passed.
+2. After them: 63 passed, 1 failed. The login test timed out after 5 seconds with the page still on "Checking…", while the machine's load average was about 25 to 31 (three sessions building and testing). This task doesn't touch login, and that test had passed in run 1.
+3. A login-only re-run couldn't start: port 3210 was in use by Session 2's test run (`go-mechanic-s2`), so it waited.
+4. A full run timed out building the app (Playwright allows 180 seconds) while the load was still high. The final run, once the load had dropped, passed 64 of 64.
 
 The mutation checks, run once each and then undone:
 
@@ -124,7 +131,11 @@ The mutation checks, run once each and then undone:
   3. The window's first-day and last-day query bounds had no test.
   4. A comment gave the wrong check order.
   The review also suggested the migration-timestamp test and the `await io()` note for task 23; both were added.
-- **`code-reviewer`:** not run yet. Its verdict goes here once it has run.
+- **`code-reviewer`:** "Needs changes", with no bugs in the code. Its two must-fix items were about process:
+  1. **No browser-test result for the final code.** Fixed: `npm run test:e2e` passed 64 of 64 on the final code (see "Check that it works" for the runs before it).
+  2. **Four commits mix kinds of change**, against the rule "code, tests, docs and tracker in separate commits": `659045c` (`india-time.ts` with its test), `b20473f` (`slots.ts` with its test), `7e8ff4a` (the plan with `task.md`) and `a3c0daf` (`CLAUDE.md`, the plan and `task.md`). Splitting them would mean rewriting history, which this parallel setup doesn't allow (no rebase, no force), so they stay as they are and are listed here. Later units did split them.
+  It also suggested three smaller changes, all made in `c53baed` and `50b8440`: a test that each migration snapshot points at the one before it; `readAvailableSlots` added to the "never inside an open transaction" rule; and "each in one statement" reworded, because `moveSlot` makes two counter changes. Its heads-up for later: task 16's branch makes `garage.ts` import the login code (`authorize`), so after it merges, `slots.ts` (which imports `weeklyHours` from `garage.ts`) pulls that in too. Run `src/server/dal/slots.test.ts` again after task 16 lands. If it breaks, move `weeklyHours` into its own small file. That file belongs to task 16's work right now, so it wasn't moved here.
+- **Compound:** one lesson, [pglite-parallel-tests-bare-database-not-transaction-per-call.md](../solutions/conventions/pglite-parallel-tests-bare-database-not-transaction-per-call.md). The transaction-per-call test shape looks natural and hides race bugs, and it would come back in tasks 23 to 28 if only this task's test comment knew it.
 
 ## Try it yourself
 
