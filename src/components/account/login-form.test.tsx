@@ -377,11 +377,15 @@ describe("loginSubmitter (what useActionState runs)", () => {
   });
 });
 
-test("formatCountdown: minutes and two-digit seconds", () => {
+test("formatCountdown: minutes and two-digit seconds, with hours from an hour on", () => {
   expect(formatCountdown(30)).toBe("0:30");
   expect(formatCountdown(5)).toBe("0:05");
   expect(formatCountdown(65)).toBe("1:05");
   expect(formatCountdown(0)).toBe("0:00");
+  expect(formatCountdown(3599)).toBe("59:59");
+  expect(formatCountdown(3725)).toBe("1:02:05");
+  // A day limit: 21 hours to wait, not "1260:00".
+  expect(formatCountdown(21 * 3600)).toBe("21:00:00");
 });
 
 test("reads no messages itself: every word comes from the labels", () => {
