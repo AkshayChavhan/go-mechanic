@@ -277,6 +277,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas
 - [ ] `saveGarage` (`src/server/dal/garage.ts`) first checks that the signed-in user is the owner or a manager. Every later save in `src/server/dal/` does the same for its role (task 14)
+- [ ] `requireUser`/`requireRole` built on `getCurrentUser()` (`src/server/auth/session.ts`). Proxy redirects: a logged-out `/account` gets a real 307 to `/login` (today the redirect happens inside `<Suspense>`, with status 200), and a logged-in `/login` goes to `/account` (task 15)
+- [ ] A way to make the owner's number `owner`: everyone signs up as `customer` (`users.role`), and Better Auth refuses a role sent by the browser (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -319,6 +321,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Contact, about, FAQ, privacy and terms pages
 - [ ] Set `live: true` for `about` and `contact` in `src/components/site/navigation.ts` with the pages. A directions link needs the owner's exact map link: one built from the address text lands at Mukai Chowk, not the garage (task 12)
+- [ ] Link `/login`'s short notice to the new `/privacy` page, and change `LOGIN_NOTICE_VERSION` (`src/domain/consent.ts`) and the pinned wording in `consent.test.ts` in the same commit (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -334,6 +337,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Seed the garage row on Supabase, with `db:migrate` and `db:seed` scripts that load the env through `loadEnvConfig(process.cwd(), true)` from `@next/env`. The app never migrates or seeds a real Postgres itself (task 14)
 - [ ] Size postgres.js's connection pool for the build's worker processes, and check whether postgres.js needs `serverExternalPackages` (task 14)
 - [ ] Rows changed in the Supabase console reach the site only after a redeploy or a revalidation (`readGarage()` uses `cacheLife("max")`): say so in the deploy notes (task 14)
+- [ ] Set `BETTER_AUTH_SECRET` on Vercel (`openssl rand -base64 32`), and check that `x-vercel-forwarded-for` carries the visitor's IP there (`clientIpKey` in `src/server/auth/login.ts`) (task 15)
+- [ ] Decide how staging testers read the fake SMS: `/dev/outbox` is a 404 on every production build, and codes must never be readable by the public (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -345,6 +350,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Plan with `ce-plan`
 - [ ] Customer vehicles with registration-number checks, profile
 - [ ] Ask the owner to start the DLT (SMS) and Meta (WhatsApp) paperwork: approvals take weeks
+- [ ] The header's "Log in"/"Account" entry (the owner's choice: not before this task), as a static link or a browser island, never a session read in the shell (`ensureStatic` on `/`), with `prefetch={false}` (task 15)
+- [ ] Ask for a name on the profile (users get an empty `name` at sign-up). Carriers reassign numbers that go unused: decide what a new SIM owner sees of the old account (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -368,6 +375,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] `/book` wizard with OTP, server-side prices, e2e test
 - [ ] e2e tests run on a production server whose database is PGlite in memory: every run starts from the seed, and whatever a test creates is gone after a restart. Write booking tests that don't depend on an earlier run (task 14)
 - [ ] Set `bookPage.live` to true in `src/components/site/navigation.ts`: "Book a service" and the phone bar's Book then go to `/book` instead of WhatsApp. Decide the phone bar on `/book`, where its Book repeats the page and can cover the wizard's own buttons (task 12)
+- [ ] The inline OTP reuses the login service (`requestLoginCode`, `verifyLoginCode`), its consent snapshot and the e2e outbox file. Decide whether the phone bar hides while a form field has focus. If a different number verifies on a phone that is already logged in, end the old session (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -490,6 +498,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `35_notification_outbox`
 - [ ] Plan with `ce-plan`
 - [ ] Notification outbox (SMS, WhatsApp, email fakes), retries, consent
+- [ ] Reuse `dev_messages` (it already has a `channel`: sms, whatsapp, email) and the provider pattern in `src/server/providers/`. `notify()` sends only for purposes the user agreed to (`consents`) (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -571,6 +580,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] The 404 titles already include the brand (`NotFound.metaTitle`), so the title template must not add it twice. The PIN code (412101) is already stored on its own (`garage_settings.postal_code`, read with `readGarage()` from `src/server/dal/garage.ts`; task 14); split the address text into street, area and city for the JSON-LD (task 12)
 - [ ] Decide whether to add a `favicon.ico`: today `/favicon.ico` gets Next.js's bare 404, because the proxy skips `.ico` paths (task 12)
 - [ ] The home page's title and description name Kiwale, Pune (task 13 changed only the h1 and the description's wording), with `AutoRepair` JSON-LD and a social image (task 13)
+- [ ] Once the domain is known, add the WebOTP line (`@domain #code`) to the login SMS (`Sms.loginCode`), so Android can fill the code in (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -581,6 +591,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `43_privacy_dpdp`
 - [ ] Plan with `ce-plan`
 - [ ] Privacy notice, consent withdrawal, delete-my-data, export
+- [ ] Consent history and withdrawal (`consents`). Deleting a user is refused while it has consent records (`restrict`): decide what deletion does to them. Mention that sessions keep the IP address and browser name (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -591,6 +602,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `44_real_sms_otp`
 - [ ] Plan with `ce-plan`
 - [ ] Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid)
+- [ ] An MSG91 provider (`SMS_PROVIDER=msg91`) with its DLT template; production then starts. Turnstile on the phone step, a per-IP cap on code checks, a site-wide daily SMS cap, tuned `LOGIN_RULES`, a message for a provider failure, and sending through Better Auth's background-task hook. Until then a number can be locked out for up to a day and nobody can reset it (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
