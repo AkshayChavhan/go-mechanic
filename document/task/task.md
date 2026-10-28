@@ -630,6 +630,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Real photos of the garage: static imports from a new `src/assets/` folder, passed to the home page's visual slots (the hero's with `eager`), each with its alt text added to `messages/en.json` (task 13)
 - The lint text guard in `eslint.config.mjs` treats every `placeholder` prop as text people read, including next/image's `placeholder="blur"` setting; `src/components/site/visual-slot.tsx` works around it. Narrow that selector to form fields, with a case in `src/i18n/lint-guards.test.ts` (task 13)
 - App-like install for customers, roadside-assistance dispatch, more branches
+- The local database lock (`src/server/db/folder-lock.ts`): if two processes start within milliseconds of each other and both find a lock left by a stopped process, both can take it over (each deletes the old file, and the second can delete the first one's new lock). Take it over by renaming the old file aside and checking it still names the stopped process, instead of deleting it. Rare: it needs two `npm run dev` starting together after a crash (task 14 code review)
 - `npm audit` shows 3 low findings from a deepmerge advisory through the shadcn CLI (also on `main`, seen in task 14). Revisit when shadcn updates; don't run `npm audit fix --force` (it would install shadcn 1.0.0)
 
 ## How to add a task
