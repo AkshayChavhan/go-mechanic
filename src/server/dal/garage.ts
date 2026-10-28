@@ -6,10 +6,14 @@
 // 2. Public reads need no check: anyone can see the garage's phone and
 //    hours. readGarage() is cached, so the pages that show them stay
 //    prebuilt (`○ /en` in the build's route list).
-// 3. Writes change what everyone sees, so from task 16 on they first check
-//    that the signed-in user is the owner or a manager. Until then nothing
-//    may call saveGarage: no Server Action, no Route Handler, no form.
-//    Tasks 28 and 40 call it, after task 16's check.
+// 3. Every write calls authorize(permission) (src/server/auth/access.ts) on
+//    its first line, before it checks its input, calls getDatabase() or opens
+//    a transaction. authorize reads the session itself, so no caller can hand
+//    it a made-up user, and a forgotten check in a page can't open a save.
+//    Functions over a user's own data take the user from authorize, never a
+//    user id from their caller, and filter by it in the query. saveGarage
+//    needs "garage.edit" (owner or manager); tasks 28 and 40 call it from a
+//    Server Action that calls requireUser(locale) first.
 
 import "server-only";
 
@@ -19,6 +23,7 @@ import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { checkGarage, type Garage, type GarageProblem } from "@/domain/garage";
 import { type DayHours, WEEKDAYS, type WeeklyHours } from "@/domain/opening-hours";
 import { type Clock, systemClock } from "@/lib/clock";
+import { authorize } from "@/server/auth/access";
 import { getDatabase } from "@/server/db";
 import { garageSettings, openingHours } from "@/server/db/schema";
 import { garageSettingsRow, openingHoursRows } from "@/server/db/seed";
@@ -90,6 +95,8 @@ export type SaveGarageResult = { ok: true } | { ok: false; problems: GarageProbl
 /**
  * Saves the garage's details, or says what's wrong with them.
  *
+ * 0. authorize("garage.edit"): only the owner or a manager. Anyone else gets
+ *    AccessDeniedError, before anything is read, checked or written.
  * 1. checkGarage: on any problem, nothing is written and the problems come
  *    back as codes (a form turns them into messages).
  * 2. One transaction: the garage row (updated_at from `clock`) and all seven
@@ -101,6 +108,7 @@ export type SaveGarageResult = { ok: true } | { ok: false; problems: GarageProbl
  * 40 call this from (see rule 3 at the top of this file).
  */
 export async function saveGarage(garage: Garage, clock: Clock = systemClock): Promise<SaveGarageResult> {
+  await authorize("garage.edit");
   const problems = checkGarage(garage);
   if (problems.length > 0) return { ok: false, problems };
 
