@@ -12,12 +12,22 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vite
 import { CONSENT_PURPOSES } from "@/domain/consent";
 import { WEEKDAYS } from "@/domain/opening-hours";
 import { ROLES } from "@/domain/roles";
+import { SLOT_RULE_LIMITS, type SlotRules } from "@/domain/slots";
 
 import { lockPathFor } from "./folder-lock";
 import { chooseDatabase, closeDatabase, createDatabase, type Database, isNextHelperProcess } from "./index";
-import { consentPurpose, garageSettings, openingHours, userRole, weekday } from "./schema";
-import { seedGarage } from "./seed";
-import { ownerGarage } from "./seed-data";
+import {
+  calendarExceptions,
+  consentPurpose,
+  garageSettings,
+  openingHours,
+  slotCounters,
+  slotRules,
+  userRole,
+  weekday,
+} from "./schema";
+import { seedGarage, seedSlotRules, slotRulesRow } from "./seed";
+import { ownerGarage, ownerSlotRules } from "./seed-data";
 
 // Starting PGlite (Postgres compiled to WebAssembly) and migrating it takes a
 // few seconds, and much longer when the full test run shares a busy machine:
@@ -227,6 +237,131 @@ describe("seeding", () => {
       expect(await rowCounts(db)).toEqual({ garage: 0, hours: 0 });
     } finally {
       await closeDatabase(db);
+    }
+  });
+});
+
+describe("the slot tables (task 22)", () => {
+  let db: Database;
+
+  beforeAll(async () => {
+    db = await createDatabase(memory);
+  });
+  afterAll(async () => {
+    await closeDatabase(db);
+  });
+
+  /** Puts the owner's rules back, so each test starts from them. */
+  async function resetRules() {
+    await db.delete(slotRules);
+    await seedSlotRules(db);
+  }
+
+  test("a new database has the owner's slot rules, and no closed dates or counters", async () => {
+    const rows = await db.select().from(slotRules);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ id: 1, ...ownerSlotRules });
+    expect(await db.$count(calendarExceptions)).toBe(0);
+    expect(await db.$count(slotCounters)).toBe(0);
+  });
+
+  test("seeding again adds nothing and never overwrites the owner's changes", async () => {
+    await db.update(slotRules).set({ capacity: 3 });
+    await seedSlotRules(db);
+    const rows = await db.select().from(slotRules);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].capacity).toBe(3);
+    await resetRules();
+  });
+
+  test("checks the rules first: invalid seed rules throw and insert nothing", async () => {
+    await db.delete(slotRules);
+    await expect(seedSlotRules(db, { ...ownerSlotRules, capacity: 0 })).rejects.toThrow(
+      /seed slot rules are invalid.*capacity/,
+    );
+    expect(await db.$count(slotRules)).toBe(0);
+    await resetRules();
+  });
+
+  test("refuses a second rules row", async () => {
+    expect(await violation(db.insert(slotRules).values({ ...slotRulesRow(ownerSlotRules), id: 2 }))).toEqual({
+      code: "23514",
+      constraint: "slot_rules_single_row",
+    });
+  });
+
+  // The CHECKs type SLOT_RULE_LIMITS' numbers again (schema.ts may only
+  // import types), so this keeps the two in step: each end is allowed, one
+  // past it is refused by that rule's CHECK.
+  const columnOf: Record<keyof SlotRules, string> = {
+    slotMinutes: "slot_minutes",
+    capacity: "capacity",
+    minDaysAhead: "min_days_ahead",
+    maxDaysAhead: "max_days_ahead",
+  };
+  test.each(Object.keys(SLOT_RULE_LIMITS) as (keyof SlotRules)[])(
+    "the CHECK on %s allows exactly SLOT_RULE_LIMITS' range",
+    async (field) => {
+      const { min, max } = SLOT_RULE_LIMITS[field];
+      // minDaysAhead 0 and maxDaysAhead 60 let the other two day rules reach both ends.
+      const roomy = { slotMinutes: 60, capacity: 2, minDaysAhead: 0, maxDaysAhead: 60 };
+      try {
+        for (const value of [min, max]) {
+          await db.update(slotRules).set({ ...roomy, [field]: value });
+        }
+        for (const value of [min - 1, max + 1]) {
+          const refused = await violation(db.update(slotRules).set({ ...roomy, [field]: value }));
+          // A first day of 61 breaks two CHECKs at once (the last day can't
+          // pass 60 or come before the first); Postgres names the one it hit
+          // first, and either refusal holds the limit.
+          const allowed =
+            field === "minDaysAhead" && value === max + 1
+              ? ["slot_rules_min_days_ahead_range", "slot_rules_max_days_ahead_range"]
+              : [`slot_rules_${columnOf[field]}_range`];
+          expect(refused.code, `${field} = ${value}`).toBe("23514");
+          expect(allowed, `${field} = ${value}`).toContain(refused.constraint);
+        }
+      } finally {
+        await resetRules();
+      }
+    },
+  );
+
+  test("refuses a last bookable day before the first", async () => {
+    expect(await violation(db.update(slotRules).set({ minDaysAhead: 3, maxDaysAhead: 2 }))).toEqual({
+      code: "23514",
+      constraint: "slot_rules_max_days_ahead_range",
+    });
+  });
+
+  test("keeps a closed date as plain YYYY-MM-DD text, once", async () => {
+    await db.insert(calendarExceptions).values({ date: "2026-11-08" });
+    try {
+      expect(await db.select().from(calendarExceptions)).toEqual([{ date: "2026-11-08" }]);
+      expect(await violation(db.insert(calendarExceptions).values({ date: "2026-11-08" }))).toEqual({
+        code: "23505",
+        constraint: "calendar_exceptions_pkey",
+      });
+    } finally {
+      await db.delete(calendarExceptions);
+    }
+  });
+
+  test("keeps one counter per slot start, never below 0", async () => {
+    const startsAt = new Date("2026-10-29T04:30:00Z");
+    await db.insert(slotCounters).values({ startsAt, reserved: 1 });
+    try {
+      expect(await db.select().from(slotCounters)).toEqual([{ startsAt, reserved: 1 }]);
+      expect(await violation(db.insert(slotCounters).values({ startsAt, reserved: 1 }))).toEqual({
+        code: "23505",
+        constraint: "slot_counters_pkey",
+      });
+      expect(await violation(db.update(slotCounters).set({ reserved: -1 }))).toEqual({
+        code: "23514",
+        constraint: "slot_counters_reserved_not_negative",
+      });
+    } finally {
+      await db.delete(slotCounters);
     }
   });
 });
