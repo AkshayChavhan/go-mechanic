@@ -39,9 +39,9 @@ describe("AccountDetails", () => {
     expect(screen.getByText(messages.Account.signedInAs.replace("{number}", "+91 98765 43210"))).toBeTruthy();
   });
 
-  test("logged out: sent to /login", async () => {
+  test("logged out (a leftover cookie): sent to /login?session=ended", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(null);
     const error = await thrownBy(AccountDetails({ locale: "en" }));
-    expect(error).toMatchObject({ digest: expect.stringMatching(/^NEXT_REDIRECT;\w+;\/login;/) });
+    expect(error).toMatchObject({ digest: expect.stringMatching(/^NEXT_REDIRECT;\w+;\/login\?session=ended;/) });
   });
 });
