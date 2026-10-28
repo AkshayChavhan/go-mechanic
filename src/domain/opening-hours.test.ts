@@ -14,7 +14,7 @@ import {
 // time it stands for in a comment. India is 5 hours 30 minutes ahead of UTC.
 // 26 Oct 2026 is a Monday.
 
-/** The garage's real hours (src/content/garage.ts), copied so U2 stands alone. */
+/** The garage's real hours (src/server/db/seed-data.ts), copied so these tests stand alone. */
 const garageHours: WeeklyHours = {
   monday: "closed",
   tuesday: { opens: "10:00", closes: "19:00" },

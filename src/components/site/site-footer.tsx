@@ -1,7 +1,7 @@
 import { PhoneIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
-import type { Garage } from "@/content/garage";
+import type { Garage } from "@/domain/garage";
 import { formatAddress } from "@/i18n/format";
 import { Link } from "@/i18n/navigation";
 import { formatPhoneNumber, telHref, whatsappHref } from "@/lib/contact-links";

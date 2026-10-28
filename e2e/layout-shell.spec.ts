@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import messages from "../messages/en.json";
-import { garage } from "../src/content/garage";
+import { ownerGarage } from "../src/server/db/seed-data";
 import { clientNamespaces } from "../src/i18n/client-messages";
 import { formatPhoneNumber, telHref } from "../src/lib/contact-links";
 
@@ -9,7 +9,8 @@ import { expectNoErrors, layoutShift, rscPayload, trackLayoutShift, watchErrors 
 
 // The layout shell (task 12) on a real production build: header, footer,
 // phone bar, phone menu, open status, 404 pages. Expected text comes from
-// messages/en.json and src/content/garage.ts.
+// messages/en.json and the database seed (src/server/db/seed-data.ts): the
+// production build runs on a fresh in-memory database with exactly those values.
 //
 // Every test that shows the open status fixes the browser's clock before the
 // page loads (page.clock), so the result never depends on when it runs.
@@ -67,26 +68,26 @@ test.describe("the garage's details, on every public page", () => {
     await openAt(page, "/", TUESDAY_11_00);
     const footer = page.getByRole("contentinfo");
     // "+91 97647 50567", dialled as tel:+919764750567
-    const phoneNumber = formatPhoneNumber(garage.phone);
+    const phoneNumber = formatPhoneNumber(ownerGarage.phone);
     const call = footer.getByRole("link", { name: `${messages.Contact.call} ${phoneNumber}` });
-    await expect(call).toHaveAttribute("href", telHref(garage.phone));
+    await expect(call).toHaveAttribute("href", telHref(ownerGarage.phone));
     await expect(call).toContainText(phoneNumber);
 
     const whatsapp = footer.getByRole("link", { name: `${messages.Contact.whatsapp} ${messages.Contact.opensWhatsApp}` });
     const href = await whatsapp.getAttribute("href");
-    expect(href).toMatch(new RegExp(`^https://wa\\.me/${garage.whatsapp.slice(1)}\\?text=`));
+    expect(href).toMatch(new RegExp(`^https://wa\\.me/${ownerGarage.whatsapp.slice(1)}\\?text=`));
     expect(whatsappText(href)).toBe(messages.Contact.whatsappMessage);
     await expect(whatsapp).toHaveAttribute("target", "_blank");
 
     // "Mukai Chowk, Kiwale, Pune, Maharashtra 412101"
-    await expect(footer.getByText(`${garage.address.text.en} ${garage.address.postalCode}`, { exact: true })).toBeVisible();
+    await expect(footer.getByText(`${ownerGarage.address.text.en} ${ownerGarage.address.postalCode}`, { exact: true })).toBeVisible();
   });
 
   test("the footer: the weekly hours, as day and time pairs, in India time", async ({ page }) => {
-    // The rows below are src/content/garage.ts written out: Monday closed,
+    // The rows below are the seed (seed-data.ts) written out: Monday closed,
     // Tuesday to Sunday 10:00 to 19:00. If the hours change, change them here.
-    expect(garage.hours.monday).toBe("closed");
-    expect(garage.hours.tuesday).toEqual({ opens: "10:00", closes: "19:00" });
+    expect(ownerGarage.hours.monday).toBe("closed");
+    expect(ownerGarage.hours.tuesday).toEqual({ opens: "10:00", closes: "19:00" });
 
     await openAt(page, "/", TUESDAY_11_00);
     const footer = page.getByRole("contentinfo");

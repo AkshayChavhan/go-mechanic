@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 
-import { garage } from "@/content/garage";
+import { ownerGarage } from "@/server/db/seed-data";
 import { renderWithIntl } from "@/i18n/test-utils";
 import messages from "../../../messages/en.json";
 
@@ -14,7 +14,7 @@ const demoItems: NavItem[] = [
 ];
 
 function renderFooter(items: readonly NavItem[] = []) {
-  renderWithIntl(<SiteFooter items={items} garage={garage} />);
+  renderWithIntl(<SiteFooter items={items} garage={ownerGarage} />);
   return screen.getByRole("contentinfo");
 }
 

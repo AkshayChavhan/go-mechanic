@@ -9,8 +9,15 @@ import { defineConfig } from "vitest/config";
 // failed with npm ERESOLVE (its optional peer chain wants Babel 8, shadcn uses
 // Babel 7), and Vite 8 already compiles JSX using tsconfig's "jsx" setting.
 export default defineConfig({
-  // Understand the "@/..." import alias from tsconfig.json.
-  resolve: { tsconfigPaths: true },
+  resolve: {
+    // Understand the "@/..." import alias from tsconfig.json.
+    tsconfigPaths: true,
+    // Server code starts with `import "server-only"`. We don't install that
+    // package: Next.js points it at an empty file for server code (and at one
+    // that throws for browser code; create-compiler-aliases.js). Tests run on
+    // the server side, so they get the same empty file.
+    alias: { "server-only": "next/dist/compiled/server-only/empty.js" },
+  },
   test: {
     // A forgotten test.only would silently skip every other test: fail instead.
     allowOnly: false,

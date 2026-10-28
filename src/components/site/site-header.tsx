@@ -3,7 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { SheetClose } from "@/components/ui/sheet";
-import type { Garage } from "@/content/garage";
+import type { Garage } from "@/domain/garage";
 import { formatAddress } from "@/i18n/format";
 import { Link } from "@/i18n/navigation";
 import { telHref, whatsappHref } from "@/lib/contact-links";

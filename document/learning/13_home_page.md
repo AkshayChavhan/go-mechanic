@@ -1,6 +1,6 @@
 # 13_home_page: the real home page, with calm scroll motion
 
-> **Branch:** `13_home_page` · **Date:** 2026-10-27 · **Status:** In progress
+> **Branch:** `13_home_page` · **Date:** 2026-10-27 · **Status:** Done
 
 ## In one minute
 
@@ -244,7 +244,7 @@ To look for yourself, run `npm run dev` and open http://localhost:3000. You shou
     - a duplicated test helper was removed, and a comment corrected.
 - **`code-reviewer` agent: "Needs changes", for the doc only.** No code bugs; it confirmed the ce-code-review fixes are real (the App Router `next/dynamic` in the tests, the loader fallback and error boundary, the resize listeners and their cleanup, the `showSamples()` gate on `/dev/design`). Two must-fixes, both in this doc: the loader example still showed the version without `.catch` (the P1 bug), and the shuffled-test output still said 7 tests. Both fixed with real re-runs. Its suggestions: `readme.md` now says `npm run dev` shows the home page's samples; the re-run guard for the effects setup went to task 18 as a follow-up.
 - **Compound.** Would a future session repeat this without a written lesson? For one thing, yes: in Vitest, `next/dynamic` is the Pages Router version, which swallows a failed load by itself, so a test of a lazily loaded island passes even when the real App Router build would replace the page with an error screen. Task 18 will lazy-load the phone menu the same way. `ce-compound` (lightweight) wrote `document/solutions/conventions/nextjs-16-test-lazy-islands-with-app-router-dynamic.md`: mock `next/dynamic` with the App Router version, use `vi.doMock` per test (not a hoisted `vi.mock` with `vi.resetModules()`), and prove each failure test fails without its fix. The Playwright clock and `toBeVisible()` traps are already rules in `CLAUDE.md`. (The helper left a throwaway `src/__verify_tmp/` folder from checking its claim; it was deleted, not committed.)
-- **Pull requests.** The branch was pushed from VS Code and merged on GitHub three times before Claude said the task was ready: PR #9 (the plan only), PR #10 (before the review fixes) and PR #11 (at `189e699`, before the final review). Claude didn't push during the task. The final review's doc fixes and the lesson come in one follow-up pull request. CLAUDE.md step 11's rule is still to merge once, after "ready".
+- **Pull requests.** The branch was pushed from VS Code and merged on GitHub three times before Claude said the task was ready: PR #9 (the plan only), PR #10 (before the review fixes) and PR #11 (at `189e699`, before the final review). Claude didn't push during the task. The final review's doc fixes and the lesson came in one follow-up pull request, PR #12, which Claude opened after saying the task was ready and the owner merged on 2026-10-27. CLAUDE.md step 11's rule is still to merge once, after "ready".
 
 ## Common mistakes
 

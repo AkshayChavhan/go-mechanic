@@ -2,7 +2,7 @@ import { PhoneIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
-import type { Garage } from "@/content/garage";
+import type { Garage } from "@/domain/garage";
 import { Link } from "@/i18n/navigation";
 import { telHref, whatsappHref } from "@/lib/contact-links";
 

@@ -1,8 +1,8 @@
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
-import { garage as garageContent, type Garage } from "@/content/garage";
 import { currentOffer } from "@/content/offer";
+import type { Garage } from "@/domain/garage";
 import { whatsappHref } from "@/lib/contact-links";
 
 import { ActionBar } from "./action-bar";
@@ -12,28 +12,20 @@ import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
 
 /**
- * The garage's details, for the shell and the 404 pages. Task 14 replaces
- * this with a cached database read: the one place to change.
- */
-export function readGarage(): Garage {
-  return garageContent;
-}
-
-/**
  * The frame around every public page: a "skip to main content" link, the
  * header, the offer banner, the page itself in <main>, the footer and, on
  * phones, the action bar.
  *
- * The one place that reads the garage's data (src/content/, through
- * readGarage above) and the list of live pages (navigation.ts). Everything below it gets them as props, so
- * task 14 only swaps these reads for the database.
- * Used by src/app/[locale]/(site)/layout.tsx.
+ * It gets the garage's details as a prop: its callers read them from the
+ * database with readGarage() (src/server/dal/garage.ts). It reads the list of
+ * live pages (navigation.ts) and the offer itself, and passes all of it down
+ * as props. Used by src/app/[locale]/(site)/layout.tsx and
+ * src/app/global-not-found.tsx.
  */
-export function SiteChrome({ children }: { children: ReactNode }) {
+export function SiteChrome({ garage, children }: { garage: Garage; children: ReactNode }) {
   const t = useTranslations("Common");
   const tContact = useTranslations("Contact");
 
-  const garage = readGarage();
   const items = liveNavItems();
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
 
