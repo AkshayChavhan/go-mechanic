@@ -38,13 +38,16 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `.compound-engineering/` | Compound Engineering settings: `config.yaml` (ours) and `config.example.yaml` (every option explained). |
 | `document/plans/` | Plans: the project's master plan, plus one plan per task written by Compound Engineering's `ce-plan`. |
 | `document/solutions/` | Reusable lessons, written by `ce-compound`. Claude reads them before similar work. |
-| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/components/` the shared components (`ui/` from shadcn/ui, `site/` our own), `src/i18n/` the language setup and the ₹ and date helpers, `src/content/` the garage's details (address, phone, hours), `src/domain/` pure business logic such as opening hours, `src/lib/` small helpers. |
+| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/components/` the shared components (`ui/` from shadcn/ui, `site/` our own), `src/i18n/` the language setup and the ₹ and date helpers, `src/server/` code that only runs on the server (the database in `db/`, the code that reads and saves its data in `dal/`, the checked settings in `env.ts`), `src/content/` typed content the database hasn't taken over yet (services, the offer, home page stats), `src/domain/` pure business logic such as opening hours and the garage's rules, `src/lib/` small helpers. |
 | `design-system/` | The design system written out for people: tokens, rules and the brand. |
 | `messages/` | The website's text, one file per language (`en.json` for now). |
 | `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. `e2e/dev/` checks the development-only `/dev/design` page and the home page under `npm run dev`. |
 | `package.json`, `package-lock.json` | The app's dependencies and commands. |
 | `.nvmrc` | The Node.js version the project uses (24). |
 | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `components.json` | Settings for Next.js, TypeScript, ESLint and shadcn/ui. |
+| `drizzle.config.ts` | Settings for drizzle-kit, the tool that turns the database schema (`src/server/db/schema.ts`) into SQL migrations (`src/server/db/migrations/`). |
+| `.env.example` | The server settings you *could* set (`APP_ENV`, `DATABASE_URL`), with fake values. Local development needs none of them. |
+| `.pglite/` | Your local database, made by the first `npm run dev`. Git ignores it. |
 | `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright.dev.config.ts` | Test settings. |
 | `AGENTS.md` | Notes from Next.js for AI coding agents. |
 
@@ -56,7 +59,9 @@ npm install            # install dependencies (first time, or after package.json
 npm run dev            # start the dev server
 ```
 
-Open http://localhost:3000. Other commands:
+Open http://localhost:3000. There's no database to install: the first `npm run dev` creates one in `.pglite/` (PGlite, a Postgres that runs inside Node) and fills it with the garage's real details. Your changes to it stay there between restarts.
+
+Other commands:
 
 | Command | What it does |
 | --- | --- |
@@ -65,6 +70,8 @@ Open http://localhost:3000. Other commands:
 | `npm run test:design` | Checks the `/dev/design` page and the home page in Chrome (sizes, contrast, focus, motion) and saves screenshots. Run it after any design change. Note: `npm run dev` shows "Sample" stats and reviews on the home page that the live site never shows. |
 | `npm run build` / `npm start` | Build the production version / run it |
 | `npm run lint`, `npm run typecheck`, `npm run test` | The three parts of `check`, one at a time |
+| `npm run db:reset` | Deletes your local database (`.pglite/`); the next `npm run dev` starts a fresh one with the garage's details. Use it when the local data is in a mess or a migration you were writing went wrong. Stop `npm run dev` first. |
+| `npm run db:generate -- --name=<what_changed>` | After changing `src/server/db/schema.ts`: writes the SQL migration for it. Commit it with the schema change, then restart `npm run dev` to apply it. |
 
 ## Prerequisites
 

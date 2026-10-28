@@ -245,9 +245,14 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `14_database_setup`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-27-2221-feat-database-setup-plan.md)
-- [ ] Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers
-- [ ] Move garage details and hours from `src/content/garage.ts` into the database; `readGarage()` in `src/components/site/site-chrome.tsx` (the one reader, also called by both 404 pages) reads the database
-- [ ] Read the garage with `'use cache'` and a `cacheTag`, and call `updateTag` on every save (tasks 28 and 40), so every prerendered page refreshes. Check phone numbers when they're saved (`isIndianPhoneNumber`, `isIndianMobileNumber` in `src/lib/contact-links.ts`): the shell's formatters never throw (task 12)
+- [x] Packages and tooling: Drizzle ORM, PGlite, postgres.js and drizzle-kit pinned exactly (no install script approved), the `db:generate` and `db:reset` scripts, `drizzle.config.ts`, `.env.example`, and in `next.config.ts` `serverExternalPackages` and `outputFileTracingExcludes` for PGlite
+- [x] Checked server settings (`src/server/env.ts`: `APP_ENV`, `DATABASE_URL`) and an injectable clock (`src/lib/clock.ts`)
+- [x] The `Garage` type and `checkGarage` in `src/domain/garage.ts`: any Indian number for calls, a mobile for WhatsApp, a 6-digit PIN, an English address, valid hours
+- [x] Schema (`garage_settings`, `opening_hours`), the first migration, the owner's details as a typed seed (`src/server/db/seed-data.ts`) and `getDatabase()`: PGlite in `.pglite/` under `npm run dev`, in memory for builds and tests, postgres.js when `DATABASE_URL` is set; sessions in UTC. A spike first proved PGlite works under `next dev` and `next build`
+- [x] Move garage details and hours from `src/content/garage.ts` into the database. `readGarage()` moved from `site-chrome.tsx` to the data-access layer (`src/server/dal/garage.ts`); `SiteChrome` gets the garage as a prop from the `(site)` layout and `global-not-found.tsx`, and the home page, `[locale]/not-found.tsx` and `/dev/design` read it too. `src/content/garage.ts` is gone
+- [x] Read the garage with `'use cache'`, `cacheTag("garage")` and `cacheLife("max")`, so `/` stays prebuilt (`○ /en`). `saveGarage()` checks with `checkGarage` (which uses `isIndianPhoneNumber` and `isIndianMobileNumber`: the shell's formatters never throw, task 12), saves in one transaction and calls `updateTag("garage")`. Nothing calls it until tasks 28 and 40, after task 16's role check
+- [x] Browser-boundary check on a production build: no database code in `.next/static/` (`e2e/server-boundary.spec.ts`)
+- [x] Docs: `CLAUDE.md` (stack, repo map, commands, "Database" conventions), `readme.md`, `MASTER.md`, the `seo-reviewer` agent, and the plan's "Deferred to Follow-Up Work" on tasks 15, 16, 18, 20, 22, 23, 28, 40 and 41
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -260,6 +265,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox`
 - [ ] A login or account entry in the header goes in a `<Suspense>` slot or a client island, never a cookie read in `SiteHeader` (every public page would turn dynamic). Decide whether the phone bar hides while a form field has focus (task 12)
 - [ ] `/dev/outbox` is a page under `src/app/[locale]/dev/` that calls `devOnly()` (`dev-only.test.ts` checks every dev page). If it needs a Route Handler too, gate that as well and extend `dev-only.test.ts` to `route.ts` files (code-reviewer in task 11)
+- [ ] Better Auth's tables go into the same schema and migrations (`src/server/db/schema.ts`, then `npm run db:generate -- --name=<what_changed>`). Its Drizzle adapter gets the database from `getDatabase()` (task 14)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -270,6 +276,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `16_roles_access`
 - [ ] Plan with `ce-plan`
 - [ ] Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas
+- [ ] `saveGarage` (`src/server/dal/garage.ts`) first checks that the signed-in user is the owner or a manager. Every later save in `src/server/dal/` does the same for its role (task 14)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -291,6 +298,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `18_services_pricing`
 - [ ] Plan with `ce-plan`
 - [ ] Services, packages, prices by vehicle; `/services`, `/packages`
+- [ ] Services move to the database the way the garage did in task 14: a typed seed made from `src/content/services.ts` (like `src/server/db/seed-data.ts`), a cached read in `src/server/dal/` with its own tag, and `src/content/services.ts` deleted (task 14)
 - [ ] Switch the home page services grid from `src/content/services.ts` to database services. The table mirrors its fields (id, `LocalizedText` name and summary, vehicle kinds); `ServiceTile` gives an id it has no icon for a wrench (task 13)
 - [ ] Each home page service tile links to its `/services/[slug]` page (the ids are the slugs), and the hero gets "See prices" and the grid an "All services" link, each only once its page is live (`isLivePage`) (task 13)
 - [ ] An e2e test that goes from the home page to a service page and back: no console errors, and nothing left hidden (the scroll scene's reveals set themselves up again) (task 13)
@@ -321,6 +329,11 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `20_staging_deploy`
 - [ ] Plan with `ce-plan`
 - [ ] Staging on Vercel + Supabase (Mumbai) with fake providers
+- [ ] Set `APP_ENV` (`staging`) and `DATABASE_URL` on Vercel: Supabase's transaction pooler (port 6543), with postgres.js's `prepare: false` (`createDatabase` in `src/server/db/index.ts`) (task 14)
+- [ ] Run `drizzle-kit migrate` over the direct connection before `next build`: prerendering reads the database during the build (task 14)
+- [ ] Seed the garage row on Supabase, with `db:migrate` and `db:seed` scripts that load the env through `loadEnvConfig(process.cwd(), true)` from `@next/env`. The app never migrates or seeds a real Postgres itself (task 14)
+- [ ] Size postgres.js's connection pool for the build's worker processes, and check whether postgres.js needs `serverExternalPackages` (task 14)
+- [ ] Rows changed in the Supabase console reach the site only after a redeploy or a revalidation (`readGarage()` uses `cacheLife("max")`): say so in the deploy notes (task 14)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -342,6 +355,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `22_slot_engine`
 - [ ] Plan with `ce-plan`
 - [ ] Time slots, capacity, holidays; atomic slot reservation
+- [ ] The slot engine reads the hours through the data-access layer (`readGarage()` or a new read in `src/server/dal/`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -352,6 +366,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `23_booking_flow`
 - [ ] Plan with `ce-plan`
 - [ ] `/book` wizard with OTP, server-side prices, e2e test
+- [ ] e2e tests run on a production server whose database is PGlite in memory: every run starts from the seed, and whatever a test creates is gone after a restart. Write booking tests that don't depend on an earlier run (task 14)
 - [ ] Set `bookPage.live` to true in `src/components/site/navigation.ts`: "Book a service" and the phone bar's Book then go to `/book` instead of WhatsApp. Decide the phone bar on `/book`, where its Book repeats the page and can cover the wizard's own buttons (task 12)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
@@ -403,6 +418,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `28_schedule_settings`
 - [ ] Plan with `ce-plan`
 - [ ] Edit hours, slot rules, holidays, pickup areas
+- [ ] The hours editor saves through `saveGarage` (`src/server/dal/garage.ts`) from a Server Action, after task 16's role check, and turns its problem codes into messages. Add an e2e test that the public pages show the new hours after a save (task 14)
 - [ ] The garage closes on some festival days (for example Diwali, Ganeshotsav): let the owner enter those dates, and make the open-status badge (`openStatusAt` in `src/domain/opening-hours.ts`) say "Closed" on them. Until then it can say "Open now" (owner, 2026-10-27)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
@@ -528,6 +544,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `40_content_admin`
 - [ ] Plan with `ce-plan`
 - [ ] Admin editing of FAQ, content blocks and garage info
+- [ ] The garage info editor saves through `saveGarage` from a Server Action, after task 16's role check, and turns its problem codes (`GarageProblem`) into messages. Add an e2e test that the header and footer change after a save (task 14)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -538,6 +555,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `41_admin_reports`
 - [ ] Plan with `ce-plan`
 - [ ] Reports and CSV export
+- [ ] Reports that group by day convert to India time in SQL (`AT TIME ZONE 'Asia/Kolkata'`): the database session runs in UTC (task 14)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -550,7 +568,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Metadata, sitemap, robots, social image, AutoRepair structured data
 - [ ] An `apple-icon` PNG (180×180) from the same letter design as `src/app/icon.svg`, plus `theme-color` (task 11)
 - [ ] One source of hreflang for when Hindi ships: `alternates.languages` in metadata and the sitemap with `alternateLinks: false` in `src/i18n/routing.ts`, or next-intl's `Link` header alone (SEO check in task 10). A canonical on `/` also settles the `/en` 307 redirect
-- [ ] The 404 titles already include the brand (`NotFound.metaTitle`), so the title template must not add it twice. The PIN code (412101) is already in `src/content/garage.ts`; split the address text into street, area and city for the JSON-LD (task 12)
+- [ ] The 404 titles already include the brand (`NotFound.metaTitle`), so the title template must not add it twice. The PIN code (412101) is already stored on its own (`garage_settings.postal_code`, read with `readGarage()` from `src/server/dal/garage.ts`; task 14); split the address text into street, area and city for the JSON-LD (task 12)
 - [ ] Decide whether to add a `favicon.ico`: today `/favicon.ico` gets Next.js's bare 404, because the proxy skips `.ico` paths (task 12)
 - [ ] The home page's title and description name Kiwale, Pune (task 13 changed only the h1 and the description's wording), with `AutoRepair` JSON-LD and a social image (task 13)
 - [ ] Write the learning doc
