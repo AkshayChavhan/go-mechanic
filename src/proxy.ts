@@ -1,11 +1,36 @@
 import createMiddleware from "next-intl/middleware";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { routing } from "./i18n/routing";
+import { accessRedirect, hasSessionCookie } from "./lib/access-routes";
 
 // Runs before each page request (Next.js 16 calls this "proxy"; it used to be
-// "middleware"). next-intl uses it to send "/" to the English pages and to
-// redirect "/en/..." to the clean URL.
-export default createMiddleware(routing);
+// "middleware"). Two jobs:
+// - Pages that need a login (src/lib/access-routes.ts): a logged-out
+//   /account gets a real 307 to /login, and a logged-in /login a 307 to
+//   /account. It only looks at whether a session cookie is there: no
+//   database, no signature check. The pages check the session themselves;
+//   this only saves a trip and gives search engines and browsers a real
+//   redirect. Form posts (Server Actions) are never redirected.
+// - Languages: next-intl sends "/" to the English pages and redirects
+//   "/en/..." to the clean URL.
+const handleLanguages = createMiddleware(routing);
+
+export default function proxy(request: NextRequest) {
+  const target = accessRedirect(
+    {
+      method: request.method,
+      pathname: request.nextUrl.pathname,
+      searchParams: request.nextUrl.searchParams,
+      hasSession: hasSessionCookie(request.headers.get("cookie")),
+    },
+    routing.locales,
+    routing.defaultLocale,
+  );
+  // NextResponse.redirect answers 307 by default: the method is kept.
+  if (target) return NextResponse.redirect(new URL(target, request.url));
+  return handleLanguages(request);
+}
 
 export const config = {
   // Which paths the proxy runs on: everything except
