@@ -6,6 +6,7 @@ import { selectReviews, selectTrustStats } from "@/content/home";
 import { services } from "@/content/services";
 import { whatsappHref } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
+import { readVehicleCatalogue } from "@/server/dal/vehicles";
 
 import { HomeCta } from "./_components/home-cta";
 import { HomeHero } from "./_components/home-hero";
@@ -30,8 +31,8 @@ export const ensureStatic = "navigation";
  * the scroll motion in the browser, for visitors who allow it. No <main>
  * here: the shell around every public page ((site)/layout.tsx) provides it.
  *
- * Async because it reads the garage from the database (readGarage() is
- * cached, so the page is still built ahead of time). An async component
+ * Async because it reads the garage and the vehicle brands from the database
+ * (both reads are cached, so the page is still built ahead of time). An async component
  * reads its text with getTranslations instead of useTranslations.
  */
 export default async function Home() {
@@ -40,6 +41,11 @@ export default async function Home() {
   // The garage is read the way the shell and the 404 pages read it.
   const garage = await readGarage();
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
+
+  // The brands the garage works on, for the row under the services (cached
+  // too). Only their names go to the section, not the models.
+  const catalogue = await readVehicleCatalogue();
+  const brands = catalogue.makes.map(({ id, kind, name }) => ({ id, kind, name }));
 
   // Real data, else samples under `npm run dev`, else null (src/content/home.ts).
   const stats = selectTrustStats();
@@ -50,7 +56,7 @@ export default async function Home() {
     <ScrollScene>
       <HomeHero book={book} phone={garage.phone} />
       <HomeStory />
-      <HomeServices services={services} />
+      <HomeServices services={services} brands={brands} />
       {stats && <HomeStats stats={stats} tone={tones.stats} />}
       {reviews && <HomeReviews reviews={reviews} tone={tones.reviews} />}
       <HomeCta book={book} phone={garage.phone} tone={tones.cta} />
