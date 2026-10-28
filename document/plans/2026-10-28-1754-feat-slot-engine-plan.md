@@ -90,9 +90,9 @@ Not built (considered; each line says what would change the call):
 Recorded at the end of the backlog in `document/task/task.md` by U6, each marked "(task 22)":
 
 - Task 20: seed the `slot_rules` row on Supabase, and run N parallel reservations against Postgres to prove the race (the master plan's "tested in parallel on staging").
-- Task 23: reserve the slot first, then create the booking, in one transaction, returning a non-ok answer before writing anything (KTD7); confirm with the owner that a pending booking holds a place from creation (assumed here); a test that counters equal active bookings; read slots inside `<Suspense>` (with `io()` if the clock is read before the first uncached query).
+- Task 23: reserve the slot first, then create the booking, in one transaction, returning a non-ok answer before writing anything (KTD7); confirm with the owner that a pending booking holds a place from creation (assumed here); a test that counters equal active bookings; read slots inside `<Suspense>`, after `await io()` (`readAvailableSlots` reads the clock first).
 - Task 24: a pickup booking's slot is the time the vehicle reaches the garage.
-- Tasks 25 and 27: cancel by updating the booking only while it's active (`... returning`), and release only when a row comes back; reschedule through `moveSlot`.
+- Tasks 25 and 27: a cancel or reschedule first locks the booking row (`select ... for update`) and reads its slot from it, then releases or moves (`moveSlot`), then writes the booking, so two changes at once never give a place back twice.
 - Task 26: a staff policy for `reserveSlot` and `moveSlot` (today, beyond 7 days, walk-ins).
 - Task 28: edit slot rules (`checkSlotRules`) and closed dates; before saving rules, hours or a closed date, list the future reservations it would strand (lock the `slot_rules` row in each save, and have `reserveSlot` read it `for share`, so the list includes reservations still being made); a cached closed-dates read so the open badge says "Closed" on them.
 - Task 43: deleting a customer's data releases their future bookings' places.
