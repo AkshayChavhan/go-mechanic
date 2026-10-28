@@ -261,7 +261,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 15_auth_otp_login
 
 - [x] Create branch `15_auth_otp_login`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-28-1155-feat-otp-login-plan.md)
 - [ ] Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox`
 - [ ] A login or account entry in the header goes in a `<Suspense>` slot or a client island, never a cookie read in `SiteHeader` (every public page would turn dynamic). Decide whether the phone bar hides while a form field has focus (task 12)
 - [ ] `/dev/outbox` is a page under `src/app/[locale]/dev/` that calls `devOnly()` (`dev-only.test.ts` checks every dev page). If it needs a Route Handler too, gate that as well and extend `dev-only.test.ts` to `route.ts` files (code-reviewer in task 11)
