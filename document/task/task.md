@@ -274,7 +274,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 16_roles_access
 
 - [x] Create branch `16_roles_access`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-28-1836-feat-roles-access-plan.md)
 - [ ] Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas
 - [ ] `saveGarage` (`src/server/dal/garage.ts`) first checks that the signed-in user is the owner or a manager. Every later save in `src/server/dal/` does the same for its role (task 14)
 - [ ] `requireUser`/`requireRole` built on `getCurrentUser()` (`src/server/auth/session.ts`). Proxy redirects: a logged-out `/account` gets a real 307 to `/login` (today the redirect happens inside `<Suspense>`, with status 200), and a logged-in `/login` goes to `/account` (task 15)
