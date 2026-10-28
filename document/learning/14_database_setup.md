@@ -31,7 +31,7 @@ Three constraints shaped the work:
 | `next.config.ts` | Changed | `serverExternalPackages` and `outputFileTracingExcludes` for PGlite (step 8) |
 | `vitest.config.mts` | Changed | Points `server-only` at Next.js's empty file, so server code loads in tests |
 | `drizzle.config.ts` | Added | drizzle-kit settings: the schema file and the migrations folder. No credentials |
-| `.gitignore`, `.env.example` | Changed, Added | Ignore `.pglite/`; list `APP_ENV` and `DATABASE_URL` with fake values |
+| `.gitignore`, `.env.example` | Changed, Added | Ignore `.pglite/` and `.pglite.lock`; list `APP_ENV` and `DATABASE_URL` with fake values |
 | `src/server/env.ts` + test | Added | `serverEnv()`: the server's settings, read and checked in one place |
 | `src/lib/clock.ts` + test | Added | `Clock`, `systemClock`, `fixedClock()`: where code gets "now" |
 | `src/domain/garage.ts` + test | Added | The `Garage` type (moved here) and `checkGarage()`, the rules a save must pass |
@@ -40,7 +40,8 @@ Three constraints shaped the work:
 | `src/server/db/migrations/` | Added | `0000_garage_settings.sql` and `meta/`: the SQL drizzle-kit wrote from the schema |
 | `src/server/db/seed-data.ts` + test | Added | `ownerGarage`: the owner's real details, plain data |
 | `src/server/db/seed.ts` | Added | `seedGarage()`: puts the owner's garage into a new database, never over an existing one |
-| `src/server/db/index.ts`, `database.test.ts` | Added | `getDatabase()`: picks, opens, migrates and seeds the right database, once per process |
+| `src/server/db/index.ts`, `database.test.ts` | Added | `getDatabase()`: picks, opens, migrates and seeds the right database, once per process; Next.js helper processes never open the folder |
+| `src/server/db/folder-lock.ts` | Added | The `.pglite.lock` file: one process at a time opens `.pglite/`. A lock left by a process that has stopped is taken over. Added after the code review (see "Checks and reviews") |
 | `src/server/dal/garage.ts` + test | Added | `readGarage()` (cached) and `saveGarage()`: the only code that queries the garage |
 | `src/content/garage.ts` + test | Removed | Replaced by the database and `seed-data.ts` |
 | `src/components/site/site-chrome.tsx` + test | Changed | Gets `garage` as a prop instead of reading it |
@@ -246,7 +247,7 @@ npx vitest run src/server
 ```
 ```
  Test Files  4 passed (4)
-      Tests  49 passed (49)
+      Tests  62 passed (62)
 ```
 
 `npm run build` still lists `○ /en`, now with the cache lifetime from `cacheLife("max")`:
