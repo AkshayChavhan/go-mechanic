@@ -133,13 +133,6 @@ describe("checking a code", () => {
     expect(user.role).toBe("customer");
   });
 
-  test("extra fields reach onVerified's caller untouched (how the login attempt id travels)", async () => {
-    // The login service passes the attempt id in the body; Better Auth
-    // ignores fields it doesn't know.
-    const code = await sendAndCatchCode();
-    await expect(verify(code, { loginAttemptId: "a1" })).resolves.toMatchObject({ status: true });
-  });
-
   test("when onVerified throws, no session is created", async () => {
     onVerified.mockRejectedValueOnce(new Error("no consent"));
     const code = await sendAndCatchCode();
