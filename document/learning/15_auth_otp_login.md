@@ -90,7 +90,7 @@ The branch's first commit, `f5a45ee docs(14): mark task 14 done`, is task 14's b
    - **A failed SMS leaves the code stored.** That's why `forgetFailedSend` exists (step 6).
    - **The caller can't pick a role.** A `role` sent with the code is ignored, and everyone starts as `customer`.
 
-   One test was removed later: it checked that an attempt id could ride along in the request body, and the service uses AsyncLocalStorage instead (step 7). So the file holds 10 tests today. One Better Auth warning, "Base URL is not set", is dropped on purpose in `logWithoutDetails`. It only matters for Better Auth's own web endpoints, which this site doesn't have.
+   One test was removed later: it checked that an attempt id could ride along in the request body, and the service uses AsyncLocalStorage instead (step 7). Later reviews added 4 tests for Better Auth's log lines, so the file holds 14 today. One Better Auth warning, "Base URL is not set", is dropped on purpose in `logWithoutDetails`. It only matters for Better Auth's own web endpoints, which this site doesn't have.
 
 4. **Settings** (`serverEnv()`, written test-first).
    - `BETTER_AUTH_SECRET` signs the session cookie. Staging and production require it, and it must be at least 32 characters. Locally a fixed placeholder is used. That's safe because a deployment can't run as `local` (task 14's rule).
@@ -148,7 +148,7 @@ The branch's first commit, `f5a45ee docs(14): mark task 14 done`, is task 14's b
     - **`/login`** sits outside the shell, has `noindex`, and shows a slim Wordmark bar like the 404. The `LoginForm` island gets every label as a prop from the server page, so the `Login` namespace never joins the messages every page sends to the browser (`src/i18n/client-messages.ts`).
     - **`RedirectIfSignedIn`** reads the session inside `<Suspense>`, so the rest of the page is still prebuilt.
     - **`/account`** sits inside the shell. Only `AccountDetails` reads the session, inside `<Suspense>`.
-    - **Log out works without JavaScript.** The Log out form sits *outside* `<Suspense>`: content that streams in needs JavaScript to appear, and a plain form posting to `logOut` doesn't.
+    - **Log out works without JavaScript.** The Log out form sits *outside* `<Suspense>`: content that streams in needs JavaScript to appear, and a plain form posting to `logOut` doesn't. One limit: if the database fails while logging out, Better Auth still clears the cookie but can't delete the session row, so that session stays valid on the server until it expires; a copied cookie would still work in that window.
     - **A logged-out `/account` redirects with status 200.** Once a page has started streaming, the status is already sent, so a `redirect()` inside `<Suspense>` happens in the browser (bundled docs: `01-app/02-guides/streaming.md`, "Status codes"). Task 16 adds a real 307 in the proxy.
 
     The `ui-engineer` agent built the UI:
@@ -227,14 +227,14 @@ The branch's first commit, `f5a45ee docs(14): mark task 14 done`, is task 14's b
 
 ## Check that it works
 
-Real output on 2026-10-28 with Node 24 (`fnm exec --using=24 -- …`; trimmed), run for this doc:
+Real output on 2026-10-28 with Node 24 (`fnm exec --using=24 -- …`; trimmed), from the final code (after both reviews):
 
 ```bash
 npm run check
 ```
 ```
- Test Files  71 passed (71)
-      Tests  1052 passed (1052)
+ Test Files  72 passed (72)
+      Tests  1071 passed (1071)
 ```
 
 Only the server and domain tests (rules, settings, database, login service, actions):
@@ -242,13 +242,13 @@ Only the server and domain tests (rules, settings, database, login service, acti
 npx vitest run src/server src/domain
 ```
 ```
- Test Files  19 passed (19)
-      Tests  249 passed (249)
+ Test Files  20 passed (20)
+      Tests  266 passed (266)
 ```
 
-From the work session's final runs:
-- `npm run test:e2e`: `64 passed (38.6s)`, after the fix in step 14 (the first run was `1 failed`, `63 passed (1.1m)`).
-- `npm run test:design`: `41 passed (1.7m)`.
+The browser suites:
+- `npm run test:e2e`: `64 passed (1.2m)` on the final code. (The first run, before the fix in step 14, was `1 failed`, `63 passed (1.1m)`.)
+- `npm run test:design`: `41 passed (3.3m)`, after the `ce-code-review` fixes, with the machine's load average near 30. The two commits after it (the resend wait and a session test) touch no page `/dev/design` or `/dev/outbox` shows.
 - `npm run build`: `/en` is still `○`. `/en/login` and `/en/account` are `◐`: a prebuilt shell, plus the session read streamed in. `/en/dev/outbox` is `○` in the list, but `devOnly()` answers 404 in production.
   ```
   Route (app)                 Revalidate  Expire
@@ -288,10 +288,20 @@ To try it yourself (not done for this doc: a dev server would open `.pglite/` wh
   6. **The fake SMS provider read the time itself (#8).** It now takes a `Clock`, like the rest of the code.
 
   It also listed residual risks for later tasks (a real SMS provider needs a time limit, IPv6 /48 rotation, no site-wide SMS cap, verify takes no lock on the number) and test gaps; the cheap ones were filled (the cross-number test now expects `wrongCode` exactly; "Send a new code" keeps the first consent's time). While re-running the tests, the machine's load average reached about 30 (Docker Desktop and the editor's TypeScript server): database tests timed out, as in task 14, and one test that allowed only 1 second of slack failed. It now measures the time on both sides of the send.
-- **`code-reviewer` agent:** Pending.
+- **`code-reviewer` agent: "Needs changes", then fixed.** It ran on `9149f35..0bc4e58` (everything PR #15 merged) and re-ran `npm run check` (72 files, 1070 tests). It found no code bugs, no secrets and no `NEXT_PUBLIC_` values, and checked that a code can't be guessed twice in parallel (Better Auth claims and deletes the stored code before comparing). Its findings:
+  - **Must fix: the branch had already been merged, twice, and this doc said "Pending".** See "Pull request" below. Fixed by recording it here and handing the rest over through one follow-up pull request.
+  - **Should fix:** stale numbers in this doc (`auth.test.ts` has 14 tests now; the server and domain run is 20 files), and Log out's behaviour when the database fails. Both fixed above.
+  - **Nice to have, done:** after too many wrong codes, "Send a new code" now counts down to the real 30-second wait instead of lighting up and then answering "please wait" (`2a7b88e`); a test that a login past its 30 days reads as logged out (`8195d67`); two lines of the plan corrected (`9f8009c`).
+  - **Nice to have, noted:** the task was large (about 6,300 added lines), far past "reviewed in about 15 minutes". Tasks 16 and 23 should split the service work from the pages.
 - **SEO check:** the `seo-reviewer` agent served the production build and fetched each page (also as Googlebot). All 5 pass: `/login` and `/account` say `noindex, nofollow` in their prebuilt part (the metadata reads no session), `/dev/outbox` and `/dev/design` are 404 with `noindex` in production, and `/` is unchanged (`○ /en`, no login text or link). One nice-to-have, added to task 42 with the owner's OK: the new titles already end in "| GoMechanic", so a title template would double it.
-- **Compound:** Pending.
-- **Pull request:** Pending.
+- **Compound: two lessons**, because a future session would otherwise repeat each investigation:
+  - [`better-auth-phone-login-only-from-server-actions.md`](../solutions/conventions/better-auth-phone-login-only-from-server-actions.md): what Better Auth doesn't do when called from Server Actions (no rate limit, no origin check), the code-format and failed-SMS surprises, its logger, and the request store that must survive a hot reload. Tasks 16, 23, 35 and 44 build on this login.
+  - [`playwright-networkidle-hangs-after-second-page-load.md`](../solutions/conventions/playwright-networkidle-hangs-after-second-page-load.md): why `expectNoErrors` can't be used after a page is loaded a second time, which took about an hour to find.
+- **Pull request: merged early, twice, then a follow-up.** Both were opened and merged from the owner's GitHub account, within seconds or minutes of opening, with an empty description. No Claude session ran a push or opened them (the work session checked its own command history). The local reflog shows both pushes came from this computer, from the owner's own tooling; so did a third push of the branch at 17:34 IST (`9f8009c`), during the follow-up (the owner confirmed it on 2026-10-28).
+  - **#14** (head `d9fb84d`) merged at 10:48 UTC, before all 8 `ce-code-review` fixes.
+  - **#15** (head `0bc4e58`) merged at 11:53 UTC, before `code-reviewer` and the compound step.
+  - So `main` had the login, but without these review fixes, lessons and records. Following the owner's rule from tasks 10 and 12 ("If a branch was merged early anyway, push the rest and open a follow-up pull request"), the commits after `0bc4e58` go to `main` through one follow-up pull request from `15_auth_otp_login`, opened after the owner's OK.
+- **Working next to other sessions.** The follow-up was finished while two other Claude sessions started tasks 17 and 22 in their own folders (`../go-mechanic-s2`, `../go-mechanic-s3`). This branch didn't merge `main` again, so there were no merge conflicts; the end-to-end suite's port (3210) was free each time it ran here.
 
 ## Common mistakes
 

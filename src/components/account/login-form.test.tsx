@@ -274,21 +274,20 @@ describe("LoginForm: the code step", () => {
     expect(screen.getByText(t.resendReady).closest("[aria-live]")?.getAttribute("aria-live")).toBe("polite");
   });
 
-  test("too many tries: Send a new code works at once", async () => {
-    // The clock stands at `now`, so the code step's Resend waits 30 seconds
-    // until the tooManyTries answer opens it.
+  test("too many tries: the message, and Send a new code works once 30 seconds have passed since the SMS", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     vi.setSystemTime(now);
-    renderForm(codeStep, {
-      ...codeStep,
-      status: undefined,
-      resendAt: new Date(0).toISOString(),
-      error: { field: "code", text: t.errors.tooManyTries },
-    });
+    // The server keeps resendAt as it was (30 seconds after the SMS).
+    renderForm(codeStep, { ...codeStep, status: undefined, error: { field: "code", text: t.errors.tooManyTries } });
     await sendNumber();
-    expect((screen.getByRole("button", { name: "Send a new code in 0:30" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(codeField(), { target: { value: "111111" } });
+    vi.setSystemTime(now.getTime() + 10_000);
     await press(t.logIn);
+
+    expect(screen.getByText(t.errors.tooManyTries)).toBeTruthy();
+    expect((screen.getByRole("button", { name: "Send a new code in 0:20" }) as HTMLButtonElement).disabled).toBe(true);
+    vi.setSystemTime(now.getTime() + 30_000);
+    await act(() => new Promise((resolve) => setTimeout(resolve, 300)));
     expect((screen.getByRole("button", { name: t.resend }) as HTMLButtonElement).disabled).toBe(false);
   });
 
