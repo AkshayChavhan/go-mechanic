@@ -135,6 +135,7 @@ Visitors must notice nothing. The details stay the same, `/` stays prebuilt (`â—
 
   In-memory production builds are what make the build safe (KTD3). They also give every e2e run the same fresh seed.
 - KTD3. **Never two processes on one PGlite folder.** PGlite has one connection. Two processes opening the same data folder corrupt it, and nothing locks it (PGlite issue #327).
+  - *Corrected in review (2026-10-28): `next dev` is not always one process. Next.js 16.4.3's dev use-cache probe can re-run a slow `'use cache'` read in a jest-worker child, which opened `.pglite/` a second time. The folder now has a lock file, and Next.js helper processes never open it (see `src/server/db/index.ts` and the learning doc).*
   - `next build` loads routes in "CPU count âˆ’ 1" worker processes. Builds therefore use memory (KTD2).
   - `next dev` is one process, and Next.js locks the dev folder against a second one.
   - The client opens on the first query, never when a module loads, and is kept on `globalThis`, so a hot reload reuses it.

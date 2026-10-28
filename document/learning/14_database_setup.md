@@ -101,7 +101,7 @@ The first commit on the branch, `b353ea1 docs(13): mark task 13 done`, is task 1
    | Vitest | An in-memory PGlite that each test file opens |
    | `DATABASE_URL` set (any mode; staging and production from task 20) | A real Postgres through postgres.js |
 
-   **Why builds use memory.** `next build` renders pages in several worker processes at once ("using 6 workers" in the build output). PGlite has a single connection, and two processes that open the same data folder corrupt it. Nothing locks the folder to stop them (PGlite issue #327). So each build worker gets its own database in memory. `next dev` is one process, so it can use the folder.
+   **Why builds use memory.** `next build` renders pages in several worker processes at once ("using 6 workers" in the build output). PGlite has a single connection, and two processes that open the same data folder corrupt it. Nothing locks the folder to stop them (PGlite issue #327). So each build worker gets its own database in memory. `next dev` uses the folder, but it turned out not to be one process (see "Checks and reviews"): the code review found a hidden helper process, so the folder now has a lock file, and Next.js helper processes never open it.
 
    `getDatabase()` opens the database on the first query, never when the file is imported. It keeps the open database on `globalThis`, so a hot reload in `next dev` reuses it instead of opening the folder a second time.
 
@@ -230,14 +230,14 @@ The first commit on the branch, `b353ea1 docs(13): mark task 13 done`, is task 1
 
 ## Check that it works
 
-Real output on 2026-10-28, with Node 24 (`fnm exec --using=24 -- ...`; trimmed).
+Real output on 2026-10-28, with Node 24 (`fnm exec --using=24 -- ...`; trimmed). `npm run check` is from the final code, after the review fixes; the route list is from before them (no route changed).
 
 ```bash
 npm run check
 ```
 ```
  Test Files  50 passed (50)
-      Tests  843 passed (843)
+      Tests  856 passed (856)
 ```
 
 Only the server tests (env, seed data, database, data-access layer):
@@ -262,16 +262,24 @@ Route (app)                 Revalidate  Expire
 └ ○ /icon.svg
 ```
 
-The browser suites, from the work session's final runs (not re-run for this doc: they take minutes on a busy machine):
-- `npm run test:e2e` (production build, including the boundary scan): `60 passed (2.3m)`.
-- `npm run test:design` (under `next dev`, reading `.pglite/`): `39 passed (2.6m)`.
+The browser suites, from the work session's final runs after the review fixes:
+- `npm run test:e2e` (production build, including the boundary scan): `60 passed (50.2s)`.
+- `npm run test:design` (under `next dev`, reading `.pglite/`): `39 passed (1.5m)`.
 
 To look for yourself: run `npm run dev` and open http://localhost:3000. The header, footer and phone bar show the owner's details, and a `.pglite/` folder appears in the repo. To start over, stop the dev server, then run `npm run db:reset`. (Not done for this doc: a dev server would have opened the folder while another review was running.)
 
 ## Checks and reviews
 
-- **SEO check:** Pending.
-- **`ce-code-review`:** Pending.
+- **SEO check:** the `seo-reviewer` agent compared `/`, the 404s (`/no-such-page`, `/index.html`, `/hi`) and `/dev/design` on the production build with task 13's copies. **All pass, and the HTML is identical** once scripts are removed. The name, address, PIN, phone, WhatsApp and hours all come from the seed. No database name or `DATABASE_URL` appears in anything a browser gets. One change it explained: `/` now sends `s-maxage=2592000, stale-while-revalidate=…` (30 days, from `cacheLife("max")`) instead of a year. Search engines ignore `s-maxage`, and the `garage` tag means an owner's save refreshes every page at once (tasks 28 and 40).
+- **`ce-code-review`: "Ready with fixes".** Two P1s and two P2s, all fixed:
+  - **A second process on `.pglite/` (P1).** Next.js 16.4.3's dev server has a *use-cache probe*: when a `'use cache'` read takes over 10 seconds (a cold first start on a busy machine), it runs the same function again in a helper process (a jest-worker child) to see whether it's stuck. That helper has its own memory, so `globalThis` was empty and it opened the folder too. The work session reproduced it, with two processes holding `.pglite/` at once. Two guards now:
+    - a lock file (`.pglite.lock`, with the process id and a random token; a lock left by a process that has died is taken over);
+    - a rule that Next.js helper processes never open the folder: their read never finishes, which the probe treats as "inconclusive".
+    
+    Why not just let the helper fail on the lock? The work session tested that, and the real page request then failed with a 500 "deadlock" error. The review had assumed an error would count as inconclusive; Next.js counts it as "finished".
+  - **The database password in logs (P1).** A `DATABASE_URL` whose password has an unencoded `/`, `?` or `#` makes postgres.js throw a `TypeError` that carries the whole URL, and Next.js logs that error. The URL parse is now wrapped and replaced by a fixed message with no `cause`. A test checks the password never appears, even in `util.inspect` output.
+  - **`next build --debug-prerender` (P2).** That flag builds with `NODE_ENV=development`, so every build worker would have opened the folder. Builds now always use memory (`NEXT_PHASE`).
+  - **Rollback tests that couldn't fail (P2).** Both stopped before any write. They now make a write fail after the old hours are deleted (or after the garage insert). Removing the transaction made them fail: all seven hours rows were lost.
 - **`code-reviewer` agent:** Pending.
 - **Compound:** Pending.
 - **Pull request:** Pending.
