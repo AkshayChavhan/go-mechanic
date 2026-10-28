@@ -279,9 +279,17 @@ To try it yourself (not done for this doc: a dev server would open `.pglite/` wh
 
 ## Checks and reviews
 
-- **`ce-code-review`:** Pending (running when this doc was written).
+- **`ce-code-review`: "Ready with fixes".** No P0 or P1. Ten reviewers (correctness, security, data migration, reliability, testing, adversarial, form races and others); all 8 findings were confirmed, and all 8 are fixed, one commit each:
+  1. **Tests that couldn't fail (#1, #2).** The "too many tries" tests started from a `resendAt` already in the past, so they passed even with the fix removed. The `/account` test stood in a details component that never waited, so it couldn't tell whether Log out had moved inside `<Suspense>`. Both now fail when the rule they guard breaks (checked by removing the fix once each).
+  2. **A wrong screen after an error (#3).** "Change number", then a Send code that failed (no network), showed the *old* number's code step. The form's error path now keeps the step the visitor pressed the button on.
+  3. **Two copies of the "no details" rule (#6), and no proof of it (#4).** `getCurrentUser` had a hand-copied version that dropped the Postgres code. Both now use `withoutDetails` in `src/server/auth/errors.ts`. New tests: details never survive, Next.js's redirect and 404 signals pass through, a broken database during a session read prints no token, and a scan of everything the login service tests print finds no number, code or token. Adding one log line that printed the code made 18 of those tests fail.
+  4. **A hot reload broke login until a restart (#5).** Under `npm run dev`, editing the login service made a new request store, while the kept Better Auth instance still read the old one. The store now lives on `globalThis` too. A test loads the service twice and logs in.
+  5. **A limit that lifts tomorrow (#7).** At the daily limit the message said "Try again after 10:00 am" (tomorrow's 10:00) and the countdown read "1260:00". It now names the date, and the countdown shows hours.
+  6. **The fake SMS provider read the time itself (#8).** It now takes a `Clock`, like the rest of the code.
+
+  It also listed residual risks for later tasks (a real SMS provider needs a time limit, IPv6 /48 rotation, no site-wide SMS cap, verify takes no lock on the number) and test gaps; the cheap ones were filled (the cross-number test now expects `wrongCode` exactly; "Send a new code" keeps the first consent's time). While re-running the tests, the machine's load average reached about 30 (Docker Desktop and the editor's TypeScript server): database tests timed out, as in task 14, and one test that allowed only 1 second of slack failed. It now measures the time on both sides of the send.
 - **`code-reviewer` agent:** Pending.
-- **SEO check:** Pending.
+- **SEO check:** the `seo-reviewer` agent served the production build and fetched each page (also as Googlebot). All 5 pass: `/login` and `/account` say `noindex, nofollow` in their prebuilt part (the metadata reads no session), `/dev/outbox` and `/dev/design` are 404 with `noindex` in production, and `/` is unchanged (`○ /en`, no login text or link). One nice-to-have, added to task 42 with the owner's OK: the new titles already end in "| GoMechanic", so a title template would double it.
 - **Compound:** Pending.
 - **Pull request:** Pending.
 
