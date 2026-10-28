@@ -26,7 +26,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | Done | [14_database_setup.md](../learning/14_database_setup.md) |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | In progress | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
-| 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
+| 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | In progress |  |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
@@ -286,7 +286,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 17_vehicle_catalogue
 
-- [ ] Create branch `17_vehicle_catalogue`
+- [x] Create branch `17_vehicle_catalogue`
 - [ ] Plan with `ce-plan`
 - [ ] Vehicle types, brands, models; vehicle picker
 - [ ] If the owner names the brands the garage serves, consider a brands row on the home page (task 13)
