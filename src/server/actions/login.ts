@@ -88,8 +88,11 @@ export async function loginStep(locale: string, previous: LoginState, formData: 
       step: "code",
       status: undefined,
       retryAt: undefined,
-      // After too many tries the code is dead: "Send a new code" works at once.
-      resendAt: result.problem === "tooManyTries" ? new Date(0).toISOString() : previous.resendAt,
+      // Unchanged, also after too many tries: the code is dead then, and
+      // "Send a new code" works as soon as the 30 seconds since the last SMS
+      // are over (usually long ago), never earlier, which the server would
+      // only refuse with "please wait".
+      resendAt: previous.resendAt,
       error: { field: "code", text: t(`errors.${result.problem}`) },
     };
   }
