@@ -85,6 +85,12 @@ describe("getCurrentUser (who is logged in, for pages)", () => {
     expect(after.expiresAt).toEqual(older);
   });
 
+  test("a session past its 30 days reads as logged out", async () => {
+    vi.mocked(headers).mockResolvedValue(new Headers({ cookie: await logIn() }));
+    await db.update(sessions).set({ expiresAt: new Date(Date.now() - 1000) });
+    expect(await getCurrentUser()).toBeNull();
+  });
+
   test("a deleted session (logged out elsewhere) reads as logged out", async () => {
     vi.mocked(headers).mockResolvedValue(new Headers({ cookie: await logIn() }));
     await db.delete(sessions);
