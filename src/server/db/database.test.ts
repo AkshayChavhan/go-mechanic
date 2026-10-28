@@ -9,11 +9,13 @@ import { sql } from "drizzle-orm";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
+import { CONSENT_PURPOSES } from "@/domain/consent";
 import { WEEKDAYS } from "@/domain/opening-hours";
+import { ROLES } from "@/domain/roles";
 
 import { lockPathFor } from "./folder-lock";
 import { chooseDatabase, closeDatabase, createDatabase, type Database, isNextHelperProcess } from "./index";
-import { garageSettings, openingHours, weekday } from "./schema";
+import { consentPurpose, garageSettings, openingHours, userRole, weekday } from "./schema";
 import { seedGarage } from "./seed";
 import { ownerGarage } from "./seed-data";
 
@@ -64,6 +66,14 @@ async function rowCounts(db: Database) {
 describe("the schema", () => {
   test("lists the weekdays exactly as the app does, Monday first", () => {
     expect(weekday.enumValues).toEqual([...WEEKDAYS]);
+  });
+
+  test("lists the roles exactly as the app does", () => {
+    expect(userRole.enumValues).toEqual([...ROLES]);
+  });
+
+  test("lists the consent purposes exactly as the app does", () => {
+    expect(consentPurpose.enumValues).toEqual([...CONSENT_PURPOSES]);
   });
 });
 
