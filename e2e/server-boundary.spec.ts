@@ -24,7 +24,8 @@ const nextFolder = path.join(__dirname, "..", ".next");
 /**
  * Words that appear in database or login code and nowhere else. Matched
  * ignoring case. The login ones (task 15): a table, a setting, and the
- * Better Auth call only the login service makes.
+ * Better Auth call only the login service makes. The catalogue (task 17):
+ * the models table, which the browser's vehicle picker must never import.
  */
 const MARKERS = [
   "garage_settings",
@@ -34,6 +35,7 @@ const MARKERS = [
   "login_attempts",
   "BETTER_AUTH_SECRET",
   "sendPhoneNumberOTP",
+  "vehicle_models",
 ];
 
 /** Every file under a folder, as full paths. */
