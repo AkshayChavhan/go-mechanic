@@ -5,13 +5,12 @@
 import "server-only";
 
 import { headers } from "next/headers";
-import { unstable_rethrow } from "next/navigation";
 import { cache } from "react";
 
 import type { Role } from "@/domain/roles";
 
+import { withoutDetails } from "./errors";
 import { getAuth } from "./instance";
-import { LoginServiceError } from "./login";
 
 export type CurrentUser = { id: string; phoneNumber: string; role: Role };
 
@@ -20,8 +19,12 @@ export type CurrentUser = { id: string; phoneNumber: string; role: Role };
  * cache() makes every call during one request share one database read.
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
+  // Outside withoutDetails: headers() pauses a prerender with Next.js's own
+  // signal, which must reach Next.js as it is (withoutDetails passes those
+  // on too, but nothing here needs hiding).
   const requestHeaders = await headers();
-  try {
+  // A database error's message holds the query's values (the session token).
+  return withoutDetails("getCurrentUser", async () => {
     const auth = await getAuth();
     const session = await auth.api.getSession({
       headers: requestHeaders,
@@ -35,9 +38,5 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     if (!session?.user.phoneNumber) return null;
     const { id, phoneNumber, role } = session.user;
     return { id, phoneNumber, role: role as Role };
-  } catch (error) {
-    // A database error's message holds the query's values (the session token).
-    unstable_rethrow(error);
-    throw new LoginServiceError("getCurrentUser", error instanceof Error ? error.name : typeof error);
-  }
+  });
 });

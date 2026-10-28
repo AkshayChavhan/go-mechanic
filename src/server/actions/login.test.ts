@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { initialLoginState, type LoginState } from "@/lib/login-state";
 import type { Auth } from "@/server/auth/auth";
 import { getAuth } from "@/server/auth/instance";
-import { LoginServiceError, requestLoginCode, verifyLoginCode } from "@/server/auth/login";
+import { LoginServiceError } from "@/server/auth/errors";
+import { requestLoginCode, verifyLoginCode } from "@/server/auth/login";
 
 import allMessages from "../../../messages/en.json";
 

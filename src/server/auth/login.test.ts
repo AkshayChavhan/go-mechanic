@@ -13,9 +13,9 @@ import { smsProvider } from "@/server/providers/sms";
 import allMessages from "../../../messages/en.json";
 
 import { type Auth, createAuth } from "./auth";
+import { LoginServiceError } from "./errors";
 import {
   clientIpKey,
-  LoginServiceError,
   recordConsentsForVerifiedLogin,
   requestLoginCode,
   type RequestCodeInput,
