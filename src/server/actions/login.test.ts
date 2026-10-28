@@ -215,9 +215,11 @@ describe("loginStep: the code step", () => {
 
   test("tooManyTries opens Resend at once", async () => {
     vi.mocked(verifyLoginCode).mockResolvedValue({ ok: false, problem: "tooManyTries" });
-    const state = await loginStep("en", codeStep, form({ intent: "verify", attemptId, code: "000000" }));
+    // Resend would still be far off without the change.
+    const waiting = { ...codeStep, resendAt: new Date("2099-01-01T00:00:00Z").toISOString() };
+    const state = await loginStep("en", waiting, form({ intent: "verify", attemptId, code: "000000" }));
     expect(state.error).toEqual({ field: "code", text: t.errors.tooManyTries });
-    expect(new Date(state.resendAt ?? "").getTime()).toBeLessThanOrEqual(Date.now());
+    expect(state.resendAt).toBe(new Date(0).toISOString());
   });
 });
 

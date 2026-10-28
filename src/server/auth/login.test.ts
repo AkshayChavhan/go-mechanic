@@ -246,6 +246,10 @@ describe("asking for a code", () => {
     if (!resent.ok) throw new Error("unreachable");
     expect(await check(resent.attemptId, first)).toEqual({ ok: false, problem: "wrongCode" });
     expect(await check(resent.attemptId, second)).toEqual({ ok: true });
+    // The consent is the one given on the phone step (ticked at `start`),
+    // carried by "Send a new code", not a new one at the resend's time.
+    const givenAt = (await db.select().from(consents)).map((row) => row.givenAt.getTime());
+    expect(givenAt).toEqual([start.getTime(), start.getTime()]);
   });
 
   test('"Send a new code" with an attempt that doesn\'t exist: startOver', async () => {
@@ -370,12 +374,19 @@ describe("checking a code", () => {
     expect(await ask()).toMatchObject({ ok: true, sent: true });
   });
 
-  test("an attempt for another number can't sign this one in", async () => {
+  test("my code with another number's attempt is checked against their number: wrongCode, nobody signed in", async () => {
     const theirs = await askForCode({ phoneTyped: "91234 56789" });
     await askForCode();
     const mine = await latestCode();
+    let their = await latestCode("+919123456789");
+    // One chance in a million that both numbers got the same code.
+    if (their === mine) {
+      moveTo(31);
+      await ask({ intent: "resend", attemptId: theirs });
+      their = await latestCode("+919123456789");
+    }
     // The attempt decides the number: their attempt checks their code.
-    expect(await check(theirs, mine)).not.toEqual({ ok: true });
+    expect(await check(theirs, mine)).toEqual({ ok: false, problem: "wrongCode" });
     expect(await db.$count(sessions)).toBe(0);
   });
 

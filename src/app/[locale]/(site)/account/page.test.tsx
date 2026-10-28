@@ -14,10 +14,20 @@ import AccountPage, { generateMetadata } from "./page";
 // - the Server Action module (Better Auth, cookies) becomes empty functions;
 // - getTranslations (next-intl/server, for the metadata) is next-intl's own
 //   translator over the real messages.
-vi.mock("@/components/account/account-details", () => ({
-  AccountDetails: () => <p data-testid="account-details" />,
-  detailsClass: "type-lead text-muted-foreground",
-}));
+// `suspend` makes the stand-in wait forever, as the real one waits for the
+// session: the page then shows its loading line in its place.
+const details = vi.hoisted(() => ({ suspend: false }));
+vi.mock("@/components/account/account-details", async () => {
+  const { use } = await import("react");
+  const never = new Promise<never>(() => {});
+  return {
+    AccountDetails: () => {
+      if (details.suspend) use(never);
+      return <p data-testid="account-details" />;
+    },
+    detailsClass: "type-lead text-muted-foreground",
+  };
+});
 vi.mock("@/server/actions/login", () => ({ loginStep: vi.fn(), logOut: vi.fn() }));
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
@@ -51,6 +61,18 @@ describe("/account", () => {
     expect(form!.contains(screen.getByTestId("account-details"))).toBe(false);
     // Not blue: logging out isn't the page's main action.
     expect(button.getAttribute("data-variant")).toBe("secondary");
+  });
+
+  test("while the details are still loading, Log out is already there (it doesn't wait for the stream)", () => {
+    details.suspend = true;
+    try {
+      renderWithIntl(<AccountPage />);
+      expect(screen.getByText(t.loading)).toBeTruthy();
+      expect(screen.queryByTestId("account-details")).toBeNull();
+      expect(screen.getByRole("button", { name: t.logOut })).toBeTruthy();
+    } finally {
+      details.suspend = false;
+    }
   });
 
   test("the form posts to logOut, with the locale bound as its first argument", async () => {

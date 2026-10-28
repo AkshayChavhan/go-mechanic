@@ -275,6 +275,10 @@ describe("LoginForm: the code step", () => {
   });
 
   test("too many tries: Send a new code works at once", async () => {
+    // The clock stands at `now`, so the code step's Resend waits 30 seconds
+    // until the tooManyTries answer opens it.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(now);
     renderForm(codeStep, {
       ...codeStep,
       status: undefined,
@@ -282,6 +286,7 @@ describe("LoginForm: the code step", () => {
       error: { field: "code", text: t.errors.tooManyTries },
     });
     await sendNumber();
+    expect((screen.getByRole("button", { name: "Send a new code in 0:30" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(codeField(), { target: { value: "111111" } });
     await press(t.logIn);
     expect((screen.getByRole("button", { name: t.resend }) as HTMLButtonElement).disabled).toBe(false);

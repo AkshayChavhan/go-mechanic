@@ -64,6 +64,7 @@ describe("sending a code", () => {
   test("hands a 6-digit code to the SMS sender and stores it for 5 minutes", async () => {
     const before = Date.now();
     const code = await sendAndCatchCode();
+    const after = Date.now();
 
     expect(sendCode).toHaveBeenCalledTimes(1);
     expect(sendCode).toHaveBeenCalledWith(number, code);
@@ -71,9 +72,10 @@ describe("sending a code", () => {
     const rows = await db.select().from(verifications);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ identifier: number, value: `${code}:0` });
-    const lifetime = rows[0].expiresAt.getTime() - before;
-    expect(lifetime).toBeGreaterThan(299_000);
-    expect(lifetime).toBeLessThanOrEqual(301_000);
+    // 5 minutes from the moment of sending, measured on both sides of the
+    // call: a busy machine can take seconds, so no fixed slack.
+    expect(rows[0].expiresAt.getTime()).toBeGreaterThanOrEqual(before + 300_000);
+    expect(rows[0].expiresAt.getTime()).toBeLessThanOrEqual(after + 300_000);
   });
 
   test("refuses a number that isn't an Indian mobile, and sends nothing", async () => {
