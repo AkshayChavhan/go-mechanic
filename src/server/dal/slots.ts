@@ -17,9 +17,10 @@
 //    and staff together) then run one after the other, and the second sees
 //    the first's result: without the lock both read the old slot and give
 //    its place back twice, and that slot can be overbooked.
-// 4. Never call getDatabase() (or readGarage()) while a transaction is open:
-//    PGlite has one connection, and the query would wait forever. Every
-//    read here goes through the `db` it's given.
+// 4. Never call getDatabase(), readGarage() or readAvailableSlots() while a
+//    transaction is open: each queries the database on its own, PGlite has
+//    one connection, and that query would wait forever. Every read below
+//    goes through the `db` it's given.
 //
 // Each change to a counter is one SQL statement whose WHERE re-checks the
 // limit: Postgres locks the row and re-reads it before it writes, so two

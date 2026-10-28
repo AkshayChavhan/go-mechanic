@@ -148,8 +148,9 @@ export const calendarExceptions = pgTable("calendar_exceptions", {
 /**
  * Places taken per slot. A slot is named by the moment it starts (UTC); its
  * row appears with the first reservation, so there's no row per future slot.
- * Only reserveSlot, releaseSlot and moveSlot change `reserved`, each in one
- * statement that never takes it past the slot's capacity or below 0.
+ * Only reserveSlot, releaseSlot and moveSlot change `reserved`. Each change
+ * is one statement that never takes it past the slot's capacity or below 0
+ * (moveSlot makes two, inside the caller's transaction).
  */
 export const slotCounters = pgTable(
   "slot_counters",
