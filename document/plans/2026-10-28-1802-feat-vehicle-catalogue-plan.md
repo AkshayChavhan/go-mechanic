@@ -129,7 +129,7 @@ Deferred, not blocking:
   - Each model row carries its kind. Two composite foreign keys, (make, kind) and (category, kind), make a car model under a two-wheeler brand or group impossible. That needs a unique (id, kind) on brands and groups. These are the repo's first composite keys, so their comment explains them.
   - Fuels are a `fuel` enum array with a CHECK for at least one value. Drizzle 0.45.4 parses the array text that PGlite and postgres.js return (`node_modules/drizzle-orm/pg-core/columns/common.js`, `PgArray.mapFromDriverValue`), and a test proves the round trip.
   - Names are `LocalizedText` in jsonb. An integer `position` orders each list, and a CHECK keeps the English name non-blank.
-  - `listed` (boolean, default true) hides a row without deleting it, so task 21's saved vehicles can keep pointing at a model the owner retires. Foreign keys refuse deletes (`restrict`).
+  - `listed` (boolean, default true) on brands and models hides a row without deleting it, so task 21's saved vehicles can keep pointing at a model the owner retires. Price groups have no `listed`: visitors never see them, and a hidden group with visible models would mean nothing. Foreign keys refuse deletes (`restrict`).
 - KTD6. **The seed is a plain data file, added row by row and never updated.**
   - `src/server/db/vehicle-seed-data.ts` holds the draft nested by kind and brand, with no `server-only` import, so the e2e specs can import it, as they import `ownerGarage`. It becomes the third exception in CLAUDE.md's server-only rule.
   - `seedVehicleCatalogue(db)` in `src/server/db/seed.ts` runs right after `seedGarage(db)` in `createDatabase`. It is a separate call, because `seedGarage` returns early on every existing database.
@@ -166,7 +166,6 @@ erDiagram
     vehicle_kind kind
     jsonb name "LocalizedText"
     int position
-    bool listed
   }
   vehicle_makes {
     text id PK "car-honda"
@@ -348,7 +347,7 @@ These are planning bets, not checked with the owner (the scope check was skipped
 - **Patterns to follow:** `src/server/dal/garage.ts` and its test (PGlite in `beforeAll`, `next/cache` and `getDatabase` mocked, rows reset in `beforeEach`).
 - **Test scenarios:**
   - Returns the groups, and brands with their models, in position order; Honda appears once under cars and once under two-wheelers.
-  - Leaves out a hidden brand (with its models), a hidden model and a hidden group.
+  - Leaves out a hidden brand (with its models) and a hidden model.
   - Calls `cacheTag("vehicle-catalogue")` and `cacheLife("max")`.
   - Returns empty lists when the catalogue tables are empty, without throwing.
   - A model's fuels come back as an array of fuel values.
