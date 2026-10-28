@@ -5,7 +5,9 @@ import {
   formatPhoneNumber,
   isIndianMobileNumber,
   isIndianPhoneNumber,
+  parseIndianMobile,
   telHref,
+  toAsciiDigits,
   whatsappHref,
 } from "./contact-links";
 
@@ -92,5 +94,37 @@ describe("isIndianPhoneNumber and isIndianMobileNumber (checks for saving a numb
   ])("reject %s", (_case, number) => {
     expect(isIndianPhoneNumber(number)).toBe(false);
     expect(isIndianMobileNumber(number)).toBe(false);
+  });
+});
+
+describe("parseIndianMobile (what someone typed on the login page)", () => {
+  test.each([
+    ["10 digits with a space", "98765 43210"],
+    ["10 digits", "9876543210"],
+    ["a leading 0 and a dash", "098765-43210"],
+    ["91 in front", "919876543210"],
+    ["+91 and spaces", "+91 98765 43210"],
+    ["dots and brackets", "(98765).43210"],
+    ["Devanagari digits", "९८७६५४३२१०"],
+    ["spaces around it", "  98765 43210 "],
+  ])("reads %s as +919876543210", (_case, typed) => {
+    expect(parseIndianMobile(typed)).toBe("+919876543210");
+  });
+
+  test.each([
+    ["a number starting with 5", "5876543210"],
+    ["a landline", "020 2765 4321"],
+    ["9 digits", "987654321"],
+    ["11 digits", "98765432101"],
+    ["a US number", "+1 2025550123"],
+    ["letters", "98765abcde"],
+    ["an empty string", ""],
+    ["+91 twice", "+91+919876543210"],
+  ])("rejects %s", (_case, typed) => {
+    expect(parseIndianMobile(typed)).toBeNull();
+  });
+
+  test("toAsciiDigits leaves other text alone", () => {
+    expect(toAsciiDigits("कोड १२३ abc 456")).toBe("कोड 123 abc 456");
   });
 });

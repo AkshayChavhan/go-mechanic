@@ -8,7 +8,8 @@
 //   while a page renders, so they never throw. A number they can't read is
 //   still shown or dialled as stored.
 // - Checks (isIndianPhoneNumber, isIndianMobileNumber) run when a number is
-//   saved: garage.test.ts today, the admin screens later (tasks 28 and 40).
+//   saved (checkGarage; the admin screens in tasks 28 and 40) or typed in to
+//   log in (parseIndianMobile, task 15).
 
 // +91, then 10 digits. The number never starts with 0: that's only the
 // "trunk" prefix people dial inside India (09764...), not part of the number.
@@ -25,6 +26,25 @@ export function isIndianPhoneNumber(number: string): boolean {
 /** An Indian mobile number in E.164 form. WhatsApp needs one. */
 export function isIndianMobileNumber(number: string): boolean {
   return INDIAN_MOBILE.test(number);
+}
+
+/** Devanagari digits (०-९) as ASCII digits: phones with a Hindi keyboard type them. */
+export function toAsciiDigits(text: string): string {
+  return text.replace(/[\u0966-\u096F]/g, (digit) => String(digit.charCodeAt(0) - 0x0966));
+}
+
+/**
+ * What someone typed as their mobile number, as E.164 ("+919876543210"), or
+ * null when it isn't an Indian mobile. Accepts the ways people write it:
+ * "98765 43210", "098765-43210", "919876543210", "+91 98765 43210", and the
+ * same in Devanagari digits.
+ */
+export function parseIndianMobile(typed: string): string | null {
+  const compact = toAsciiDigits(typed).replace(/[\s\-.()]/g, "");
+  const match = /^(?:\+91|91|0)?(\d{10})$/.exec(compact);
+  if (!match) return null;
+  const number = `+91${match[1]}`;
+  return isIndianMobileNumber(number) ? number : null;
 }
 
 /**

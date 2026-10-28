@@ -11,3 +11,11 @@
 export const CONSENT_PURPOSES = ["age_18_plus", "account_and_booking_contact"] as const;
 
 export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
+
+/**
+ * Which wording of the login notice and boxes people saw. Change it whenever
+ * the words change (consent.test.ts fails until you do): every consent
+ * record keeps the version it was given under. Task 19 links the full
+ * privacy notice and changes it.
+ */
+export const LOGIN_NOTICE_VERSION = "2026-10-28";
