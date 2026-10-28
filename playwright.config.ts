@@ -1,5 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
+import { OUTBOX_FILE } from "./e2e/helpers";
+
 // End-to-end tests: a real browser loads the real, built site.
 // - Uses the Google Chrome already installed on the machine (channel "chrome"),
 //   so no browsers are downloaded. Never run `npx playwright install`.
@@ -29,5 +31,9 @@ export default defineConfig({
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
     timeout: 180_000,
+    // The fake SMS provider also writes each message here, so the login
+    // tests can read their codes (e2e/helpers.ts, latestCodeFor). Added to
+    // this process's own environment, not instead of it.
+    env: { E2E_OUTBOX_FILE: OUTBOX_FILE },
   },
 });

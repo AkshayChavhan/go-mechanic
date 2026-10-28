@@ -1,3 +1,7 @@
+import { existsSync, readFileSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { expect, type Page } from "@playwright/test";
 
 // Helpers shared by the browser tests: e2e/*.spec.ts (production build) and
@@ -110,3 +114,51 @@ export const effectiveOpacities = (page: Page, selector: string) =>
       return opacity;
     }),
   );
+
+// --- Login codes (task 15) ----------------------------------------------------
+//
+// The production build the tests run has no /dev/outbox page. Instead,
+// playwright.config.ts sets E2E_OUTBOX_FILE for its server, and the fake SMS
+// provider adds every message to that file as one JSON line. The server
+// refuses that setting outside local runs (src/server/env.ts), so this path
+// can never work on a deployment.
+
+/** The fake SMS provider's file. Outside test-results/, which a filtered run empties. */
+export const OUTBOX_FILE = path.join(os.tmpdir(), "gomechanic-e2e-outbox.jsonl");
+
+type OutboxLine = { to: string; text: string; sentAt: string };
+
+/** The SMS sent to `number` (E.164) since `since`, oldest first. The file outlives runs, so `since` matters. */
+export function smsSentTo(number: string, since: Date): OutboxLine[] {
+  if (!existsSync(OUTBOX_FILE)) return [];
+  return readFileSync(OUTBOX_FILE, "utf8")
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => JSON.parse(line) as OutboxLine)
+    .filter((line) => line.to === number && new Date(line.sentAt) >= since);
+}
+
+/** The code in the newest SMS to `number` since `since`; waits up to 10 s for it. */
+export async function latestCodeFor(number: string, since: Date): Promise<string> {
+  let code: string | undefined;
+  await expect
+    .poll(
+      () => {
+        code = /^(\d{6}) /.exec(smsSentTo(number, since).at(-1)?.text ?? "")?.[1];
+        return code;
+      },
+      { timeout: 10_000 },
+    )
+    .toBeDefined();
+  return code as string;
+}
+
+/**
+ * A mobile number no other test (or earlier run) uses: "60000" and 5 random
+ * digits. Indian mobiles start with 6 to 9, so it passes the checks, and the
+ * 60000 prefix makes test users easy to spot in a database.
+ */
+export function freshNumber(): { typed: string; e164: string } {
+  const rest = String(Math.floor(Math.random() * 100_000)).padStart(5, "0");
+  return { typed: `60000 ${rest}`, e164: `+9160000${rest}` };
+}

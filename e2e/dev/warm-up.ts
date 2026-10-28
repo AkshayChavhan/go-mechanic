@@ -10,7 +10,7 @@ import { chromium, type FullConfig } from "@playwright/test";
 // the measurement, on the first run after a code change. So every page the
 // specs visit is loaded once here, in a real browser (which also compiles
 // the page's JavaScript), before any test runs.
-const pages = ["/dev/design", "/", "/this-page-does-not-exist"];
+const pages = ["/dev/design", "/", "/this-page-does-not-exist", "/login", "/dev/outbox"];
 
 export default async function warmUp(config: FullConfig) {
   const baseURL = config.projects[0].use.baseURL;
