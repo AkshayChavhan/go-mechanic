@@ -50,7 +50,7 @@ Read the page's source (page, layout, and the components it uses). If the site b
 - Not too much client JavaScript: interactive parts are small `"use client"` islands.
 
 **Local SEO for India**
-- The garage's name, address and phone are written exactly the same everywhere, and match the garage details: `src/content/garage.ts` (the owner's real details: Mukai Chowk, Kiwale, Pune, Maharashtra 412101; +91 97647 50567) until task 14, then the `garage_settings` table.
+- The garage's name, address and phone are written exactly the same everywhere, and match the garage details. Since task 14 they live in the database (`garage_settings` and `opening_hours`), read with `readGarage()` (`src/server/dal/garage.ts`) and seeded from `src/server/db/seed-data.ts` (the owner's real details: Mukai Chowk, Kiwale, Pune, Maharashtra 412101; +91 97647 50567). Read `seed-data.ts` for the expected values.
 - City and area names appear naturally in titles, headings and text ("car service in Kiwale, Pune"), without keyword stuffing.
 - Both vehicle types are covered where relevant ("car and bike service").
 - Click-to-call (`tel:`) and WhatsApp links are present on contact-type pages.
