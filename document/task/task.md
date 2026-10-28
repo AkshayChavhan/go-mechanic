@@ -24,7 +24,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | Done | [12_layout_shell.md](../learning/12_layout_shell.md) |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | Done | [13_home_page.md](../learning/13_home_page.md) |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | Done | [14_database_setup.md](../learning/14_database_setup.md) |
-| 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | In progress | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
+| 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | Done | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
@@ -269,7 +269,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds (after `ce-code-review`: "Ready with fixes", 8 findings fixed)
 - [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [Better Auth from Server Actions](../solutions/conventions/better-auth-phone-login-only-from-server-actions.md), [Playwright networkidle](../solutions/conventions/playwright-networkidle-hangs-after-second-page-load.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PRs #14, #15 and #16 on GitHub (#14 and #15 merged before the final review; #16 is the follow-up)
 
 ### 16_roles_access
 

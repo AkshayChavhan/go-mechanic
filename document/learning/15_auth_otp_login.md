@@ -1,6 +1,6 @@
 # 15_auth_otp_login: log in with a mobile number and an SMS code
 
-> **Branch:** `15_auth_otp_login` · **Date:** 2026-10-28 · **Status:** In progress
+> **Branch:** `15_auth_otp_login` · **Date:** 2026-10-28 · **Status:** Done (merged through PRs #14, #15 and #16)
 
 ## In one minute
 
