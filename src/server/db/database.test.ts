@@ -1,6 +1,8 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { inspect } from "node:util";
 
 import { PGlite } from "@electric-sql/pglite";
 import { sql } from "drizzle-orm";
@@ -9,7 +11,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vite
 
 import { WEEKDAYS } from "@/domain/opening-hours";
 
-import { chooseDatabase, closeDatabase, createDatabase, type Database } from "./index";
+import { lockPathFor } from "./folder-lock";
+import { chooseDatabase, closeDatabase, createDatabase, type Database, isNextHelperProcess } from "./index";
 import { garageSettings, openingHours, weekday } from "./schema";
 import { seedGarage } from "./seed";
 import { ownerGarage } from "./seed-data";
@@ -66,21 +69,26 @@ describe("the schema", () => {
 
 describe("chooseDatabase (which database each way of running gets)", () => {
   const cwd = "/repo";
+  const local = { appEnv: "local", databaseUrl: undefined } as const;
 
   test("npm run dev: PGlite in .pglite/, next to package.json", () => {
-    expect(chooseDatabase({ appEnv: "local", databaseUrl: undefined }, "development", cwd)).toEqual({
+    expect(chooseDatabase(local, { nodeEnv: "development", nextPhase: undefined, cwd })).toEqual({
       driver: "pglite",
       dataDir: path.join(cwd, ".pglite"),
     });
   });
 
   test.each(["production", "test", undefined])("NODE_ENV %s: PGlite in memory", (nodeEnv) => {
-    expect(chooseDatabase({ appEnv: "local", databaseUrl: undefined }, nodeEnv, cwd)).toEqual(memory);
+    expect(chooseDatabase(local, { nodeEnv, nextPhase: undefined, cwd })).toEqual(memory);
+  });
+
+  test("next build --debug-prerender (NODE_ENV development during the build): PGlite in memory", () => {
+    expect(chooseDatabase(local, { nodeEnv: "development", nextPhase: "phase-production-build", cwd })).toEqual(memory);
   });
 
   test.each(["development", "production"])("a DATABASE_URL wins, even under NODE_ENV %s", (nodeEnv) => {
     const url = "postgresql://gomechanic:fake-password@localhost:5432/gomechanic";
-    expect(chooseDatabase({ appEnv: "production", databaseUrl: url }, nodeEnv, cwd)).toEqual({
+    expect(chooseDatabase({ appEnv: "production", databaseUrl: url }, { nodeEnv, nextPhase: undefined, cwd })).toEqual({
       driver: "postgres",
       url,
     });
@@ -180,6 +188,23 @@ describe("seeding", () => {
     }
   });
 
+  test("puts in the garage and its hours together or not at all: a failed hours insert leaves no garage", async () => {
+    const db = await createDatabase(memory);
+    try {
+      await db.delete(openingHours);
+      await db.delete(garageSettings);
+      // A leftover Monday row: the seed's own Monday row clashes with it, so
+      // the hours insert fails after the garage row went in.
+      await db.insert(openingHours).values({ weekday: "monday", opens: null, closes: null });
+
+      expect(await violation(seedGarage(db))).toEqual({ code: "23505", constraint: "opening_hours_pkey" });
+      // The transaction rolled back: still no garage row.
+      expect(await rowCounts(db)).toEqual({ garage: 0, hours: 1 });
+    } finally {
+      await closeDatabase(db);
+    }
+  });
+
   test("checks the garage first: a landline as WhatsApp throws and inserts nothing", async () => {
     const db = await createDatabase(memory);
     try {
@@ -222,6 +247,38 @@ describe("a local database in a folder (what npm run dev uses)", () => {
   });
   afterAll(() => {
     fs.rmSync(dataDir, { recursive: true, force: true });
+    fs.rmSync(lockPathFor(dataDir), { force: true });
+  });
+
+  test("can't be opened twice at once: the second open fails, and nothing touches the folder", async () => {
+    const first = await createDatabase({ driver: "pglite", dataDir });
+    try {
+      // This process holds the lock, so even a second open from here fails.
+      // Another process (Next.js's use-cache probe) gets the same error.
+      await expect(createDatabase({ driver: "pglite", dataDir })).rejects.toThrow(
+        `The local database (${dataDir}) is already open by process ${process.pid}`,
+      );
+      expect(fs.readFileSync(lockPathFor(dataDir), "utf8").split("\n")[0]).toBe(String(process.pid));
+    } finally {
+      await closeDatabase(first);
+    }
+    // Closing released the lock.
+    expect(fs.existsSync(lockPathFor(dataDir))).toBe(false);
+  });
+
+  test("takes over a lock left by a process that has stopped", async () => {
+    // A process that starts and exits at once: its id is free afterwards.
+    const exited = spawnSync(process.execPath, ["-e", ""]);
+    expect(exited.status).toBe(0);
+    fs.writeFileSync(lockPathFor(dataDir), `${exited.pid}\nleft-behind-token\n`);
+
+    const db = await createDatabase({ driver: "pglite", dataDir });
+    try {
+      expect(fs.readFileSync(lockPathFor(dataDir), "utf8").split("\n")[0]).toBe(String(process.pid));
+    } finally {
+      await closeDatabase(db);
+    }
+    expect(fs.existsSync(lockPathFor(dataDir))).toBe(false);
   });
 
   test("keeps changes after it's closed and opened again, and migrates only once", async () => {
@@ -263,6 +320,23 @@ describe("a real Postgres (DATABASE_URL)", () => {
     expect(db.$client).not.toBeInstanceOf(PGlite);
     await closeDatabase(db);
   });
+
+  test.each([
+    ["an unencoded / in the password", "postgresql://u:fake/s3cret@db.example.com:5432/postgres"],
+    ["a broken % escape in the password", "postgresql://u:fake%zzs3cret@db.example.com:5432/postgres"],
+  ])("a URL postgres.js can't read (%s) fails without showing the password", async (_case, url) => {
+    const error = await createDatabase({ driver: "postgres", url }).then(
+      () => {
+        throw new Error("expected createDatabase to fail");
+      },
+      (failure: unknown) => failure,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain("DATABASE_URL");
+    // inspect() is what console.error prints, so this covers every property
+    // a log would show: the message, the stack, a cause, Node's `input`.
+    expect(inspect(error, { depth: 10 })).not.toContain("s3cret");
+  });
 });
 
 describe("getDatabase (one database per process)", () => {
@@ -284,10 +358,14 @@ describe("getDatabase (one database per process)", () => {
   });
 
   test("gives two calls made at the same time the same database", async () => {
-    // A local test run: no deployment settings, so PGlite in memory.
+    // A local test run: no deployment settings, so PGlite in memory. NODE_ENV
+    // is set too: Vitest keeps one the shell already has, and "development"
+    // would open the repo's .pglite/.
     vi.stubEnv("APP_ENV", "");
     vi.stubEnv("DATABASE_URL", "");
     vi.stubEnv("VERCEL", "");
+    vi.stubEnv("NODE_ENV", "test");
+    vi.stubEnv("NEXT_PHASE", "");
     vi.resetModules();
     const { getDatabase } = await import("./index");
 
@@ -295,5 +373,53 @@ describe("getDatabase (one database per process)", () => {
     expect(a).toBe(b);
     expect(a.$client).toBeInstanceOf(PGlite);
     expect(await getDatabase()).toBe(a);
+  });
+
+  test("in a Next.js helper process (the dev server's use-cache probe), never opens the local folder", async () => {
+    // `npm run dev` settings, in a temporary project folder.
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "gomechanic-project-"));
+    vi.stubEnv("APP_ENV", "");
+    vi.stubEnv("DATABASE_URL", "");
+    vi.stubEnv("VERCEL", "");
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("NEXT_PHASE", "");
+    const cwd = vi.spyOn(process, "cwd").mockReturnValue(project);
+    const entryScript = process.argv[1];
+    process.argv[1] = "/repo/node_modules/next/dist/compiled/jest-worker/processChild.js";
+    try {
+      vi.resetModules();
+      const { getDatabase } = await import("./index");
+
+      // The probe's own time limit then makes it "inconclusive", and the real
+      // request goes on. A database that opened, or an error, would end it.
+      const outcome = await Promise.race([
+        getDatabase().then(
+          () => "opened",
+          () => "failed",
+        ),
+        new Promise((resolve) => setTimeout(() => resolve("still waiting"), 500)),
+      ]);
+      expect(outcome).toBe("still waiting");
+      expect(fs.existsSync(path.join(project, ".pglite"))).toBe(false);
+      expect(fs.existsSync(path.join(project, ".pglite.lock"))).toBe(false);
+    } finally {
+      // Never settles, so afterEach mustn't wait for it.
+      delete globalSlot[key];
+      process.argv[1] = entryScript;
+      cwd.mockRestore();
+      fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("isNextHelperProcess (is this one of Next.js's jest-worker children?)", () => {
+  test.each([
+    ["the use-cache probe's worker", "/repo/node_modules/next/dist/compiled/jest-worker/processChild.js", true],
+    ["the same on Windows", "C:\\repo\\node_modules\\next\\dist\\compiled\\jest-worker\\processChild.js", true],
+    ["the dev server", "/repo/node_modules/next/dist/server/lib/start-server.js", false],
+    ["Vitest", "/repo/node_modules/vitest/dist/workers/forks.js", false],
+    ["no entry script", undefined, false],
+  ])("%s", (_case, entryScript, expected) => {
+    expect(isNextHelperProcess(entryScript)).toBe(expected);
   });
 });

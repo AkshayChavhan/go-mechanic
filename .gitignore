@@ -16,9 +16,11 @@ coverage/
 /blob-report/
 /playwright/.cache/
 
-# Local database (PGlite's data folder, created by `npm run dev`;
-# `npm run db:reset` deletes it)
+# Local database (PGlite's data folder, created by `npm run dev`, and the
+# lock file that lets one process at a time open it; `npm run db:reset`
+# deletes both)
 .pglite/
+.pglite.lock
 
 # Secrets and local environment values
 # Commit a `.env.example` with fake values instead.
