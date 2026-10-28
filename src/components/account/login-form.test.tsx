@@ -306,6 +306,19 @@ describe("LoginForm: the code step", () => {
     expect(codeField()).toBeTruthy();
   });
 
+  test("Change number, then a Send code that fails: the phone step with the new number, not the old code step", async () => {
+    renderForm(codeStep, new TypeError("Failed to fetch"));
+    await sendNumber();
+    fireEvent.click(screen.getByRole("button", { name: t.changeNumber }));
+    fireEvent.change(phoneField(), { target: { value: "91234 56789" } });
+    await press(t.sendCode);
+
+    expect(screen.queryByLabelText(t.codeLabel)).toBeNull();
+    expect(phoneField().value).toBe("91234 56789");
+    expect(screen.getByText(t.errors.connection)).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe("");
+  });
+
   test("a call that fails: the connection message, still on the code step, the typed code kept", async () => {
     renderForm(codeStep, new TypeError("Failed to fetch"));
     await sendNumber();

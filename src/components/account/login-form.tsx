@@ -101,6 +101,10 @@ export function loginSubmitter(action: LoginAction, connectionText: string) {
       return {
         ...answer,
         ...typedIn(formData),
+        // The step the visitor was on when they pressed the button. After
+        // "Change number" the last answer is still the code step, but a
+        // failed Send code must show the phone step with the new number.
+        step: formData.get("intent") === "send" ? "phone" : answer.step,
         retryAt: undefined,
         error: { field: "form", text: connectionText },
       };
