@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   // of bundling it. PGlite reads its .wasm and .data files from the folder
   // next to its own code; a bundled copy looks in the wrong folder.
   serverExternalPackages: ["@electric-sql/pglite"],
+  // `next build` lists every file the server code might read, so a deployment
+  // can copy them. It follows `path.join(process.cwd(), ".pglite")` in
+  // src/server/db/index.ts into your local database: leave that out, for
+  // every route ("/*"). A deployment uses its own Postgres (task 20).
+  outputFileTracingExcludes: { "/*": ["./.pglite/**"] },
   experimental: {
     // Needed because the root layout lives inside [locale]: URLs that match
     // no route at all get src/app/global-not-found.tsx.
