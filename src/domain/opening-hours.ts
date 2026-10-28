@@ -6,10 +6,10 @@
 //
 // The garage runs on India time, but servers usually run in UTC and a visitor
 // may be abroad. So every function here reads the India wall-clock time
-// through Intl with GARAGE_TIME_ZONE. Never the computer's own clock
+// through the helpers in india-time.ts. Never the computer's own clock
 // (date.getHours()) and never a typed "+05:30".
 
-import { GARAGE_TIME_ZONE } from "@/i18n/config";
+import { indiaInstant, indiaWallClockAt, weekdayIndex } from "./india-time";
 
 /** The days of the week, Monday first (the order the footer lists them in). */
 export const WEEKDAYS = [
@@ -86,75 +86,14 @@ export function checkWeeklyHours(hours: WeeklyHours): { weekday: Weekday; proble
  * Hours that fail checkDayHours also count as closed: this runs while a page
  * renders, where a wrong "Closed" is better than a crash. Admin saves
  * (tasks 28 and 40) call checkDayHours so bad hours never get stored.
+ * The slot engine (slots.ts) uses it too, so a bad day has no slots.
  */
-function openMinutes(day: DayHours): { opens: number; closes: number } | null {
+export function openMinutes(day: DayHours): { opens: number; closes: number } | null {
   // The same rules as a save, from one place: a rule added to checkDayHours
   // (a lunch break, say) reaches the badge too.
   if (day === "closed" || checkDayHours(day) !== null) return null;
   // checkDayHours has just confirmed both times are valid "HH:MM".
   return { opens: minutesAfterMidnight(day.opens) as number, closes: minutesAfterMidnight(day.closes) as number };
-}
-
-// Reads the date and time shown on a clock in India. "en-US" only so the
-// parts come back as plain digits; it doesn't change the time zone.
-// hourCycle "h23" writes midnight as 00, not 24.
-const indiaClock = new Intl.DateTimeFormat("en-US", {
-  timeZone: GARAGE_TIME_ZONE,
-  year: "numeric",
-  month: "numeric",
-  day: "numeric",
-  hour: "numeric",
-  minute: "numeric",
-  second: "numeric",
-  hourCycle: "h23",
-});
-
-type IndiaWallClock = { year: number; month: number; day: number; hour: number; minute: number; second: number };
-
-function indiaWallClockAt(instant: Date | number): IndiaWallClock {
-  // formatToParts gives [{ type: "month", value: "10" }, { type: "literal", value: "/" }, ...]
-  const parts: Record<string, number> = {};
-  for (const { type, value } of indiaClock.formatToParts(instant)) parts[type] = Number(value);
-  return {
-    year: parts.year,
-    month: parts.month,
-    day: parts.day,
-    hour: parts.hour,
-    minute: parts.minute,
-    second: parts.second,
-  };
-}
-
-/**
- * How far India's clock is ahead of UTC at `instant`, in milliseconds
- * (5 h 30 min). Measured with Intl, not typed in.
- */
-function indiaOffsetAt(instant: number): number {
-  const clock = indiaWallClockAt(instant);
-  const clockAsUtc = Date.UTC(clock.year, clock.month - 1, clock.day, clock.hour, clock.minute, clock.second);
-  // Intl drops milliseconds, so drop them from the instant too.
-  return clockAsUtc - Math.floor(instant / 1000) * 1000;
-}
-
-/**
- * The moment India's clock shows `minutes` after midnight, `daysAhead` days
- * after the India date in `today`. Date.UTC handles month and year ends
- * (31 Oct + 1 day = 1 Nov).
- */
-function indiaInstant(today: IndiaWallClock, daysAhead: number, minutes: number): Date {
-  const clockAsUtc = Date.UTC(today.year, today.month - 1, today.day + daysAhead, 0, minutes);
-  // Subtract India's offset to get the real moment. The offset is measured
-  // twice: first near the answer (at clockAsUtc), then at that first guess.
-  // India has no daylight saving time, so both give 5 h 30 min; the second
-  // step only matters if the garage's time zone ever changed its clocks.
-  const guess = clockAsUtc - indiaOffsetAt(clockAsUtc);
-  return new Date(clockAsUtc - indiaOffsetAt(guess));
-}
-
-/** Monday = 0 ... Sunday = 6, for a date on India's calendar. */
-function weekdayIndex(clock: IndiaWallClock): number {
-  // getUTCDay counts from Sunday = 0; shift it so Monday comes first.
-  return (new Date(Date.UTC(clock.year, clock.month - 1, clock.day)).getUTCDay() + 6) % 7;
 }
 
 /** Whether the garage is open at `instant` (India time). */
