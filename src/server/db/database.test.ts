@@ -254,7 +254,9 @@ describe("a local database in a folder (what npm run dev uses)", () => {
     const first = await createDatabase({ driver: "pglite", dataDir });
     try {
       // This process holds the lock, so even a second open from here fails.
-      // Another process (Next.js's use-cache probe) gets the same error.
+      // Another `npm run dev` gets the same error. (Next.js's helper
+      // processes never get this far: see the helper-process test under
+      // getDatabase below.)
       await expect(createDatabase({ driver: "pglite", dataDir })).rejects.toThrow(
         `The local database (${dataDir}) is already open by process ${process.pid}`,
       );

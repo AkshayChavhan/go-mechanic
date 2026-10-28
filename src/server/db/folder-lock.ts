@@ -16,9 +16,12 @@
 //   clean up).
 // The lock goes when the database is closed, or when the process exits.
 //
-// When Next.js's probe hits the lock, it treats the failure as inconclusive
-// (use-cache-probe-scheduler.js) and the page request carries on in the main
-// process, which has the database open.
+// The lock alone isn't enough for Next.js's probe. A probe that fails (on
+// this lock, say) counts as "completed", and Next.js then turns the real page
+// request into a 500 "deadlock" error (seen in task 14). So helper processes
+// never open the folder at all (`openForThisProcess` in index.ts): their read
+// never finishes, which the probe counts as "inconclusive". The lock catches
+// every other second process, such as a second `npm run dev`.
 
 import "server-only";
 
