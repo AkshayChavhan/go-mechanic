@@ -287,7 +287,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 17_vehicle_catalogue
 
 - [x] Create branch `17_vehicle_catalogue`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-28-1802-feat-vehicle-catalogue-plan.md)
 - [ ] Vehicle types, brands, models; vehicle picker
 - [ ] If the owner names the brands the garage serves, consider a brands row on the home page (task 13)
 - [ ] Write the learning doc
