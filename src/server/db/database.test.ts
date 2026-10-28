@@ -116,6 +116,23 @@ describe("the migrations journal", () => {
     const files = fs.readdirSync(path.join(process.cwd(), "src/server/db/migrations")).filter((name) => name.endsWith(".sql"));
     expect(files.sort()).toEqual(journal.entries.map((entry) => `${entry.tag}.sql`));
   });
+
+  test("chains each snapshot to the one before it", () => {
+    // drizzle-kit compares the schema with the latest snapshot. A migration
+    // renamed by hand keeps a snapshot that still points at the old parent
+    // and lacks the other migration's tables; the next db:generate breaks.
+    let previous = "00000000-0000-0000-0000-000000000000";
+    for (const entry of journal.entries) {
+      const snapshot = JSON.parse(
+        fs.readFileSync(
+          path.join(process.cwd(), `src/server/db/migrations/meta/${entry.tag.slice(0, 4)}_snapshot.json`),
+          "utf8",
+        ),
+      ) as { id: string; prevId: string };
+      expect(snapshot.prevId, entry.tag).toBe(previous);
+      previous = snapshot.id;
+    }
+  });
 });
 
 describe("chooseDatabase (which database each way of running gets)", () => {
