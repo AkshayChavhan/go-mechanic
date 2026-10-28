@@ -25,7 +25,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | Done | [13_home_page.md](../learning/13_home_page.md) |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | Done | [14_database_setup.md](../learning/14_database_setup.md) |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | Done | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
-| 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | In progress |  |
+| 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | In progress | [16_roles_access.md](../learning/16_roles_access.md) |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
@@ -279,7 +279,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] `saveGarage` (`src/server/dal/garage.ts`) first checks that the signed-in user is the owner or a manager (`authorize("garage.edit")`). Every later save in `src/server/dal/` does the same for its permission (task 14)
 - [x] `requireUser`/`requirePermission` built on `getCurrentUser()` (`src/server/auth/session.ts`; no `requireRole`: checks ask for a permission). Proxy redirects: a logged-out `/account` gets a real 307 to `/login`, and a logged-in `/login` goes to `/account`, by a session-cookie check, with `?session=ended` against a leftover-cookie loop (task 15)
 - [x] A way to make the owner's number `owner`: the `OWNER_PHONE_NUMBER` setting (the garage's own number, the owner's choice on 2026-10-28), applied on every session read (`effectiveRole`) and stored at each login (`syncOwnerRole`). Everyone else signs up as `customer`, and Better Auth refuses a role sent by the browser (task 15)
-- [ ] Write the learning doc
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
