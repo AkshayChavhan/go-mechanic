@@ -262,10 +262,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `15_auth_otp_login`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-28-1155-feat-otp-login-plan.md)
-- [ ] Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox`
-- [ ] A login or account entry in the header goes in a `<Suspense>` slot or a client island, never a cookie read in `SiteHeader` (every public page would turn dynamic). Decide whether the phone bar hides while a form field has focus (task 12)
-- [ ] `/dev/outbox` is a page under `src/app/[locale]/dev/` that calls `devOnly()` (`dev-only.test.ts` checks every dev page). If it needs a Route Handler too, gate that as well and extend `dev-only.test.ts` to `route.ts` files (code-reviewer in task 11)
-- [ ] Better Auth's tables go into the same schema and migrations (`src/server/db/schema.ts`, then `npm run db:generate -- --name=<what_changed>`). Its Drizzle adapter gets the database from `getDatabase()` (task 14)
+- [x] Mobile OTP login (Better Auth 1.7.14, pinned) with a fake SMS sender and `/dev/outbox`: `/login`, a minimal `/account` with Log out, consent records (18+ and contact, `LOGIN_NOTICE_VERSION`), our own send limits under an advisory lock, and no number, code or token in any log
+- [x] No login or account entry in the header yet (the owner's choice, 2026-10-28: task 21 adds it, as a static link or a browser island, never a cookie read in the shell). The phone bar's behaviour while a field has focus doesn't come up: `/login` has no shell and `/account` has no fields (task 23 decides it)
+- [x] `/dev/outbox` is a page under `src/app/[locale]/dev/` that calls `devOnly()` in the page and `generateMetadata` (`dev-only.test.ts` checks every dev page). No Route Handler was needed
+- [x] Better Auth's tables go into the same schema and migrations (`src/server/db/schema.ts`, migration `0001_auth_login`), written by hand with Better Auth's field names and snake_case columns. Its Drizzle adapter gets the database from `getDatabase()` (task 14)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
