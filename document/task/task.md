@@ -254,8 +254,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Browser-boundary check on a production build: no database code in `.next/static/` (`e2e/server-boundary.spec.ts`)
 - [x] Docs: `CLAUDE.md` (stack, repo map, commands, "Database" conventions), `readme.md`, `MASTER.md`, the `seo-reviewer` agent, and the plan's "Deferred to Follow-Up Work" on tasks 15, 16, 18, 20, 22, 23, 28, 40 and 41
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [lesson](../solutions/conventions/nextjs-16-dev-server-is-not-one-process-use-cache-probe.md)
 - [ ] Merge into `main`
 
 ### 15_auth_otp_login
