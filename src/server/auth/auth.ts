@@ -46,7 +46,7 @@ export type AuthDependencies = {
  * values: phone numbers, codes, session tokens. Only the level and the
  * message are printed.
  */
-function logWithoutDetails(level: "info" | "success" | "warn" | "error" | "debug", message: unknown): void {
+export function logWithoutDetails(level: "info" | "success" | "warn" | "error" | "debug", message: unknown): void {
   // Better Auth needs its own web address only for its web endpoints (email
   // links, OAuth callbacks), which this site doesn't have. Without this, every
   // process would print that warning once.

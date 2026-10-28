@@ -85,8 +85,15 @@ afterAll(async () => {
   await closeDatabase(db);
 });
 
+// Everything the code under test prints, checked after each test: no phone
+// number, code or session token may reach a log (plan C2, R13).
+let printed: ReturnType<typeof vi.spyOn>[] = [];
+
 beforeEach(async () => {
   vi.clearAllMocks();
+  printed = (["log", "info", "warn", "error", "debug"] as const).map((level) =>
+    vi.spyOn(console, level).mockImplementation(() => {}),
+  );
   vi.mocked(getDatabase).mockResolvedValue(db);
   // Better Auth reads the time through Date, our service through the clock:
   // faking only Date moves both together. Timers stay real (PGlite needs them).
@@ -94,8 +101,20 @@ beforeEach(async () => {
   vi.setSystemTime(start);
   for (const table of [consents, sessions, users, verifications, loginAttempts, devMessages]) await db.delete(table);
 });
-afterEach(() => {
+afterEach(async () => {
   vi.useRealTimers();
+  const output = inspect(printed.flatMap((spy) => spy.mock.calls), { depth: 10 });
+  for (const spy of printed) spy.mockRestore();
+  const numbers = (await db.select({ number: loginAttempts.phoneNumber }).from(loginAttempts)).map((row) =>
+    row.number.slice(3),
+  );
+  const codes = (await db.select({ body: devMessages.body }).from(devMessages)).flatMap(
+    (row) => /^(\d{6}) /.exec(row.body)?.[1] ?? [],
+  );
+  const tokens = (await db.select({ token: sessions.token }).from(sessions)).map((row) => row.token);
+  for (const secret of [...numbers, ...codes, ...tokens]) {
+    expect(output, "something printed holds a number, a code or a token").not.toContain(secret);
+  }
 });
 
 /** `seconds` after the test started. */

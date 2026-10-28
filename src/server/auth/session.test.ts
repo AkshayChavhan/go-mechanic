@@ -5,7 +5,10 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vit
 import { closeDatabase, createDatabase, type Database } from "@/server/db";
 import { sessions, users, verifications } from "@/server/db/schema";
 
+import { inspect } from "node:util";
+
 import { type Auth, createAuth } from "./auth";
+import { LoginServiceError } from "./errors";
 import { getAuth } from "./instance";
 import { getCurrentUser } from "./session";
 
@@ -86,5 +89,31 @@ describe("getCurrentUser (who is logged in, for pages)", () => {
     vi.mocked(headers).mockResolvedValue(new Headers({ cookie: await logIn() }));
     await db.delete(sessions);
     expect(await getCurrentUser()).toBeNull();
+  });
+});
+
+describe("getCurrentUser when the database fails", () => {
+  test("throws a LoginServiceError that holds no session token", async () => {
+    const cookie = await logIn();
+    const token = /better-auth\.session_token=([^.;]+)/.exec(cookie)?.[1];
+    expect(token).toBeTruthy();
+    const broken = await createDatabase({ driver: "pglite", dataDir: null });
+    await closeDatabase(broken);
+    vi.mocked(getAuth).mockResolvedValue(
+      createAuth({ db: broken, secret: "test-secret-that-is-at-least-32-characters-long", secureCookies: false, sendCode: async () => {}, onVerified: async () => {} }),
+    );
+    vi.mocked(headers).mockResolvedValue(new Headers({ cookie }));
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const failure = await getCurrentUser().then(
+      () => "no error",
+      (error: unknown) => error,
+    );
+    quiet.mockRestore();
+    // Better Auth answers the failed read with its own APIError; what
+    // reaches the page (and Next.js's log) is only the step and that name.
+    expect(failure).toBeInstanceOf(LoginServiceError);
+    expect((failure as Error).message).toBe("getCurrentUser failed (APIError)");
+    expect(inspect(failure, { depth: 10 })).not.toContain(token);
   });
 });
