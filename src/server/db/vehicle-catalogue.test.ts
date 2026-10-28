@@ -6,6 +6,8 @@ import { FUELS, VEHICLE_KINDS } from "@/domain/vehicles";
 
 import { closeDatabase, createDatabase, type Database } from "./index";
 import { fuel, vehicleCategories, vehicleKind, vehicleMakes, vehicleModels } from "./schema";
+import { seedVehicleCatalogue } from "./seed";
+import { draftCatalogue } from "./vehicle-seed-data";
 
 // Starting PGlite (Postgres compiled to WebAssembly) and migrating it takes a
 // few seconds, and much longer when the full test run shares a busy machine
@@ -130,5 +132,88 @@ describe("the catalogue's tables", () => {
       code: "23001",
       constraint: "vehicle_models_make_kind_fkey",
     });
+  });
+});
+
+/**
+ * Every id in each catalogue table, sorted, plus the model rows without their
+ * timestamps (two databases seeded a moment apart differ only there).
+ */
+async function snapshot(db: Database) {
+  const sortIds = (rows: { id: string }[]) => rows.map((row) => row.id).sort();
+  const { id, makeId, categoryId, kind, name, fuels, position, listed } = vehicleModels;
+  return {
+    categories: sortIds(await db.select({ id: vehicleCategories.id }).from(vehicleCategories)),
+    makes: sortIds(await db.select({ id: vehicleMakes.id }).from(vehicleMakes)),
+    models: await db
+      .select({ id, makeId, categoryId, kind, name, fuels, position, listed })
+      .from(vehicleModels)
+      .orderBy(id),
+  };
+}
+
+const draftModelCount = draftCatalogue.makes.reduce((count, make) => count + make.models.length, 0);
+
+describe("seeding the catalogue", () => {
+  let db: Database;
+
+  beforeAll(async () => {
+    db = await createDatabase({ driver: "pglite", dataDir: null });
+  });
+
+  afterAll(async () => {
+    await closeDatabase(db);
+  });
+
+  test("a new database holds every draft price group, brand and model", async () => {
+    const { categories, makes, models } = await snapshot(db);
+    expect(categories).toEqual(draftCatalogue.categories.map((category) => category.id).sort());
+    expect(makes).toEqual(draftCatalogue.makes.map((make) => make.id).sort());
+    expect(models).toHaveLength(draftModelCount);
+    const city = models.find((model) => model.id === "car-honda-city");
+    expect(city).toMatchObject({ makeId: "car-honda", kind: "car", categoryId: "sedan", listed: true });
+  });
+
+  test("two separate databases give every row the same id (each build worker seeds its own)", async () => {
+    const other = await createDatabase({ driver: "pglite", dataDir: null });
+    try {
+      expect(await snapshot(other)).toEqual(await snapshot(db));
+    } finally {
+      await closeDatabase(other);
+    }
+  });
+
+  test("seeding again adds nothing and changes nothing", async () => {
+    const before = await snapshot(db);
+    await seedVehicleCatalogue(db);
+    expect(await snapshot(db)).toEqual(before);
+  });
+
+  test("keeps the owner's edits and hidden rows, and puts back a draft row that's missing", async () => {
+    await db.update(vehicleModels).set({ name: { en: "City e:HEV" } }).where(eq(vehicleModels.id, "car-honda-city"));
+    await db.update(vehicleModels).set({ listed: false }).where(eq(vehicleModels.id, "car-honda-jazz"));
+    await db.delete(vehicleModels).where(eq(vehicleModels.id, "car-honda-amaze"));
+
+    await seedVehicleCatalogue(db);
+
+    const rows = await db.select().from(vehicleModels).where(eq(vehicleModels.makeId, "car-honda"));
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    expect(byId.get("car-honda-city")?.name).toEqual({ en: "City e:HEV" });
+    expect(byId.get("car-honda-jazz")?.listed).toBe(false);
+    expect(byId.get("car-honda-amaze")).toMatchObject({ name: { en: "Amaze" }, listed: true });
+  });
+
+  test("checks the catalogue first: a model with no fuels throws and nothing is written", async () => {
+    const [first, ...rest] = draftCatalogue.makes;
+    const broken = {
+      ...draftCatalogue,
+      makes: [
+        { ...first!, models: [...first!.models, { id: `${first!.id}-new`, name: { en: "New" }, categoryId: "suv", fuels: [] }] },
+        ...rest,
+      ],
+    };
+    await expect(seedVehicleCatalogue(db, broken)).rejects.toThrow("The seed vehicle catalogue is invalid");
+    const [row] = await db.select().from(vehicleModels).where(eq(vehicleModels.id, `${first!.id}-new`));
+    expect(row).toBeUndefined();
   });
 });
