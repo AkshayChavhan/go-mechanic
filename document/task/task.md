@@ -581,6 +581,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Decide whether to add a `favicon.ico`: today `/favicon.ico` gets Next.js's bare 404, because the proxy skips `.ico` paths (task 12)
 - [ ] The home page's title and description name Kiwale, Pune (task 13 changed only the h1 and the description's wording), with `AutoRepair` JSON-LD and a social image (task 13)
 - [ ] Once the domain is known, add the WebOTP line (`@domain #code`) to the login SMS (`Sms.loginCode`), so Android can fill the code in (task 15)
+- [ ] `Login.metaTitle` and `Account.metaTitle` already end in the brand ("Log in | {brand}"), like `NotFound.metaTitle`. With a `%s | GoMechanic` title template they would read "Log in | GoMechanic | GoMechanic": drop the brand from those messages, or return `title: { absolute: ... }` (SEO check in task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
