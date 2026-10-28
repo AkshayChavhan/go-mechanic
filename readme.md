@@ -47,7 +47,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `components.json` | Settings for Next.js, TypeScript, ESLint and shadcn/ui. |
 | `drizzle.config.ts` | Settings for drizzle-kit, the tool that turns the database schema (`src/server/db/schema.ts`) into SQL migrations (`src/server/db/migrations/`). |
 | `.env.example` | The server settings you *could* set (`APP_ENV`, `DATABASE_URL`), with fake values. Local development needs none of them. |
-| `.pglite/` | Your local database, made by the first `npm run dev`. Git ignores it. |
+| `.pglite/`, `.pglite.lock` | Your local database, made by the first `npm run dev`, and the lock file that stops a second program opening it at the same time. Git ignores both. |
 | `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright.dev.config.ts` | Test settings. |
 | `AGENTS.md` | Notes from Next.js for AI coding agents. |
 
@@ -70,7 +70,7 @@ Other commands:
 | `npm run test:design` | Checks the `/dev/design` page and the home page in Chrome (sizes, contrast, focus, motion) and saves screenshots. Run it after any design change. Note: `npm run dev` shows "Sample" stats and reviews on the home page that the live site never shows. |
 | `npm run build` / `npm start` | Build the production version / run it |
 | `npm run lint`, `npm run typecheck`, `npm run test` | The three parts of `check`, one at a time |
-| `npm run db:reset` | Deletes your local database (`.pglite/`); the next `npm run dev` starts a fresh one with the garage's details. Use it when the local data is in a mess or a migration you were writing went wrong. Stop `npm run dev` first. |
+| `npm run db:reset` | Deletes your local database (`.pglite/` and its lock); the next `npm run dev` starts a fresh one with the garage's details. Use it when the local data is in a mess or a migration you were writing went wrong. Stop `npm run dev` first. |
 | `npm run db:generate -- --name=<what_changed>` | After changing `src/server/db/schema.ts`: writes the SQL migration for it. Commit it with the schema change, then restart `npm run dev` to apply it. |
 
 ## Prerequisites
