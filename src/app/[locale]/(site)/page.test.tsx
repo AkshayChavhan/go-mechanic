@@ -6,7 +6,9 @@ import { sceneSelector } from "@/components/site/scroll-scene-attributes";
 import { services } from "@/content/services";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { readGarage } from "@/server/dal/garage";
+import { readVehicleCatalogue } from "@/server/dal/vehicles";
 import { ownerGarage } from "@/server/db/seed-data";
+import { draftCatalogue } from "@/server/db/vehicle-seed-data";
 import messages from "../../../../messages/en.json";
 
 import { FOOTER_TONE } from "./_components/home-tones";
@@ -19,6 +21,8 @@ import Home, { ensureStatic } from "./page";
 // inside a Next.js render: here it's next-intl's own translator over the
 // real messages.
 vi.mock("@/server/dal/garage", () => ({ readGarage: vi.fn() }));
+// The brands row (task 17) reads the vehicle catalogue: the draft here.
+vi.mock("@/server/dal/vehicles", () => ({ readVehicleCatalogue: vi.fn() }));
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
   const { default: allMessages } = await import("../../../../messages/en.json");
@@ -31,6 +35,7 @@ const home = messages.HomePage;
 
 beforeEach(() => {
   vi.mocked(readGarage).mockResolvedValue(ownerGarage);
+  vi.mocked(readVehicleCatalogue).mockResolvedValue(draftCatalogue);
 });
 
 afterEach(() => {
@@ -148,6 +153,35 @@ describe("Home page", () => {
       expect(within(section).getByRole("heading", { level: 3, name: service.name.en })).toBeTruthy();
     }
     expect(section.querySelector("a, button")).toBeNull();
+  });
+
+  test("under the services, lists the brands the garage works on, cars and two-wheelers, in order, with no links", async () => {
+    renderWithIntl(await Home());
+    const section = sectionOf(home.services.title);
+    const block = within(section).getByRole("heading", { level: 3, name: home.services.brands.title }).parentElement!;
+    const lists = [...block.querySelectorAll("dt")].map((label) => ({
+      label: label.textContent,
+      brands: [...label.nextElementSibling!.querySelectorAll("li")].map((item) => item.textContent),
+    }));
+    const namesOf = (kind: string) => draftCatalogue.makes.filter((make) => make.kind === kind).map((make) => make.name.en);
+    expect(lists).toEqual([
+      { label: home.services.brands.cars, brands: namesOf("car") },
+      { label: home.services.brands.twoWheelers, brands: namesOf("two-wheeler") },
+    ]);
+    expect(block.querySelector("a, button, img")).toBeNull();
+  });
+
+  test("leaves out a kind with no brands, and the whole block when there are none", async () => {
+    const carsOnly = { ...draftCatalogue, makes: draftCatalogue.makes.filter((make) => make.kind === "car") };
+    vi.mocked(readVehicleCatalogue).mockResolvedValue(carsOnly);
+    const { container, unmount } = renderWithIntl(await Home());
+    // The list labels are the block's <dt>s ("Cars" is on the service tiles too).
+    expect([...container.querySelectorAll("dt")].map((label) => label.textContent)).toEqual([home.services.brands.cars]);
+    unmount();
+
+    vi.mocked(readVehicleCatalogue).mockResolvedValue({ categories: [], makes: [] });
+    renderWithIntl(await Home());
+    expect(screen.queryByRole("heading", { name: home.services.brands.title })).toBeNull();
   });
 
   test.each(["test", "development"])("no link or button sits inside, or around, a reveal target (%s)", async (nodeEnv) => {
