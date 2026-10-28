@@ -24,7 +24,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | Done | [12_layout_shell.md](../learning/12_layout_shell.md) |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | Done | [13_home_page.md](../learning/13_home_page.md) |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | Done | [14_database_setup.md](../learning/14_database_setup.md) |
-| 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | To do |  |
+| 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | In progress |  |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
@@ -260,7 +260,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 15_auth_otp_login
 
-- [ ] Create branch `15_auth_otp_login`
+- [x] Create branch `15_auth_otp_login`
 - [ ] Plan with `ce-plan`
 - [ ] Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox`
 - [ ] A login or account entry in the header goes in a `<Suspense>` slot or a client island, never a cookie read in `SiteHeader` (every public page would turn dynamic). Decide whether the phone bar hides while a form field has focus (task 12)
