@@ -18,6 +18,13 @@
 //                 the browser tests' copy of the fake's SMS (one JSON line
 //                 each, playwright.config.ts). Local runs only: it's refused
 //                 on staging, production and Vercel.
+//   OWNER_PHONE_NUMBER
+//                 whoever logs in with this mobile (E.164, "+919764750567") is
+//                 the garage's owner (src/domain/roles.ts, effectiveRole).
+//                 Required on staging and production; locally it defaults to
+//                 the garage's own number (the owner's choice, 2026-10-28).
+//                 Change it to move owner access: the old number becomes a
+//                 customer on its next request.
 //
 // DATABASE_URL and BETTER_AUTH_SECRET are secrets, so error messages name a
 // variable but never print its value: errors end up in logs that more people
@@ -27,6 +34,8 @@
 // imports this file, so the URL can't end up in the JavaScript visitors download.
 
 import "server-only";
+
+import { isIndianMobileNumber } from "@/lib/contact-links";
 
 export const APP_ENVS = ["local", "staging", "production"] as const;
 
@@ -42,6 +51,12 @@ export type SmsProviderName = (typeof SMS_PROVIDERS)[number];
  */
 export const LOCAL_AUTH_SECRET = "local-only-login-secret-never-used-on-a-deployment";
 
+/**
+ * The owner's number for local runs: the garage's own number, as in the
+ * database seed (src/server/db/seed-data.ts; env.test.ts checks they match).
+ */
+export const LOCAL_OWNER_PHONE_NUMBER = "+919764750567";
+
 /** The shortest BETTER_AUTH_SECRET accepted. */
 export const MIN_AUTH_SECRET_LENGTH = 32;
 
@@ -54,6 +69,8 @@ export type ServerEnv = {
   smsProvider: SmsProviderName;
   /** Where the fake SMS provider also writes each message, for the browser tests. */
   e2eOutboxFile: string | undefined;
+  /** Whoever logs in with this number (E.164) is the owner. */
+  ownerPhoneNumber: string;
 };
 
 /** What's wrong with one variable. Codes, not sentences, like HoursProblem. */
@@ -62,7 +79,8 @@ export type ServerEnvProblem =
   | { variable: "DATABASE_URL"; problem: "missing" | "not-postgres" }
   | { variable: "BETTER_AUTH_SECRET"; problem: "missing" | "too-short" }
   | { variable: "SMS_PROVIDER"; problem: "unknown-provider" | "fake-in-production" }
-  | { variable: "E2E_OUTBOX_FILE"; problem: "local-only" };
+  | { variable: "E2E_OUTBOX_FILE"; problem: "local-only" }
+  | { variable: "OWNER_PHONE_NUMBER"; problem: "missing" | "not-mobile" };
 
 // One readable line per problem. None of them includes a value.
 const explanations: Record<ServerEnvProblem["problem"], string> = {
@@ -74,6 +92,7 @@ const explanations: Record<ServerEnvProblem["problem"], string> = {
   "unknown-provider": `must be ${SMS_PROVIDERS.join(" or ")}`,
   "fake-in-production": "can't be fake (the default) when APP_ENV is production: production sends real SMS (task 44)",
   "local-only": "is only for local test runs (APP_ENV local, not on Vercel)",
+  "not-mobile": "must be an Indian mobile number written as +91 and 10 digits, with no spaces",
 };
 
 /** Thrown by parseServerEnv, with every problem it found. */
@@ -150,10 +169,24 @@ export function parseServerEnv(vars: Record<string, string | undefined>): Server
     problems.push({ variable: "E2E_OUTBOX_FILE", problem: "local-only" });
   }
 
+  const setOwnerNumber = valueOf(vars, "OWNER_PHONE_NUMBER");
+  if (setOwnerNumber === undefined) {
+    if (deployed) problems.push({ variable: "OWNER_PHONE_NUMBER", problem: "missing" });
+  } else if (!isIndianMobileNumber(setOwnerNumber)) {
+    problems.push({ variable: "OWNER_PHONE_NUMBER", problem: "not-mobile" });
+  }
+
   // A missing appEnv or smsProvider always comes with a problem; checking
   // them too tells TypeScript that they're set below.
   if (problems.length > 0 || !appEnv || !smsProvider) throw new ServerEnvError(problems);
-  return { appEnv, databaseUrl, authSecret: setSecret ?? LOCAL_AUTH_SECRET, smsProvider, e2eOutboxFile };
+  return {
+    appEnv,
+    databaseUrl,
+    authSecret: setSecret ?? LOCAL_AUTH_SECRET,
+    smsProvider,
+    e2eOutboxFile,
+    ownerPhoneNumber: setOwnerNumber ?? LOCAL_OWNER_PHONE_NUMBER,
+  };
 }
 
 let remembered: ServerEnv | undefined;

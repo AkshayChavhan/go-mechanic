@@ -16,6 +16,7 @@ describe("smsProvider (picks the provider from SMS_PROVIDER)", () => {
       authSecret: "x".repeat(32),
       smsProvider: "fake",
       e2eOutboxFile: undefined,
+      ownerPhoneNumber: "+919764750567",
     });
     vi.mocked(saveDevMessage).mockResolvedValue(undefined);
 
