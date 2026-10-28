@@ -360,8 +360,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 22_slot_engine
 
 - [x] Create branch `22_slot_engine`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [2026-10-28-1754-feat-slot-engine-plan.md](../plans/2026-10-28-1754-feat-slot-engine-plan.md)
 - [ ] Time slots, capacity, holidays; atomic slot reservation
+- [x] Notes for the tasks that build on the slot engine (20, 23 to 28, 43) at the end of the backlog: this task may edit only its own steps (three sessions work in parallel)
 - [ ] Slot rules from the owner (2026-10-28): 1-hour slots; customers book up to 7 days ahead, from tomorrow on (no same-day slots). Capacity is a **placeholder**: 2 vehicles per slot, cars and two-wheelers together, until the owner gives the real number
 - [ ] The slot engine reads the hours through the data-access layer (`readGarage()` or a new read in `src/server/dal/`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
 - [ ] Write the learning doc
@@ -646,6 +647,13 @@ Not in version 1. See [features.md](../website/features.md).
 - App-like install for customers, roadside-assistance dispatch, more branches
 - The local database lock (`src/server/db/folder-lock.ts`): if two processes start within milliseconds of each other and both find a lock left by a stopped process, both can take it over (each deletes the old file, and the second can delete the first one's new lock). Take it over by renaming the old file aside and checking it still names the stopped process, instead of deleting it. Rare: it needs two `npm run dev` starting together after a crash (task 14 code review)
 - `npm audit` shows 3 low findings from a deepmerge advisory through the shadcn CLI (also on `main`, seen in task 14). Revisit when shadcn updates; don't run `npm audit fix --force` (it would install shadcn 1.0.0)
+- For task 20: the Supabase seed also writes the `slot_rules` row (`ownerSlotRules` in `src/server/db/seed-data.ts`; the slot reads throw without it). Then prove "never overbooked" on real Postgres: N parallel `reserveSlot` calls on one slot never pass its capacity (PGlite runs one query or one transaction at a time, so the unit tests can't) (task 22)
+- For task 23: in the booking transaction, call `reserveSlot(tx, ...)` before writing the booking and return a non-ok answer at once; write the booking only after an ok. Confirm with the owner that a pending booking holds a place from creation (task 22 assumes so). Add a test that every slot's counter equals its active bookings. Read slots with `readAvailableSlots` inside `<Suspense>` (with `io()` first if the clock is read before the first uncached query) (task 22)
+- For task 24: a pickup booking's slot is the time the vehicle reaches the garage, and it takes a place like any booking (task 22)
+- For tasks 25 and 27: cancel by updating the booking only while it's active (`update ... where status in (...) returning`) and call `releaseSlot` only when a row comes back, so two cancels at once release once. Reschedule through `moveSlot` (task 22)
+- For task 26: `reserveSlot` and `moveSlot` apply the customer window (tomorrow to 7 days ahead). Phone and walk-in bookings need a staff rule (today, later dates; may staff go over "full"?): ask the owner, then add it as an option (task 22)
+- For task 28: edit slot rules (`checkSlotRules`) and closed dates. Before saving rules, hours (`saveGarage`) or a closed date, list the future reservations it would strand; lock the `slot_rules` row in each save and have `reserveSlot` read it `for share`, so the list includes reservations still being made. Add a cached closed-dates read so the open badge says "Closed" on those dates (task 22)
+- For task 43: deleting a customer's data releases their future bookings' places (task 22)
 
 ## How to add a task
 
