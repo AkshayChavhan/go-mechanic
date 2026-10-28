@@ -287,7 +287,7 @@ To look for yourself: run `npm run dev` and open http://localhost:3000. The head
   
   Also fixed: `folder-lock.ts` and `.pglite.lock` were missing from the "What" table, and `CLAUDE.md` now lists all 7 `npm audit` findings, not just the 4 moderate ones. One nice-to-have went to the backlog: two processes starting within milliseconds after a crash can both take over the same stale lock (rare; the fix is to rename the old lock aside instead of deleting it). The reviewer also noted that `e76ee8d` holds three separate fixes; next time each fix gets its own commit.
 - **Compound: one lesson.** [`nextjs-16-dev-server-is-not-one-process-use-cache-probe.md`](../solutions/conventions/nextjs-16-dev-server-is-not-one-process-use-cache-probe.md). Without it, a future session would trust the "probe failures are inconclusive" comment in Next.js's source and repeat the 500, or open a new single-process resource (a fake provider writing to a file, task 15) in the helper.
-- **Pull request:** Pending.
+- **Pull request:** [#13](https://github.com/AkshayChavhan/go-mechanic/pull/13), opened on 2026-10-28 after the owner's OK. The branch's first commit (`docs(14): start task 14`) was already on GitHub: the owner pushed it from VS Code on 2026-10-27, two seconds after it was made, so `git push` here was a plain fast-forward.
 
 ## Common mistakes
 
