@@ -8,12 +8,8 @@
 // Summaries describe the work plainly. They promise nothing the garage
 // doesn't offer yet: no pickup, warranty, parts or turnaround claims.
 
+import type { VehicleKind } from "@/domain/vehicles";
 import type { LocalizedText } from "@/i18n/localized-text";
-
-/** The kinds of vehicle the garage repairs. */
-export const VEHICLE_KINDS = ["car", "two-wheeler"] as const;
-
-export type VehicleKind = (typeof VEHICLE_KINDS)[number];
 
 export type Service = {
   /**

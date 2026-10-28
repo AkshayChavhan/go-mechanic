@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
 
-import { services, VEHICLE_KINDS } from "./services";
+import { VEHICLE_KINDS } from "@/domain/vehicles";
+
+import { services } from "./services";
 
 // The services the home page lists (plan KTD8). The names and their order are
 // the owner's (features.md, item 4). The one-line summaries and the vehicle
