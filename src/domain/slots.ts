@@ -167,8 +167,11 @@ export function availableSlots(
  * Why a customer can't book the slot starting at `startsAt` now, or null when
  * they can (if a place is left: the database checks that). Uses the same
  * window and slot times as availableSlots, so the two never disagree.
- * Checked in this order: not a slot time at all, outside the booking window,
- * on a closed date.
+ * Checked in this order: an Invalid Date or invalid rules ("not-a-slot"),
+ * outside the booking window, including a slot that has started
+ * ("outside-window"), not a slot time on that date ("not-a-slot"), on a
+ * closed date ("closed-date"). So 10:30 on a day past the window is
+ * "outside-window", not "not-a-slot".
  */
 export function checkSlotRequest(schedule: Schedule, startsAt: Date, now: Date): SlotRequestProblem | null {
   // An Invalid Date (from a bad form value) or invalid rules: nothing to book.

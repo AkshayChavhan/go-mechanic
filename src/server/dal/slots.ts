@@ -9,10 +9,14 @@
 //    non-ok answer at once. Write the booking row, or change its slot, only
 //    after an ok; otherwise returning "full" would commit a booking with no
 //    place.
-// 3. Release with the slot read from the stored booking row, never from a
-//    form. Release only when the booking really stopped holding a place: for
-//    a cancel, update the booking `where status in (...) returning`, and
-//    release only if a row came back, so two cancels at once release once.
+// 3. Any change to an existing booking's place (cancel, reschedule, deleting
+//    a customer's data) first locks the booking row with
+//    `select ... for update` and reads its slot and status from that locked
+//    row, never from a form. Only then call releaseSlot or moveSlot, then
+//    write the booking. Two such changes at once (a double click, a customer
+//    and staff together) then run one after the other, and the second sees
+//    the first's result: without the lock both read the old slot and give
+//    its place back twice, and that slot can be overbooked.
 // 4. Never call getDatabase() (or readGarage()) while a transaction is open:
 //    PGlite has one connection, and the query would wait forever. Every
 //    read here goes through the `db` it's given.
@@ -46,9 +50,18 @@ import { weeklyHours } from "./garage";
 
 /**
  * What the slot functions run their queries through: the database itself
- * or, for reserve, release and move, the caller's transaction on it.
+ * or, for reserve and release, the caller's transaction on it.
  */
 export type SlotDatabase = Pick<Database, "select" | "insert" | "update">;
+
+/**
+ * A transaction on the database: what moveSlot requires. A move is two
+ * statements (take the new place, give back the old one), so it must never
+ * run on the bare database, where a failed release would leave the new place
+ * taken for good. (A transaction has `rollback()`; the database doesn't, so
+ * passing the database fails `npm run typecheck`.)
+ */
+export type SlotTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
 
 /** The answer to a reservation or a move. */
 export type ReserveResult = { ok: true } | { ok: false; problem: SlotRequestProblem | "full" };
@@ -92,7 +105,10 @@ export async function readSchedule(db: SlotDatabase, now: Date): Promise<Schedul
  * The booking window's days with their slots and places left, as of now.
  *
  * Reads the time and live counts: call it at request time, inside a
- * <Suspense> boundary (task 23), never while a page is prerendered.
+ * <Suspense> boundary (task 23), never while a page is prerendered. It reads
+ * the clock before its first query, so with Cache Components the caller runs
+ * `await io()` from "next/cache" first (node_modules/next/dist/docs/01-app/
+ * 03-api-reference/04-functions/io.md).
  */
 export async function readAvailableSlots(clock: Clock = systemClock): Promise<SlotDay[]> {
   const now = clock.now();
@@ -172,7 +188,7 @@ export async function releaseSlot(db: SlotDatabase, startsAt: Date): Promise<voi
  * changes nothing and succeeds, even when that slot is full.
  */
 export async function moveSlot(
-  db: SlotDatabase,
+  db: SlotTransaction,
   from: Date,
   to: Date,
   clock: Clock = systemClock,
