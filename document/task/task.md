@@ -367,8 +367,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] The slot engine reads the hours through the data-access layer (`readSchedule` in `src/server/dal/slots.ts`, through `weeklyHours` from `garage.ts`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
 - [x] Rules for slot callers in `CLAUDE.md` ("Booking slots")
 - [x] Write the learning doc: [22_slot_engine.md](../learning/22_slot_engine.md)
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `ce-code-review` and `code-reviewer` and fix what they find (verdicts and fixes in the learning doc)
+- [x] Compound: [pglite-parallel-tests-bare-database-not-transaction-per-call.md](../solutions/conventions/pglite-parallel-tests-bare-database-not-transaction-per-call.md)
 - [ ] Merge into `main`
 
 ### 23_booking_flow
