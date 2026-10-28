@@ -31,7 +31,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
-| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | To do |  |
+| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress |  |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
@@ -359,9 +359,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 22_slot_engine
 
-- [ ] Create branch `22_slot_engine`
+- [x] Create branch `22_slot_engine`
 - [ ] Plan with `ce-plan`
 - [ ] Time slots, capacity, holidays; atomic slot reservation
+- [ ] Slot rules from the owner (2026-10-28): 1-hour slots; customers book up to 7 days ahead, from tomorrow on (no same-day slots). Capacity is a **placeholder**: 2 vehicles per slot, cars and two-wheelers together, until the owner gives the real number
 - [ ] The slot engine reads the hours through the data-access layer (`readGarage()` or a new read in `src/server/dal/`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
