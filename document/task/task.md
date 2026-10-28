@@ -31,7 +31,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
-| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress |  |
+| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
@@ -366,7 +366,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Slot rules from the owner (2026-10-28): 1-hour slots; customers book up to 7 days ahead, from tomorrow on (no same-day slots). Capacity is a **placeholder**: 2 vehicles per slot, cars and two-wheelers together, until the owner gives the real number
 - [x] The slot engine reads the hours through the data-access layer (`readSchedule` in `src/server/dal/slots.ts`, through `weeklyHours` from `garage.ts`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
 - [x] Rules for slot callers in `CLAUDE.md` ("Booking slots")
-- [ ] Write the learning doc
+- [x] Write the learning doc: [22_slot_engine.md](../learning/22_slot_engine.md)
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
