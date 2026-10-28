@@ -57,7 +57,7 @@ ce-plan's document review was cut off: its run hung after the plan was written (
   - Resend posts it, and its new row copies the consent fields from that attempt (same number, or refused).
   - Verify posts it too. The callback copies exactly that attempt's snapshot into `consents`, after checking the attempt's number. A missing or mismatched attempt throws, so no session is created.
   - The limits (R10) count only rows with `sms_sent`.
-- **C4. Limits can't be beaten by a burst.** Deciding and writing the attempt happen in one transaction that first takes `pg_advisory_xact_lock` on the number, and on the IP when there is one. The SMS is sent after the commit, outside the transaction: a query made while the transaction holds PGlite's only connection would wait forever. Test: 10 parallel requests for one number produce exactly 5 SMS.
+- **C4. Limits can't be beaten by a burst.** Deciding and writing the attempt happen in one transaction that first takes `pg_advisory_xact_lock` on the number, and on the IP when there is one. The SMS is sent after the commit, outside the transaction: a query made while the transaction holds PGlite's only connection would wait forever. Test: 10 parallel requests for one number send exactly one SMS (the others are decided after it, inside its 30-second wait; corrected 2026-10-28, the earlier "5" ignored that wait).
 - **C5. A "usable live code" means unexpired and with tries left.**
   - Better Auth stores `code:attempts` and re-creates the row as `code:3` after the third wrong try. It deletes the row only on the fourth call, which answers `TOO_MANY_ATTEMPTS`.
   - The DAL's `readLiveCode(number)` parses that value and returns `{ expiresAt, triesLeft }` or null. U1's spike pins the format with a test.
@@ -172,7 +172,7 @@ Three constraints shape it. First, OTP SMS costs money and attracts abuse (SMS p
 - **Task 35:** reuse `dev_messages` and the provider pattern for WhatsApp and email; `notify()` respects the consent purposes.
 - **Task 42:** the WebOTP line (`@domain #code`) in the SMS once the domain is known.
 - **Task 43:** consent withdrawal and history; what deleting a user does to its consent records (U1 makes that delete fail until 43 decides); mention session IP and user agent in the notice.
-- **Task 44:** the MSG91 provider (`SMS_PROVIDER=msg91`) and its DLT template, Turnstile on the phone step, tuned limits, a daily SMS cap, closing the small race where two simultaneous sends both pass the limit check, a provider-failure message, and sending through Better Auth's background-task hook.
+- **Task 44:** the MSG91 provider (`SMS_PROVIDER=msg91`) and its DLT template, Turnstile on the phone step, tuned limits, a daily SMS cap, a provider-failure message, and sending through Better Auth's background-task hook.
 
 ### Open Questions
 
@@ -585,7 +585,7 @@ Phases: foundation (U1–U3), server (U4–U6), pages (U7–U9), proof and docs 
 - Happy path: request a code for a new number with both boxes ticked. One send record and one `dev_messages` row whose text holds the code. Verifying that code gives one user, two consent rows at `LOGIN_NOTICE_VERSION` with `given_at` equal to the send time, and one session.
 - A returning user who logs in again at the same notice version adds no consent rows. At a newer version (version stubbed in the test), two rows are added.
 - Requesting again from the phone step while the code is usable returns `alreadySent` with resend at send plus 30 s, and no second SMS. Resend after 30 s sends a new code (C1); Resend before 30 s gives `tooSoon`.
-- Ten parallel requests for one number send exactly 5 SMS (C4). A failing provider leaves no `verifications` row, and a retry sends (C6).
+- Ten parallel requests for one number send exactly one SMS (C4). A failing provider leaves no `verifications` row, and a retry sends (C6).
 - Verify with a missing attempt id, or one for another number, creates no session (C3). No error thrown by the service contains the number, the code or a token (C2).
 - `wrongCode` for a wrong code. After 3 wrong tries the 4th call gives `tooManyTries`, and the right code then also fails.
 - An expired code (system time moved 5 minutes 1 second on) gives `wrongCode`, and a new request then sends a new code.

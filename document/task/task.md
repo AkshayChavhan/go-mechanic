@@ -267,8 +267,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] `/dev/outbox` is a page under `src/app/[locale]/dev/` that calls `devOnly()` in the page and `generateMetadata` (`dev-only.test.ts` checks every dev page). No Route Handler was needed
 - [x] Better Auth's tables go into the same schema and migrations (`src/server/db/schema.ts`, migration `0001_auth_login`), written by hand with Better Auth's field names and snake_case columns. Its Drizzle adapter gets the database from `getDatabase()` (task 14)
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `code-reviewer` and fix what it finds (after `ce-code-review`: "Ready with fixes", 8 findings fixed)
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [Better Auth from Server Actions](../solutions/conventions/better-auth-phone-login-only-from-server-actions.md), [Playwright networkidle](../solutions/conventions/playwright-networkidle-hangs-after-second-page-load.md)
 - [ ] Merge into `main`
 
 ### 16_roles_access
