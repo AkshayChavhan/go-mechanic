@@ -475,3 +475,17 @@ describe("clientIpKey (whose limit a request counts towards)", () => {
     expect(clientIpKey(new Headers({ "x-forwarded-for": "unknown" }), "staging")).toBeNull();
   });
 });
+
+describe("hot reloads under npm run dev", () => {
+  test("a reloaded login service shares the same request store, so a kept auth instance still works", async () => {
+    // As if `npm run dev` had loaded login.ts again after an edit, while
+    // getAuth() kept the auth instance built with the first copy's callbacks.
+    vi.resetModules();
+    const reloaded = await import("./login");
+    expect(await reloaded.requestLoginCode(
+      auth,
+      { locale: "en", intent: "start", phoneTyped: typed, ageConfirmed: true, contactConsent: true, ipKey: null },
+      systemClock,
+    )).toMatchObject({ ok: true, sent: true });
+  });
+});

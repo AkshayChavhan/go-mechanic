@@ -3,7 +3,9 @@
 // It needs the database, and getDatabase() is async, so the instance can't
 // be made when this file loads. It's kept on globalThis, next to the
 // database, so hot reloads under `npm run dev` reuse it. A change to the
-// auth settings (auth.ts) therefore needs a dev-server restart.
+// auth settings (auth.ts) therefore needs a dev-server restart. The store its
+// callbacks read (loginRequest in login.ts) is on globalThis too, so edits to
+// the login service itself work without one.
 
 import "server-only";
 

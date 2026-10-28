@@ -86,7 +86,13 @@ export type VerifyCodeResult =
 
 type LoginRequest = { locale: Locale; attempt?: LoginAttempt };
 
-const loginRequest = new AsyncLocalStorage<LoginRequest>();
+// Kept on globalThis, like the auth instance (instance.ts) that calls back
+// into this file. Under `npm run dev`, an edit to this file or to anything
+// it imports loads it again; a fresh store here would leave the kept auth
+// instance's callbacks reading the old one, and every login would fail
+// until a restart.
+const globalForLogin = globalThis as typeof globalThis & { loginRequest?: AsyncLocalStorage<LoginRequest> };
+const loginRequest = (globalForLogin.loginRequest ??= new AsyncLocalStorage<LoginRequest>());
 
 // --- What Better Auth calls back -------------------------------------------
 
