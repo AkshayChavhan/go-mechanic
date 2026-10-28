@@ -23,7 +23,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 11 | `11_design_system` | Apple-like design system: tokens, type, motion, restyled controls, `/dev/design` preview | Done | [11_design_system.md](../learning/11_design_system.md) |
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | Done | [12_layout_shell.md](../learning/12_layout_shell.md) |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | Done | [13_home_page.md](../learning/13_home_page.md) |
-| 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | In progress |  |
+| 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | In progress | [14_database_setup.md](../learning/14_database_setup.md) |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | To do |  |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
@@ -253,7 +253,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Read the garage with `'use cache'`, `cacheTag("garage")` and `cacheLife("max")`, so `/` stays prebuilt (`○ /en`). `saveGarage()` checks with `checkGarage` (which uses `isIndianPhoneNumber` and `isIndianMobileNumber`: the shell's formatters never throw, task 12), saves in one transaction and calls `updateTag("garage")`. Nothing calls it until tasks 28 and 40, after task 16's role check
 - [x] Browser-boundary check on a production build: no database code in `.next/static/` (`e2e/server-boundary.spec.ts`)
 - [x] Docs: `CLAUDE.md` (stack, repo map, commands, "Database" conventions), `readme.md`, `MASTER.md`, the `seo-reviewer` agent, and the plan's "Deferred to Follow-Up Work" on tasks 15, 16, 18, 20, 22, 23, 28, 40 and 41
-- [ ] Write the learning doc
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
@@ -630,6 +630,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Real photos of the garage: static imports from a new `src/assets/` folder, passed to the home page's visual slots (the hero's with `eager`), each with its alt text added to `messages/en.json` (task 13)
 - The lint text guard in `eslint.config.mjs` treats every `placeholder` prop as text people read, including next/image's `placeholder="blur"` setting; `src/components/site/visual-slot.tsx` works around it. Narrow that selector to form fields, with a case in `src/i18n/lint-guards.test.ts` (task 13)
 - App-like install for customers, roadside-assistance dispatch, more branches
+- `npm audit` shows 3 low findings from a deepmerge advisory through the shadcn CLI (also on `main`, seen in task 14). Revisit when shadcn updates; don't run `npm audit fix --force` (it would install shadcn 1.0.0)
 
 ## How to add a task
 
