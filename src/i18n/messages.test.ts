@@ -29,6 +29,9 @@ describe("messages/en.json", () => {
         "ActionBar",
         "Offer",
         "Brand",
+        "Login",
+        "Sms",
+        "Account",
       ]),
     );
   });

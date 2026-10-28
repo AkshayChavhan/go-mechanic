@@ -187,6 +187,21 @@ test("the page blocks: illustrations in three tones, a slot, a wide and a normal
   await expect(sample(page, "scroll-values").locator("dt")).toHaveCount(5);
 });
 
+test("the checkbox field: native boxes, ticked by pressing the label's text, the error tied to its box", async ({
+  page,
+}) => {
+  await open(page);
+  const boxes = sample(page, "checkbox-field").getByRole("checkbox");
+  await expect(boxes).toHaveCount(3);
+  await expect(boxes.nth(0)).not.toBeChecked();
+  await expect(boxes.nth(1)).toBeChecked();
+  await sample(page, "checkbox-field").getByText("Send me a reminder the day before my booking.").click();
+  await expect(boxes.nth(0)).toBeChecked();
+  const error = sample(page, "checkbox-field").getByText("Tick this box to continue.");
+  await expect(boxes.nth(2)).toHaveAttribute("aria-invalid", "true");
+  await expect(boxes.nth(2)).toHaveAttribute("aria-describedby", (await error.getAttribute("id"))!);
+});
+
 test.describe("the scroll scene demo", () => {
   const targets = '[data-sample="scroll-scene"] :is([data-scene-reveal], [data-scene-reveal-group] > *)';
 
@@ -228,7 +243,7 @@ test.describe("on a phone (375px, touch screen)", () => {
     expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
   });
 
-  test("every visible button, button link and field is at least 44px tall; icon buttons are 44px wide", async ({
+  test("every visible button, button link, field and checkbox row is at least 44px tall; icon buttons are 44px wide", async ({
     page,
   }) => {
     await open(page);
@@ -239,7 +254,11 @@ test.describe("on a phone (375px, touch screen)", () => {
         .filter((element) => element.getRootNode() === document)
         .filter((element) => element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))
         .map((element) => {
-          const box = element.getBoundingClientRect();
+          // A checkbox (CheckboxField) is a 20px box inside a label row at
+          // least 44px tall, and the whole row is what a thumb presses: so
+          // the row is measured, not the box.
+          const target = element.matches('input[type="checkbox"]') ? (element.closest("label") ?? element) : element;
+          const box = target.getBoundingClientRect();
           return {
             name: element.getAttribute("aria-label") || element.textContent?.trim() || element.id || element.tagName,
             height: box.height,

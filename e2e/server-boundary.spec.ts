@@ -21,8 +21,20 @@ import { expect, test } from "@playwright/test";
 
 const nextFolder = path.join(__dirname, "..", ".next");
 
-/** Words that appear in database code and nowhere else. Matched ignoring case. */
-const MARKERS = ["garage_settings", "opening_hours", "pglite", "DATABASE_URL"];
+/**
+ * Words that appear in database or login code and nowhere else. Matched
+ * ignoring case. The login ones (task 15): a table, a setting, and the
+ * Better Auth call only the login service makes.
+ */
+const MARKERS = [
+  "garage_settings",
+  "opening_hours",
+  "pglite",
+  "DATABASE_URL",
+  "login_attempts",
+  "BETTER_AUTH_SECRET",
+  "sendPhoneNumberOTP",
+];
 
 /** Every file under a folder, as full paths. */
 function filesUnder(folder: string): string[] {

@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { ActionBar } from "@/components/site/action-bar";
+import { CheckboxField } from "@/components/site/checkbox-field";
 import { MobileMenu } from "@/components/site/mobile-menu";
 import { bookTarget, navItems } from "@/components/site/navigation";
 import { NotFoundContent } from "@/components/site/not-found-content";
@@ -649,6 +650,23 @@ export default async function DesignPage() {
                   <FieldDescription>Locked after booking. Call us to change it.</FieldDescription>
                 </Field>
               </FieldGroup>
+            </Block>
+
+            <Separator />
+
+            <Block
+              title="Checkbox field"
+              description="A native checkbox and its label as one row at least 44px tall: press anywhere on it. It can be ticked before JavaScript loads. Blue when ticked; an error sits under the label's text."
+            >
+              <div data-sample="checkbox-field" className="grid gap-6 md:grid-cols-3">
+                <CheckboxField name="sample-reminders" label="Send me a reminder the day before my booking." />
+                <CheckboxField name="sample-age" label="I am 18 or older." defaultChecked />
+                <CheckboxField
+                  name="sample-consent"
+                  label="I agree to be contacted about my bookings."
+                  error="Tick this box to continue."
+                />
+              </div>
             </Block>
 
             <Separator />

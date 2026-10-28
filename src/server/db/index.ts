@@ -66,7 +66,7 @@ export type RunContext = {
 };
 
 /** Which database to open (the table at the top of this file). */
-export function chooseDatabase(env: ServerEnv, run: RunContext): DatabaseConfig {
+export function chooseDatabase(env: Pick<ServerEnv, "databaseUrl">, run: RunContext): DatabaseConfig {
   if (env.databaseUrl) return { driver: "postgres", url: env.databaseUrl };
   // A build always gets memory: `next build --debug-prerender` sets
   // NODE_ENV=development for its workers, and several of them would open the

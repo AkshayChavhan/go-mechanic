@@ -19,9 +19,24 @@
 //   runs in UTC too: src/server/db/index.ts).
 
 import { sql } from "drizzle-orm";
-import { check, integer, jsonb, pgEnum, pgTable, text, time, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  check,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  time,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
 
+import type { ConsentPurpose } from "@/domain/consent";
 import type { Weekday } from "@/domain/opening-hours";
+import type { Role } from "@/domain/roles";
 import type { LocalizedText } from "@/i18n/localized-text";
 
 /**
@@ -81,4 +96,198 @@ export const openingHours = pgTable(
       sql`(${table.opens} is null and ${table.closes} is null) or (${table.opens} is not null and ${table.closes} is not null and ${table.opens} < ${table.closes})`,
     ),
   ],
+);
+
+// --- Login (task 15) ---------------------------------------------------------
+//
+// users, sessions, accounts and verifications are Better Auth's tables
+// (src/server/auth/auth.ts). Better Auth finds each table by its key in the
+// schema object it's given, and each column by its TypeScript name, so those
+// names are Better Auth's own (emailVerified, expiresAt). The database names
+// stay snake_case. Better Auth checks these tables against what it expects
+// when it starts, and refuses to run if a column is missing. Ids on its
+// tables are text: Better Auth makes them.
+
+/** Every role, as in ROLES (src/domain/roles.ts; database.test.ts checks they match). */
+export const userRole = pgEnum("user_role", [
+  "customer",
+  "mechanic",
+  "manager",
+  "owner",
+] as const satisfies readonly Role[]);
+
+/** Everyone who has logged in. Phone login only: every user has a number. */
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  /** Empty for now: the profile (task 21) asks for a name. */
+  name: text("name").notNull(),
+  /**
+   * Better Auth requires an email. Phone users get "<digits>@phone.invalid":
+   * the .invalid domain is reserved, so nothing is ever delivered there.
+   */
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
+  /** E.164: "+919876543210". */
+  phoneNumber: text("phone_number").notNull().unique(),
+  phoneNumberVerified: boolean("phone_number_verified").notNull().default(false),
+  /** Everyone starts as a customer. Task 16 decides who can change it. */
+  role: userRole("role").notNull().default("customer"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow()
+    .$onUpdate(() => new Date()),
+});
+
+/**
+ * One row per logged-in browser. The cookie holds the token (signed); each
+ * request looks the row up, so deleting it logs that browser out.
+ */
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: text("id").primaryKey(),
+    token: text("token").notNull().unique(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("sessions_user_id_index").on(table.userId)],
+);
+
+/**
+ * Better Auth's sign-in methods per user (passwords, Google...). Phone login
+ * never writes here, but Better Auth requires the table.
+ */
+export const accounts = pgTable(
+  "accounts",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("accounts_user_id_index").on(table.userId)],
+);
+
+/**
+ * Login codes waiting to be typed in. identifier is the number; value is
+ * "<code>:<wrong tries>" (Better Auth's format: readLiveCode in
+ * src/server/dal/login-codes.ts parses it). A row lives 5 minutes at most.
+ */
+export const verifications = pgTable(
+  "verifications",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [index("verifications_identifier_index").on(table.identifier)],
+);
+
+/** Every purpose, as in CONSENT_PURPOSES (src/domain/consent.ts; database.test.ts checks they match). */
+export const consentPurpose = pgEnum("consent_purpose", [
+  "age_18_plus",
+  "account_and_booking_contact",
+] as const satisfies readonly ConsentPurpose[]);
+
+/**
+ * Proof of what each user agreed to (DPDP Act): one row per purpose and
+ * notice version. Deleting a user is refused while it has consent records
+ * ("restrict"): task 43 decides what deleting someone's data does to them.
+ */
+export const consents = pgTable(
+  "consents",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    purpose: consentPurpose("purpose").notNull(),
+    /** Which wording the person saw (LOGIN_NOTICE_VERSION). */
+    noticeVersion: text("notice_version").notNull(),
+    /** The language the page was in: "en". */
+    locale: text("locale").notNull(),
+    /** When the box was ticked: the login attempt's time. */
+    givenAt: timestamp("given_at", { withTimezone: true }).notNull(),
+    /** When this row was written: after the code was checked. */
+    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique("consents_user_purpose_version").on(table.userId, table.purpose, table.noticeVersion)],
+);
+
+/**
+ * One row each time the login form asks for a code (the phone step, or
+ * "Send a new code"), whether or not an SMS went out. It carries the consent
+ * the person gave on that form, and the send limits count the rows with
+ * sms_sent. Rows older than 48 hours are deleted.
+ */
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    /** Random: the form sends it back with the code, to tie the consent to this attempt. */
+    id: uuid("id").primaryKey().defaultRandom(),
+    phoneNumber: text("phone_number").notNull(),
+    /** Null when it isn't known (local runs). */
+    ipAddress: text("ip_address"),
+    locale: text("locale").notNull(),
+    noticeVersion: text("notice_version").notNull(),
+    consentGivenAt: timestamp("consent_given_at", { withTimezone: true }).notNull(),
+    smsSent: boolean("sms_sent").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    index("login_attempts_phone_number_created_at_index").on(table.phoneNumber, table.createdAt),
+    index("login_attempts_ip_address_created_at_index").on(table.ipAddress, table.createdAt),
+  ],
+);
+
+/** How a message travels. Only SMS for now; WhatsApp and email come in task 35. */
+export const messageChannel = pgEnum("message_channel", ["sms", "whatsapp", "email"]);
+
+/**
+ * Messages the fake providers "sent" (src/server/providers/), shown on
+ * /dev/outbox. Real providers never write here. Rows older than 48 hours
+ * are deleted.
+ */
+export const devMessages = pgTable(
+  "dev_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    channel: messageChannel("channel").notNull(),
+    /** E.164 for SMS and WhatsApp. */
+    recipient: text("recipient").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("dev_messages_created_at_index").on(table.createdAt)],
 );

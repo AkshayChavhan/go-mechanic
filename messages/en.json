@@ -127,5 +127,51 @@
   },
   "Brand": {
     "name": "GoMechanic"
+  },
+  "Login": {
+    "metaTitle": "Log in | {brand}",
+    "heading": "Log in",
+    "intro": "Log in with your mobile number. We'll send you a 6-digit code by SMS.",
+    "phoneLabel": "Mobile number",
+    "countryCode": "+91",
+    "phoneHint": "10 digits, like 98765 43210",
+    "ageLabel": "I am 18 or older.",
+    "consentLabel": "I agree that {brand} can use my mobile number to log me in and to contact me by SMS, WhatsApp or phone about my bookings.",
+    "notice": "We keep your mobile number and when you agreed. We use it only to log you in and to tell you about your bookings. To stop this or delete your data, call the garage.",
+    "sendCode": "Send code",
+    "sending": "Sending…",
+    "codeSentTo": "We sent a 6-digit code to {number}.",
+    "alreadySentTo": "We already sent a code to {number}. It works for 5 minutes.",
+    "codeLabel": "6-digit code",
+    "logIn": "Log in",
+    "checking": "Checking…",
+    "resend": "Send a new code",
+    "resendIn": "Send a new code in {time}",
+    "resendReady": "You can ask for a new code now.",
+    "waitFor": "Try again in {time}.",
+    "changeNumber": "Change number",
+    "help": "Trouble logging in? Call us on <call>{phone}</call>.",
+    "noScript": "Logging in needs JavaScript. You can still call us on <call>{phone}</call> to book.",
+    "errors": {
+      "invalidPhone": "Enter a 10-digit mobile number, like 98765 43210.",
+      "consentMissing": "Tick both boxes to continue.",
+      "tooSoon": "Please wait a few seconds before asking for another code.",
+      "rateLimited": "Too many codes for this number. Try again after {time}, or call us.",
+      "invalidCode": "Enter the 6 digits from the SMS.",
+      "wrongCode": "That code isn't right, or it has expired. Check the latest SMS, or ask for a new code.",
+      "tooManyTries": "Too many wrong tries. Ask for a new code.",
+      "startOver": "This login has expired. Enter your number again.",
+      "connection": "We couldn't reach the garage's server. Check your connection and try again."
+    }
+  },
+  "Sms": {
+    "loginCode": "{code} is your {brand} login code. It works for {minutes} minutes. Don't share it with anyone."
+  },
+  "Account": {
+    "metaTitle": "Your account | {brand}",
+    "heading": "Your account",
+    "signedInAs": "Logged in as {number}",
+    "loading": "Loading your account…",
+    "logOut": "Log out"
   }
 }

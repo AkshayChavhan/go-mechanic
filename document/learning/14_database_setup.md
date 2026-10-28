@@ -1,6 +1,6 @@
 # 14_database_setup: the garage's details move into a database
 
-> **Branch:** `14_database_setup` · **Date:** 2026-10-28 · **Status:** In progress
+> **Branch:** `14_database_setup` · **Date:** 2026-10-28 · **Status:** Done (merged through PR #13)
 
 ## In one minute
 
