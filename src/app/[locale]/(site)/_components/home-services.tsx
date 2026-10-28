@@ -57,7 +57,7 @@ export function HomeServices({ services, brands }: { services: readonly Service[
             {/* A label beside each list from 640px; above it on phones. */}
             <dl className="grid gap-x-8 gap-y-3 sm:grid-cols-[max-content_1fr]">
               {brandLists.map((list) => (
-                <div key={list.kind} className="grid gap-1 sm:col-span-2 sm:grid-cols-subgrid">
+                <div key={list.kind} className="grid gap-y-1 sm:col-span-2 sm:grid-cols-subgrid">
                   <dt className="type-callout text-muted-foreground">{list.label}</dt>
                   <dd>
                     {/* Spaced apart, with no typed separator between the names. */}
