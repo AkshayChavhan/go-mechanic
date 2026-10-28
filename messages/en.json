@@ -37,6 +37,11 @@
         "car": "Cars",
         "twoWheeler": "Two-wheelers",
         "both": "Cars and two-wheelers"
+      },
+      "brands": {
+        "title": "Brands we work on",
+        "cars": "Cars",
+        "twoWheelers": "Two-wheelers"
       }
     },
     "stats": {
@@ -69,6 +74,33 @@
       "lead": "Message us on WhatsApp or call, then bring your vehicle to Mukai Chowk."
     },
     "sample": "Sample"
+  },
+  "Vehicles": {
+    "kinds": {
+      "car": "Car",
+      "twoWheeler": "Two-wheeler"
+    },
+    "fuels": {
+      "petrol": "Petrol",
+      "diesel": "Diesel",
+      "cng": "CNG",
+      "electric": "Electric"
+    },
+    "picker": {
+      "kindLegend": "Type",
+      "makeLabel": "Brand",
+      "makePlaceholder": "Choose a brand",
+      "makeGroups": {
+        "car": "Cars",
+        "twoWheeler": "Two-wheelers"
+      },
+      "modelLabel": "Model",
+      "modelPlaceholder": "Choose a model",
+      "modelGroup": "{brand} ({kind})",
+      "fuelLegend": "Fuel",
+      "announceSet": "{field} set to {value}",
+      "announceCleared": "{field} cleared"
+    }
   },
   "NotFound": {
     "metaTitle": "Page not found | {brand}",
