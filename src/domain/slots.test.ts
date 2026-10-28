@@ -277,11 +277,49 @@ describe("checkSlotRequest", () => {
     expect(checkSlotRequest(broken, at("2026-10-29T04:30:00Z"), now)).toBe("not-a-slot");
   });
 
-  test("agrees with availableSlots on every slot in the window", () => {
-    const days = availableSlots(schedule(), noneReserved, now);
+  test("10:30 on a day past the window is outside the window (the window is checked first)", () => {
+    expect(checkSlotRequest(schedule(), at("2026-11-05T05:00:00Z"), now)).toBe("outside-window");
+  });
+
+  test.each([
+    ["the owner's rules", ownerRules, now],
+    // Same-day booking at 13:00 exactly (07:30Z): the 13:00 slot has started.
+    ["same-day booking, at a slot's start", { ...ownerRules, minDaysAhead: 0 }, at("2026-10-28T07:30:00Z")],
+  ])("agrees with availableSlots on every slot in the window (%s)", (_, rules, moment) => {
+    const days = availableSlots(schedule({ rules }), noneReserved, moment);
     for (const day of days) {
       if (day.status !== "open") continue;
-      for (const slot of day.slots) expect(checkSlotRequest(schedule(), slot.startsAt, now)).toBeNull();
+      for (const slot of day.slots) expect(checkSlotRequest(schedule({ rules }), slot.startsAt, moment)).toBeNull();
     }
+  });
+});
+
+describe("checkSlotRequest with same-day booking (if the owner ever allows it)", () => {
+  const sameDay = schedule({ rules: { ...ownerRules, minDaysAhead: 0 } });
+  // 12:20 on Wednesday 28 Oct in India.
+  const midday = at("2026-10-28T06:50:00Z");
+
+  test("a slot that started earlier today is outside the window", () => {
+    // 11:00 today.
+    expect(checkSlotRequest(sameDay, at("2026-10-28T05:30:00Z"), midday)).toBe("outside-window");
+  });
+
+  test("the 12:00 slot, which started 20 minutes ago, is outside the window", () => {
+    expect(checkSlotRequest(sameDay, at("2026-10-28T06:30:00Z"), midday)).toBe("outside-window");
+  });
+
+  test("a slot starting exactly now is outside the window", () => {
+    // 13:00 today, asked at 13:00.
+    expect(checkSlotRequest(sameDay, at("2026-10-28T07:30:00Z"), at("2026-10-28T07:30:00Z"))).toBe("outside-window");
+  });
+
+  test("a later slot today can be booked", () => {
+    // 13:00 today.
+    expect(checkSlotRequest(sameDay, at("2026-10-28T07:30:00Z"), midday)).toBeNull();
+  });
+
+  test("availableSlots leaves out a slot starting exactly now", () => {
+    const days = availableSlots(sameDay, noneReserved, at("2026-10-28T07:30:00Z"));
+    expect(startTimes(days[0])[0]).toBe("14:00");
   });
 });

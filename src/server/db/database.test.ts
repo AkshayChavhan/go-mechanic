@@ -87,6 +87,37 @@ describe("the schema", () => {
   });
 });
 
+describe("the migrations journal", () => {
+  // Drizzle's migrator only applies a migration whose `when` is later than
+  // the last one a database applied. Two sessions add migrations in parallel:
+  // if one were renamed by hand (0002 to 0003) instead of generated again, it
+  // would keep an older `when`, and every local database that already has the
+  // other migration would skip it for good. Generating again gives a new
+  // `when`; this test fails on a hand rename.
+  const journal = JSON.parse(
+    fs.readFileSync(path.join(process.cwd(), "src/server/db/migrations/meta/_journal.json"), "utf8"),
+  ) as { entries: { idx: number; when: number; tag: string }[] };
+
+  test("numbers each migration by its place in the list", () => {
+    journal.entries.forEach((entry, place) => {
+      expect(entry.idx, entry.tag).toBe(place);
+      expect(Number(entry.tag.slice(0, 4)), entry.tag).toBe(place);
+    });
+  });
+
+  test("gives each migration a later time than the one before", () => {
+    for (let place = 1; place < journal.entries.length; place++) {
+      const [before, entry] = [journal.entries[place - 1], journal.entries[place]];
+      expect(entry.when, `${entry.tag} after ${before.tag}`).toBeGreaterThan(before.when);
+    }
+  });
+
+  test("has a .sql file for every entry, and no other", () => {
+    const files = fs.readdirSync(path.join(process.cwd(), "src/server/db/migrations")).filter((name) => name.endsWith(".sql"));
+    expect(files.sort()).toEqual(journal.entries.map((entry) => `${entry.tag}.sql`));
+  });
+});
+
 describe("chooseDatabase (which database each way of running gets)", () => {
   const cwd = "/repo";
   const local = { databaseUrl: undefined } as const;
@@ -426,6 +457,22 @@ describe("a local database in a folder (what npm run dev uses)", () => {
       await closeDatabase(db);
     }
     expect(fs.existsSync(lockPathFor(dataDir))).toBe(false);
+  });
+
+  test("gets the slot rules row back on its next start if it's missing (a database made before task 22)", async () => {
+    const first = await createDatabase({ driver: "pglite", dataDir });
+    try {
+      await first.delete(slotRules);
+    } finally {
+      await closeDatabase(first);
+    }
+
+    const second = await createDatabase({ driver: "pglite", dataDir });
+    try {
+      expect(await second.select().from(slotRules)).toEqual([expect.objectContaining({ id: 1, ...ownerSlotRules })]);
+    } finally {
+      await closeDatabase(second);
+    }
   });
 
   test("keeps changes after it's closed and opened again, and migrates only once", async () => {

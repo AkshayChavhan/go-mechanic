@@ -92,6 +92,39 @@ describe("readAvailableSlots", () => {
     expect(days[2]).toEqual({ date: "2026-10-31", weekday: "saturday", status: "closed-date" });
   });
 
+  test("reads closed dates on the window's first and last day, and none just outside it", async () => {
+    // 28 Oct (today) and 5 Nov (day 8) sit just outside the window.
+    await db
+      .insert(calendarExceptions)
+      .values([{ date: "2026-10-28" }, { date: "2026-10-29" }, { date: "2026-11-04" }, { date: "2026-11-05" }]);
+    const days = await readAvailableSlots(clock);
+    expect(days.map((day) => [day.date, day.status])).toEqual([
+      ["2026-10-29", "closed-date"],
+      ["2026-10-30", "open"],
+      ["2026-10-31", "open"],
+      ["2026-11-01", "open"],
+      ["2026-11-02", "closed-weekday"],
+      ["2026-11-03", "open"],
+      ["2026-11-04", "closed-date"],
+    ]);
+  });
+
+  test("reads the places taken in the last slot of the window, and none from just outside it", async () => {
+    // 18:00 on Wednesday 4 Nov, the window's last slot.
+    const lastSlot = new Date("2026-11-04T12:30:00Z");
+    expect(await reserveSlot(db, lastSlot, clock)).toEqual({ ok: true });
+    // Counters just outside the window, written directly: 18:00 today and
+    // 00:00 on 5 Nov (India time) must not be read into any slot.
+    await db.insert(slotCounters).values([
+      { startsAt: new Date("2026-10-28T12:30:00Z"), reserved: 2 },
+      { startsAt: new Date("2026-11-04T18:30:00Z"), reserved: 2 },
+    ]);
+
+    const slots = slotsOf(await readAvailableSlots(clock));
+    expect(slots.at(-1)).toMatchObject({ startsAt: lastSlot, remaining: 1 });
+    expect(slots.filter((slot) => slot.remaining !== 2)).toHaveLength(1);
+  });
+
   test("throws a clear error when the slot rules row is missing", async () => {
     await db.delete(slotRules);
     await expect(readAvailableSlots(clock)).rejects.toThrow("slot_rules table has no row");
@@ -212,9 +245,11 @@ describe("releaseSlot", () => {
 });
 
 describe("moveSlot", () => {
+  // moveSlot takes a transaction only (its type has no bare-database form):
+  // its two statements must commit or roll back together.
   test("moves a place from one slot to another", async () => {
     await reserveSlot(db, thursday10, clock);
-    expect(await moveSlot(db, thursday10, thursday11, clock)).toEqual({ ok: true });
+    expect(await db.transaction((tx) => moveSlot(tx, thursday10, thursday11, clock))).toEqual({ ok: true });
     expect(await taken(thursday10)).toBe(0);
     expect(await taken(thursday11)).toBe(1);
   });
@@ -224,7 +259,7 @@ describe("moveSlot", () => {
     await reserveSlot(db, thursday11, clock);
     await reserveSlot(db, thursday11, clock);
 
-    expect(await moveSlot(db, thursday10, thursday11, clock)).toEqual({ ok: false, problem: "full" });
+    expect(await db.transaction((tx) => moveSlot(tx, thursday10, thursday11, clock))).toEqual({ ok: false, problem: "full" });
     expect(await taken(thursday10)).toBe(1);
     expect(await taken(thursday11)).toBe(2);
   });
@@ -232,7 +267,7 @@ describe("moveSlot", () => {
   test("into a slot that can't be booked: answers why and changes nothing", async () => {
     await reserveSlot(db, thursday10, clock);
     // 10:00 on Monday 2 Nov, the closed day.
-    expect(await moveSlot(db, thursday10, new Date("2026-11-02T04:30:00Z"), clock)).toEqual({
+    expect(await db.transaction((tx) => moveSlot(tx, thursday10, new Date("2026-11-02T04:30:00Z"), clock))).toEqual({
       ok: false,
       problem: "not-a-slot",
     });
@@ -242,7 +277,7 @@ describe("moveSlot", () => {
   test("to the same slot: succeeds and changes nothing, even when it's full", async () => {
     await reserveSlot(db, thursday10, clock);
     await reserveSlot(db, thursday10, clock);
-    expect(await moveSlot(db, thursday10, new Date(thursday10.getTime()), clock)).toEqual({ ok: true });
+    expect(await db.transaction((tx) => moveSlot(tx, thursday10, new Date(thursday10.getTime()), clock))).toEqual({ ok: true });
     expect(await taken(thursday10)).toBe(2);
   });
 
