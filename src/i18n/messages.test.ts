@@ -31,6 +31,7 @@ describe("messages/en.json", () => {
         "Brand",
         "Login",
         "Sms",
+        "Account",
       ]),
     );
   });
