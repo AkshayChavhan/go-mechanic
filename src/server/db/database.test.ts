@@ -14,6 +14,13 @@ import { garageSettings, openingHours, weekday } from "./schema";
 import { seedGarage } from "./seed";
 import { ownerGarage } from "./seed-data";
 
+// Starting PGlite (Postgres compiled to WebAssembly) and migrating it takes a
+// few seconds, and much longer when the full test run shares a busy machine:
+// in task 14 the 10-second hook limit timed out under load (load average
+// ~14) while the same tests took ~16 s alone. Only these database test files
+// get the longer limits.
+vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
+
 // Each test database is PGlite in memory: a real Postgres inside this
 // process, migrated and seeded exactly as `npm run dev` does it. Opening one
 // takes about a second, so tests that only read share one.
