@@ -150,8 +150,8 @@
     "resendReady": "You can ask for a new code now.",
     "waitFor": "Try again in {time}.",
     "changeNumber": "Change number",
-    "help": "Trouble logging in? Call us on {phone}.",
-    "noScript": "Logging in needs JavaScript. You can still call us on {phone} to book.",
+    "help": "Trouble logging in? Call us on <call>{phone}</call>.",
+    "noScript": "Logging in needs JavaScript. You can still call us on <call>{phone}</call> to book.",
     "errors": {
       "invalidPhone": "Enter a 10-digit mobile number, like 98765 43210.",
       "consentMissing": "Tick both boxes to continue.",
