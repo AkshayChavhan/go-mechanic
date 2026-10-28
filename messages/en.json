@@ -133,5 +133,8 @@
     "ageLabel": "I am 18 or older.",
     "consentLabel": "I agree that {brand} can use my mobile number to log me in and to contact me by SMS, WhatsApp or phone about my bookings.",
     "notice": "We keep your mobile number and when you agreed. We use it only to log you in and to tell you about your bookings. To stop this or delete your data, call the garage."
+  },
+  "Sms": {
+    "loginCode": "{code} is your {brand} login code. It works for {minutes} minutes. Don't share it with anyone."
   }
 }
