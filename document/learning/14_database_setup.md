@@ -281,8 +281,12 @@ To look for yourself: run `npm run dev` and open http://localhost:3000. The head
   - **The database password in logs (P1).** A `DATABASE_URL` whose password has an unencoded `/`, `?` or `#` makes postgres.js throw a `TypeError` that carries the whole URL, and Next.js logs that error. The URL parse is now wrapped and replaced by a fixed message with no `cause`. A test checks the password never appears, even in `util.inspect` output.
   - **`next build --debug-prerender` (P2).** That flag builds with `NODE_ENV=development`, so every build worker would have opened the folder. Builds now always use memory (`NEXT_PHASE`).
   - **Rollback tests that couldn't fail (P2).** Both stopped before any write. They now make a write fail after the old hours are deleted (or after the garage insert). Removing the transaction made them fail: all seven hours rows were lost.
-- **`code-reviewer` agent:** Pending.
-- **Compound:** Pending.
+- **`code-reviewer` agent: "Needs changes", then fixed.** It re-ran `npm run check` (856 passed), compared the lockfile as data (87 packages added, none removed, all from the npm registry with hashes), and found no secrets and no `NEXT_PUBLIC_` values. Two must-fixes, both fixed:
+  - **A stale test count.** This doc said `npx vitest run src/server` prints 49 tests. The review fixes added 13, so it prints 62 now. Re-run and corrected: the same slip as in `run-commands-before-documenting-output.md`.
+  - **A comment that said the opposite of what happens.** The header of `src/server/db/folder-lock.ts` still said a probe that fails on the lock "counts as inconclusive". That was the review's first guess, which the work session disproved (it's the 500 above). Someone reading only that file might delete the helper-process guard. Rewritten, along with a test comment in `database.test.ts`.
+  
+  Also fixed: `folder-lock.ts` and `.pglite.lock` were missing from the "What" table, and `CLAUDE.md` now lists all 7 `npm audit` findings, not just the 4 moderate ones. One nice-to-have went to the backlog: two processes starting within milliseconds after a crash can both take over the same stale lock (rare; the fix is to rename the old lock aside instead of deleting it). The reviewer also noted that `e76ee8d` holds three separate fixes; next time each fix gets its own commit.
+- **Compound: one lesson.** [`nextjs-16-dev-server-is-not-one-process-use-cache-probe.md`](../solutions/conventions/nextjs-16-dev-server-is-not-one-process-use-cache-probe.md). Without it, a future session would trust the "probe failures are inconclusive" comment in Next.js's source and repeat the 500, or open a new single-process resource (a fake provider writing to a file, task 15) in the helper.
 - **Pull request:** Pending.
 
 ## Common mistakes
