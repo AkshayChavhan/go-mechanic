@@ -114,8 +114,8 @@ function weekdayOf(date: IndiaDate): Weekday {
   return WEEKDAYS[weekdayIndexOf(date)];
 }
 
-/** The first and last bookable India dates when it's `now`. */
-function bookingWindow(rules: SlotRules, now: Date): { first: IndiaDate; last: IndiaDate } {
+/** The first and last bookable India dates when it's `now`, both included. */
+export function bookingWindow(rules: SlotRules, now: Date): { first: IndiaDate; last: IndiaDate } {
   // India's date, never UTC's: from 00:00 to 05:30 in India, UTC still says
   // yesterday, and "tomorrow" in UTC would be today.
   const today = indiaDateOf(now);
