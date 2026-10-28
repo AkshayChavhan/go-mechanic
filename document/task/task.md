@@ -24,7 +24,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 12 | `12_layout_shell` | Frosted header, footer, sticky mobile action bar, 404, open-now, offer banner | Done | [12_layout_shell.md](../learning/12_layout_shell.md) |
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | Done | [13_home_page.md](../learning/13_home_page.md) |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | Done | [14_database_setup.md](../learning/14_database_setup.md) |
-| 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | In progress |  |
+| 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | In progress | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
@@ -266,7 +266,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] No login or account entry in the header yet (the owner's choice, 2026-10-28: task 21 adds it, as a static link or a browser island, never a cookie read in the shell). The phone bar's behaviour while a field has focus doesn't come up: `/login` has no shell and `/account` has no fields (task 23 decides it)
 - [x] `/dev/outbox` is a page under `src/app/[locale]/dev/` that calls `devOnly()` in the page and `generateMetadata` (`dev-only.test.ts` checks every dev page). No Route Handler was needed
 - [x] Better Auth's tables go into the same schema and migrations (`src/server/db/schema.ts`, migration `0001_auth_login`), written by hand with Better Auth's field names and snake_case columns. Its Drizzle adapter gets the database from `getDatabase()` (task 14)
-- [ ] Write the learning doc
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
