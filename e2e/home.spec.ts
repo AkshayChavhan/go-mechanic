@@ -4,7 +4,7 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 
 import messages from "../messages/en.json";
 import { sceneSelector } from "../src/components/site/scroll-scene-attributes";
-import { garage } from "../src/content/garage";
+import { ownerGarage } from "../src/server/db/seed-data";
 import { sampleCanary, sampleReviews } from "../src/content/home";
 import { services } from "../src/content/services";
 import { formatPhoneNumber, telHref } from "../src/lib/contact-links";
@@ -165,8 +165,8 @@ test.describe("what the production build ships", () => {
     expect(href.host).toBe("wa.me");
     expect(href.searchParams.get("text")).toBe(messages.Contact.bookingMessage);
 
-    const call = hero(page).getByRole("link", { name: `${messages.Contact.call} ${formatPhoneNumber(garage.phone)}` });
-    await expect(call).toHaveAttribute("href", telHref(garage.phone));
+    const call = hero(page).getByRole("link", { name: `${messages.Contact.call} ${formatPhoneNumber(ownerGarage.phone)}` });
+    await expect(call).toHaveAttribute("href", telHref(ownerGarage.phone));
     await expect(call).toHaveAttribute("href", "tel:+919764750567");
   });
 });
@@ -176,9 +176,9 @@ test.describe("from 768px, Call shows the number", () => {
 
   test("it reads \"Call +91 97647 50567\", with the space, in the hero and the call to action", async ({ page }) => {
     await page.goto("/");
-    const name = `${messages.Contact.call} ${formatPhoneNumber(garage.phone)}`;
+    const name = `${messages.Contact.call} ${formatPhoneNumber(ownerGarage.phone)}`;
     for (const section of [hero(page), cta(page)]) {
-      const call = section.locator(`a[href="${telHref(garage.phone)}"]`);
+      const call = section.locator(`a[href="${telHref(ownerGarage.phone)}"]`);
       await expect(call).toHaveAccessibleName(name);
       await expect(call).toHaveText(name);
     }

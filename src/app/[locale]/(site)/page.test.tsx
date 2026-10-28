@@ -1,16 +1,37 @@
 import { screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, onTestFinished, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi } from "vitest";
 
 import { isLivePage } from "@/components/site/navigation";
 import { sceneSelector } from "@/components/site/scroll-scene-attributes";
 import { services } from "@/content/services";
 import { renderWithIntl } from "@/i18n/test-utils";
+import { readGarage } from "@/server/dal/garage";
+import { ownerGarage } from "@/server/db/seed-data";
 import messages from "../../../../messages/en.json";
 
 import { FOOTER_TONE } from "./_components/home-tones";
 import Home, { ensureStatic } from "./page";
 
+// The page is an async Server Component: each test renders `await Home()`.
+// It reads the garage from the database through readGarage(), replaced here
+// by a stand-in that returns the owner's details (or what a test sets), and
+// its text with getTranslations from next-intl/server, which only works
+// inside a Next.js render: here it's next-intl's own translator over the
+// real messages.
+vi.mock("@/server/dal/garage", () => ({ readGarage: vi.fn() }));
+vi.mock("next-intl/server", async () => {
+  const { createTranslator } = await import("next-intl");
+  const { default: allMessages } = await import("../../../../messages/en.json");
+  return {
+    getTranslations: async (namespace: "Contact") => createTranslator({ locale: "en", messages: allMessages, namespace }),
+  };
+});
+
 const home = messages.HomePage;
+
+beforeEach(() => {
+  vi.mocked(readGarage).mockResolvedValue(ownerGarage);
+});
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -35,33 +56,33 @@ function sectionOf(heading: string): HTMLElement {
 }
 
 describe("Home page", () => {
-  test("has exactly one h1: the service and the area", () => {
-    renderWithIntl(<Home />);
+  test("has exactly one h1: the service and the area", async () => {
+    renderWithIntl(await Home());
     const headings = screen.getAllByRole("heading", { level: 1 });
     expect(headings).toHaveLength(1);
     expect(headings[0].textContent).toBe(home.title);
     expect(home.title).toContain("Kiwale, Pune");
   });
 
-  test("the lead under it names cars, two-wheelers and Mukai Chowk", () => {
-    renderWithIntl(<Home />);
+  test("the lead under it names cars, two-wheelers and Mukai Chowk", async () => {
+    renderWithIntl(await Home());
     expect(screen.getByText(home.hero.lead)).toBeTruthy();
     expect(home.hero.lead).toMatch(/cars/i);
     expect(home.hero.lead).toMatch(/two-wheelers/i);
     expect(home.hero.lead).toContain("Mukai Chowk");
   });
 
-  test("outside npm run dev: story, services and the call to action, with no samples anywhere", () => {
+  test("outside npm run dev: story, services and the call to action, with no samples anywhere", async () => {
     expect(process.env.NODE_ENV).toBe("test");
-    const { container } = renderWithIntl(<Home />);
+    const { container } = renderWithIntl(await Home());
     expect(sectionHeadings()).toEqual([home.story.title, home.services.title, home.cta.title]);
     expect(container.querySelector("[data-sample]")).toBeNull();
     expect(container.textContent).not.toContain(home.sample);
   });
 
-  test("under npm run dev: the sample stats and reviews too, in order, each one marked", () => {
+  test("under npm run dev: the sample stats and reviews too, in order, each one marked", async () => {
     vi.stubEnv("NODE_ENV", "development");
-    const { container } = renderWithIntl(<Home />);
+    const { container } = renderWithIntl(await Home());
     expect(sectionHeadings()).toEqual([
       home.story.title,
       home.services.title,
@@ -81,9 +102,9 @@ describe("Home page", () => {
     expect(container.querySelectorAll("[data-sample]")).toHaveLength(7);
   });
 
-  test.each(["test", "development"])("neighbouring sections never share a tone, the footer included (%s)", (nodeEnv) => {
+  test.each(["test", "development"])("neighbouring sections never share a tone, the footer included (%s)", async (nodeEnv) => {
     vi.stubEnv("NODE_ENV", nodeEnv);
-    const { container } = renderWithIntl(<Home />);
+    const { container } = renderWithIntl(await Home());
     const order = tones(container);
     order.slice(1).forEach((tone, index) => expect(tone, order.join(", ")).not.toBe(order[index]));
   });
@@ -91,8 +112,8 @@ describe("Home page", () => {
   test.each([
     ["the hero", () => screen.getByRole("heading", { level: 1 }).closest("section")!],
     ["the call to action", () => sectionOf(home.cta.title)],
-  ])("%s: one blue Book link to WhatsApp with the booking message, and Call", (_name, section) => {
-    renderWithIntl(<Home />);
+  ])("%s: one blue Book link to WhatsApp with the booking message, and Call", async (_name, section) => {
+    renderWithIntl(await Home());
     const links = within(section()).getAllByRole("link");
     const book = links.filter((link) => link.textContent?.includes(messages.Header.book));
     expect(book).toHaveLength(1);
@@ -110,8 +131,18 @@ describe("Home page", () => {
     expect(call[0].getAttribute("data-variant")).toBe("secondary");
   });
 
-  test("lists all eleven services, with no links (no service pages or prices yet)", () => {
-    renderWithIntl(<Home />);
+  test("Call uses the number from the database, not a typed-in one", async () => {
+    vi.mocked(readGarage).mockResolvedValue({ ...ownerGarage, phone: "+912012345678" });
+    renderWithIntl(await Home());
+    const hero = screen.getByRole("heading", { level: 1 }).closest("section")!;
+    const calls = within(hero)
+      .getAllByRole("link")
+      .filter((link) => link.getAttribute("href")?.startsWith("tel:"));
+    expect(calls.map((link) => link.getAttribute("href"))).toEqual(["tel:+912012345678"]);
+  });
+
+  test("lists all eleven services, with no links (no service pages or prices yet)", async () => {
+    renderWithIntl(await Home());
     const section = sectionOf(home.services.title);
     for (const service of services) {
       expect(within(section).getByRole("heading", { level: 3, name: service.name.en })).toBeTruthy();
@@ -119,9 +150,9 @@ describe("Home page", () => {
     expect(section.querySelector("a, button")).toBeNull();
   });
 
-  test.each(["test", "development"])("no link or button sits inside, or around, a reveal target (%s)", (nodeEnv) => {
+  test.each(["test", "development"])("no link or button sits inside, or around, a reveal target (%s)", async (nodeEnv) => {
     vi.stubEnv("NODE_ENV", nodeEnv);
-    const { container } = renderWithIntl(<Home />);
+    const { container } = renderWithIntl(await Home());
     const targets = [
       ...container.querySelectorAll(sceneSelector("reveal")),
       ...container.querySelectorAll(`${sceneSelector("revealGroup")} > *`),
@@ -133,8 +164,8 @@ describe("Home page", () => {
     }
   });
 
-  test("every link on the page goes somewhere that exists", () => {
-    const { container } = renderWithIntl(<Home />);
+  test("every link on the page goes somewhere that exists", async () => {
+    const { container } = renderWithIntl(await Home());
     const hrefs = [...container.querySelectorAll("a[href]")].map((link) => link.getAttribute("href")!);
     expect(hrefs.length).toBeGreaterThan(0);
     for (const href of hrefs) {
@@ -153,8 +184,8 @@ describe("Home page", () => {
     expect(home).not.toHaveProperty("tagline");
   });
 
-  test("the page is cleaned up after each test (vitest.setup.ts runs)", () => {
-    renderWithIntl(<Home />);
+  test("the page is cleaned up after each test (vitest.setup.ts runs)", async () => {
+    renderWithIntl(await Home());
     // onTestFinished runs after the afterEach hooks, so by then the cleanup
     // registered in vitest.setup.ts must have emptied the page.
     onTestFinished(() => {

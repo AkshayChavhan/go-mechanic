@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 
-import { garage } from "@/content/garage";
+import { ownerGarage } from "@/server/db/seed-data";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { telHref, whatsappHref } from "@/lib/contact-links";
 import messages from "../../../messages/en.json";
@@ -9,12 +9,12 @@ import messages from "../../../messages/en.json";
 import { ActionBar } from "./action-bar";
 import { bookTarget } from "./navigation";
 
-const bookingHref = whatsappHref(garage.whatsapp, messages.Contact.bookingMessage);
+const bookingHref = whatsappHref(ownerGarage.whatsapp, messages.Contact.bookingMessage);
 const whatsappBook = bookTarget(bookingHref, { href: "/book", live: false });
 const opens = messages.Contact.opensWhatsApp;
 
 function renderBar(book = whatsappBook) {
-  renderWithIntl(<ActionBar book={book} garage={garage} />);
+  renderWithIntl(<ActionBar book={book} garage={ownerGarage} />);
   return screen.getByRole("navigation", { name: messages.ActionBar.label });
 }
 
@@ -22,8 +22,8 @@ describe("ActionBar (the phone bar)", () => {
   test("is a navigation landmark named from messages, holding Call, WhatsApp and Book in that order", () => {
     const bar = renderBar();
     expect(within(bar).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
-      telHref(garage.phone),
-      whatsappHref(garage.whatsapp, messages.Contact.whatsappMessage),
+      telHref(ownerGarage.phone),
+      whatsappHref(ownerGarage.whatsapp, messages.Contact.whatsappMessage),
       bookingHref,
     ]);
   });
@@ -60,7 +60,7 @@ describe("ActionBar (the phone bar)", () => {
   });
 
   test("className can show it in place (the /dev/design sample): static, and not hidden from 768px", () => {
-    renderWithIntl(<ActionBar book={whatsappBook} garage={garage} className="static md:block" />);
+    renderWithIntl(<ActionBar book={whatsappBook} garage={ownerGarage} className="static md:block" />);
     const classes = [...screen.getByRole("navigation", { name: messages.ActionBar.label }).classList];
     expect(classes).toEqual(expect.arrayContaining(["static", "md:block"]));
     expect(classes).not.toContain("fixed");

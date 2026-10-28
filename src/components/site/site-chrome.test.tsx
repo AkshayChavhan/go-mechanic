@@ -2,6 +2,7 @@ import { screen } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { renderWithIntl } from "@/i18n/test-utils";
+import { ownerGarage } from "@/server/db/seed-data";
 import messages from "../../../messages/en.json";
 
 import { SiteChrome } from "./site-chrome";
@@ -25,7 +26,7 @@ afterEach(() => {
 
 function renderChrome() {
   return renderWithIntl(
-    <SiteChrome>
+    <SiteChrome garage={ownerGarage}>
       <h1>{messages.HomePage.title}</h1>
     </SiteChrome>,
   );

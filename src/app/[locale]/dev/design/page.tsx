@@ -1,7 +1,7 @@
 import { LoaderCircleIcon, MenuIcon, MessageCircleIcon, PhoneIcon } from "lucide-react";
 import type { Metadata } from "next";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { ActionBar } from "@/components/site/action-bar";
@@ -16,7 +16,6 @@ import { SampleBadge } from "@/components/site/sample-badge";
 import { ScrollScene } from "@/components/site/scroll-scene";
 import { sceneMark } from "@/components/site/scroll-scene-attributes";
 import { ServiceTile } from "@/components/site/service-tile";
-import { readGarage } from "@/components/site/site-chrome";
 import { SiteFooter } from "@/components/site/site-footer";
 import { MobileMenuContent, SiteHeader } from "@/components/site/site-header";
 import { StatTile } from "@/components/site/stat-tile";
@@ -44,6 +43,7 @@ import { formatRupees } from "@/i18n/format";
 import { whatsappHref } from "@/lib/contact-links";
 import { devOnly } from "@/lib/dev-only";
 import { countDuration, distance, duration, ease } from "@/lib/motion";
+import { readGarage } from "@/server/dal/garage";
 
 import { ColorPair } from "./_components/color-pair";
 import { FontPreview, FontToggle } from "./_components/font-switch";
@@ -259,12 +259,14 @@ function Example({ verdict, rule, children }: { verdict: "Do" | "Don't"; rule: s
   );
 }
 
-export default function DesignPage() {
+// Async because the shell samples show the garage's real details, read from
+// the database.
+export default async function DesignPage() {
   devOnly();
-  const tCommon = useTranslations("Common");
-  const tHeader = useTranslations("Header");
-  const tContact = useTranslations("Contact");
-  const garage = readGarage();
+  const tCommon = await getTranslations("Common");
+  const tHeader = await getTranslations("Header");
+  const tContact = await getTranslations("Contact");
+  const garage = await readGarage();
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
   // The samples, through the same switch the home page uses (showSamples()):
   // devOnly() keeps this page out of production, but a staging server that

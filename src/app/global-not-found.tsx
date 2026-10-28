@@ -4,10 +4,11 @@ import { getMessages, getTranslations } from "next-intl/server";
 
 import { fontVariables } from "@/app/fonts";
 import { NotFoundContent } from "@/components/site/not-found-content";
-import { readGarage, SiteChrome } from "@/components/site/site-chrome";
+import { SiteChrome } from "@/components/site/site-chrome";
 import { pickClientMessages } from "@/i18n/client-messages";
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
+import { readGarage } from "@/server/dal/garage";
 
 import "@/app/globals.css";
 
@@ -37,6 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function GlobalNotFound() {
   const messages = await getMessages({ locale });
+  const garage = await readGarage();
   return (
     <html lang={locale} className={cn(fontVariables, "font-sans antialiased")}>
       <body>
@@ -44,8 +46,8 @@ export default async function GlobalNotFound() {
             @/i18n/navigation) read the language from this provider. Like the
             root layout, it sends only the client components' messages. */}
         <NextIntlClientProvider locale={locale} messages={pickClientMessages(messages)}>
-          <SiteChrome>
-            <NotFoundContent garage={readGarage()} />
+          <SiteChrome garage={garage}>
+            <NotFoundContent garage={garage} />
           </SiteChrome>
         </NextIntlClientProvider>
       </body>

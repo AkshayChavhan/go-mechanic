@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 
 import { NotFoundContent } from "@/components/site/not-found-content";
-import { readGarage } from "@/components/site/site-chrome";
 import { Wordmark } from "@/components/site/wordmark";
 import { Link } from "@/i18n/navigation";
+import { readGarage } from "@/server/dal/garage";
 
 // The 404 for a page that exists but has nothing to show: it called
 // notFound() (/dev/design in production, later an unknown service).
@@ -24,7 +24,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("metaTitle", { brand: tBrand("name") }) };
 }
 
-export default function NotFound() {
+// Async because it reads the garage (for its Call and WhatsApp links) from
+// the database. readGarage() is cached, so this costs no query per page.
+export default async function NotFound() {
+  const garage = await readGarage();
   return (
     <>
       <header className="border-b border-border">
@@ -35,7 +38,7 @@ export default function NotFound() {
         </div>
       </header>
       <main id="main">
-        <NotFoundContent garage={readGarage()} />
+        <NotFoundContent garage={garage} />
       </main>
     </>
   );

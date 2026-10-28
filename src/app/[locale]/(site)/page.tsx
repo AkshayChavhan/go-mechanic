@@ -1,11 +1,11 @@
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 import { bookTarget } from "@/components/site/navigation";
 import { ScrollScene } from "@/components/site/scroll-scene";
-import { readGarage } from "@/components/site/site-chrome";
 import { selectReviews, selectTrustStats } from "@/content/home";
 import { services } from "@/content/services";
 import { whatsappHref } from "@/lib/contact-links";
+import { readGarage } from "@/server/dal/garage";
 
 import { HomeCta } from "./_components/home-cta";
 import { HomeHero } from "./_components/home-hero";
@@ -29,12 +29,16 @@ export const ensureStatic = "navigation";
  * Everything renders on the server. ScrollScene, the one client island, adds
  * the scroll motion in the browser, for visitors who allow it. No <main>
  * here: the shell around every public page ((site)/layout.tsx) provides it.
+ *
+ * Async because it reads the garage from the database (readGarage() is
+ * cached, so the page is still built ahead of time). An async component
+ * reads its text with getTranslations instead of useTranslations.
  */
-export default function Home() {
-  const tContact = useTranslations("Contact");
+export default async function Home() {
+  const tContact = await getTranslations("Contact");
 
   // The garage is read the way the shell and the 404 pages read it.
-  const garage = readGarage();
+  const garage = await readGarage();
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
 
   // Real data, else samples under `npm run dev`, else null (src/content/home.ts).
