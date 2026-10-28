@@ -288,8 +288,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `17_vehicle_catalogue`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-28-1802-feat-vehicle-catalogue-plan.md)
-- [ ] Vehicle types, brands, models; vehicle picker
-- [ ] If the owner names the brands the garage serves, consider a brands row on the home page (task 13)
+- [x] Vehicle types, brands, models; vehicle picker: tables for price groups, brands (one row per kind) and models with their fuels, ids made from names, the owner's 22 brands with a draft of 142 models seeded into every new database, `readVehicleCatalogue()`, and `VehiclePicker` on native controls (`NativeSelect`, `ChoiceGroup`), shown on `/dev/design`
+- [x] If the owner names the brands the garage serves, consider a brands row on the home page (task 13): the owner named them on 2026-10-28 and chose a names-only row, now under the services grid
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -645,6 +645,10 @@ Not in version 1. See [features.md](../website/features.md).
 - App-like install for customers, roadside-assistance dispatch, more branches
 - The local database lock (`src/server/db/folder-lock.ts`): if two processes start within milliseconds of each other and both find a lock left by a stopped process, both can take it over (each deletes the old file, and the second can delete the first one's new lock). Take it over by renaming the old file aside and checking it still names the stopped process, instead of deleting it. Rare: it needs two `npm run dev` starting together after a crash (task 14 code review)
 - `npm audit` shows 3 low findings from a deepmerge advisory through the shadcn CLI (also on `main`, seen in task 14). Revisit when shadcn updates; don't run `npm audit fix --force` (it would install shadcn 1.0.0)
+- Task 18: the owner checks the draft models, their fuels and their price groups in `src/server/db/vehicle-seed-data.ts` before any model shows on a public page. Prices key on the price group (`vehicle_categories`) and the fuel. The prices page gets the picker with `readVehicleCatalogue()` and `vehiclePickerLabels()` (task 17)
+- Task 20: seed the vehicle catalogue on staging together with the garage, before the first build reads it: an empty catalogue raises no error, and the cached empty read stays for up to 30 days. Never change a catalogue id (task 17)
+- Tasks 21 and 23: the vehicle picker inside a real form. React 19 resets a form after its action, so the picker should return to its default on the form's `reset` event; a choice made before the page hydrates must not be lost; check a posted model and fuel with `resolveVehicle`; decide how to edit a saved vehicle whose model was later hidden; give `ChoiceGroup` and `NativeSelect` an error state like `CheckboxField`'s. Ask the owner first whether customers may say "my model isn't listed", and whether the garage also takes other brands such as Ford or Chevrolet (task 17)
+- Task 39: hide brands and models (`listed = false`) instead of deleting them, so saved vehicles keep their model; ids never change; saves call `updateTag("vehicle-catalogue")`; moving a model to another price group changes the price only for later bookings (task 17)
 
 ## How to add a task
 
