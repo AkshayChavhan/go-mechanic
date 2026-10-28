@@ -275,10 +275,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `16_roles_access`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-28-1836-feat-roles-access-plan.md)
-- [ ] Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas
-- [ ] `saveGarage` (`src/server/dal/garage.ts`) first checks that the signed-in user is the owner or a manager. Every later save in `src/server/dal/` does the same for its role (task 14)
-- [ ] `requireUser`/`requireRole` built on `getCurrentUser()` (`src/server/auth/session.ts`). Proxy redirects: a logged-out `/account` gets a real 307 to `/login` (today the redirect happens inside `<Suspense>`, with status 200), and a logged-in `/login` goes to `/account` (task 15)
-- [ ] A way to make the owner's number `owner`: everyone signs up as `customer` (`users.role`), and Better Auth refuses a role sent by the browser (task 15)
+- [x] Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas: one permission table (`src/domain/permissions.ts`), `requireUser`, `requirePermission` and `authorize` (`src/server/auth/access.ts`)
+- [x] `saveGarage` (`src/server/dal/garage.ts`) first checks that the signed-in user is the owner or a manager (`authorize("garage.edit")`). Every later save in `src/server/dal/` does the same for its permission (task 14)
+- [x] `requireUser`/`requirePermission` built on `getCurrentUser()` (`src/server/auth/session.ts`; no `requireRole`: checks ask for a permission). Proxy redirects: a logged-out `/account` gets a real 307 to `/login`, and a logged-in `/login` goes to `/account`, by a session-cookie check, with `?session=ended` against a leftover-cookie loop (task 15)
+- [x] A way to make the owner's number `owner`: the `OWNER_PHONE_NUMBER` setting (the garage's own number, the owner's choice on 2026-10-28), applied on every session read (`effectiveRole`) and stored at each login (`syncOwnerRole`). Everyone else signs up as `customer`, and Better Auth refuses a role sent by the browser (task 15)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -645,6 +645,14 @@ Not in version 1. See [features.md](../website/features.md).
 - App-like install for customers, roadside-assistance dispatch, more branches
 - The local database lock (`src/server/db/folder-lock.ts`): if two processes start within milliseconds of each other and both find a lock left by a stopped process, both can take it over (each deletes the old file, and the second can delete the first one's new lock). Take it over by renaming the old file aside and checking it still names the stopped process, instead of deleting it. Rare: it needs two `npm run dev` starting together after a crash (task 14 code review)
 - `npm audit` shows 3 low findings from a deepmerge advisory through the shadcn CLI (also on `main`, seen in task 14). Revisit when shadcn updates; don't run `npm audit fix --force` (it would install shadcn 1.0.0)
+- Task 20: set `OWNER_PHONE_NUMBER` on Vercel staging (required there, like `BETTER_AUTH_SECRET`) (task 16)
+- Task 21: vehicle and profile data take the user from `authorize`/`requireUser` and filter by it in the query, never a user id from the caller; a test that customer A can't read or change customer B's vehicle by its id (task 16)
+- Task 23: a booking takes its customer from the session after the inline code, never from a form field (task 16)
+- Task 25: another customer's booking id gives the 404 page, not a 403 (task 16)
+- Task 26: add `/admin` to `PROTECTED_PREFIXES` in `src/lib/access-routes.ts`; every `/admin` page calls `requirePermission(locale, "admin.open")` itself, not only its layout; browser tests that a customer gets the 404 and a logged-out visitor a 307; revisit `forbidden()` (task 16)
+- Tasks 28 and 40: `saveGarage` now checks `garage.edit` itself; their Server Action calls `requireUser(locale)` first (their steps still say "after task 16's role check") (task 16)
+- Task 29: assigning roles needs `team.manage`; nobody can be given `owner` (it comes from `OWNER_PHONE_NUMBER`); the team list shows the effective role (`effectiveRole`) (task 16)
+- Task 31: a mechanic's job queries filter by the assigned mechanic in the query, and never select a customer's phone number (`customers.contact` is not a mechanic's) (task 16)
 
 ## How to add a task
 
