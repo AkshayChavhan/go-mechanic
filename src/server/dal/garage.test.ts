@@ -3,10 +3,11 @@ import { cacheLife, cacheTag, updateTag } from "next/cache";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import type { Garage } from "@/domain/garage";
+import { WEEKDAYS } from "@/domain/opening-hours";
 import { fixedClock } from "@/lib/clock";
 import { closeDatabase, createDatabase, type Database, getDatabase } from "@/server/db";
 import { garageSettings, openingHours } from "@/server/db/schema";
-import { seedGarage } from "@/server/db/seed";
+import { openingHoursRows, seedGarage } from "@/server/db/seed";
 import { ownerGarage } from "@/server/db/seed-data";
 
 import { readGarage, saveGarage } from "./garage";
@@ -27,6 +28,12 @@ vi.mock("@/server/db", async (importOriginal) => ({
   getDatabase: vi.fn(),
 }));
 vi.mock("next/cache", () => ({ cacheTag: vi.fn(), cacheLife: vi.fn(), updateTag: vi.fn() }));
+// openingHoursRows works as usual; one test makes it return rows the
+// database refuses, so a save fails halfway through its transaction.
+vi.mock("@/server/db/seed", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/server/db/seed")>();
+  return { ...actual, openingHoursRows: vi.fn(actual.openingHoursRows) };
+});
 
 let db: Database;
 
@@ -60,6 +67,11 @@ const edited: Garage = {
 async function storedRow() {
   const [row] = await db.select().from(garageSettings);
   return row;
+}
+
+/** The stored hours rows, Monday first. */
+async function storedHours() {
+  return db.select().from(openingHours).orderBy(openingHours.weekday);
 }
 
 describe("readGarage (the cached public read)", () => {
@@ -125,13 +137,37 @@ describe("saveGarage (checked, all at once, then the cache is refreshed)", () =>
     expect(updateTag).not.toHaveBeenCalled();
   });
 
-  test("refuses to save when the garage row is missing, and keeps the hours", async () => {
+  test("refuses to save when the garage row is missing, and leaves the hours alone", async () => {
     await db.delete(garageSettings);
 
     await expect(saveGarage(edited, fixedClock(savedAt))).rejects.toThrow("garage_settings table has no row");
-    // The transaction rolled back: Monday is still closed.
+    // The save stopped at the row update, before it touched the hours, so
+    // Monday is still closed. (The next test is the one that needs the
+    // transaction.)
     const [monday] = await db.select().from(openingHours).where(eq(openingHours.weekday, "monday"));
     expect(monday).toEqual({ weekday: "monday", opens: null, closes: null });
+    expect(updateTag).not.toHaveBeenCalled();
+  });
+
+  test("undoes everything when a write fails after the old hours were deleted", async () => {
+    const rowBefore = await storedRow();
+    const hoursBefore = await storedHours();
+    // New hours the database refuses (Tuesday closes before it opens): the
+    // insert fails after the row update and the delete already ran.
+    vi.mocked(openingHoursRows).mockReturnValueOnce(
+      WEEKDAYS.map((weekday) =>
+        weekday === "tuesday" ? { weekday, opens: "19:00", closes: "10:00" } : { weekday, opens: null, closes: null },
+      ),
+    );
+
+    await expect(saveGarage(edited, fixedClock(savedAt))).rejects.toMatchObject({
+      cause: { constraint: "opening_hours_closed_or_opens_before_closes" },
+    });
+    // The transaction rolled back: the seven old rows, the old phone and the
+    // old updated_at are all still there.
+    expect(await storedHours()).toEqual(hoursBefore);
+    expect(hoursBefore).toHaveLength(7);
+    expect(await storedRow()).toEqual(rowBefore);
     expect(updateTag).not.toHaveBeenCalled();
   });
 });
