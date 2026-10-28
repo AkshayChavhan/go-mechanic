@@ -79,7 +79,7 @@ describe("the schema", () => {
 
 describe("chooseDatabase (which database each way of running gets)", () => {
   const cwd = "/repo";
-  const local = { appEnv: "local", databaseUrl: undefined } as const;
+  const local = { databaseUrl: undefined } as const;
 
   test("npm run dev: PGlite in .pglite/, next to package.json", () => {
     expect(chooseDatabase(local, { nodeEnv: "development", nextPhase: undefined, cwd })).toEqual({
@@ -98,7 +98,7 @@ describe("chooseDatabase (which database each way of running gets)", () => {
 
   test.each(["development", "production"])("a DATABASE_URL wins, even under NODE_ENV %s", (nodeEnv) => {
     const url = "postgresql://gomechanic:fake-password@localhost:5432/gomechanic";
-    expect(chooseDatabase({ appEnv: "production", databaseUrl: url }, { nodeEnv, nextPhase: undefined, cwd })).toEqual({
+    expect(chooseDatabase({ databaseUrl: url }, { nodeEnv, nextPhase: undefined, cwd })).toEqual({
       driver: "postgres",
       url,
     });

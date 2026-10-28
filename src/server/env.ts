@@ -6,9 +6,22 @@
 //   DATABASE_URL  a Postgres URL (postgres:// or postgresql://). Required in
 //                 staging and production. Locally it's optional: without it
 //                 the app uses PGlite (src/server/db/index.ts).
+//   BETTER_AUTH_SECRET
+//                 signs the login cookie (src/server/auth/). At least 32
+//                 characters. Required in staging and production; locally a
+//                 fixed placeholder is used, which is safe only because a
+//                 deployment can't run as local (see "local-on-vercel").
+//   SMS_PROVIDER  who sends SMS: "fake" (the default, and the only one until
+//                 task 44) stores them for /dev/outbox. Production refuses
+//                 the fake, so production can't start before task 44.
+//   E2E_OUTBOX_FILE
+//                 the browser tests' copy of the fake's SMS (one JSON line
+//                 each, playwright.config.ts). Local runs only: it's refused
+//                 on staging, production and Vercel.
 //
-// DATABASE_URL holds a password, so error messages name a variable but never
-// print its value: errors end up in logs that more people can read.
+// DATABASE_URL and BETTER_AUTH_SECRET are secrets, so error messages name a
+// variable but never print its value: errors end up in logs that more people
+// can read.
 //
 // `import "server-only"` makes the build fail if a browser component ever
 // imports this file, so the URL can't end up in the JavaScript visitors download.
@@ -19,16 +32,37 @@ export const APP_ENVS = ["local", "staging", "production"] as const;
 
 export type AppEnv = (typeof APP_ENVS)[number];
 
+export const SMS_PROVIDERS = ["fake"] as const;
+
+export type SmsProviderName = (typeof SMS_PROVIDERS)[number];
+
+/**
+ * The local login secret. Clearly fake, and never used on a deployment:
+ * staging and production must set BETTER_AUTH_SECRET.
+ */
+export const LOCAL_AUTH_SECRET = "local-only-login-secret-never-used-on-a-deployment";
+
+/** The shortest BETTER_AUTH_SECRET accepted. */
+export const MIN_AUTH_SECRET_LENGTH = 32;
+
 export type ServerEnv = {
   appEnv: AppEnv;
   /** The Postgres URL, or undefined to use PGlite (only allowed locally). */
   databaseUrl: string | undefined;
+  /** Signs the login cookie. */
+  authSecret: string;
+  smsProvider: SmsProviderName;
+  /** Where the fake SMS provider also writes each message, for the browser tests. */
+  e2eOutboxFile: string | undefined;
 };
 
 /** What's wrong with one variable. Codes, not sentences, like HoursProblem. */
 export type ServerEnvProblem =
   | { variable: "APP_ENV"; problem: "unknown" | "local-on-vercel" }
-  | { variable: "DATABASE_URL"; problem: "missing" | "not-postgres" };
+  | { variable: "DATABASE_URL"; problem: "missing" | "not-postgres" }
+  | { variable: "BETTER_AUTH_SECRET"; problem: "missing" | "too-short" }
+  | { variable: "SMS_PROVIDER"; problem: "unknown-provider" | "fake-in-production" }
+  | { variable: "E2E_OUTBOX_FILE"; problem: "local-only" };
 
 // One readable line per problem. None of them includes a value.
 const explanations: Record<ServerEnvProblem["problem"], string> = {
@@ -36,6 +70,10 @@ const explanations: Record<ServerEnvProblem["problem"], string> = {
   "local-on-vercel": "must be staging or production on Vercel (it is unset or local)",
   missing: "is required when APP_ENV is staging or production",
   "not-postgres": "must start with postgres:// or postgresql://",
+  "too-short": `must be at least ${MIN_AUTH_SECRET_LENGTH} characters long`,
+  "unknown-provider": `must be ${SMS_PROVIDERS.join(" or ")}`,
+  "fake-in-production": "can't be fake (the default) when APP_ENV is production: production sends real SMS (task 44)",
+  "local-only": "is only for local test runs (APP_ENV local, not on Vercel)",
 };
 
 /** Thrown by parseServerEnv, with every problem it found. */
@@ -58,6 +96,10 @@ function valueOf(vars: Record<string, string | undefined>, name: string): string
 
 function isAppEnv(value: string): value is AppEnv {
   return (APP_ENVS as readonly string[]).includes(value);
+}
+
+function isSmsProviderName(value: string): value is SmsProviderName {
+  return (SMS_PROVIDERS as readonly string[]).includes(value);
 }
 
 /**
@@ -86,10 +128,32 @@ export function parseServerEnv(vars: Record<string, string | undefined>): Server
     problems.push({ variable: "DATABASE_URL", problem: "not-postgres" });
   }
 
-  // A missing appEnv always comes with a problem; checking it too tells
-  // TypeScript that appEnv is set below.
-  if (problems.length > 0 || !appEnv) throw new ServerEnvError(problems);
-  return { appEnv, databaseUrl };
+  const deployed = appEnv === "staging" || appEnv === "production";
+
+  const setSecret = valueOf(vars, "BETTER_AUTH_SECRET");
+  if (setSecret === undefined) {
+    if (deployed) problems.push({ variable: "BETTER_AUTH_SECRET", problem: "missing" });
+  } else if (setSecret.length < MIN_AUTH_SECRET_LENGTH) {
+    problems.push({ variable: "BETTER_AUTH_SECRET", problem: "too-short" });
+  }
+
+  const rawSmsProvider = valueOf(vars, "SMS_PROVIDER") ?? "fake";
+  const smsProvider = isSmsProviderName(rawSmsProvider) ? rawSmsProvider : undefined;
+  if (!smsProvider) {
+    problems.push({ variable: "SMS_PROVIDER", problem: "unknown-provider" });
+  } else if (smsProvider === "fake" && appEnv === "production") {
+    problems.push({ variable: "SMS_PROVIDER", problem: "fake-in-production" });
+  }
+
+  const e2eOutboxFile = valueOf(vars, "E2E_OUTBOX_FILE");
+  if (e2eOutboxFile !== undefined && (appEnv !== "local" || valueOf(vars, "VERCEL"))) {
+    problems.push({ variable: "E2E_OUTBOX_FILE", problem: "local-only" });
+  }
+
+  // A missing appEnv or smsProvider always comes with a problem; checking
+  // them too tells TypeScript that they're set below.
+  if (problems.length > 0 || !appEnv || !smsProvider) throw new ServerEnvError(problems);
+  return { appEnv, databaseUrl, authSecret: setSecret ?? LOCAL_AUTH_SECRET, smsProvider, e2eOutboxFile };
 }
 
 let remembered: ServerEnv | undefined;
