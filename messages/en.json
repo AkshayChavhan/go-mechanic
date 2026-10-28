@@ -157,6 +157,7 @@
       "consentMissing": "Tick both boxes to continue.",
       "tooSoon": "Please wait a few seconds before asking for another code.",
       "rateLimited": "Too many codes for this number. Try again after {time}, or call us.",
+      "rateLimitedLater": "Too many codes for this number. Try again on {date} after {time}, or call us.",
       "invalidCode": "Enter the 6 digits from the SMS.",
       "wrongCode": "That code isn't right, or it has expired. Check the latest SMS, or ask for a new code.",
       "tooManyTries": "Too many wrong tries. Ask for a new code.",

@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { fixedClock } from "@/lib/clock";
+
 import { createFakeSmsProvider } from "./fake";
 
 const message = { to: "+919876543210", text: "123456 is your login code." };
@@ -26,16 +28,20 @@ describe("the fake SMS provider", () => {
 
   test("with an outbox file, also adds one JSON line the browser tests can read", async () => {
     const outboxFile = path.join(folder, "outbox.jsonl");
-    const provider = createFakeSmsProvider({ save: vi.fn().mockResolvedValue(undefined), outboxFile });
+    const sentAt = new Date("2026-10-28T06:30:00Z");
+    const provider = createFakeSmsProvider({
+      save: vi.fn().mockResolvedValue(undefined),
+      outboxFile,
+      clock: fixedClock(sentAt),
+    });
     await provider.send(message);
     await provider.send({ ...message, text: "654321 is your login code." });
 
     const lines = fs.readFileSync(outboxFile, "utf8").trim().split("\n").map((line) => JSON.parse(line));
     expect(lines).toEqual([
-      { to: message.to, text: message.text, sentAt: expect.any(String) },
-      { to: message.to, text: "654321 is your login code.", sentAt: expect.any(String) },
+      { to: message.to, text: message.text, sentAt: sentAt.toISOString() },
+      { to: message.to, text: "654321 is your login code.", sentAt: sentAt.toISOString() },
     ]);
-    expect(Number.isNaN(Date.parse(lines[0].sentAt))).toBe(false);
   });
 
   test("without an outbox file, writes no file", async () => {

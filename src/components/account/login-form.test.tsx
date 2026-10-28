@@ -275,6 +275,10 @@ describe("LoginForm: the code step", () => {
   });
 
   test("too many tries: Send a new code works at once", async () => {
+    // The clock stands at `now`, so the code step's Resend waits 30 seconds
+    // until the tooManyTries answer opens it.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(now);
     renderForm(codeStep, {
       ...codeStep,
       status: undefined,
@@ -282,6 +286,7 @@ describe("LoginForm: the code step", () => {
       error: { field: "code", text: t.errors.tooManyTries },
     });
     await sendNumber();
+    expect((screen.getByRole("button", { name: "Send a new code in 0:30" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(codeField(), { target: { value: "111111" } });
     await press(t.logIn);
     expect((screen.getByRole("button", { name: t.resend }) as HTMLButtonElement).disabled).toBe(false);
@@ -304,6 +309,19 @@ describe("LoginForm: the code step", () => {
     await press(t.sendCode);
     expect(action).toHaveBeenCalledTimes(2);
     expect(codeField()).toBeTruthy();
+  });
+
+  test("Change number, then a Send code that fails: the phone step with the new number, not the old code step", async () => {
+    renderForm(codeStep, new TypeError("Failed to fetch"));
+    await sendNumber();
+    fireEvent.click(screen.getByRole("button", { name: t.changeNumber }));
+    fireEvent.change(phoneField(), { target: { value: "91234 56789" } });
+    await press(t.sendCode);
+
+    expect(screen.queryByLabelText(t.codeLabel)).toBeNull();
+    expect(phoneField().value).toBe("91234 56789");
+    expect(screen.getByText(t.errors.connection)).toBeTruthy();
+    expect(screen.getByRole("status").textContent).toBe("");
   });
 
   test("a call that fails: the connection message, still on the code step, the typed code kept", async () => {
@@ -359,11 +377,15 @@ describe("loginSubmitter (what useActionState runs)", () => {
   });
 });
 
-test("formatCountdown: minutes and two-digit seconds", () => {
+test("formatCountdown: minutes and two-digit seconds, with hours from an hour on", () => {
   expect(formatCountdown(30)).toBe("0:30");
   expect(formatCountdown(5)).toBe("0:05");
   expect(formatCountdown(65)).toBe("1:05");
   expect(formatCountdown(0)).toBe("0:00");
+  expect(formatCountdown(3599)).toBe("59:59");
+  expect(formatCountdown(3725)).toBe("1:02:05");
+  // A day limit: 21 hours to wait, not "1260:00".
+  expect(formatCountdown(21 * 3600)).toBe("21:00:00");
 });
 
 test("reads no messages itself: every word comes from the labels", () => {

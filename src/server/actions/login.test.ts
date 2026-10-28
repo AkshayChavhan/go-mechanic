@@ -1,10 +1,11 @@
 import { headers } from "next/headers";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { initialLoginState, type LoginState } from "@/lib/login-state";
 import type { Auth } from "@/server/auth/auth";
 import { getAuth } from "@/server/auth/instance";
-import { LoginServiceError, requestLoginCode, verifyLoginCode } from "@/server/auth/login";
+import { LoginServiceError } from "@/server/auth/errors";
+import { requestLoginCode, verifyLoginCode } from "@/server/auth/login";
 
 import allMessages from "../../../messages/en.json";
 
@@ -45,6 +46,10 @@ const resendAt = new Date("2026-10-28T06:30:30Z");
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // 28 Oct 2026, 12:00 India time: "today" for the rateLimited messages.
+  // Only Date is faked.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-10-28T06:30:00Z"));
   vi.mocked(headers).mockResolvedValue(new Headers({ "x-forwarded-for": "203.0.113.7" }));
   vi.mocked(getAuth).mockResolvedValue({ api: { signOut } } as unknown as Auth);
 });
@@ -65,6 +70,10 @@ const codeStep: LoginState = {
   phoneDisplay: "+91 98765 43210",
   resendAt: resendAt.toISOString(),
 };
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 /** What an action threw (a redirect is a thrown error with a digest). */
 async function thrownBy(run: Promise<unknown>): Promise<unknown> {
@@ -145,6 +154,19 @@ describe("loginStep: the phone step", () => {
     });
   });
 
+  test("rateLimited until tomorrow (the daily limit) names the date too", async () => {
+    vi.mocked(requestLoginCode).mockResolvedValue({
+      ok: false,
+      problem: "rateLimited",
+      // 11:00 am tomorrow, India time.
+      retryAt: new Date("2026-10-29T05:30:00Z"),
+      attemptId,
+      phoneNumber: "+919876543210",
+    });
+    const state = await loginStep("en", initialLoginState, phoneStep);
+    expect(state.error?.text).toBe("Too many codes for this number. Try again on 29 Oct 2026 after 11:00 am, or call us.");
+  });
+
   test("tooSoon gives the moment to count down to", async () => {
     vi.mocked(requestLoginCode).mockResolvedValue({
       ok: false,
@@ -215,9 +237,11 @@ describe("loginStep: the code step", () => {
 
   test("tooManyTries opens Resend at once", async () => {
     vi.mocked(verifyLoginCode).mockResolvedValue({ ok: false, problem: "tooManyTries" });
-    const state = await loginStep("en", codeStep, form({ intent: "verify", attemptId, code: "000000" }));
+    // Resend would still be far off without the change.
+    const waiting = { ...codeStep, resendAt: new Date("2099-01-01T00:00:00Z").toISOString() };
+    const state = await loginStep("en", waiting, form({ intent: "verify", attemptId, code: "000000" }));
     expect(state.error).toEqual({ field: "code", text: t.errors.tooManyTries });
-    expect(new Date(state.resendAt ?? "").getTime()).toBeLessThanOrEqual(Date.now());
+    expect(state.resendAt).toBe(new Date(0).toISOString());
   });
 });
 

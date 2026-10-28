@@ -101,6 +101,10 @@ export function loginSubmitter(action: LoginAction, connectionText: string) {
       return {
         ...answer,
         ...typedIn(formData),
+        // The step the visitor was on when they pressed the button. After
+        // "Change number" the last answer is still the code step, but a
+        // failed Send code must show the phone step with the new number.
+        step: formData.get("intent") === "send" ? "phone" : answer.step,
         retryAt: undefined,
         error: { field: "form", text: connectionText },
       };
@@ -138,9 +142,15 @@ function typedIn(formData: FormData): Partial<FormState> {
   }
 }
 
-/** Seconds as a countdown: 27 -> "0:27", 65 -> "1:05". */
+/**
+ * Seconds as a countdown: 27 -> "0:27", 65 -> "1:05", and with hours once
+ * the wait is an hour or more (a day limit): 3725 -> "1:02:05".
+ */
 export function formatCountdown(seconds: number): string {
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  const two = (value: number) => String(value).padStart(2, "0");
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return hours > 0 ? `${hours}:${two(minutes)}:${two(seconds % 60)}` : `${minutes}:${two(seconds % 60)}`;
 }
 
 /** A message template ("Try again in {time}.") with the countdown filled in. */

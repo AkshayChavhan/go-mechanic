@@ -13,9 +13,9 @@ import { smsProvider } from "@/server/providers/sms";
 import allMessages from "../../../messages/en.json";
 
 import { type Auth, createAuth } from "./auth";
+import { LoginServiceError } from "./errors";
 import {
   clientIpKey,
-  LoginServiceError,
   recordConsentsForVerifiedLogin,
   requestLoginCode,
   type RequestCodeInput,
@@ -85,8 +85,15 @@ afterAll(async () => {
   await closeDatabase(db);
 });
 
+// Everything the code under test prints, checked after each test: no phone
+// number, code or session token may reach a log (plan C2, R13).
+let printed: ReturnType<typeof vi.spyOn>[] = [];
+
 beforeEach(async () => {
   vi.clearAllMocks();
+  printed = (["log", "info", "warn", "error", "debug"] as const).map((level) =>
+    vi.spyOn(console, level).mockImplementation(() => {}),
+  );
   vi.mocked(getDatabase).mockResolvedValue(db);
   // Better Auth reads the time through Date, our service through the clock:
   // faking only Date moves both together. Timers stay real (PGlite needs them).
@@ -94,8 +101,20 @@ beforeEach(async () => {
   vi.setSystemTime(start);
   for (const table of [consents, sessions, users, verifications, loginAttempts, devMessages]) await db.delete(table);
 });
-afterEach(() => {
+afterEach(async () => {
   vi.useRealTimers();
+  const output = inspect(printed.flatMap((spy) => spy.mock.calls), { depth: 10 });
+  for (const spy of printed) spy.mockRestore();
+  const numbers = (await db.select({ number: loginAttempts.phoneNumber }).from(loginAttempts)).map((row) =>
+    row.number.slice(3),
+  );
+  const codes = (await db.select({ body: devMessages.body }).from(devMessages)).flatMap(
+    (row) => /^(\d{6}) /.exec(row.body)?.[1] ?? [],
+  );
+  const tokens = (await db.select({ token: sessions.token }).from(sessions)).map((row) => row.token);
+  for (const secret of [...numbers, ...codes, ...tokens]) {
+    expect(output, "something printed holds a number, a code or a token").not.toContain(secret);
+  }
 });
 
 /** `seconds` after the test started. */
@@ -246,6 +265,10 @@ describe("asking for a code", () => {
     if (!resent.ok) throw new Error("unreachable");
     expect(await check(resent.attemptId, first)).toEqual({ ok: false, problem: "wrongCode" });
     expect(await check(resent.attemptId, second)).toEqual({ ok: true });
+    // The consent is the one given on the phone step (ticked at `start`),
+    // carried by "Send a new code", not a new one at the resend's time.
+    const givenAt = (await db.select().from(consents)).map((row) => row.givenAt.getTime());
+    expect(givenAt).toEqual([start.getTime(), start.getTime()]);
   });
 
   test('"Send a new code" with an attempt that doesn\'t exist: startOver', async () => {
@@ -370,12 +393,19 @@ describe("checking a code", () => {
     expect(await ask()).toMatchObject({ ok: true, sent: true });
   });
 
-  test("an attempt for another number can't sign this one in", async () => {
+  test("my code with another number's attempt is checked against their number: wrongCode, nobody signed in", async () => {
     const theirs = await askForCode({ phoneTyped: "91234 56789" });
     await askForCode();
     const mine = await latestCode();
+    let their = await latestCode("+919123456789");
+    // One chance in a million that both numbers got the same code.
+    if (their === mine) {
+      moveTo(31);
+      await ask({ intent: "resend", attemptId: theirs });
+      their = await latestCode("+919123456789");
+    }
     // The attempt decides the number: their attempt checks their code.
-    expect(await check(theirs, mine)).not.toEqual({ ok: true });
+    expect(await check(theirs, mine)).toEqual({ ok: false, problem: "wrongCode" });
     expect(await db.$count(sessions)).toBe(0);
   });
 
@@ -443,5 +473,19 @@ describe("clientIpKey (whose limit a request counts towards)", () => {
   test("no header, or not an address: null", () => {
     expect(clientIpKey(new Headers(), "staging")).toBeNull();
     expect(clientIpKey(new Headers({ "x-forwarded-for": "unknown" }), "staging")).toBeNull();
+  });
+});
+
+describe("hot reloads under npm run dev", () => {
+  test("a reloaded login service shares the same request store, so a kept auth instance still works", async () => {
+    // As if `npm run dev` had loaded login.ts again after an edit, while
+    // getAuth() kept the auth instance built with the first copy's callbacks.
+    vi.resetModules();
+    const reloaded = await import("./login");
+    expect(await reloaded.requestLoginCode(
+      auth,
+      { locale: "en", intent: "start", phoneTyped: typed, ageConfirmed: true, contactConsent: true, ipKey: null },
+      systemClock,
+    )).toMatchObject({ ok: true, sent: true });
   });
 });

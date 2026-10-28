@@ -21,7 +21,7 @@ import { headers } from "next/headers";
 import { RedirectType } from "next/navigation";
 
 import type { Locale } from "@/i18n/config";
-import { formatTime } from "@/i18n/format";
+import { formatDate, formatTime } from "@/i18n/format";
 import { redirect } from "@/i18n/navigation";
 import { routing } from "@/i18n/routing";
 import { systemClock } from "@/lib/clock";
@@ -30,6 +30,22 @@ import { initialLoginState, type LoginState } from "@/lib/login-state";
 import { getAuth } from "@/server/auth/instance";
 import { clientIpKey, requestLoginCode, verifyLoginCode } from "@/server/auth/login";
 import { serverEnv } from "@/server/env";
+
+/**
+ * "Try again after 10:00 am", with the date when that's not today in India
+ * (the daily limit can lift tomorrow): "Try again on 29 Oct 2026 after 10:00 am".
+ */
+function rateLimitedText(
+  t: Awaited<ReturnType<typeof getTranslations<"Login">>>,
+  retryAt: Date,
+  locale: Locale,
+): string {
+  const time = formatTime(retryAt, locale);
+  const date = formatDate(retryAt, locale);
+  return date === formatDate(systemClock.now(), locale)
+    ? t("errors.rateLimited", { time })
+    : t("errors.rateLimitedLater", { date, time });
+}
 
 function checkedLocale(locale: string): Locale {
   if (!hasLocale(routing.locales, locale)) throw new Error("Unknown locale");
@@ -132,7 +148,7 @@ export async function loginStep(locale: string, previous: LoginState, formData: 
         attemptId: resend ? result.attemptId : previous.attemptId,
         resendAt: resend ? result.retryAt.toISOString() : previous.resendAt,
         status: undefined,
-        error: { field: "form", text: t("errors.rateLimited", { time: formatTime(result.retryAt, checked) }) },
+        error: { field: "form", text: rateLimitedText(t, result.retryAt, checked) },
       };
   }
 }
