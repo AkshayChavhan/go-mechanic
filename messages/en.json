@@ -243,7 +243,7 @@
     "noCatalogue": "Adding a vehicle here isn't available right now. Call us or message us on WhatsApp, and we'll add it for you.",
     "errors": {
       "vehicle-missing": "Choose your vehicle's type, brand, model and fuel.",
-      "vehicle-unknown-model": "We can't take bookings for that model here. Choose another, or call us.",
+      "vehicle-unknown-model": "We can't add that model here. Choose another, or call us.",
       "vehicle-fuel-not-offered": "That model doesn't come with this fuel. Choose its fuel again.",
       "registration-missing": "Enter the registration number.",
       "registration-unknown-state": "The first two letters aren't a state code. Check the number on the plate.",

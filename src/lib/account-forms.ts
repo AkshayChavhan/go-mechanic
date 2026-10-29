@@ -8,6 +8,8 @@
 // values. That keeps everything typed and picked after an error, and the
 // vehicle picker can't drift from what the fields show.
 
+import type { VehicleInput } from "@/domain/customer-vehicles";
+
 export type NameFormState = {
   /** Goes up by one with every answer. */
   submission: number;
@@ -18,8 +20,6 @@ export type NameFormState = {
 };
 
 export const initialNameFormState: NameFormState = { submission: 0, nameTyped: "" };
-
-import type { VehicleInput } from "@/domain/customer-vehicles";
 
 /** The add-vehicle form's fields, as posted: what checkVehicleInput checks. */
 export type VehicleFormValues = VehicleInput;

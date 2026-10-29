@@ -183,4 +183,5 @@ test("logged out, the header's Account link leads to the login page", async ({ p
   await page.getByRole("banner").getByRole("link", { name: account.headerLink }).click();
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { level: 1, name: messages.Login.heading })).toBeVisible();
+  expect(withoutFaviconProbe(errors)).toEqual([]);
 });

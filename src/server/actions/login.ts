@@ -47,7 +47,6 @@ function rateLimitedText(
     : t("errors.rateLimitedLater", { date, time });
 }
 
-
 /**
  * Every step of the login form, told apart by the button pressed
  * (formData "intent"): "send" (the phone step), "resend" ("Send a new
