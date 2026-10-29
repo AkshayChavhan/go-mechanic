@@ -21,10 +21,16 @@ describe("parseRegistration: what people type becomes one stored form", () => {
     expect(accepted("MH12AB0001").compact).toBe("MH12AB0001");
   });
 
+  test("the RTO pads to two digits, so MH 1 AB 1234 and MH 01 AB 1234 are one plate", () => {
+    expect(accepted("MH 1 AB 1234").compact).toBe("MH01AB1234");
+    expect(accepted("MH 01 AB 1234").compact).toBe("MH01AB1234");
+    expect(accepted("DL 3C AB 1234").compact).toBe(accepted("DL 03 CAB 1234").compact);
+  });
+
   test.each([
     ["a one-letter series", "MH12A1234", "MH12A1234"],
-    ["a three-letter Delhi series", "DL3CAB1234", "DL3CAB1234"],
-    ["a one-digit RTO", "DL1CAB1234", "DL1CAB1234"],
+    ["a three-letter Delhi series", "DL3CAB1234", "DL03CAB1234"],
+    ["a one-digit RTO", "DL1CAB1234", "DL01CAB1234"],
   ])("accepts %s", (_case, typed, compact) => {
     expect(accepted(typed).compact).toBe(compact);
   });
@@ -72,7 +78,7 @@ describe("parseRegistration: what people type becomes one stored form", () => {
 describe("formatRegistration: the stored form, grouped for reading", () => {
   test.each([
     ["MH12AB1234", "MH 12 AB 1234"],
-    ["DL3CAB0042", "DL 3 CAB 0042"],
+    ["DL03CAB0042", "DL 03 CAB 0042"],
     ["22BH1234AB", "22 BH 1234 AB"],
   ])("%s shows as %s", (compact, display) => {
     expect(formatRegistration(compact)).toBe(display);
@@ -80,7 +86,7 @@ describe("formatRegistration: the stored form, grouped for reading", () => {
   });
 
   test("formatting then parsing gives back the same stored form", () => {
-    for (const compact of ["MH12AB1234", "DL3CAB0042", "22BH1234AB", "KA1A0007"]) {
+    for (const compact of ["MH12AB1234", "DL03CAB0042", "22BH1234AB", "KA01A0007"]) {
       expect(accepted(formatRegistration(compact)).compact).toBe(compact);
     }
   });

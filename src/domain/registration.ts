@@ -8,8 +8,10 @@
 // - the Bharat series (since 2021, for people who move between states): YY
 //   (the year, 21 or later) + "BH" + NUMBER (1-4 digits) + 1-2 letters:
 //   "22 BH 1234 AB".
-// The number is stored with four digits ("MH12AB1" is "MH12AB0001"), so one
-// plate is never saved twice in two forms.
+// The RTO is stored with two digits and the number with four ("MH 1 AB 1"
+// is "MH01AB0001"), so one plate is never saved twice in two forms. Delhi
+// writes its RTO without the zero ("DL 3C AB 1234"); here it shows as
+// "DL 03 CAB 1234", the price of one stored form per plate.
 //
 // Refused on purpose, with a message that points to the garage's phone:
 // plates with no series letters (with none, "MH12123" could be RTO 12 or
@@ -48,7 +50,7 @@ function partsOf(compact: string): Parts | null {
   const state = STATE_SERIES.exec(compact);
   if (state) {
     const [, code, rto, series, number] = state;
-    return { kind: "state", state: code, rto, series, number: number.padStart(4, "0") };
+    return { kind: "state", state: code, rto: rto.padStart(2, "0"), series, number: number.padStart(4, "0") };
   }
   const bharat = BHARAT_SERIES.exec(compact);
   if (bharat && Number(bharat[1]) >= FIRST_BHARAT_YEAR) {
