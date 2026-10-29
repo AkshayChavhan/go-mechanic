@@ -29,7 +29,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | In progress | [17_vehicle_catalogue.md](../learning/17_vehicle_catalogue.md) |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
-| 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
+| 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | In progress |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
@@ -329,7 +329,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 20_staging_deploy
 
-- [ ] Create branch `20_staging_deploy`
+- [x] Create branch `20_staging_deploy`
+- [x] Owner decisions (2026-10-29): staging on **Vercel Hobby** (free) and **Supabase Free**, accounts created by the owner. Known risk, accepted by the owner: Vercel's Hobby plan is for personal, non-commercial use only, a garage's site counts as commercial, so Vercel may pause the project, and on Hobby Vercel may use the code to train its AI. Supabase Free pauses a project after 7 days of low activity (the data stays). Moving to Vercel Pro stays in task 46
 - [ ] Plan with `ce-plan`
 - [ ] Staging on Vercel + Supabase (Mumbai) with fake providers
 - [ ] Set `APP_ENV` (`staging`) and `DATABASE_URL` on Vercel: Supabase's transaction pooler (port 6543), with postgres.js's `prepare: false` (`createDatabase` in `src/server/db/index.ts`) (task 14)
