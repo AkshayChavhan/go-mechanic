@@ -10,7 +10,9 @@ The rule that shaped everything: **a page only states facts the owner confirmed 
 
 Full details: [the plan](../plans/2026-10-29-1118-feat-info-pages-plan.md) (R1–R12, KTD1–KTD9, units U1–U8).
 
-**Built in parallel.** Three Claude sessions worked at once, each in its own folder (git worktree) on its own branches: Session 1 in `go-mechanic` (tasks 15, 16 …), Session 2 in `go-mechanic-s2` (task 17 …), and this one, Session 3, in `go-mechanic-s3`. To avoid merge conflicts, this task added new message namespaces in the middle of `messages/en.json` (not at the end, where others append), and put its notes for later tasks at the end of the task.md backlog instead of in their step lists. `main` didn't move while this task was built, so there was no merge and no conflict.
+**Built in parallel.** Three Claude sessions worked at once, each in its own folder (git worktree) on its own branches: Session 1 in `go-mechanic` (tasks 15, 16 …), Session 2 in `go-mechanic-s2` (task 17 …), and this one, Session 3, in `go-mechanic-s3`. To avoid merge conflicts, this task added new message namespaces in the middle of `messages/en.json` (not at the end, where others append), and put its notes for later tasks at the end of the task.md backlog instead of in their step lists.
+
+**The merge.** Near the end, tasks 16 (roles) and 17 (vehicle catalogue) reached `main`, so `git merge origin/main` brought them in (`9ccaa03`). Three files conflicted, each because both sides added text at the same spot. `CLAUDE.md`: both changed the same repo-map rows and login bullets. `task.md`: both added backlog lines. `messages/en.json`: both added namespaces just before `NotFound`. Each conflict kept both sides, with `main`'s text where it was and this task's after it. Then the privacy coverage test failed: task 17 had added three tables (`vehicle_categories`, `vehicle_makes`, `vehicle_models`). That's the test doing its job. They hold the garage's list of vehicles, not anyone's own, so they're listed as `null`. `npm run check` passed again: 95 files, 1442 tests.
 
 ## Why: the problem we solved
 
@@ -30,12 +32,13 @@ The owner answered four questions on 2026-10-29:
 | `src/app/[locale]/(site)/contact/`, `about/`, `faq/`, `privacy/`, `terms/` | Added | The five pages and their tests |
 | `src/app/[locale]/(site)/privacy/coverage.test.ts` | Added | Lists every database table against the privacy notice; fails when a new one appears |
 | `src/app/[locale]/(site)/_components/page-tones.ts` | Added | Picks section tones from how many sections a page shows |
+| `src/app/[locale]/(site)/_components/contact-rich-text.tsx` | Added | The call and WhatsApp links inside sentences, shared by contact, FAQ and terms |
 | `src/content/about.ts`, `faq.ts` | Added | The unconfirmed facts as samples, each with a "canary" phrase, read only through selectors |
 | `src/lib/samples.ts`, `src/content/home.ts` | Changed | `realOrSamples()` moved here, shared by all three content files |
 | `src/components/site/navigation.ts`, `site-footer.tsx`, `site-chrome.tsx` | Changed | About and Contact go live; a footer-only list (FAQ, Privacy, Terms) |
 | `src/app/[locale]/dev/design/page.tsx` | Changed | The footer sample shows the new links |
 | `src/app/[locale]/login/page.tsx`, `src/components/account/login-form.tsx` | Changed | The notice links `/privacy` in a new tab |
-| `src/domain/consent.ts`, `consent.test.ts` | Changed | Version `2026-10-29`; the test now pins a fingerprint of the privacy notice too |
+| `src/domain/consent.ts`, `consent.test.ts` | Changed | Version `2026-10-29`; `PRIVACY_NOTICE_VALUES` (the hours, minutes and days the notice states, taken from `LOGIN_RULES`); the test now pins a fingerprint of the privacy notice too |
 | `messages/en.json` | Changed | `ContactPage`, `AboutPage`, `FaqPage`, `PrivacyPage`, `TermsPage`, three `Nav` labels, the new notice |
 | `e2e/info-pages.spec.ts` | Added | The five pages on the production build |
 | `CLAUDE.md`, `document/task/task.md` | Changed | Repo map, the privacy-notice rule, notes for tasks 23, 40, 42, 43 |
@@ -58,7 +61,7 @@ The owner answered four questions on 2026-10-29:
 
 - **Canary phrase:** a made-up phrase that appears in one sample only ("older than our first spanner"). The browser tests search the production build's HTML, page data and scripts for it: finding it means a sample leaked.
 - **Rich text in messages:** `"The <privacy>privacy notice</privacy> has the details."` keeps the words in `messages/en.json`, and the page decides what `<privacy>` becomes (`t.rich("notice", { privacy: (chunks) => <Link …> })`).
-- **Fingerprint:** a SHA-256 hash of the privacy notice's text. `consent.test.ts` pins it, so any change to the notice fails the test until the consent version moves. A full copy of the notice would be a page long.
+- **Fingerprint:** a SHA-256 hash of the privacy notice's text and the numbers it fills in ("48 hours", "5 minutes", "30 days"). `consent.test.ts` pins it, so changing either fails the test until the consent version moves. A full copy of the notice would be a page long. The numbers count too: a change to `LOGIN_RULES` changes what the notice says without touching its wording.
 - **noindex:** `robots: { index: false }` in a page's metadata asks search engines not to list it. Used on the two drafts until task 43.
 
 ## Check that it works
@@ -80,7 +83,26 @@ Results so far: `npm run check` passed with 84 files and 1278 tests, and `npm ru
 ## Reviews
 
 - **SEO check** (`seo-reviewer`, run by hand: this chat's automatic hook watches Session 1's folder): all 7 pages checked pass (the five new ones, `/login` and `/` for the changed links). Missing canonical URLs, sitemap, Open Graph and structured data wait for task 42. Its suggestions weren't applied (the owner decides): name Kiwale, Pune and the vehicles in the contact and FAQ headings, add an in-text link to `/faq`, and avoid a doubled brand in titles once task 42 adds a title template (noted for task 42).
-- Not run yet: `ce-code-review`, `code-reviewer` and the compound step. Their results go here when they happen.
+- **`ce-code-review`** (six reviewers: correctness, adversarial, project standards, testing, maintainability, past lessons; nothing sent to another AI company, `cross_model_review_mode: off`). Verdict: ready with fixes, nothing at the top two levels. This session merged and checked the six reports itself, instead of handing that to separate helper agents as the skill describes. It checked the two privacy claims against Better Auth 1.7.14's own code. Fixed:
+  - **The privacy notice was wrong in three places.**
+    - Codes: an expired code isn't deleted at once. It goes the next time anyone types a code on the website, and a new code doesn't delete the old one.
+    - Sessions: a login that runs out stays stored. Nothing deletes it yet.
+    - Attempts: the notice said we keep data "only when you log in", but asking for a code already stores it.
+    The reworded notice moved the fingerprint, and the version stays `2026-10-29` because the earlier wording never shipped.
+  - **The fingerprint skipped the numbers.** The notice's hours, minutes and days come from `LOGIN_RULES`, so changing a rule changed the notice without failing the test. Now they're hashed with the wording (`PRIVACY_NOTICE_VALUES`), and a test changes one to prove the check fails.
+  - **The coverage test missed new columns.** It now lists every personal table's columns, so a new column fails it too. Checked by adding a column on purpose.
+  - **Untested paths.** Real (owner-given) about topics and FAQ answers: a test each, with no Sample mark. The browser test for `/terms` now looks for the terms page's own draft line, not the privacy page's.
+  - **Code shape.**
+    - The call and WhatsApp links were written three times: now `contact-rich-text.tsx`.
+    - The FAQ's answer maps are typed by their real keys.
+    - The footer list is `liveNavItems(footerItems)` instead of a copy of the same logic, and `footerOnlyItems` names it plainly.
+    - A test keeps `LOGIN_NOTICE_VERSION` a date, because `/privacy` shows it as one.
+  - **Not changed.** `home.ts` still re-exports the `Shown` type, so the home page's files didn't need edits. Two test files share a small tone helper by copy. Neither causes a bug.
+- **Commit notes** the reviews found, left as they are (fixing them would rewrite history):
+  - `8fac218` has a one-sentence body.
+  - `9a38c93` and `6ae4ac9` are `feat` commits that also update tests, because flipping a page's `live` flag broke them.
+  - `ad85d5f` is typed `feat`, but nothing in it is visible to a visitor (`refactor` would fit).
+- Not run yet: `code-reviewer` and the compound step. Their results go here when they happen.
 
 ## Try it yourself
 
