@@ -243,11 +243,11 @@ test.describe("on a phone (375px, touch screen)", () => {
     expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches)).toBe(true);
   });
 
-  test("every visible button, button link, field and checkbox row is at least 44px tall; icon buttons are 44px wide", async ({
+  test("every visible button, button link, field, select, checkbox row and choice pill is at least 44px tall; icon buttons are 44px wide", async ({
     page,
   }) => {
     await open(page);
-    const controls = await page.locator('button, a[data-slot="button"], input').evaluateAll((elements) =>
+    const controls = await page.locator('button, a[data-slot="button"], input, select').evaluateAll((elements) =>
       elements
         // Playwright also finds elements inside shadow roots, such as the
         // Next.js dev badge's button. Only the page's own controls count.
@@ -256,8 +256,11 @@ test.describe("on a phone (375px, touch screen)", () => {
         .map((element) => {
           // A checkbox (CheckboxField) is a 20px box inside a label row at
           // least 44px tall, and the whole row is what a thumb presses: so
-          // the row is measured, not the box.
-          const target = element.matches('input[type="checkbox"]') ? (element.closest("label") ?? element) : element;
+          // the row is measured, not the box. A choice pill's radio
+          // (ChoiceGroup) is visually hidden inside its pill: the pill counts.
+          const target = element.matches('input[type="checkbox"], input[type="radio"]')
+            ? (element.closest("label") ?? element)
+            : element;
           const box = target.getBoundingClientRect();
           return {
             name: element.getAttribute("aria-label") || element.textContent?.trim() || element.id || element.tagName,

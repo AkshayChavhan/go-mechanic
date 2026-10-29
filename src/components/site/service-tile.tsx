@@ -15,7 +15,8 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Service, ServiceId, VehicleKind } from "@/content/services";
+import type { Service, ServiceId } from "@/content/services";
+import type { VehicleKind } from "@/domain/vehicles";
 import { localize } from "@/i18n/localized-text";
 import { cn } from "@/lib/utils";
 

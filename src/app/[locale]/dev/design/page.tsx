@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 
 import { ActionBar } from "@/components/site/action-bar";
 import { CheckboxField } from "@/components/site/checkbox-field";
+import { ChoiceGroup } from "@/components/site/choice-group";
 import { MobileMenu } from "@/components/site/mobile-menu";
 import { bookTarget, footerItems, navItems } from "@/components/site/navigation";
 import { NotFoundContent } from "@/components/site/not-found-content";
@@ -21,6 +22,8 @@ import { SiteFooter } from "@/components/site/site-footer";
 import { MobileMenuContent, SiteHeader } from "@/components/site/site-header";
 import { StatTile } from "@/components/site/stat-tile";
 import { VehicleIllustration } from "@/components/site/vehicle-illustration";
+import { VehiclePicker } from "@/components/site/vehicle-picker";
+import { vehiclePickerLabels } from "@/components/site/vehicle-picker-labels";
 import { VisualSlot } from "@/components/site/visual-slot";
 import { Wordmark } from "@/components/site/wordmark";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/components/ui/native-select";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -45,6 +49,7 @@ import { whatsappHref } from "@/lib/contact-links";
 import { devOnly } from "@/lib/dev-only";
 import { countDuration, distance, duration, ease } from "@/lib/motion";
 import { readGarage } from "@/server/dal/garage";
+import { readVehicleCatalogue } from "@/server/dal/vehicles";
 
 import { ColorPair } from "./_components/color-pair";
 import { FontPreview, FontToggle } from "./_components/font-switch";
@@ -269,6 +274,9 @@ export default async function DesignPage() {
   const tHeader = await getTranslations("Header");
   const tContact = await getTranslations("Contact");
   const garage = await readGarage();
+  // The real catalogue (the draft models, task 17), for the picker sample.
+  const catalogue = await readVehicleCatalogue();
+  const pickerLabels = await vehiclePickerLabels();
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
   // The samples, through the same switch the home page uses (showSamples()):
   // devOnly() keeps this page out of production, but a staging server that
@@ -667,6 +675,91 @@ export default async function DesignPage() {
                   label="I agree to be contacted about my bookings."
                   error="Tick this box to continue."
                 />
+              </div>
+            </Block>
+
+            <Separator />
+
+            <Block
+              title="Select"
+              description="A native select drawn like a field: 44px tall, 17px text, full width. Phones open their own list, and it works before JavaScript loads."
+            >
+              <FieldGroup data-sample="native-select" className="grid gap-6 md:grid-cols-3">
+                <Field>
+                  <FieldLabel htmlFor="sample-brand">Brand</FieldLabel>
+                  <NativeSelect id="sample-brand" defaultValue="">
+                    <NativeSelectOption value="">Choose a brand</NativeSelectOption>
+                    <NativeSelectOptGroup label="Cars">
+                      <NativeSelectOption value="car-honda">Honda</NativeSelectOption>
+                      <NativeSelectOption value="car-tata">Tata</NativeSelectOption>
+                    </NativeSelectOptGroup>
+                    <NativeSelectOptGroup label="Two-wheelers">
+                      <NativeSelectOption value="two-wheeler-honda">Honda</NativeSelectOption>
+                    </NativeSelectOptGroup>
+                  </NativeSelect>
+                </Field>
+                <Field data-invalid>
+                  <FieldLabel htmlFor="sample-brand-invalid">Brand</FieldLabel>
+                  <NativeSelect
+                    id="sample-brand-invalid"
+                    defaultValue=""
+                    aria-invalid
+                    aria-describedby="sample-brand-invalid-error"
+                  >
+                    <NativeSelectOption value="">Choose a brand</NativeSelectOption>
+                    <NativeSelectOption value="car-honda">Honda</NativeSelectOption>
+                  </NativeSelect>
+                  <FieldError id="sample-brand-invalid-error">Choose your vehicle&apos;s brand.</FieldError>
+                </Field>
+                <Field data-disabled>
+                  <FieldLabel htmlFor="sample-brand-disabled">Brand</FieldLabel>
+                  <NativeSelect id="sample-brand-disabled" defaultValue="car-honda" disabled>
+                    <NativeSelectOption value="car-honda">Honda</NativeSelectOption>
+                  </NativeSelect>
+                  <FieldDescription>Locked after booking. Call us to change it.</FieldDescription>
+                </Field>
+              </FieldGroup>
+            </Block>
+
+            <Separator />
+
+            <Block
+              title="Choice pills"
+              description="One question, answered by native radios drawn as 44px pills: they work before JavaScript loads, and the arrow keys move between them. The chosen pill takes the text colour; blue stays for actions."
+            >
+              <div data-sample="choice-group" className="grid gap-6 md:grid-cols-2">
+                <ChoiceGroup
+                  legend="Type"
+                  name="sample-kind"
+                  options={[
+                    { value: "car", label: "Car" },
+                    { value: "two-wheeler", label: "Two-wheeler" },
+                  ]}
+                />
+                <ChoiceGroup
+                  legend="Fuel"
+                  name="sample-fuel"
+                  defaultValue="diesel"
+                  options={[
+                    { value: "petrol", label: "Petrol" },
+                    { value: "diesel", label: "Diesel" },
+                    { value: "cng", label: "CNG" },
+                    { value: "electric", label: "Electric" },
+                  ]}
+                />
+              </div>
+            </Block>
+
+            <Separator />
+
+            <Block
+              title="Vehicle picker"
+              description="Type, brand, model and fuel, from the database's catalogue (a draft of the models, for the owner to check). Each choice narrows the lists after it; a model fills in its brand and type, and a screen reader hears what changed. Without JavaScript every list stays complete."
+            >
+              <div data-sample="vehicle-picker" className="max-w-md">
+                {catalogue.makes.length > 0 && (
+                  <VehiclePicker catalogue={catalogue} labels={pickerLabels} name="sampleVehicle" />
+                )}
               </div>
             </Block>
 

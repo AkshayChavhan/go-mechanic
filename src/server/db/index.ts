@@ -41,7 +41,7 @@ import { type ServerEnv, serverEnv } from "@/server/env";
 
 import { type FolderLock, lockFolder } from "./folder-lock";
 import * as schema from "./schema";
-import { seedGarage, seedSlotRules } from "./seed";
+import { seedGarage, seedSlotRules, seedVehicleCatalogue } from "./seed";
 
 /**
  * The database, whichever driver is underneath. Drizzle's PGlite and
@@ -138,6 +138,9 @@ export async function createDatabase(config: DatabaseConfig): Promise<Database> 
     await migrate(db, { migrationsFolder: path.join(process.cwd(), "src", "server", "db", "migrations") });
     await seedGarage(db);
     await seedSlotRules(db);
+    // Its own call: seedGarage stops early on every database that already
+    // has the garage, and the catalogue must still reach those.
+    await seedVehicleCatalogue(db);
     if (lock) folderLocks.set(db, lock);
     return db;
   } catch (error) {

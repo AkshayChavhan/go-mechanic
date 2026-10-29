@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { expect, type Page } from "@playwright/test";
 
+import messages from "../messages/en.json";
+
 // Helpers shared by the browser tests: e2e/*.spec.ts (production build) and
 // e2e/dev/*.spec.ts (next dev). Not a spec itself, so Playwright doesn't run it.
 
@@ -161,4 +163,23 @@ export async function latestCodeFor(number: string, since: Date): Promise<string
 export function freshNumber(): { typed: string; e164: string } {
   const rest = String(Math.floor(Math.random() * 100_000)).padStart(5, "0");
   return { typed: `60000 ${rest}`, e164: `+9160000${rest}` };
+}
+
+/**
+ * Logs a fresh number in through the real /login form (codes from the fake
+ * SMS provider's file) and waits for /account. Returns the number.
+ */
+export async function logInThroughTheForm(page: Page): Promise<{ typed: string; e164: string }> {
+  const t = messages.Login;
+  const number = freshNumber();
+  const since = new Date();
+  await page.goto("/login");
+  await page.getByLabel(t.phoneLabel, { exact: true }).fill(number.typed);
+  await page.getByLabel(t.ageLabel).check();
+  await page.getByLabel(t.consentLabel.replace("{brand}", messages.Brand.name)).check();
+  await page.getByRole("button", { name: t.sendCode }).click();
+  await page.getByLabel(t.codeLabel).fill(await latestCodeFor(number.e164, since));
+  await page.getByRole("button", { name: t.logIn, exact: true }).click();
+  await expect(page).toHaveURL(/\/account$/);
+  return number;
 }

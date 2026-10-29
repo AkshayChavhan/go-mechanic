@@ -4,6 +4,8 @@ import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vit
 import { closeDatabase, createDatabase, type Database } from "@/server/db";
 import { sessions, users, verifications } from "@/server/db/schema";
 
+import { hasSessionCookie } from "@/lib/access-routes";
+
 import { type Auth, createAuth, logWithoutDetails } from "./auth";
 
 // Starting PGlite (Postgres compiled to WebAssembly) and migrating it takes a
@@ -229,5 +231,18 @@ describe("Better Auth's log lines (logWithoutDetails)", () => {
     } finally {
       for (const spy of output) spy.mockRestore();
     }
+  });
+});
+
+describe("the session cookie's name, as the proxy sees it", () => {
+  // The proxy checks cookie names itself (src/lib/access-routes.ts). These
+  // names come from our own Better Auth settings, on http (local) and https
+  // (staging and production, which add the __Secure- prefix), so a change in
+  // auth.ts that renames the cookie fails here.
+  test.each([false, true])("secureCookies %s: the proxy recognises the cookie Better Auth sets", async (secureCookies) => {
+    const configured = createAuth({ db, secret, secureCookies, sendCode, onVerified });
+    const { name } = (await configured.$context).authCookies.sessionToken;
+    expect(name).toBe(secureCookies ? "__Secure-better-auth.session_token" : "better-auth.session_token");
+    expect(hasSessionCookie(`${name}=abc.def`)).toBe(true);
   });
 });

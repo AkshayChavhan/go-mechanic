@@ -42,6 +42,10 @@ const TABLES: Record<string, Personal | null> = {
   slot_rules: null,
   calendar_exceptions: null,
   slot_counters: null,
+  // The vehicle catalogue (task 17): the garage's list of types, brands and models, nobody's own vehicle.
+  vehicle_categories: null,
+  vehicle_makes: null,
+  vehicle_models: null,
 };
 
 /** Every table schema.ts defines, by its database name. */

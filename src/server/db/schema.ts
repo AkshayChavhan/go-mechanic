@@ -23,6 +23,7 @@ import {
   boolean,
   check,
   date,
+  foreignKey,
   index,
   integer,
   jsonb,
@@ -38,6 +39,7 @@ import {
 import type { ConsentPurpose } from "@/domain/consent";
 import type { Weekday } from "@/domain/opening-hours";
 import type { Role } from "@/domain/roles";
+import type { Fuel, VehicleKind } from "@/domain/vehicles";
 import type { LocalizedText } from "@/i18n/localized-text";
 
 /**
@@ -353,4 +355,113 @@ export const devMessages = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("dev_messages_created_at_index").on(table.createdAt)],
+);
+
+// --- Vehicle catalogue (task 17) ---------------------------------------------
+//
+// The kinds, price groups, brands and models the garage works on
+// (src/domain/vehicles.ts explains each). Ids are text made from names
+// ("car-honda-city") and never change: every process seeds its own copy, so
+// the same vehicle must get the same id everywhere. "make" in the table and
+// column names means the brand (the master plan's names).
+//
+// Nothing is deleted: a brand or model the garage stops serving gets
+// listed = false, so a customer's saved vehicle (task 21) can still point
+// to it. The foreign keys refuse a delete ("restrict") to keep it that way.
+
+/** Every kind, as in VEHICLE_KINDS (src/domain/vehicles.ts; vehicle-catalogue.test.ts checks they match). */
+export const vehicleKind = pgEnum("vehicle_kind", ["car", "two-wheeler"] as const satisfies readonly VehicleKind[]);
+
+/** Every fuel, as in FUELS, in the picker's order (vehicle-catalogue.test.ts checks they match). */
+export const fuel = pgEnum("fuel", ["petrol", "diesel", "cng", "electric"] as const satisfies readonly Fuel[]);
+
+/**
+ * A CHECK that the English name is filled in. Spelled out with coalesce: a
+ * name with no "en" key gives NULL, and a CHECK whose result is NULL passes.
+ */
+const englishNameFilled = (name: unknown) => sql`coalesce(btrim(${name} ->> 'en'), '') <> ''`;
+
+/**
+ * Price groups within a kind: task 18 prices services by group and fuel.
+ * Visitors never see a group, so there's nothing to hide here.
+ */
+export const vehicleCategories = pgTable(
+  "vehicle_categories",
+  {
+    /** "hatchback". */
+    id: text("id").primaryKey(),
+    kind: vehicleKind("kind").notNull(),
+    name: jsonb("name").$type<LocalizedText>().notNull(),
+    /** The list order, smallest first. */
+    position: integer("position").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // Lets a model's (category, kind) pair point here: the database then
+    // refuses a car model in a two-wheeler group.
+    unique("vehicle_categories_id_kind").on(table.id, table.kind),
+    check("vehicle_categories_english_name", englishNameFilled(table.name)),
+  ],
+);
+
+/** Brands, one row per kind: "car-honda" and "two-wheeler-honda" are two rows. */
+export const vehicleMakes = pgTable(
+  "vehicle_makes",
+  {
+    /** "car-maruti-suzuki". */
+    id: text("id").primaryKey(),
+    kind: vehicleKind("kind").notNull(),
+    name: jsonb("name").$type<LocalizedText>().notNull(),
+    /** The order within its kind's list, smallest first. */
+    position: integer("position").notNull(),
+    /** False hides it from the site without deleting it. */
+    listed: boolean("listed").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("vehicle_makes_id_kind").on(table.id, table.kind),
+    check("vehicle_makes_english_name", englishNameFilled(table.name)),
+  ],
+);
+
+/**
+ * Models. Each row repeats its brand's kind, so two composite foreign keys
+ * can check it: (make_id, kind) must be a brand of that kind, and
+ * (category_id, kind) a price group of that kind. A plain foreign key on
+ * make_id alone couldn't stop a scooter group on a car.
+ */
+export const vehicleModels = pgTable(
+  "vehicle_models",
+  {
+    /** "car-honda-city": its brand's id, then its own name. */
+    id: text("id").primaryKey(),
+    makeId: text("make_id").notNull(),
+    categoryId: text("category_id").notNull(),
+    kind: vehicleKind("kind").notNull(),
+    name: jsonb("name").$type<LocalizedText>().notNull(),
+    /** What it runs on: at least one, in FUELS order. */
+    fuels: fuel("fuels").array().notNull(),
+    /** The order within its brand, smallest first. */
+    position: integer("position").notNull(),
+    /** False hides it from the site without deleting it. */
+    listed: boolean("listed").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: "vehicle_models_make_kind_fkey",
+      columns: [table.makeId, table.kind],
+      foreignColumns: [vehicleMakes.id, vehicleMakes.kind],
+    }).onDelete("restrict"),
+    foreignKey({
+      name: "vehicle_models_category_kind_fkey",
+      columns: [table.categoryId, table.kind],
+      foreignColumns: [vehicleCategories.id, vehicleCategories.kind],
+    }).onDelete("restrict"),
+    check("vehicle_models_has_fuels", sql`cardinality(${table.fuels}) > 0`),
+    check("vehicle_models_english_name", englishNameFilled(table.name)),
+  ],
 );
