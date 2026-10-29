@@ -1,7 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 
-import { SheetClose } from "@/components/ui/sheet";
 import messages from "../../../messages/en.json";
 
 import { MobileMenu } from "./mobile-menu";
@@ -15,9 +14,8 @@ function Menu() {
       title={messages.Header.menuTitle}
       closeLabel={messages.Common.close}
     >
-      <SheetClose asChild>
-        <a href="#services">Services</a>
-      </SheetClose>
+      <a href="#services">Services</a>
+      <p>Open today</p>
     </MobileMenu>
   );
 }
@@ -59,10 +57,17 @@ describe("MobileMenu", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  test("following a link wrapped in SheetClose closes it", () => {
+  test("following any link in it closes it, with no wrapper around the link", () => {
     render(<Menu />);
     openMenu();
     fireEvent.click(screen.getByRole("link", { name: "Services" }));
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  test("a tap elsewhere in the panel leaves it open", () => {
+    render(<Menu />);
+    openMenu();
+    fireEvent.click(screen.getByText("Open today"));
+    expect(screen.getByRole("dialog")).toBeTruthy();
   });
 });
