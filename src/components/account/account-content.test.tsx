@@ -1,6 +1,9 @@
-import { screen } from "@testing-library/react";
+import { fireEvent, screen } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import type { ReactElement } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
+import { defaultLocale, GARAGE_TIME_ZONE } from "@/i18n/config";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { getCurrentUser } from "@/server/auth/session";
 import { listMyVehicles, type MyVehicle } from "@/server/dal/customer-vehicles";
@@ -32,6 +35,16 @@ vi.mock("next-intl/server", async () => {
 });
 
 const asha = { id: "asha", phoneNumber: "+919876500001", role: "customer" as const };
+const ravi = { id: "ravi", phoneNumber: "+919876500002", role: "customer" as const };
+
+/** The provider renderWithIntl wraps around a first render, for rerenders. */
+function withIntl(ui: ReactElement) {
+  return (
+    <NextIntlClientProvider locale={defaultLocale} messages={messages} timeZone={GARAGE_TIME_ZONE}>
+      {ui}
+    </NextIntlClientProvider>
+  );
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -61,6 +74,16 @@ describe("AccountContent", () => {
     expect(screen.getByLabelText(messages.Account.nameLabel)).toBeTruthy();
     expect(screen.queryByTestId("vehicle-list")).toBeNull();
     expect(listMyVehicles).not.toHaveBeenCalled();
+  });
+
+  test("on a shared phone, the next customer's name form starts empty, not with the last one's draft", async () => {
+    vi.mocked(readMyProfile).mockResolvedValue({ name: "", phoneNumber: asha.phoneNumber });
+    const { rerender } = renderWithIntl(await AccountContent({ locale: "en" }));
+    fireEvent.change(screen.getByLabelText(messages.Account.nameLabel), { target: { value: "Asha" } });
+
+    vi.mocked(getCurrentUser).mockResolvedValue(ravi);
+    rerender(withIntl(await AccountContent({ locale: "en" })));
+    expect((screen.getByLabelText(messages.Account.nameLabel) as HTMLInputElement).value).toBe("");
   });
 
   test("with a name: the vehicles, India's today for the Expired flags, and the add link", async () => {

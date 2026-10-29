@@ -221,6 +221,48 @@ describe("VehiclePicker", () => {
     }
   });
 
+  test("also keeps a type or a fuel picked before the page's JavaScript loaded", async () => {
+    const tree: ReactElement = (
+      <NextIntlClientProvider locale={defaultLocale} messages={{}}>
+        <form aria-label="Book">
+          <VehiclePicker catalogue={catalogue} labels={labels} />
+        </form>
+      </NextIntlClientProvider>
+    );
+    // Two rounds: a type alone, then a model with one of its fuels.
+    const choices: { pick: (picker: HTMLElement) => void; posted: Record<string, string> }[] = [
+      {
+        pick: (picker) => {
+          picker.querySelector<HTMLInputElement>('input[name="vehicleKind"][value="two-wheeler"]')!.checked = true;
+        },
+        posted: { vehicleKind: "two-wheeler", vehicleMake: "", vehicleModel: "" },
+      },
+      {
+        pick: (picker) => {
+          picker.querySelectorAll("select")[1]!.value = "car-honda-city";
+          picker.querySelector<HTMLInputElement>('input[name="vehicleFuel"][value="diesel"]')!.checked = true;
+        },
+        posted: { vehicleKind: "car", vehicleMake: "car-honda", vehicleModel: "car-honda-city", vehicleFuel: "diesel" },
+      },
+    ];
+    for (const { pick, posted } of choices) {
+      const container = document.createElement("div");
+      container.innerHTML = renderToString(tree);
+      document.body.append(container);
+      pick(container);
+      let root: Root | undefined;
+      await act(async () => {
+        root = hydrateRoot(container, tree);
+      });
+      try {
+        expect(Object.fromEntries(new FormData(container.querySelector("form")!))).toEqual(posted);
+      } finally {
+        act(() => root?.unmount());
+        container.remove();
+      }
+    }
+  });
+
   test("a form reset puts it back to its default, in what's shown and what's posted", () => {
     renderWithIntl(
       <form aria-label="Book">

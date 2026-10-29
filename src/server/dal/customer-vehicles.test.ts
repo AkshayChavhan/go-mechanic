@@ -104,10 +104,12 @@ describe("nobody logged in", () => {
     expect(getDatabase).not.toHaveBeenCalled();
   });
 
-  test("a bad input still gives AccessDeniedError, not its problems: the check comes first", async () => {
+  test("a bad input or id still gives AccessDeniedError, not its answer: the check comes first", async () => {
     logIn(null);
     await expect(addMyVehicle(input({ registration: "" }), clock)).rejects.toBeInstanceOf(AccessDeniedError);
     await expect(updateMyVehicle("not-a-uuid", input(), clock)).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(readMyVehicle("not-a-uuid")).rejects.toBeInstanceOf(AccessDeniedError);
+    await expect(removeMyVehicle("not-a-uuid")).rejects.toBeInstanceOf(AccessDeniedError);
   });
 });
 
@@ -135,6 +137,22 @@ describe("one customer can't reach another's vehicles", () => {
     const ravis = await addAs(ravi);
     expect(await removeMyVehicle(ravis)).toEqual({ status: "not-found" });
     expect(await storedRow(ravis)).toBeDefined();
+  });
+
+  test("with two vehicles of their own, each call reaches only the one it names", async () => {
+    const first = await addAs(asha, { registration: "MH12AB1234" });
+    const second = await addAs(asha, { registration: "MH12AB0001" });
+    expect((await readMyVehicle(second))?.id).toBe(second);
+    expect(await readMyVehicle(unknownId)).toBeNull();
+    expect(await updateMyVehicle(unknownId, input({ registration: "KA01AB0001" }), clock)).toEqual({ status: "not-found" });
+
+    expect(await updateMyVehicle(second, input({ registration: "DL3CAB0042" }), clock)).toEqual({ status: "saved" });
+    expect((await storedRow(first)).registrationNumber).toBe("MH12AB1234");
+    expect((await storedRow(second)).registrationNumber).toBe("DL03CAB0042");
+
+    expect(await removeMyVehicle(unknownId)).toEqual({ status: "not-found" });
+    expect(await removeMyVehicle(second)).toEqual({ status: "removed" });
+    expect(await storedRow(first)).toBeDefined();
   });
 
   test("an id that isn't a uuid is not found, without a database error", async () => {
@@ -195,6 +213,19 @@ describe("addMyVehicle", () => {
     expect(await db.$count(customerVehicles)).toBe(1);
   });
 
+  test("today is India's date: from 18:30 UTC it's already the next day there", async () => {
+    // A date may be up to 10 years after today. On 29 Oct at 18:29 UTC it's
+    // still 29 Oct in India, so 30 Oct 2036 is too late; one minute later
+    // it's 30 Oct in India, and the same date is allowed.
+    const beforeMidnight = fixedClock(new Date("2026-10-29T18:29:00Z"));
+    const afterMidnight = fixedClock(new Date("2026-10-29T18:30:00Z"));
+    expect(await addMyVehicle(input({ insuranceExpiresOn: "2036-10-30" }), beforeMidnight)).toEqual({
+      status: "problems",
+      problems: [{ field: "insuranceExpiresOn", problem: "date-out-of-range" }],
+    });
+    expect(await addMyVehicle(input({ insuranceExpiresOn: "2036-10-30" }), afterMidnight)).toMatchObject({ status: "saved" });
+  });
+
   test("refuses a model the garage hid", async () => {
     await db.update(vehicleModels).set({ listed: false }).where(eq(vehicleModels.id, "car-honda-city"));
     expect(await addMyVehicle(input(), clock)).toEqual({
@@ -223,6 +254,12 @@ describe("updateMyVehicle", () => {
   test("keeping the vehicle's own number is fine", async () => {
     const id = await addAs(asha);
     expect(await updateMyVehicle(id, input(), clock)).toEqual({ status: "saved" });
+  });
+
+  test("a number another customer saved is fine: only the customer's own vehicles count", async () => {
+    await addAs(ravi, { registration: "KA01AB0001" });
+    const mine = await addAs(asha);
+    expect(await updateMyVehicle(mine, input({ registration: "KA01AB0001" }), clock)).toEqual({ status: "saved" });
   });
 
   test("the number of another of the customer's vehicles is a duplicate", async () => {

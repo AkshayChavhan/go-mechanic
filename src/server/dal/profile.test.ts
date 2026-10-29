@@ -63,6 +63,11 @@ describe("nobody logged in", () => {
     expect((error as AccessDeniedError).reason).toBe("signedOut");
     expect(getDatabase).not.toHaveBeenCalled();
   });
+
+  test("a bad name still gives AccessDeniedError, not its problem: the check comes first", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(null);
+    await expect(saveMyName("A", clock)).rejects.toBeInstanceOf(AccessDeniedError);
+  });
 });
 
 describe("readMyProfile", () => {
@@ -71,8 +76,12 @@ describe("readMyProfile", () => {
   });
 
   test("reads the logged-in customer's row, never another's", async () => {
+    await db.update(users).set({ name: "Asha Patil" }).where(eq(users.id, "asha"));
     await db.update(users).set({ name: "Ravi Kumar" }).where(eq(users.id, "ravi"));
-    expect(await readMyProfile()).toEqual({ name: "", phoneNumber: "+919876500001" });
+    vi.mocked(getCurrentUser).mockResolvedValue(ravi);
+    expect(await readMyProfile()).toEqual({ name: "Ravi Kumar", phoneNumber: "+919876500002" });
+    vi.mocked(getCurrentUser).mockResolvedValue(asha);
+    expect(await readMyProfile()).toEqual({ name: "Asha Patil", phoneNumber: "+919876500001" });
   });
 });
 
