@@ -262,7 +262,7 @@ describe("changeSelection (how one choice changes the others)", () => {
     expect(changed).toEqual(["model"]);
   });
 
-  test("setting the model back to its placeholder clears only the model, and every fuel is offered again", () => {
+  test("setting the model back to its placeholder clears only the model, and the brand's fuels are offered again", () => {
     const before = normalizeSelection(catalogue, select({ modelId: "car-honda-elevate" }));
     expect(before.fuel).toBe("petrol");
     const { selection, changed } = changeSelection(catalogue, before, { field: "model", value: null });

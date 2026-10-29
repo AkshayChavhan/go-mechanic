@@ -173,13 +173,15 @@ export type SelectionChange =
   | { field: "fuel"; value: Fuel | null };
 
 /** A model and the brand it belongs to. */
-type FoundModel = { make: VehicleMake; model: VehicleModel };
+export type FoundModel = { make: VehicleMake; model: VehicleModel };
 
-function findMake(catalogue: VehicleCatalogue, id: string | null): VehicleMake | undefined {
+/** The brand with this id, or undefined (null finds nothing). */
+export function findMake(catalogue: VehicleCatalogue, id: string | null): VehicleMake | undefined {
   return id === null ? undefined : catalogue.makes.find((make) => make.id === id);
 }
 
-function findModel(catalogue: VehicleCatalogue, id: string | null): FoundModel | undefined {
+/** The model with this id and its brand, or undefined (null finds nothing). */
+export function findModel(catalogue: VehicleCatalogue, id: string | null): FoundModel | undefined {
   if (id === null) return undefined;
   for (const make of catalogue.makes) {
     const model = make.models.find((candidate) => candidate.id === id);
@@ -334,8 +336,9 @@ export type ResolveVehicleResult =
 
 /**
  * Turns a model id and a fuel (what the picker's form posts) into a vehicle,
- * or says what's wrong. The picker uses it to know when the choice is
- * complete; the forms of tasks 21 and 23 check a posted choice with it.
+ * or says what's wrong. For the server: the forms of tasks 21 and 23 check a
+ * posted choice with it before saving anything. The picker itself doesn't
+ * call it.
  */
 export function resolveVehicle(catalogue: VehicleCatalogue, modelId: string, fuel: Fuel): ResolveVehicleResult {
   const found = findModel(catalogue, modelId);

@@ -96,8 +96,10 @@ export function vehicleCatalogueRows(catalogue: VehicleCatalogue) {
  * Adds the rows of `catalogue` (the draft by default) that the database
  * doesn't have yet, matched by id. It never changes or removes a row that's
  * already there, so the owner's edits and hidden rows survive restarts, and a
- * model added to the draft later reaches existing databases too. A renamed
- * draft model reaches an existing local database only after `npm run db:reset`.
+ * model added to the draft later reaches existing databases too. Any other
+ * correction to the draft (a renamed id, a changed fuel list or price group, a
+ * removed model) reaches an existing local database only after
+ * `npm run db:reset`; a renamed id would otherwise sit next to the old row.
  *
  * Checks the catalogue first and throws on any problem, so a typo in
  * vehicle-seed-data.ts fails loudly. One transaction, one insert per table:

@@ -9,6 +9,8 @@ import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/compon
 import {
   changeSelection,
   EMPTY_SELECTION,
+  findMake,
+  findModel,
   type Fuel,
   normalizeSelection,
   type SelectionChange,
@@ -72,11 +74,16 @@ const subscribeToNothing = () => () => {};
 /**
  * The vehicle picker: type, then brand, then model, then fuel.
  *
- * - Native controls (radios and selects), so it posts inside a plain form,
- *   and works before its JavaScript has loaded: the first render (on the
- *   server, and again while hydrating) always shows the full lists, with any
- *   default selected, so a visitor without JavaScript can still pick any
- *   brand and model. Narrowing starts once the picker has hydrated.
+ * - Native controls (radios and selects), so it posts inside a plain form.
+ *   The first render (on the server, and again while hydrating) always shows
+ *   the full lists, with any default selected, so a visitor without
+ *   JavaScript can still pick any brand and model. Narrowing starts once the
+ *   picker has hydrated.
+ * - Known gap (tasks 21 and 23 close it): a choice made in the fields while
+ *   the page's JavaScript is still loading is reset when the picker
+ *   hydrates, because the fields then follow React's state, which never saw
+ *   that choice. The fix is to read the fields once at hydration and pass
+ *   their values through normalizeSelection.
  * - The rules live in src/domain/vehicles.ts: each list is complete until an
  *   earlier choice narrows it, a model fills in its brand and type, and a
  *   choice that no longer fits is cleared. Only matching options are
@@ -121,12 +128,12 @@ export function VehiclePicker({
       case "kind":
         return next.kind && labels.kinds[next.kind];
       case "make": {
-        const make = catalogue.makes.find((candidate) => candidate.id === next.makeId);
+        const make = findMake(catalogue, next.makeId);
         return make ? localize(make.name, locale) : null;
       }
       case "model": {
-        const model = catalogue.makes.flatMap((make) => make.models).find((candidate) => candidate.id === next.modelId);
-        return model ? localize(model.name, locale) : null;
+        const found = findModel(catalogue, next.modelId);
+        return found ? localize(found.model.name, locale) : null;
       }
       case "fuel":
         return next.fuel && labels.fuels[next.fuel];
