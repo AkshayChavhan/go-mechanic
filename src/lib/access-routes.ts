@@ -66,9 +66,17 @@ export function accessRedirect(
 ): string | null {
   if (request.method !== "GET" && request.method !== "HEAD") return null;
 
-  const [, first = "", ...rest] = request.pathname.split("/");
+  // Decoded first, as next-intl does, so "/%61ccount" counts as /account. A
+  // malformed address ("/%E0%A4") is left as it is.
+  let pathname = request.pathname;
+  try {
+    pathname = decodeURI(pathname);
+  } catch {
+    // Not valid percent-encoding: no page matches it anyway.
+  }
+  const [, first = "", ...rest] = pathname.split("/");
   const hasLocale = locales.includes(first);
-  const path = hasLocale ? `/${rest.join("/")}` : request.pathname;
+  const path = hasLocale ? `/${rest.join("/")}` : pathname;
   const prefix = hasLocale && first !== defaultLocale ? `/${first}` : "";
 
   const isProtected = PROTECTED_PREFIXES.some((protectedPath) => path === protectedPath || path.startsWith(`${protectedPath}/`));

@@ -21,7 +21,7 @@
 
 import "server-only";
 
-import { notFound } from "next/navigation";
+import { notFound, RedirectType } from "next/navigation";
 
 import { can, type Permission } from "@/domain/permissions";
 import type { Locale } from "@/i18n/config";
@@ -55,7 +55,12 @@ export class AccessDeniedError extends Error {
 export async function requireUser(locale: Locale): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) {
-    return redirect({ href: { pathname: LOGIN_PATH, query: { [SESSION_ENDED.name]: SESSION_ENDED.value } }, locale });
+    // "replace": inside a Server Action, a redirect would otherwise add a
+    // history entry, and Back would return to a page that sends you away.
+    return redirect(
+      { href: { pathname: LOGIN_PATH, query: { [SESSION_ENDED.name]: SESSION_ENDED.value } }, locale },
+      RedirectType.replace,
+    );
   }
   return user;
 }

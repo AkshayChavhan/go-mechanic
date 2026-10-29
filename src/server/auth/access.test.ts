@@ -21,7 +21,8 @@ async function thrownBy(run: Promise<unknown>): Promise<unknown> {
   );
 }
 
-const TO_LOGIN = { digest: expect.stringMatching(/^NEXT_REDIRECT;\w+;\/login\?session=ended;/) };
+// "replace": no history entry for the page that sent the visitor away.
+const TO_LOGIN = { digest: expect.stringMatching(/^NEXT_REDIRECT;replace;\/login\?session=ended;/) };
 const NOT_FOUND = { digest: "NEXT_HTTP_ERROR_FALLBACK;404" };
 
 beforeEach(() => {

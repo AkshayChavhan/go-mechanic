@@ -48,6 +48,15 @@ describe("accessRedirect (the proxy's shortcut, by the session cookie alone)", (
     expect(decide("POST", "/account", false)).toBeNull();
   });
 
+  test("percent-encoded paths count as what they spell: /%61ccount and /%6Cogin", () => {
+    expect(decide("GET", "/%61ccount", false)).toBe("/login");
+    expect(decide("GET", "/%6Cogin", true)).toBe("/account");
+  });
+
+  test("a malformed address doesn't throw: let through", () => {
+    expect(decide("GET", "/%E0%A4%A", false)).toBeNull();
+  });
+
   test.each(["/accounting", "/account-help", "/services", "/", "/hi", "/login/extra"])(
     "GET %s: through, logged in or out",
     (path) => {
