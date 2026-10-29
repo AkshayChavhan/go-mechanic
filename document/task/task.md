@@ -30,7 +30,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
-| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | In progress |  |
+| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | In progress | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
@@ -353,7 +353,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] The header's "Account" entry: one static link (`AccountLink`), `prefetch={false}`, never a session read in the shell (the owner's choice, 2026-10-29)
 - [x] Ask for a name on the profile: required, once, right after the first login (the owner's choice, 2026-10-29). Recycled numbers: accepted for v1 with no extra logic, so whoever holds the number sees the account; the garage can remove an old account in task 29, and customers can delete their data in task 43 (the owner's choice, 2026-10-29)
 - [x] The vehicle picker inside a real form: it keeps a choice made before hydration, follows its form's reset, and takes an `error` prop (task 17's note)
-- [ ] Write the learning doc
+- [x] Write the learning doc: [21_customer_vehicles.md](../learning/21_customer_vehicles.md)
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
