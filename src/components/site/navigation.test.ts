@@ -11,7 +11,6 @@ import {
   bookTarget,
   footerItems,
   isLivePage,
-  liveFooterItems,
   liveNavItems,
   navItems,
   sitePages,
@@ -71,7 +70,7 @@ describe("the navigation registry", () => {
   test("footer-only pages never reach the header, phone menu or action bar (liveNavItems)", () => {
     const menu = liveNavItems().map((item) => item.href);
     for (const item of footerItems) expect(menu, item.href).not.toContain(item.href);
-    expect(liveFooterItems().every((item) => item.live)).toBe(true);
+    expect(liveNavItems(footerItems).every((item) => item.live)).toBe(true);
   });
 
   test("isLivePage: only a listed page with live: true", () => {

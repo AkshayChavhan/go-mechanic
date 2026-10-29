@@ -774,7 +774,7 @@ export default async function DesignPage() {
 
             <Block title="Footer" description="On every public page: contact details, the weekly hours with the live status, and the live pages.">
               <div className="overflow-hidden rounded-xl border border-border">
-                <SiteFooter items={allPagesLive} moreItems={allFooterPagesLive} garage={garage} />
+                <SiteFooter items={allPagesLive} footerOnlyItems={allFooterPagesLive} garage={garage} />
               </div>
             </Block>
 

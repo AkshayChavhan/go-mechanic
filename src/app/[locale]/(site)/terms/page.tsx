@@ -3,12 +3,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { Section } from "@/components/site/section";
-import { WhatsAppLink } from "@/components/site/whatsapp-link";
 import { indiaInstantOn } from "@/domain/india-time";
 import { formatAddress, formatDate } from "@/i18n/format";
 import { Link } from "@/i18n/navigation";
-import { formatPhoneNumber, telHref, whatsappHref } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
+
+import { contactRichText, inlineLinkClass } from "../_components/contact-rich-text";
 
 // /terms (task 19): a DRAFT of the terms for using the website and visiting
 // the garage. It states only what's decided (booking is a request for a
@@ -36,19 +36,8 @@ export default async function TermsPage() {
   const tContact = await getTranslations("Contact");
   const garage = await readGarage();
 
-  const linkClass = "text-link underline underline-offset-4";
-  const call = (chunks: ReactNode) => (
-    <a href={telHref(garage.phone)} className={`whitespace-nowrap ${linkClass}`}>
-      {chunks}
-    </a>
-  );
-  const whatsapp = (chunks: ReactNode) => (
-    <WhatsAppLink href={whatsappHref(garage.whatsapp, tContact("whatsappMessage"))} className={`${linkClass} [&_svg]:hidden`}>
-      {chunks}
-    </WhatsAppLink>
-  );
   const privacy = (chunks: ReactNode) => (
-    <Link href="/privacy" className={linkClass}>
+    <Link href="/privacy" className={inlineLinkClass}>
       {chunks}
     </Link>
   );
@@ -67,7 +56,7 @@ export default async function TermsPage() {
     paying: t("paying.body"),
     login: t.rich("login.body", { privacy }),
     undecided: t("undecided.body"),
-    questions: t.rich("questions.body", { phone: formatPhoneNumber(garage.phone), call, whatsapp }),
+    questions: t.rich("questions.body", contactRichText(garage, tContact("whatsappMessage"))),
   };
   // Midday India time on the date in messages, so it shows that date wherever the server runs.
   const updated = formatDate(indiaInstantOn(t("updatedOn"), 12 * 60), locale);

@@ -53,15 +53,11 @@ export function isLivePage(href: string, pages: readonly SitePage[] = sitePages)
   return pages.some((page) => page.href === href && page.live);
 }
 
-/** The items whose page exists, in menu order. */
+/** The items whose page exists, in order: the menu's by default, or another list such as `footerItems`. */
 export function liveNavItems(items: readonly NavItem[] = navItems): NavItem[] {
   return items.filter((item) => item.live);
 }
 
-/** The footer-only items whose page exists, in order. */
-export function liveFooterItems(items: readonly NavItem[] = footerItems): NavItem[] {
-  return items.filter((item) => item.live);
-}
 
 /** Where a "Book" button goes: a page on the site, or a WhatsApp chat. */
 export type BookTarget = { kind: "page"; href: string } | { kind: "whatsapp"; href: string };

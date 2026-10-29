@@ -23,8 +23,8 @@ const pageLink = cn(textLink, "text-muted-foreground transition-colors hover:tex
 type SiteFooterProps = {
   /** The live menu pages to link to (liveNavItems() in navigation.ts). */
   items: readonly NavItem[];
-  /** The live footer-only pages, listed after the menu pages (liveFooterItems()): FAQ, privacy, terms. */
-  moreItems?: readonly NavItem[];
+  /** The live footer-only pages, listed after the menu pages (liveNavItems(footerItems)): FAQ, privacy, terms. */
+  footerOnlyItems?: readonly NavItem[];
   /** The garage's details. */
   garage: Garage;
 };
@@ -37,13 +37,13 @@ type SiteFooterProps = {
  * A server component that takes everything as props. No copyright year:
  * reading today's date would stop the pages from being built ahead of time.
  */
-export function SiteFooter({ items, moreItems = [], garage }: SiteFooterProps) {
+export function SiteFooter({ items, footerOnlyItems = [], garage }: SiteFooterProps) {
   const tHours = useTranslations("Hours");
   const tContact = useTranslations("Contact");
   const tFooter = useTranslations("Footer");
   const tNav = useTranslations("Nav");
   const locale = useLocale();
-  const pages = [...items, ...moreItems];
+  const pages = [...items, ...footerOnlyItems];
 
   return (
     <footer>

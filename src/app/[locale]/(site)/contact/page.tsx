@@ -1,7 +1,6 @@
 import { PhoneIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
-import type { ReactNode } from "react";
 
 import { OpenStatus } from "@/components/site/open-status";
 import { OpeningHoursList } from "@/components/site/opening-hours-list";
@@ -12,6 +11,7 @@ import { formatAddress } from "@/i18n/format";
 import { formatPhoneNumber, telHref, whatsappHref } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
 
+import { contactRichText } from "../_components/contact-rich-text";
 import { pageTones } from "../_components/page-tones";
 
 // /contact (task 19): how to reach the garage, where it is and when it's
@@ -44,11 +44,7 @@ export default async function ContactPage() {
 
   const [introTone, visitTone, breakdownTone] = pageTones(3);
   const phone = formatPhoneNumber(garage.phone);
-  const call = (chunks: ReactNode) => (
-    <a href={telHref(garage.phone)} className="whitespace-nowrap text-link underline underline-offset-4">
-      {chunks}
-    </a>
-  );
+  const { call } = contactRichText(garage, tContact("whatsappMessage"));
 
   return (
     <>

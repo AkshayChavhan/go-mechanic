@@ -5,12 +5,11 @@ import type { ReactNode } from "react";
 import { OpeningHoursList } from "@/components/site/opening-hours-list";
 import { SampleBadge } from "@/components/site/sample-badge";
 import { Section } from "@/components/site/section";
-import { WhatsAppLink } from "@/components/site/whatsapp-link";
 import { FAQ_GROUPS, type FaqGroup, selectFaqItems } from "@/content/faq";
 import { localize } from "@/i18n/localized-text";
-import { formatPhoneNumber, telHref, whatsappHref } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
 
+import { contactRichText } from "../_components/contact-rich-text";
 import { pageTones } from "../_components/page-tones";
 
 // /faq (task 19): common questions, as plain headings and paragraphs (no
@@ -30,6 +29,9 @@ const confirmed = {
   visit: ["hours"],
   work: [],
 } as const satisfies Record<FaqGroup, readonly string[]>;
+
+/** A confirmed question's key: every one needs a question and an answer below. */
+type ConfirmedKey = (typeof confirmed)[FaqGroup][number];
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("FaqPage");
@@ -59,27 +61,13 @@ export default async function FaqPage() {
     work: t("groups.work"),
   };
 
-  const linkClass = "text-link underline underline-offset-4";
-  const answers: Record<string, ReactNode> = {
+  const answers: Record<ConfirmedKey, ReactNode> = {
     howToPay: t("items.howToPay.answer"),
     payOnline: t("items.payOnline.answer"),
-    howToBook: t.rich("items.howToBook.answer", {
-      phone: formatPhoneNumber(garage.phone),
-      call: (chunks) => (
-        <a href={telHref(garage.phone)} className={`whitespace-nowrap ${linkClass}`}>
-          {chunks}
-        </a>
-      ),
-      // No chat icon inside a sentence; WhatsAppLink still opens a new tab and tells screen readers.
-      whatsapp: (chunks) => (
-        <WhatsAppLink href={whatsappHref(garage.whatsapp, tContact("whatsappMessage"))} className={`${linkClass} [&_svg]:hidden`}>
-          {chunks}
-        </WhatsAppLink>
-      ),
-    }),
+    howToBook: t.rich("items.howToBook.answer", contactRichText(garage, tContact("whatsappMessage"))),
     hours: <OpeningHoursList hours={garage.hours} />,
   };
-  const questions: Record<string, string> = {
+  const questions: Record<ConfirmedKey, string> = {
     howToPay: t("items.howToPay.question"),
     payOnline: t("items.payOnline.question"),
     howToBook: t("items.howToBook.question"),
