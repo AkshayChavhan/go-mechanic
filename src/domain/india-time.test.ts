@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { addDays, indiaDateOf, indiaInstantOn, weekdayIndexOf } from "./india-time";
+import { addDays, addYears, indiaDateOf, indiaInstantOn, parseIndiaDate, weekdayIndexOf } from "./india-time";
 
 // Every instant below is written in UTC (the "Z" at the end), with the India
 // time it stands for in a comment. India is 5 hours 30 minutes ahead of UTC.
@@ -67,5 +67,32 @@ describe("indiaInstantOn (the moment India's clock shows a time on a date)", () 
       expect(indiaDateOf(indiaInstantOn(date, 0))).toBe(date);
       expect(indiaDateOf(indiaInstantOn(date, 23 * 60 + 59))).toBe(date);
     }
+  });
+});
+
+describe("parseIndiaDate (a date typed or posted as YYYY-MM-DD)", () => {
+  test.each(["2028-02-29", "2026-10-29", "2000-01-01"])("accepts %s", (text) => {
+    expect(parseIndiaDate(text)).toBe(text);
+  });
+
+  test.each(["2026-02-29", "2026-13-01", "2026-04-31", "29-10-2026", "2026-1-5", "", "2026-10-29T00:00"])("refuses %s", (text) => {
+    expect(parseIndiaDate(text)).toBeNull();
+  });
+});
+
+describe("addYears", () => {
+  test("the same day, years later", () => {
+    expect(addYears("2026-10-29", 10)).toBe("2036-10-29");
+  });
+
+  test("29 February in a year without one becomes 28 February", () => {
+    expect(addYears("2028-02-29", 1)).toBe("2029-02-28");
+  });
+});
+
+describe("today in India, across midnight", () => {
+  test("18:29 UTC is still the same day in India; 18:30 UTC is the next", () => {
+    expect(indiaDateOf(new Date("2026-10-29T18:29:00Z"))).toBe("2026-10-29");
+    expect(indiaDateOf(new Date("2026-10-29T18:30:00Z"))).toBe("2026-10-30");
   });
 });
