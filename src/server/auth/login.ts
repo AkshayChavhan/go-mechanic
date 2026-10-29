@@ -11,7 +11,8 @@
 //                     copied into the consents table, or the login fails.
 //
 // Better Auth calls back into two functions here (sendLoginCodeSms and
-// recordConsentsForVerifiedLogin, wired up in instance.ts). They need to know
+// onVerifiedLogin, wired up in instance.ts; onVerifiedLogin runs
+// recordConsentsForVerifiedLogin, then syncOwnerRole). They need to know
 // which request they belong to (its language, its login attempt), so the
 // service runs Better Auth inside `loginRequest`, an AsyncLocalStorage: a
 // value that follows one chain of async calls. Outside requestLoginCode and
