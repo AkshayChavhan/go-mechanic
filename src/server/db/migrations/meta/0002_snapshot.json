@@ -1,5 +1,5 @@
 {
-  "id": "ad936c00-5726-4b82-9c62-deb070842ef2",
+  "id": "39e2f078-8b82-4534-a141-0e669a0f2aef",
   "prevId": "a8f8e027-b42c-49f1-b031-24cc6d8839a3",
   "version": "7",
   "dialect": "postgresql",
@@ -121,6 +121,25 @@
           "onUpdate": "no action"
         }
       },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.calendar_exceptions": {
+      "name": "calendar_exceptions",
+      "schema": "",
+      "columns": {
+        "date": {
+          "name": "date",
+          "type": "date",
+          "primaryKey": true,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
@@ -578,6 +597,115 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.slot_counters": {
+      "name": "slot_counters",
+      "schema": "",
+      "columns": {
+        "starts_at": {
+          "name": "starts_at",
+          "type": "timestamp with time zone",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "reserved": {
+          "name": "reserved",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "slot_counters_reserved_not_negative": {
+          "name": "slot_counters_reserved_not_negative",
+          "value": "\"slot_counters\".\"reserved\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.slot_rules": {
+      "name": "slot_rules",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "slot_minutes": {
+          "name": "slot_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "capacity": {
+          "name": "capacity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "min_days_ahead": {
+          "name": "min_days_ahead",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "max_days_ahead": {
+          "name": "max_days_ahead",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "slot_rules_single_row": {
+          "name": "slot_rules_single_row",
+          "value": "\"slot_rules\".\"id\" = 1"
+        },
+        "slot_rules_slot_minutes_range": {
+          "name": "slot_rules_slot_minutes_range",
+          "value": "\"slot_rules\".\"slot_minutes\" between 15 and 480"
+        },
+        "slot_rules_capacity_range": {
+          "name": "slot_rules_capacity_range",
+          "value": "\"slot_rules\".\"capacity\" between 1 and 50"
+        },
+        "slot_rules_min_days_ahead_range": {
+          "name": "slot_rules_min_days_ahead_range",
+          "value": "\"slot_rules\".\"min_days_ahead\" between 0 and 60"
+        },
+        "slot_rules_max_days_ahead_range": {
+          "name": "slot_rules_max_days_ahead_range",
+          "value": "\"slot_rules\".\"max_days_ahead\" between \"slot_rules\".\"min_days_ahead\" and 60"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.users": {
       "name": "users",
       "schema": "",
@@ -672,263 +800,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.vehicle_categories": {
-      "name": "vehicle_categories",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "kind": {
-          "name": "kind",
-          "type": "vehicle_kind",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "vehicle_categories_id_kind": {
-          "name": "vehicle_categories_id_kind",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "kind"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "vehicle_categories_english_name": {
-          "name": "vehicle_categories_english_name",
-          "value": "coalesce(btrim(\"vehicle_categories\".\"name\" ->> 'en'), '') <> ''"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.vehicle_makes": {
-      "name": "vehicle_makes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "kind": {
-          "name": "kind",
-          "type": "vehicle_kind",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "listed": {
-          "name": "listed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "vehicle_makes_id_kind": {
-          "name": "vehicle_makes_id_kind",
-          "nullsNotDistinct": false,
-          "columns": [
-            "id",
-            "kind"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "vehicle_makes_english_name": {
-          "name": "vehicle_makes_english_name",
-          "value": "coalesce(btrim(\"vehicle_makes\".\"name\" ->> 'en'), '') <> ''"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.vehicle_models": {
-      "name": "vehicle_models",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "make_id": {
-          "name": "make_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "category_id": {
-          "name": "category_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "kind": {
-          "name": "kind",
-          "type": "vehicle_kind",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fuels": {
-          "name": "fuels",
-          "type": "fuel[]",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "listed": {
-          "name": "listed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "vehicle_models_make_kind_fkey": {
-          "name": "vehicle_models_make_kind_fkey",
-          "tableFrom": "vehicle_models",
-          "tableTo": "vehicle_makes",
-          "columnsFrom": [
-            "make_id",
-            "kind"
-          ],
-          "columnsTo": [
-            "id",
-            "kind"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "vehicle_models_category_kind_fkey": {
-          "name": "vehicle_models_category_kind_fkey",
-          "tableFrom": "vehicle_models",
-          "tableTo": "vehicle_categories",
-          "columnsFrom": [
-            "category_id",
-            "kind"
-          ],
-          "columnsTo": [
-            "id",
-            "kind"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "vehicle_models_has_fuels": {
-          "name": "vehicle_models_has_fuels",
-          "value": "cardinality(\"vehicle_models\".\"fuels\") > 0"
-        },
-        "vehicle_models_english_name": {
-          "name": "vehicle_models_english_name",
-          "value": "coalesce(btrim(\"vehicle_models\".\"name\" ->> 'en'), '') <> ''"
-        }
-      },
-      "isRLSEnabled": false
-    },
     "public.verifications": {
       "name": "verifications",
       "schema": "",
@@ -1006,16 +877,6 @@
         "account_and_booking_contact"
       ]
     },
-    "public.fuel": {
-      "name": "fuel",
-      "schema": "public",
-      "values": [
-        "petrol",
-        "diesel",
-        "cng",
-        "electric"
-      ]
-    },
     "public.message_channel": {
       "name": "message_channel",
       "schema": "public",
@@ -1033,14 +894,6 @@
         "mechanic",
         "manager",
         "owner"
-      ]
-    },
-    "public.vehicle_kind": {
-      "name": "vehicle_kind",
-      "schema": "public",
-      "values": [
-        "car",
-        "two-wheeler"
       ]
     },
     "public.weekday": {

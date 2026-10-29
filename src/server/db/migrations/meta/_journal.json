@@ -19,8 +19,15 @@
     {
       "idx": 2,
       "version": "7",
-      "when": 1793192341117,
-      "tag": "0002_vehicle_catalogue",
+      "when": 1793191618091,
+      "tag": "0002_slot_engine",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793252628437,
+      "tag": "0003_vehicle_catalogue",
       "breakpoints": true
     }
   ]
