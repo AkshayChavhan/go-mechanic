@@ -28,8 +28,11 @@ export type VehicleFormValues = {
   insuranceExpiresOn: string;
 };
 
-/** The parts of the form an error can belong to: "vehicle" is the picker. */
-export type VehicleFormField = "vehicle" | "registration" | "pucExpiresOn" | "insuranceExpiresOn";
+/**
+ * The parts of the form an error can belong to: "vehicle" is the picker, and
+ * "form" the whole form (a call that failed: no network).
+ */
+export type VehicleFormField = "vehicle" | "registration" | "pucExpiresOn" | "insuranceExpiresOn" | "form";
 
 export type VehicleFormState = {
   /** Goes up by one with every answer. */
