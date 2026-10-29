@@ -71,7 +71,12 @@ export function SiteHeader({ items, book, garage }: SiteHeaderProps) {
             </Button>
           </div>
           <div className="md:hidden">
-            <MobileMenu openLabel={t("openMenu")} title={t("menuTitle")} closeLabel={tCommon("close")}>
+            <MobileMenu
+              openLabel={t("openMenu")}
+              title={t("menuTitle")}
+              closeLabel={tCommon("close")}
+              links={items.map((item) => ({ href: item.href, label: tNav(item.label) }))}
+            >
               <MobileMenuContent items={items} garage={garage} />
             </MobileMenu>
           </div>

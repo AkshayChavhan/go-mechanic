@@ -271,6 +271,7 @@ export default async function DesignPage() {
   devOnly();
   const tCommon = await getTranslations("Common");
   const tHeader = await getTranslations("Header");
+  const tNav = await getTranslations("Nav");
   const tContact = await getTranslations("Contact");
   const garage = await readGarage();
   // The real catalogue (the draft models, task 17), for the picker sample.
@@ -821,7 +822,12 @@ export default async function DesignPage() {
               description="The menu button opens it on phones. It holds the live pages, the open status, the hours, the address, and Call and WhatsApp."
             >
               <div data-sample="phone-menu">
-                <MobileMenu openLabel={tHeader("openMenu")} title={tHeader("menuTitle")} closeLabel={tCommon("close")}>
+                <MobileMenu
+                  openLabel={tHeader("openMenu")}
+                  title={tHeader("menuTitle")}
+                  closeLabel={tCommon("close")}
+                  links={allPagesLive.map((item) => ({ href: item.href, label: tNav(item.label) }))}
+                >
                   <MobileMenuContent items={allPagesLive} garage={garage} />
                 </MobileMenu>
               </div>

@@ -1,10 +1,12 @@
 "use client";
 
-import { MenuIcon } from "lucide-react";
-import { type MouseEvent, type ReactNode, useState } from "react";
+import { MenuIcon, XIcon } from "lucide-react";
+import { Component, lazy, Suspense, useRef, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Link } from "@/i18n/navigation";
+
+import type { NavLinkItem } from "./nav-links";
 
 type MobileMenuProps = {
   /** What screen readers say for the menu button: t("openMenu") from Header. */
@@ -13,6 +15,8 @@ type MobileMenuProps = {
   title: string;
   /** The close button's label: t("close") from Common. */
   closeLabel: string;
+  /** The live pages, shown as plain links while the panel loads, or if it can't. */
+  links: readonly NavLinkItem[];
   /**
    * The menu's content, rendered on the server. Tapping any link in it closes
    * the menu: the header stays on screen between pages, so the menu would
@@ -21,43 +25,123 @@ type MobileMenuProps = {
   children: ReactNode;
 };
 
+// The panel and the Radix dialog code it brings (about 14 KB compressed,
+// measured in task 18) load only when the menu is first needed: on the
+// button's pointer-down or focus, so they're usually in by the time the tap
+// ends. Before task 18 they loaded on every page, desktop too.
+const loadPanel = () => import("./mobile-menu-panel");
+const LazyPanel = lazy(() => loadPanel().then((module) => ({ default: module.MobileMenuPanel })));
+
+/** Starts downloading the panel. Safe to call again: the browser fetches it once. */
+function preload() {
+  loadPanel().catch(() => {
+    // Shown later: the menu falls back to its plain panel (below).
+  });
+}
+
+type PlainPanelProps = Pick<MobileMenuProps, "title" | "closeLabel" | "links"> & { onClose: () => void };
+
+/**
+ * What shows for the moment the real panel is loading, or for good if it
+ * can't be downloaded: the title and the live pages as plain links, so the
+ * pages are always reachable, and a close button.
+ */
+function PlainPanel({ title, closeLabel, links, onClose }: PlainPanelProps) {
+  return (
+    <div
+      role="dialog"
+      aria-label={title}
+      className="fixed inset-y-0 right-0 z-50 flex w-3/4 flex-col gap-4 border-l border-border bg-popover p-4 text-popover-foreground sm:max-w-sm"
+    >
+      <div className="flex items-center justify-between gap-4">
+        <p className="type-body font-medium">{title}</p>
+        <Button variant="ghost" size="icon-sm" onClick={onClose}>
+          <XIcon />
+          <span className="sr-only">{closeLabel}</span>
+        </Button>
+      </div>
+      <ul className="flex flex-col">
+        {links.map((link) => (
+          <li key={link.href}>
+            <Link href={link.href} onClick={onClose} className="flex min-h-11 items-center type-title">
+              {link.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Shows `fallback` instead of the real panel if its download fails (React.lazy throws it while rendering). */
+class PlainPanelOnError extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
 /**
  * The phone menu: a button that slides a panel in from the right.
  *
- * A client component ("island") only because the panel opens and closes in
- * the browser. It reads no messages and imports nothing that does: every
- * label and all the content arrive from the server as props and children, so
- * the browser downloads none of that text twice. The header hides it from
- * 768px up, where the links sit in the header itself.
+ * A client island only because the panel opens and closes in the browser. It
+ * reads no messages: every label, the links and the content arrive from the
+ * server as props and children. The header hides it from 768px up, where the
+ * links sit in the header itself.
+ *
+ * The button is a plain button, not a Radix trigger (that would bring the
+ * dialog code back into every page), so this file does a trigger's two jobs
+ * itself: aria-expanded says whether the menu is open, and focus goes back to
+ * the button when the menu closes.
  */
-export function MobileMenu({ openLabel, title, closeLabel, children }: MobileMenuProps) {
+export function MobileMenu({ openLabel, title, closeLabel, links, children }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
-  // One listener for the whole panel: the links arrive as server-rendered
-  // children, so they can't each be wrapped in a close button here.
-  const closeOnLink = (event: MouseEvent<HTMLElement>) => {
-    if (event.target instanceof Element && event.target.closest("a[href]")) setOpen(false);
+  // Once the menu has been opened, the panel stays mounted, so it can animate out.
+  const [requested, setRequested] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+
+  const close = () => {
+    setOpen(false);
+    button.current?.focus();
   };
+  const plain = <PlainPanel title={title} closeLabel={closeLabel} links={links} onClose={close} />;
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={openLabel}>
-          <MenuIcon />
-        </Button>
-      </SheetTrigger>
-      {/* aria-describedby={undefined}: the panel has a title but no description
-          line. This tells Radix that's on purpose, so it doesn't warn. */}
-      <SheetContent
-        closeLabel={closeLabel}
-        aria-describedby={undefined}
-        className="overflow-y-auto"
-        onClick={closeOnLink}
+    <>
+      <Button
+        ref={button}
+        variant="ghost"
+        size="icon"
+        aria-label={openLabel}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onPointerDown={preload}
+        onFocus={preload}
+        onClick={() => {
+          setRequested(true);
+          setOpen(true);
+        }}
       >
-        <SheetHeader>
-          <SheetTitle>{title}</SheetTitle>
-        </SheetHeader>
-        {children}
-      </SheetContent>
-    </Sheet>
+        <MenuIcon />
+      </Button>
+      {requested && (
+        <PlainPanelOnError fallback={open ? plain : null}>
+          <Suspense fallback={open ? plain : null}>
+            <LazyPanel
+              open={open}
+              onOpenChange={setOpen}
+              title={title}
+              closeLabel={closeLabel}
+              onClosed={() => button.current?.focus()}
+            >
+              {children}
+            </LazyPanel>
+          </Suspense>
+        </PlainPanelOnError>
+      )}
+    </>
   );
 }
