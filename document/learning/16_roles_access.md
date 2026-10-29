@@ -140,12 +140,12 @@ The branch's first commit, `c418507 docs(15): mark task 15 done`, is task 15's b
 
 ## Check that it works
 
-Real output on 2026-10-28, Node 24 (`fnm exec --using=24 -- …`, trimmed).
+Real output, Node 24 (`fnm exec --using=24 -- …`, trimmed), from the final code (after the `ce-code-review` fixes, 2026-10-29):
 
-`npm run check`, re-run for this doc at a load average near 11:
+`npm run check`, at a load average near 11:
 ```
  Test Files  77 passed (77)
-      Tests  1146 passed (1146)
+      Tests  1154 passed (1154)
 ```
 
 Only the new rules and the proxy:
@@ -154,12 +154,12 @@ npx vitest run src/domain/permissions.test.ts src/domain/roles.test.ts src/lib/a
 ```
 ```
  Test Files  5 passed (5)
-      Tests  71 passed (71)
+      Tests  75 passed (75)
 ```
 
-From the work session (not re-run for this doc):
-- `npm run test:e2e`: `69 passed (1.8m)`, 5 of them new in `e2e/access.spec.ts`.
-- `npm run build`: the route list kept its shapes. `/` is still `○ /en`; `/en/login` and `/en/account` are still `◐` (a prebuilt shell plus a streamed part):
+From the work session's final runs:
+- `npm run test:e2e`: `69 passed (2.1m)`, 5 of them new in `e2e/access.spec.ts`. (Before the review fixes: `69 passed (1.8m)`; the very first run, `2 failed`, is in step 9.)
+- `npm run build`, re-run after the review fixes because `saveGarage` now imports the checks (and so Better Auth) into the home page's import graph: the route list kept its shapes. `/` is still `○ /en`; `/en/login` and `/en/account` are still `◐` (a prebuilt shell plus a streamed part):
   ```
   ├   /[locale]                      30d      1y
   │ ├ ◐ /[locale]                    30d      1y
@@ -174,13 +174,19 @@ From the work session (not re-run for this doc):
   ```
 - `npm run test:design`: not needed. No design token, `type-*` style or `ui/`/`site/` component changed.
 
-To try it yourself (not done for this doc: port 3000 is shared by the whole machine, and another session's `test:design` would reuse a dev server started here):
+To try it yourself (not done for this doc, so as not to start a dev server on this session's port 3000 while checks were running):
 1. Run `npm run dev`. In another terminal, run `curl -sI http://localhost:3000/account` (`-s` hides the progress bar; `-I` sends a HEAD request, which asks for the headers only, and the proxy redirects HEAD like GET). `e2e/access.spec.ts` checks the same request answers 307 with a `Location` of `/login`.
 2. Open http://localhost:3000/login and log in with `97647 50567`. Read the code on http://localhost:3000/dev/outbox. You're the owner now, though `/account` doesn't show roles yet.
 
 ## Checks and reviews
 
-- **`ce-code-review`:** Pending (running while this doc was written).
+- **`ce-code-review`: "Ready with fixes".** No P0 or P1: no reviewer found a way for a browser to set a role or reach `saveGarage`. Its first run didn't start (the account's usage limit); the second ran seven reviewers. All five findings were confirmed and fixed, one commit each:
+  - **#3, the important one: a new owner's number needs a redeploy.** The docs promised a changed `OWNER_PHONE_NUMBER` works "on the next request". But `serverEnv()` reads the settings once per process, so on Vercel it takes effect only after a redeploy. On the day a SIM is stolen, an owner who trusted the old wording would leave the thief with owner access. Every place now says "change it, then redeploy", and step 4 above has the lost-SIM steps.
+  - **#2: the stored role is only a hint.** `users.role` is brought in line at each login, so it goes stale for anyone who doesn't log in again. Code that reads another user's role (the team list, reports) must pass it through `effectiveRole`, never filter on `role = 'owner'` in SQL.
+  - **#1 and #5: the rule didn't fit two kinds of code.** "Take the user from `authorize`" can't work for a customer's own data, because customers hold no permission. New: `authorizeUser()` (logged in is enough; the function filters by that user's id). And writes during a login, before a session exists, can't check at all; the rule now names that one exception, so nobody "fixes" `syncOwnerRole` by adding `authorize` and breaks every login. The rule also covers private reads now, not just writes.
+  - **#4:** `CLAUDE.md` and `login.ts` still named the old callback; it's `onVerifiedLogin` now.
+  - **Smaller notes, also done:** `requireUser` now *replaces* the history entry (inside a Server Action a redirect would otherwise add one); the proxy decodes the path first, so a logged-out `/%61ccount` gets the same 307; and three tests the review asked for: the `getAuth()` wiring, the cookie names read from our own Better Auth settings on http *and* https, and a role step that fails after the consents (no session, consents kept, a new code works).
+  - **Left as notes for later tasks:** a later change of a user's phone number must go through a code (the number is the key to the owner role: task 21); once task 29 writes roles, `syncOwnerRole`'s read-then-write needs a compare-and-set; a leftover cookie keeps bouncing `/login` through `/account` until it expires (harmless, no loop).
 - **`code-reviewer` agent:** Pending.
 - **SEO check:** Pending, if the hook asks (`AccountDetails` and a login page comment changed).
 - **Compound step:** Pending.
