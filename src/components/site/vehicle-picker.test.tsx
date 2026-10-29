@@ -1,5 +1,7 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
+import type { ReactElement } from "react";
+import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { describe, expect, test, vi } from "vitest";
 
@@ -176,5 +178,92 @@ describe("VehiclePicker", () => {
       ...catalogue.makes.flatMap((make) => [make.name.en, ...make.models.map((model) => model.name.en)]),
     ]);
     for (const word of words) expect(allowed, word).toContain(word);
+  });
+
+  test("keeps a choice made in the fields before the page's JavaScript loaded", async () => {
+    // The server's HTML is in the page, the visitor picks a model, and only
+    // then does React hydrate it: the choice must survive, with its brand
+    // and type filled in, in what's shown and in what the form posts.
+    const onChange = vi.fn();
+    const tree: ReactElement = (
+      <NextIntlClientProvider locale={defaultLocale} messages={{}}>
+        <form aria-label="Book">
+          <VehiclePicker catalogue={catalogue} labels={labels} onChange={onChange} />
+        </form>
+      </NextIntlClientProvider>
+    );
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(tree);
+    document.body.append(container);
+    const [brand, model] = [...container.querySelectorAll("select")];
+    model!.value = "car-honda-city";
+
+    // React reports a hydration mismatch with console.error.
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    let root: Root | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, tree);
+    });
+    try {
+      expect(consoleError).not.toHaveBeenCalled();
+      expect(model!.value).toBe("car-honda-city");
+      expect(brand!.value).toBe("car-honda");
+      expect((within(container).getByRole("radio", { name: "T-Car" }) as HTMLInputElement).checked).toBe(true);
+      const data = new FormData(container.querySelector("form")!);
+      expect(Object.fromEntries(data)).toEqual({ vehicleKind: "car", vehicleMake: "car-honda", vehicleModel: "car-honda-city" });
+      // The parent hears about it once, as about any other choice.
+      expect(onChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith({ kind: "car", makeId: "car-honda", modelId: "car-honda-city", fuel: null });
+    } finally {
+      consoleError.mockRestore();
+      act(() => root?.unmount());
+      container.remove();
+    }
+  });
+
+  test("a form reset puts it back to its default, in what's shown and what's posted", () => {
+    renderWithIntl(
+      <form aria-label="Book">
+        <VehiclePicker catalogue={catalogue} labels={labels} />
+      </form>,
+    );
+    const form = screen.getByRole("form", { name: "Book" }) as HTMLFormElement;
+    fireEvent.change(modelSelect(), { target: { value: "car-honda-city" } });
+    act(() => form.reset());
+    expect(modelSelect().value).toBe("");
+    expect(brandSelect().value).toBe("");
+    expect((screen.getByRole("radio", { name: "T-Car" }) as HTMLInputElement).checked).toBe(false);
+    expect(Object.fromEntries(new FormData(form))).toEqual({ vehicleMake: "", vehicleModel: "" });
+  });
+
+  test("with a default, a form reset goes back to that vehicle, not to empty", () => {
+    renderWithIntl(
+      <form aria-label="Book">
+        <VehiclePicker catalogue={catalogue} labels={labels} defaultValue={{ modelId: "car-honda-city", fuel: "diesel" }} />
+      </form>,
+    );
+    const form = screen.getByRole("form", { name: "Book" }) as HTMLFormElement;
+    fireEvent.change(modelSelect(), { target: { value: "car-tata-tiago" } });
+    act(() => form.reset());
+    expect(modelSelect().value).toBe("car-honda-city");
+    expect(Object.fromEntries(new FormData(form))).toEqual({
+      vehicleKind: "car",
+      vehicleMake: "car-honda",
+      vehicleModel: "car-honda-city",
+      vehicleFuel: "diesel",
+    });
+  });
+
+  test("an error shows under it and marks the model field invalid", () => {
+    renderWithIntl(<VehiclePicker catalogue={catalogue} labels={labels} error="T-Choose your vehicle" />);
+    const message = screen.getByText("T-Choose your vehicle");
+    expect(modelSelect().getAttribute("aria-invalid")).toBe("true");
+    expect(modelSelect().getAttribute("aria-describedby")).toBe(message.id);
+  });
+
+  test("without an error, nothing is marked invalid", () => {
+    renderWithIntl(<VehiclePicker catalogue={catalogue} labels={labels} />);
+    expect(modelSelect().hasAttribute("aria-invalid")).toBe(false);
+    expect(modelSelect().hasAttribute("aria-describedby")).toBe(false);
   });
 });

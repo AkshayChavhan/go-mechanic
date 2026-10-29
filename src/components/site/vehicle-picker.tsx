@@ -1,10 +1,10 @@
 "use client";
 
 import { useLocale } from "next-intl";
-import { useId, useState, useSyncExternalStore } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 
 import { ChoiceGroup } from "@/components/site/choice-group";
-import { Field, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/components/ui/native-select";
 import {
   changeSelection,
@@ -12,11 +12,13 @@ import {
   findMake,
   findModel,
   type Fuel,
+  FUELS,
   normalizeSelection,
   type SelectionChange,
   type VehicleCatalogue,
   type VehicleField,
   type VehicleKind,
+  VEHICLE_KINDS,
   vehicleOptions,
   type VehicleSelection,
 } from "@/domain/vehicles";
@@ -60,6 +62,8 @@ type VehiclePickerProps = {
   defaultValue?: Partial<VehicleSelection>;
   /** Called with every new choice. */
   onChange?: (selection: VehicleSelection) => void;
+  /** An error under the picker, saying how to fix it. It also marks the model field invalid. */
+  error?: ReactNode;
   className?: string;
 };
 
@@ -71,6 +75,35 @@ function fill(template: string, values: Record<string, string>): string {
 // Never changes: the picker only needs to know whether it has hydrated.
 const subscribeToNothing = () => () => {};
 
+/** `value` if it's one of `allowed`, else null. */
+function oneOf<T extends string>(allowed: readonly T[], value: string | undefined): T | null {
+  return (allowed as readonly string[]).includes(value ?? "") ? (value as T) : null;
+}
+
+/**
+ * What the picker's fields in the page show right now, or null when they
+ * aren't in the page. It runs during the first render in the browser, while
+ * React hydrates the server's HTML: the only moment a choice made before the
+ * page's JavaScript loaded can still be read: React then sets the fields to
+ * what this render says. (`id` is useId's: the same on the server and while
+ * hydrating, so it finds this picker's own fields.)
+ */
+function fieldsInPage(id: string, name: string): VehicleSelection | null {
+  if (typeof document === "undefined") return null;
+  const picker = document.getElementById(`${id}-model`)?.closest('[data-slot="vehicle-picker"]');
+  if (!picker) return null;
+  const value = (selector: string) => picker.querySelector<HTMLInputElement | HTMLSelectElement>(selector)?.value || undefined;
+  return {
+    kind: oneOf(VEHICLE_KINDS, value(`input[name="${name}Kind"]:checked`)),
+    makeId: value(`select[name="${name}Make"]`) ?? null,
+    modelId: value(`select[name="${name}Model"]`) ?? null,
+    fuel: oneOf(FUELS, value(`input[name="${name}Fuel"]:checked`)),
+  };
+}
+
+const sameSelection = (a: VehicleSelection, b: VehicleSelection) =>
+  a.kind === b.kind && a.makeId === b.makeId && a.modelId === b.modelId && a.fuel === b.fuel;
+
 /**
  * The vehicle picker: type, then brand, then model, then fuel.
  *
@@ -79,11 +112,15 @@ const subscribeToNothing = () => () => {};
  *   the full lists, with any default selected, so a visitor without
  *   JavaScript can still pick any brand and model. Narrowing starts once the
  *   picker has hydrated.
- * - Known gap (tasks 21 and 23 close it): a choice made in the fields while
- *   the page's JavaScript is still loading is reset when the picker
- *   hydrates, because the fields then follow React's state, which never saw
- *   that choice. The fix is to read the fields once at hydration and pass
- *   their values through normalizeSelection.
+ * - A choice made while the page's JavaScript is still loading is kept
+ *   (task 21). React 19 sets the fields back to what the first render says
+ *   when it hydrates them, so the picker reads them just before
+ *   (fieldsInPage) and starts from what they showed. (React doesn't compare
+ *   a field's value or checked state with the server's HTML, so this causes
+ *   no hydration warning; the picker test checks it.)
+ * - Inside a form, a reset (the form's reset() or React's own reset after a
+ *   form action) puts the picker back to its defaultValue, so what it shows
+ *   and what the form posts never drift apart.
  * - The rules live in src/domain/vehicles.ts: each list is complete until an
  *   earlier choice narrows it, a model fills in its brand and type, and a
  *   choice that no longer fits is cleared. Only matching options are
@@ -97,13 +134,20 @@ export function VehiclePicker({
   name = "vehicle",
   defaultValue,
   onChange,
+  error,
   className,
 }: VehiclePickerProps) {
   const locale = useLocale();
   const id = useId();
-  const [selection, setSelection] = useState(() =>
-    normalizeSelection(catalogue, { ...EMPTY_SELECTION, ...defaultValue }),
-  );
+  const pickerRef = useRef<HTMLDivElement>(null);
+  // The default, made consistent: where the picker starts, and where a form
+  // reset takes it back.
+  const [start] = useState(() => normalizeSelection(catalogue, { ...EMPTY_SELECTION, ...defaultValue }));
+  // A choice already in the page's fields wins over the default.
+  const [selection, setSelection] = useState(() => {
+    const inPage = fieldsInPage(id, name);
+    return inPage ? normalizeSelection(catalogue, inPage) : start;
+  });
   const [announcement, setAnnouncement] = useState("");
   // false on the server and while hydrating, true afterwards.
   const hydrated = useSyncExternalStore(
@@ -111,9 +155,33 @@ export function VehiclePicker({
     () => true,
     () => false,
   );
+  // Tell the parent about a choice kept from before hydration, once.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
+  useEffect(() => {
+    if (!sameSelection(selection, start)) onChangeRef.current?.(selection);
+    // Only the choice found while hydrating: later ones call onChange in choose().
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A form reset puts the fields back to the server's defaults, so the
+  // picker goes back to its own default too.
+  useEffect(() => {
+    const form = pickerRef.current?.closest("form");
+    if (!form) return;
+    const backToStart = () => {
+      setSelection({ ...start });
+      setAnnouncement("");
+    };
+    form.addEventListener("reset", backToStart);
+    return () => form.removeEventListener("reset", backToStart);
+  }, [start]);
 
   const options = vehicleOptions(catalogue, hydrated ? selection : EMPTY_SELECTION);
   const bothKindsListed = new Set(options.makes.map((make) => make.kind)).size > 1;
+  const errorId = `${id}-error`;
 
   const fieldName: Record<VehicleField, string> = {
     kind: labels.kindLegend,
@@ -163,7 +231,7 @@ export function VehiclePicker({
   );
 
   return (
-    <div data-slot="vehicle-picker" className={cn("flex flex-col gap-6", className)}>
+    <div ref={pickerRef} data-slot="vehicle-picker" className={cn("flex flex-col gap-6", className)}>
       <ChoiceGroup
         legend={labels.kindLegend}
         name={`${name}Kind`}
@@ -197,6 +265,8 @@ export function VehiclePicker({
           id={`${id}-model`}
           name={`${name}Model`}
           value={selection.modelId ?? ""}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           onChange={(event) => choose({ field: "model", value: event.target.value || null })}
         >
           <NativeSelectOption value="">{labels.modelPlaceholder}</NativeSelectOption>
@@ -226,6 +296,8 @@ export function VehiclePicker({
         value={selection.fuel}
         onChange={(fuel) => choose({ field: "fuel", value: fuel })}
       />
+
+      {error && <FieldError id={errorId}>{error}</FieldError>}
 
       <p role="status" className="sr-only">
         {announcement}

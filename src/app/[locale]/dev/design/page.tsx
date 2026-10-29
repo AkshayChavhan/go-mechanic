@@ -276,6 +276,7 @@ export default async function DesignPage() {
   // The real catalogue (the draft models, task 17), for the picker sample.
   const catalogue = await readVehicleCatalogue();
   const pickerLabels = await vehiclePickerLabels();
+  const tMyVehicles = await getTranslations("MyVehicles");
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
   // The samples, through the same switch the home page uses (showSamples()):
   // devOnly() keeps this page out of production, but a staging server that
@@ -758,6 +759,23 @@ export default async function DesignPage() {
               <div data-sample="vehicle-picker" className="max-w-md">
                 {catalogue.makes.length > 0 && (
                   <VehiclePicker catalogue={catalogue} labels={pickerLabels} name="sampleVehicle" />
+                )}
+              </div>
+            </Block>
+
+            <Block
+              title="Vehicle picker with an error"
+              description="As the add-vehicle form shows it after a post without a fuel (task 21): the message sits under the picker, and the model field is marked invalid and points to it. The model posted is kept."
+            >
+              <div data-sample="vehicle-picker-error" className="max-w-md">
+                {catalogue.makes.length > 0 && (
+                  <VehiclePicker
+                    catalogue={catalogue}
+                    labels={pickerLabels}
+                    name="sampleVehicleError"
+                    defaultValue={{ modelId: "car-honda-city" }}
+                    error={tMyVehicles("errors.vehicle-missing")}
+                  />
                 )}
               </div>
             </Block>
