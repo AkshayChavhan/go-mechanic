@@ -32,7 +32,11 @@ export const navItems: readonly NavItem[] = [
  * Pages the footer links to after the menu items, and nowhere else (task 19):
  * the header, the phone menu and the action bar show only `navItems`.
  */
-export const footerItems: readonly NavItem[] = [{ label: "faq", href: "/faq", live: true }];
+export const footerItems: readonly NavItem[] = [
+  { label: "faq", href: "/faq", live: true },
+  { label: "privacy", href: "/privacy", live: true },
+  { label: "terms", href: "/terms", live: true },
+];
 
 /** The booking page (task 23). Not in the menu: "Book a service" is the header's own button. */
 export const bookPage: SitePage = { href: "/book", live: false };
