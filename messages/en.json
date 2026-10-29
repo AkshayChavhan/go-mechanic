@@ -207,7 +207,7 @@
     "loading": "Loading your account…",
     "logOut": "Log out",
     "headerLink": "Account",
-    "signedInAsNamed": "Hello, {name}. You're logged in as {number}.",
+    "greeting": "Hello, {name}.",
     "nameHeading": "What's your name?",
     "nameNote": "We use your name to greet you and to know whose vehicle is whose at the garage.",
     "nameLabel": "Your name",

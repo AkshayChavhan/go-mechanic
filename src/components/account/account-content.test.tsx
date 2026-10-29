@@ -86,9 +86,10 @@ describe("AccountContent", () => {
     expect((screen.getByLabelText(messages.Account.nameLabel) as HTMLInputElement).value).toBe("");
   });
 
-  test("with a name: the vehicles, India's today for the Expired flags, and the add link", async () => {
+  test("with a name: a hello by name, the vehicles, India's today for the Expired flags, and the add link", async () => {
     vi.mocked(readMyProfile).mockResolvedValue({ name: "Asha Patil", phoneNumber: asha.phoneNumber });
     renderWithIntl(await AccountContent({ locale: "en" }));
+    expect(screen.getByText(messages.Account.greeting.replace("{name}", "Asha Patil"))).toBeTruthy();
     expect(screen.getByRole("heading", { level: 2, name: messages.MyVehicles.listHeading })).toBeTruthy();
     // Already 29 Oct in India, though still 28 Oct in UTC.
     expect(screen.getByTestId("vehicle-list").textContent).toBe("0 vehicles, today 2026-10-29");

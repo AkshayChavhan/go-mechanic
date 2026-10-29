@@ -81,7 +81,8 @@ test("a new customer gives their name once, adds a vehicle, sees it listed, and 
   await expect(field(page, account.nameLabel)).toHaveValue("A");
 
   await giveName(page, "Asha Patil");
-  await expect(page.getByText(account.signedInAsNamed.replace("{name}", "Asha Patil").replace("{number}", `+91 ${number.typed}`))).toBeVisible();
+  await expect(page.getByText(account.greeting.replace("{name}", "Asha Patil"))).toBeVisible();
+  await expect(page.getByText(account.signedInAs.replace("{number}", `+91 ${number.typed}`))).toBeVisible();
   await expect(page.getByText(vehicles.empty)).toBeVisible();
 
   // Add a petrol Honda City, typed the messy way, with a PUC date.

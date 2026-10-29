@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { Activity } from "react";
 import { describe, expect, test, vi } from "vitest";
 
 import { initialNameFormState, type NameFormState } from "@/lib/account-forms";
@@ -53,6 +54,26 @@ describe("NameForm", () => {
     expect(nameField().getAttribute("aria-invalid")).toBe("true");
     expect(nameField().getAttribute("aria-describedby")).toBe(error.id);
     expect(document.activeElement).toBe(nameField());
+  });
+
+  test("leaving /account and coming back after an error: an empty form, no old error, and the cursor left alone", async () => {
+    const answer: NameFormState = { submission: 1, nameTyped: "A", error: t.nameErrors["name-too-short"] };
+    const action = vi.fn<NameAction>().mockResolvedValue(answer);
+    const page = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <NameForm action={action} labels={labels} />
+      </Activity>
+    );
+    const { rerender } = render(page("visible"));
+    await send("A");
+    expect(screen.getByText(t.nameErrors["name-too-short"])).toBeTruthy();
+    (document.activeElement as HTMLElement).blur();
+
+    rerender(page("hidden"));
+    rerender(page("visible"));
+    expect(nameField().value).toBe("");
+    expect(screen.queryByText(t.nameErrors["name-too-short"])).toBeNull();
+    expect(document.activeElement).not.toBe(nameField());
   });
 
   test("another customer (a new key) gets an empty form, not the last one's draft", () => {

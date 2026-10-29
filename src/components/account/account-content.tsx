@@ -16,7 +16,8 @@ import { readMyProfile } from "@/server/dal/profile";
 
 /**
  * The main part of /account (task 21): the name form, until the customer
- * has given their name, then their vehicles and "Add a vehicle".
+ * has given their name, then a hello by name, their vehicles and "Add a
+ * vehicle".
  *
  * An async Server Component that reads the session, so /account puts it
  * inside <Suspense>, below Log out: it streams in under the parts already
@@ -26,9 +27,9 @@ import { readMyProfile } from "@/server/dal/profile";
 export async function AccountContent({ locale }: { locale: Locale }) {
   const user = await requireUser(locale);
   const profile = await readMyProfile();
+  const tAccount = await getTranslations({ locale, namespace: "Account" });
 
   if (needsName(profile)) {
-    const t = await getTranslations({ locale, namespace: "Account" });
     const tLogin = await getTranslations({ locale, namespace: "Login" });
     return (
       // Keyed by the user: on a shared phone, the next customer to log in
@@ -39,11 +40,11 @@ export async function AccountContent({ locale }: { locale: Locale }) {
         // Action has no [locale] page around it to read it from.
         action={saveName.bind(null, locale)}
         labels={{
-          heading: t("nameHeading"),
-          note: t("nameNote"),
-          label: t("nameLabel"),
-          submit: t("nameSubmit"),
-          saving: t("saving"),
+          heading: tAccount("nameHeading"),
+          note: tAccount("nameNote"),
+          label: tAccount("nameLabel"),
+          submit: tAccount("nameSubmit"),
+          saving: tAccount("saving"),
           connection: tLogin("errors.connection"),
         }}
       />
@@ -57,19 +58,22 @@ export async function AccountContent({ locale }: { locale: Locale }) {
   const today = indiaDateOf(systemClock.now());
 
   return (
-    <section aria-labelledby="my-vehicles" className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h2 id="my-vehicles" className="type-title">
-          {t("listHeading")}
-        </h2>
-        <Button asChild>
-          <Link href="/account/vehicles/new">
-            <PlusIcon data-icon="inline-start" />
-            {t("addLink")}
-          </Link>
-        </Button>
-      </div>
-      <VehicleList vehicles={vehicles} today={today} locale={locale} />
-    </section>
+    <div className="flex flex-col gap-8">
+      <p className="type-lead text-pretty">{tAccount("greeting", { name: profile.name })}</p>
+      <section aria-labelledby="my-vehicles" className="flex flex-col gap-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 id="my-vehicles" className="type-title">
+            {t("listHeading")}
+          </h2>
+          <Button asChild>
+            <Link href="/account/vehicles/new">
+              <PlusIcon data-icon="inline-start" />
+              {t("addLink")}
+            </Link>
+          </Button>
+        </div>
+        <VehicleList vehicles={vehicles} today={today} locale={locale} />
+      </section>
+    </div>
   );
 }

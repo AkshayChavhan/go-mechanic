@@ -10,7 +10,7 @@
 
 import { useActionState, useEffect, useId, useRef } from "react";
 
-import { type FormAction, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
+import { type FormAction, FreshOnEachVisit, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { initialNameFormState, type NameFormState } from "@/lib/account-forms";
@@ -41,7 +41,22 @@ export function nameSubmitter(action: NameAction, connectionText: string) {
   });
 }
 
-export function NameForm({ action, labels }: { action: NameAction; labels: NameFormLabels }) {
+type NameFormProps = { action: NameAction; labels: NameFormLabels };
+
+/**
+ * The name form. It starts fresh on every visit (FreshOnEachVisit): coming
+ * back to /account after an error shows no old error and doesn't move the
+ * cursor (on a phone, that would pop up the keyboard).
+ */
+export function NameForm(props: NameFormProps) {
+  return (
+    <FreshOnEachVisit>
+      <NameFormVisit {...props} />
+    </FreshOnEachVisit>
+  );
+}
+
+function NameFormVisit({ action, labels }: NameFormProps) {
   const [state, formAction] = useActionState(nameSubmitter(action, labels.connection), initialNameFormState);
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
