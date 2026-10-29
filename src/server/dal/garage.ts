@@ -40,7 +40,12 @@ function dayHours(row: HoursRow | undefined): DayHours {
   return { opens: row.opens.slice(0, 5), closes: row.closes.slice(0, 5) };
 }
 
-function weeklyHours(rows: HoursRow[]): WeeklyHours {
+/**
+ * The week's hours from the opening_hours rows, a missing or half-filled day
+ * counting as closed. The slot engine (slots.ts) reads hours through this
+ * too, so the open badge and the slots never disagree about a bad row.
+ */
+export function weeklyHours(rows: HoursRow[]): WeeklyHours {
   const byWeekday = new Map(rows.map((row) => [row.weekday, row]));
   return Object.fromEntries(WEEKDAYS.map((weekday) => [weekday, dayHours(byWeekday.get(weekday))])) as WeeklyHours;
 }

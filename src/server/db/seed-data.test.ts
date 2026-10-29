@@ -2,10 +2,11 @@ import { describe, expect, test } from "vitest";
 
 import { checkGarage } from "@/domain/garage";
 import { groupWeeklyHours, WEEKDAYS } from "@/domain/opening-hours";
+import { checkSlotRules } from "@/domain/slots";
 import { formatAddress } from "@/i18n/format";
 import { formatPhoneNumber, telHref } from "@/lib/contact-links";
 
-import { ownerGarage } from "./seed-data";
+import { ownerGarage, ownerSlotRules } from "./seed-data";
 
 // The owner's real details, given on 2026-10-26. If one of these tests fails
 // after an edit to seed-data.ts, check the new value with the owner.
@@ -53,5 +54,21 @@ describe("the owner's opening hours", () => {
 describe("the whole garage", () => {
   test("passes every check a save makes (numbers, PIN code, address, hours)", () => {
     expect(checkGarage(ownerGarage)).toEqual([]);
+  });
+});
+
+describe("the owner's slot rules (2026-10-28)", () => {
+  test("are 1-hour slots, bookable from tomorrow up to 7 days ahead", () => {
+    expect(ownerSlotRules.slotMinutes).toBe(60);
+    expect(ownerSlotRules.minDaysAhead).toBe(1);
+    expect(ownerSlotRules.maxDaysAhead).toBe(7);
+  });
+
+  test("hold 2 vehicles per slot: a placeholder until the owner gives the real number", () => {
+    expect(ownerSlotRules.capacity).toBe(2);
+  });
+
+  test("pass every check a save makes", () => {
+    expect(checkSlotRules(ownerSlotRules)).toEqual([]);
   });
 });

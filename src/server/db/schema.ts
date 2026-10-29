@@ -22,6 +22,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -96,6 +97,68 @@ export const openingHours = pgTable(
       sql`(${table.opens} is null and ${table.closes} is null) or (${table.opens} is not null and ${table.closes} is not null and ${table.opens} < ${table.closes})`,
     ),
   ],
+);
+
+// --- Booking slots (task 22) -------------------------------------------------
+//
+// src/domain/slots.ts works out the slots from these tables and the opening
+// hours; src/server/dal/slots.ts reads and changes them.
+
+/**
+ * The slot rules: exactly one row, with id 1, like garage_settings. The
+ * ranges in the CHECKs are SLOT_RULE_LIMITS in src/domain/slots.ts, typed
+ * again here because this file may only import types (database.test.ts
+ * checks they match). The capacity CHECK (at least 1) also lets a first
+ * reservation insert its counter with 1 place taken.
+ */
+export const slotRules = pgTable(
+  "slot_rules",
+  {
+    id: integer("id").primaryKey().default(1),
+    /** How long a slot is, in minutes: 60. */
+    slotMinutes: integer("slot_minutes").notNull(),
+    /** Vehicles per slot, cars and two-wheelers together. */
+    capacity: integer("capacity").notNull(),
+    /** The first bookable day, counted from today in India: 1 = tomorrow. */
+    minDaysAhead: integer("min_days_ahead").notNull(),
+    /** The last bookable day, counted from today in India: 7. */
+    maxDaysAhead: integer("max_days_ahead").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("slot_rules_single_row", sql`${table.id} = 1`),
+    check("slot_rules_slot_minutes_range", sql`${table.slotMinutes} between 15 and 480`),
+    check("slot_rules_capacity_range", sql`${table.capacity} between 1 and 50`),
+    check("slot_rules_min_days_ahead_range", sql`${table.minDaysAhead} between 0 and 60`),
+    check("slot_rules_max_days_ahead_range", sql`${table.maxDaysAhead} between ${table.minDaysAhead} and 60`),
+  ],
+);
+
+/**
+ * Days the garage is closed although their weekday has hours: festivals like
+ * Diwali. One row per India date ("2026-11-08", string mode). Closed all day;
+ * task 28 lets the owner add them, and may add a name or special hours as
+ * new nullable columns.
+ */
+export const calendarExceptions = pgTable("calendar_exceptions", {
+  date: date("date").primaryKey(),
+});
+
+/**
+ * Places taken per slot. A slot is named by the moment it starts (UTC); its
+ * row appears with the first reservation, so there's no row per future slot.
+ * Only reserveSlot, releaseSlot and moveSlot change `reserved`. Each change
+ * is one statement that never takes it past the slot's capacity or below 0
+ * (moveSlot makes two, inside the caller's transaction).
+ */
+export const slotCounters = pgTable(
+  "slot_counters",
+  {
+    startsAt: timestamp("starts_at", { withTimezone: true }).primaryKey(),
+    reserved: integer("reserved").notNull(),
+  },
+  (table) => [check("slot_counters_reserved_not_negative", sql`${table.reserved} >= 0`)],
 );
 
 // --- Login (task 15) ---------------------------------------------------------

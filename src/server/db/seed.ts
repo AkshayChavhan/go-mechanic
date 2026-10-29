@@ -1,19 +1,22 @@
-// Puts the owner's garage into a new database.
+// Puts the owner's garage and slot rules into a new database.
 //
 // Runs on every start of a local (PGlite) database, right after the
 // migrations (src/server/db/index.ts). It only fills what's missing: once the
 // garage row exists, it never changes it, so the owner's later edits survive
-// restarts. A real Postgres (staging, production) is never seeded by the app;
-// task 20 does that on purpose.
+// restarts. The same goes for the slot rules row, seeded on its own so a
+// database made before task 22 gets it on its next start. A real Postgres
+// (staging, production) is never seeded by the app; task 20 does that on
+// purpose, slot rules included.
 
 import "server-only";
 
 import { checkGarage, type Garage } from "@/domain/garage";
 import { WEEKDAYS, type WeeklyHours } from "@/domain/opening-hours";
+import { checkSlotRules, type SlotRules } from "@/domain/slots";
 
 import type { Database } from "./index";
-import { garageSettings, openingHours } from "./schema";
-import { ownerGarage } from "./seed-data";
+import { garageSettings, openingHours, slotRules } from "./schema";
+import { ownerGarage, ownerSlotRules } from "./seed-data";
 
 /** The garage_settings row for `garage` (id, created_at and updated_at use their defaults). */
 export function garageSettingsRow(garage: Garage): typeof garageSettings.$inferInsert {
@@ -60,4 +63,29 @@ export async function seedGarage(db: Database, garage: Garage = ownerGarage): Pr
 
     await tx.insert(openingHours).values(openingHoursRows(garage.hours));
   });
+}
+
+/** The slot_rules row for `rules` (id, created_at and updated_at use their defaults). */
+export function slotRulesRow(rules: SlotRules): typeof slotRules.$inferInsert {
+  return {
+    slotMinutes: rules.slotMinutes,
+    capacity: rules.capacity,
+    minDaysAhead: rules.minDaysAhead,
+    maxDaysAhead: rules.maxDaysAhead,
+  };
+}
+
+/**
+ * Inserts `rules` (the owner's by default) when the database has no slot
+ * rules yet, and never changes a row that's there. Checks them first and
+ * throws if checkSlotRules finds a problem, so a typo in seed-data.ts fails
+ * loudly. Separate from seedGarage, so the tests that delete and re-seed the
+ * garage don't touch it.
+ */
+export async function seedSlotRules(db: Database, rules: SlotRules = ownerSlotRules): Promise<void> {
+  const problems = checkSlotRules(rules);
+  if (problems.length > 0) {
+    throw new Error(`The seed slot rules are invalid: ${JSON.stringify(problems)}`);
+  }
+  await db.insert(slotRules).values(slotRulesRow(rules)).onConflictDoNothing();
 }
