@@ -298,7 +298,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 18_services_pricing
 
 - [x] Create branch `18_services_pricing`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-29-1346-feat-services-pricing-plan.md)
 - [ ] Services, packages, prices by vehicle; `/services`, `/packages`
 - [ ] Services move to the database the way the garage did in task 14: a typed seed made from `src/content/services.ts` (like `src/server/db/seed-data.ts`), a cached read in `src/server/dal/` with its own tag, and `src/content/services.ts` deleted (task 14)
 - [ ] Switch the home page services grid from `src/content/services.ts` to database services. The table mirrors its fields (id, `LocalizedText` name and summary, vehicle kinds); `ServiceTile` gives an id it has no icon for a wrench (task 13)
