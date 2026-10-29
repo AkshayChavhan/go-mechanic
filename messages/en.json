@@ -87,6 +87,34 @@
     "visitTitle": "Visiting us",
     "visit": "Message us on WhatsApp with your vehicle and what it needs, or call us, and we'll agree a time for you to bring it in."
   },
+  "FaqPage": {
+    "metaTitle": "Questions and answers | {brand}",
+    "metaDescription": "How to pay at {brand} in Kiwale, Pune (cash or UPI), how to book a car or two-wheeler service, and when the garage is open.",
+    "heading": "Questions and answers",
+    "lead": "Paying, booking and visiting the garage.",
+    "groups": {
+      "paying": "Paying and booking",
+      "visit": "When you visit",
+      "work": "The work and the parts"
+    },
+    "items": {
+      "howToPay": {
+        "question": "How do I pay?",
+        "answer": "At the garage, in cash or by UPI."
+      },
+      "payOnline": {
+        "question": "Can I pay online?",
+        "answer": "Not on this website. You pay at the garage."
+      },
+      "howToBook": {
+        "question": "How do I book a visit?",
+        "answer": "Message us on <whatsapp>WhatsApp</whatsapp> with your vehicle and what it needs, or call us on <call>{phone}</call>. We'll agree a time with you."
+      },
+      "hours": {
+        "question": "When are you open?"
+      }
+    }
+  },
   "NotFound": {
     "metaTitle": "Page not found | {brand}",
     "title": "Page not found",
@@ -108,7 +136,8 @@
     "services": "Services",
     "prices": "Prices",
     "about": "About",
-    "contact": "Contact"
+    "contact": "Contact",
+    "faq": "FAQ"
   },
   "Header": {
     "navLabel": "Main",

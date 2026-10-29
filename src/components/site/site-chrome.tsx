@@ -6,7 +6,7 @@ import type { Garage } from "@/domain/garage";
 import { whatsappHref } from "@/lib/contact-links";
 
 import { ActionBar } from "./action-bar";
-import { bookTarget, liveNavItems } from "./navigation";
+import { bookTarget, liveFooterItems, liveNavItems } from "./navigation";
 import { OfferBanner } from "./offer-banner";
 import { SiteFooter } from "./site-footer";
 import { SiteHeader } from "./site-header";
@@ -50,7 +50,7 @@ export function SiteChrome({ garage, children }: { garage: Garage; children: Rea
         {children}
       </main>
 
-      <SiteFooter items={items} garage={garage} />
+      <SiteFooter items={items} moreItems={liveFooterItems()} garage={garage} />
       <ActionBar book={book} garage={garage} />
       {/* Below 768px: empty space the height of the fixed action bar, so the
           bar never covers the end of the footer. */}
