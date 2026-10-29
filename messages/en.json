@@ -205,6 +205,52 @@
     "heading": "Your account",
     "signedInAs": "Logged in as {number}",
     "loading": "Loading your account…",
-    "logOut": "Log out"
+    "logOut": "Log out",
+    "headerLink": "Account",
+    "greeting": "Hello, {name}",
+    "nameHeading": "What's your name?",
+    "nameNote": "We use your name to greet you and to know whose vehicle is whose at the garage.",
+    "nameLabel": "Your name",
+    "nameSubmit": "Save name",
+    "saving": "Saving…",
+    "nameErrors": {
+      "name-missing": "Enter your name.",
+      "name-too-short": "Enter at least 2 letters.",
+      "name-too-long": "Use 60 characters or fewer.",
+      "name-invalid": "Use letters, spaces, dots, apostrophes and hyphens only."
+    }
+  },
+  "MyVehicles": {
+    "listHeading": "Your vehicles",
+    "empty": "You haven't added a vehicle yet.",
+    "addLink": "Add a vehicle",
+    "pucUntil": "PUC valid until {date}",
+    "pucMissing": "PUC date not added",
+    "insuranceUntil": "Insurance valid until {date}",
+    "insuranceMissing": "Insurance date not added",
+    "expired": "Expired",
+    "metaTitle": "Add a vehicle | {brand}",
+    "formHeading": "Add a vehicle",
+    "formNote": "We use these details to book and service your vehicle. The dates are optional.",
+    "registrationLabel": "Registration number",
+    "registrationHint": "As on the number plate, like MH 12 AB 1234 or 22 BH 1234 AB.",
+    "pucLabel": "PUC certificate valid until (optional)",
+    "insuranceLabel": "Insurance valid until (optional)",
+    "submit": "Save vehicle",
+    "saving": "Saving…",
+    "backLink": "Back to your account",
+    "notListed": "Don't see your vehicle? Call us or message us on WhatsApp, and we'll help.",
+    "noCatalogue": "Adding a vehicle here isn't available right now. Call us or message us on WhatsApp, and we'll add it for you.",
+    "errors": {
+      "vehicle-missing": "Choose your vehicle's type, brand, model and fuel.",
+      "vehicle-unknown-model": "We can't take bookings for that model here. Choose another, or call us.",
+      "vehicle-fuel-not-offered": "That model doesn't come with this fuel. Choose its fuel again.",
+      "registration-missing": "Enter the registration number.",
+      "registration-unknown-state": "The first two letters aren't a state code. Check the number on the plate.",
+      "registration-invalid": "Enter a number like MH 12 AB 1234 or 22 BH 1234 AB. If your plate looks different, call us and we'll add your vehicle.",
+      "registration-duplicate": "You've already added a vehicle with this number.",
+      "date-invalid": "Enter a real date.",
+      "date-out-of-range": "Enter a date from 2000 up to 10 years from today."
+    }
   }
 }
