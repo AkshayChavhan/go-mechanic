@@ -11,6 +11,11 @@ import { FOOTER_TONE } from "../_components/home-tones";
 import FaqPage, { ensureStatic, generateMetadata } from "./page";
 
 vi.mock("@/server/dal/garage", () => ({ readGarage: vi.fn() }));
+// The real selector, which one test replaces once with real (owner-given) answers.
+vi.mock("@/content/faq", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/content/faq")>();
+  return { ...actual, selectFaqItems: vi.fn(actual.selectFaqItems) };
+});
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
   const { default: allMessages } = await import("../../../../../messages/en.json");
@@ -108,6 +113,23 @@ describe("FAQ page under npm run dev (samples)", () => {
       FAQ_GROUPS.map((group) => t.groups[group]),
     );
     expectNoMatchingNeighbours(container);
+  });
+});
+
+describe("FAQ page once the owner gives a real answer", () => {
+  test("shows it in its group, in every build, without a Sample mark", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.mocked(selectFaqItems).mockReturnValueOnce({
+      items: [{ id: "warranty", group: "work", question: { en: "Is the work under warranty?" }, answer: { en: "Real words." } }],
+      sample: false,
+    });
+    const { container } = renderWithIntl(await FaqPage());
+    expect(screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent)).toEqual(
+      FAQ_GROUPS.map((group) => t.groups[group]),
+    );
+    expect(screen.getByRole("heading", { level: 3, name: "Is the work under warranty?" })).toBeTruthy();
+    expect(container.querySelector("[data-sample]")).toBeNull();
+    expect(container.textContent).not.toContain(messages.HomePage.sample);
   });
 });
 

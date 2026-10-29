@@ -12,6 +12,11 @@ import { FOOTER_TONE } from "../_components/home-tones";
 import AboutPage, { ensureStatic, generateMetadata } from "./page";
 
 vi.mock("@/server/dal/garage", () => ({ readGarage: vi.fn() }));
+// The real selector, which one test replaces once with real (owner-given) topics.
+vi.mock("@/content/about", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/content/about")>();
+  return { ...actual, selectAboutTopics: vi.fn(actual.selectAboutTopics) };
+});
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
   const { default: allMessages } = await import("../../../../../messages/en.json");
@@ -83,6 +88,21 @@ describe("About page under npm run dev (samples)", () => {
 
   test("neighbouring sections still never share a tone", async () => {
     const { container } = renderWithIntl(await AboutPage());
+    expectNoMatchingNeighbours(container);
+  });
+});
+
+describe("About page once the owner gives real topics", () => {
+  test("shows them in every build, without a Sample mark", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.mocked(selectAboutTopics).mockReturnValueOnce({
+      items: [{ id: "story", title: { en: "Our story" }, body: { en: "Real words from the owner." } }],
+      sample: false,
+    });
+    const { container } = renderWithIntl(await AboutPage());
+    expect(screen.getByRole("heading", { level: 2, name: "Our story" })).toBeTruthy();
+    expect(container.querySelector("[data-sample]")).toBeNull();
+    expect(container.textContent).not.toContain(messages.HomePage.sample);
     expectNoMatchingNeighbours(container);
   });
 });

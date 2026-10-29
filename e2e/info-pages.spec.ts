@@ -94,11 +94,14 @@ test.describe("what the production build ships", () => {
     });
   }
 
-  for (const path of ["/privacy", "/terms"]) {
+  for (const { path, draft } of [
+    { path: "/privacy", draft: messages.PrivacyPage.draft },
+    { path: "/terms", draft: messages.TermsPage.draft },
+  ]) {
     test(`${path}: a draft, kept out of search results`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
-      await expect(page.getByText(messages.PrivacyPage.draft)).toBeVisible();
+      await expect(page.getByText(draft)).toBeVisible();
     });
   }
 
