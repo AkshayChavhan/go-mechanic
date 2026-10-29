@@ -23,7 +23,7 @@ export type NavItem = SitePage & { label: NavLabel };
 /** The main menu, in the order it shows. */
 export const navItems: readonly NavItem[] = [
   { label: "services", href: "/services", live: true }, // task 18
-  { label: "prices", href: "/packages", live: false }, // task 18
+  { label: "prices", href: "/packages", live: true }, // task 18
   { label: "about", href: "/about", live: false }, // task 19
   { label: "contact", href: "/contact", live: false }, // task 19
 ];
