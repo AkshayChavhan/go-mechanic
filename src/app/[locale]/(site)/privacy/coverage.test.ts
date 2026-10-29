@@ -9,9 +9,14 @@ import messages from "../../../../../messages/en.json";
 // So every table in src/server/db/schema.ts is listed here: a personal-data
 // table with the PrivacyPage item that describes it and its columns, or null
 // when it holds no personal data in production. A task that adds a table, or
-// a column to a personal-data table (a customer's name, say), fails this test
-// until it decides what it is, and, if it's personal data, adds it to the
-// notice (and moves LOGIN_NOTICE_VERSION: consent.test.ts pins the wording).
+// a column to a personal-data table (a vehicle's registration_number, say),
+// fails this test until it decides what it is, and, if it's personal data,
+// adds it to the notice (and moves LOGIN_NOTICE_VERSION: consent.test.ts pins
+// the wording).
+//
+// What it can't see: a task that starts filling a column that already exists
+// but is empty today (users.name, users.image). Task 21 saving a name does
+// exactly that, so it must update the notice without this test's reminder.
 
 type Personal = { item: keyof typeof messages.PrivacyPage.items; columns: readonly string[] };
 
@@ -36,7 +41,7 @@ const TABLES: Record<string, Personal | null> = {
   },
   // No personal data in production.
   accounts: null, // Better Auth's sign-in methods: phone login never writes here
-  dev_messages: null, // the fake SMS provider's outbox: development and tests only
+  dev_messages: null, // the fake SMS provider's outbox. Production refuses that provider; staging uses it, with testers' numbers (task 20)
   garage_settings: null,
   opening_hours: null,
   slot_rules: null,

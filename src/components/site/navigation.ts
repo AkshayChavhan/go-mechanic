@@ -58,7 +58,6 @@ export function liveNavItems(items: readonly NavItem[] = navItems): NavItem[] {
   return items.filter((item) => item.live);
 }
 
-
 /** Where a "Book" button goes: a page on the site, or a WhatsApp chat. */
 export type BookTarget = { kind: "page"; href: string } | { kind: "whatsapp"; href: string };
 

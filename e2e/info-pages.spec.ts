@@ -4,7 +4,7 @@ import messages from "../messages/en.json";
 import { aboutSampleCanary, sampleAboutTopics } from "../src/content/about";
 import { faqSampleCanary, sampleFaqItems } from "../src/content/faq";
 
-import { expectNoErrors, rscPayload, scrollsSideways, watchErrors } from "./helpers";
+import { expectNoErrors, logInThroughTheForm, rscPayload, scrollsSideways, watchErrors } from "./helpers";
 
 // The info pages (task 19) on a real production build: npm run test:e2e.
 // It proves what only the built site can show: each page is built ahead of
@@ -131,6 +131,14 @@ test.describe("links to the info pages", () => {
     ] as const) {
       await expect(footer.getByRole("link", { name: label, exact: true })).toHaveAttribute("href", href);
     }
+  });
+
+  test("after logging in, the website has set one cookie, the login's, as the privacy notice says", async ({ page, context }) => {
+    // PrivacyPage.cookies promises exactly this. A later Better Auth setting
+    // (its cookie cache, say) would add cookies and make the notice untrue.
+    await logInThroughTheForm(page);
+    const names = (await context.cookies()).map((cookie) => cookie.name);
+    expect(names).toEqual(["better-auth.session_token"]);
   });
 
   test("the login notice links the privacy notice, opening a new tab", async ({ page }) => {
