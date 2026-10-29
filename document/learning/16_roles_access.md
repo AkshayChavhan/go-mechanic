@@ -29,7 +29,7 @@ The master plan names the main risk: users reaching other people's data by chang
 | `src/server/dal/users.ts` + test | Added | `syncOwnerRole`: writes the owner rule into `users.role` at each login |
 | `src/server/auth/login.ts`, `instance.ts` + test | Changed | `onVerifiedLogin`: consents first, then the owner role |
 | `src/server/auth/session.ts` + test | Changed | `getCurrentUser()` returns the effective role |
-| `src/server/auth/access.ts` + test | Added | `requireUser`, `requirePermission`, `authorize`, `AccessDeniedError` |
+| `src/server/auth/access.ts` + test | Added | `requireUser`, `requirePermission`, `authorize`, `authorizeUser`, `AccessDeniedError` |
 | `src/server/dal/garage.ts` + test | Changed | `saveGarage` calls `authorize("garage.edit")` first |
 | `src/lib/access-routes.ts` + test | Added | The proxy's decision (`accessRedirect`), `hasSessionCookie`, the `?session=ended` marker |
 | `src/proxy.ts` + test | Changed | Runs that decision before next-intl |
@@ -72,16 +72,17 @@ The branch's first commit, `c418507 docs(15): mark task 15 done`, is task 15's b
    - `getCurrentUser()` applies it on **every** session read. Change the setting, **then redeploy** (or restart the server: `serverEnv()` reads settings once per process), and the new number is the owner from then on, even inside a 30-day login. If the garage SIM is ever lost or stolen: change `OWNER_PHONE_NUMBER` on Vercel and redeploy at once. Until the redeploy, the old SIM keeps owner access. (The first version of this doc said "on its next request"; `ce-code-review` caught it.)
    - `syncOwnerRole` writes the same rule into `users.role` at each login, after the consents. It runs inside Better Auth's `callbackOnVerification`, so a failure means no session. The stored role is only a hint: it goes stale for anyone who doesn't log in again, so code that reads another user's role (the team list in task 29, reports in task 41) must pass it through `effectiveRole`, never filter on `role = 'owner'` in SQL.
 
-5. **Three checks** (`src/server/auth/access.ts`). All read the session and ask the table:
+5. **Four checks** (`src/server/auth/access.ts`). All read the session; three of them ask the table:
 
    | Helper | Where | Logged out | Logged in, not allowed |
    | --- | --- | --- | --- |
    | `requireUser(locale)` | pages, Server Actions | redirect to `/login?session=ended` | (no permission asked) |
    | `requirePermission(locale, p)` | pages, Server Actions | the same redirect | `notFound()`: the 404 page |
-   | `authorize(p)` | `src/server/dal/`, first line of every save | `AccessDeniedError` (`signedOut`) | `AccessDeniedError` (`notAllowed`) |
+   | `authorize(p)` | `src/server/dal/`, first line, staff work | `AccessDeniedError` (`signedOut`) | `AccessDeniedError` (`notAllowed`) |
+   | `authorizeUser()` | `src/server/dal/`, first line, a customer's own data | `AccessDeniedError` (`signedOut`) | (no permission asked: customers hold none) |
 
-   - **Why a 404 and not a 403?** A 404 doesn't even admit a staff page exists. Next.js's `forbidden()` (403) is still experimental in 16.4.3: it needs `experimental.authInterrupts` (bundled `04-functions/forbidden.md`). Task 26 revisits it.
-   - **Why does the data-access layer read the session itself?** So no caller can hand it a made-up user, and a check forgotten in a page can't open a save. The same goes for user ids: a function over a user's own data takes the user from `authorize`, never a `userId` argument, and filters by it in the query's `WHERE`.
+   - **Why a 404 and not a 403?** A 404 doesn't even admit a staff page exists. Next.js's `forbidden()` (403) is still experimental in 16.4.3: it needs `experimental.authInterrupts` (bundled `04-functions/forbidden.md`). Task 26 revisits it. One catch: these checks read the session, so in a page they sit inside `<Suspense>`, and by then the page has started answering 200. So the 404 page shows with status 200 and `noindex`, just as the redirect happens in the browser (bundled `02-guides/streaming.md`, "Status codes"). A browser test checks the page shown, not the status.
+   - **Why does the data-access layer read the session itself?** So no caller can hand it a made-up user, and a check forgotten in a page can't open a save. The same goes for user ids: a function over a user's own data takes the user from `authorizeUser()` (staff work: `authorize`), never a `userId` argument, and filters by it in the query's `WHERE`. Three kinds of function don't check, by design: public reads (cached or live), writes made during a login (before a session exists), and functions that take the caller's transaction (task 22's slot functions: the caller checks before it opens the transaction).
 
 6. **`saveGarage` checks first.** `await authorize("garage.edit")` is its first line, before `checkGarage`, `getDatabase()` and the transaction. Two reasons for "first":
    - **PGlite has one connection.** A session read is a database query. Made inside a transaction, which holds that connection, it would wait forever.
@@ -111,7 +112,7 @@ The branch's first commit, `c418507 docs(15): mark task 15 done`, is task 15's b
 
     One of these was badly made at first. It moved `authorize` down one line, below `checkGarage` but still above the `return { ok: false, problems }`. `checkGarage` only computes a list, so nothing anyone could observe changed, and no test failed. Redone properly, the check moved below that `return`. Now a customer with broken details gets problem codes instead of `AccessDeniedError`, and 1 test fails. **The lesson:** a mutation must change what the code *does*, not just where a line sits. Ask first: "what would a caller see differently?"
 
-11. **Working next to two other sessions.** Session 2 (tasks 17, then 18) and Session 3 (tasks 22, then 19, 20) worked in their own folders on one shared git repository. The rules: only this branch, files staged by name, no stash, rebase or force. In `task.md` this task edited only its own row and steps. So the follow-ups for tasks 20, 21, 23, 25, 26, 28, 29, 31 and 40 went to the end of the backlog, not into those tasks' steps. `git fetch origin` before the docs commit showed nothing new on `main`: no merge, no conflicts.
+11. **Working next to two other sessions.** Session 2 (tasks 17, then 18) and Session 3 (tasks 22, then 19, 20) worked in their own folders on one shared git repository. The rules: only this branch, files staged by name, no stash, rebase or force. In `task.md` this task edited only its own row and steps. So the follow-ups for tasks 20, 21, 23, 25, 26, 28, 29, 31 and 40 went to the end of the backlog, not into those tasks' steps. `git fetch origin` before the docs commit showed nothing new on `main`. But task 22 (Session 3) was merged into `main` while the reviews ran, and the final `code-reviewer` check found this branch no longer merged cleanly. `git merge origin/main` then gave two conflicts, both where each task had added text at the same spot: the `src/domain/` and `src/server/` rows of `CLAUDE.md`'s repo map with "Roles and access" next to task 22's "Booking slots", and the end of `task.md`'s backlog. Both were resolved by keeping both sides: one row each listing both tasks' files, both blocks, and both backlog lists (task 22's first). The rules also had to meet: task 22's slot functions take the caller's booking transaction and must never query outside it, so this task's "check on the first line" rule now names them as an exception (the function that opens the transaction checks before it opens it). Otherwise a later session might add `authorize()` to `reserveSlot`, and every booking would hang. `garage.ts` changed on both sides (task 22 exported `weeklyHours`), and merged by itself.
 
     The machine's load average reached 40+ at times (three sessions' tests and builds, plus Docker Desktop). Twice the full `npm run check` failed only by timeouts: first the lint-guard test (at 36 s), then 10 files. It passed when re-run after a background watcher saw the load fall below 15.
 
@@ -140,13 +141,14 @@ The branch's first commit, `c418507 docs(15): mark task 15 done`, is task 15's b
 
 ## Check that it works
 
-Real output, Node 24 (`fnm exec --using=24 -- …`, trimmed), from the final code (after the `ce-code-review` fixes, 2026-10-29):
+Real output, Node 24 (`fnm exec --using=24 -- …`, trimmed), from the final code: after the `ce-code-review` fixes and the merge of `main` (2026-10-29). The numbers include task 22's tests, which came in with the merge.
 
-`npm run check`, at a load average near 11:
+`npm run check`, at a load average near 8:
 ```
- Test Files  77 passed (77)
-      Tests  1154 passed (1154)
+ Test Files  80 passed (80)
+      Tests  1277 passed (1277)
 ```
+(Before the merge: 77 files, 1154 tests. The first full run after the merge, at a load near 15, failed only by timeouts: seven database test files' setups hit the 60-second limit and the ESLint guard test took 46 seconds. The server tests alone passed, 19 files and 259 tests, and the full run passed once the load dropped.)
 
 Only the new rules and the proxy:
 ```bash
@@ -158,7 +160,7 @@ npx vitest run src/domain/permissions.test.ts src/domain/roles.test.ts src/lib/a
 ```
 
 From the work session's final runs:
-- `npm run test:e2e`: `69 passed (2.1m)`, 5 of them new in `e2e/access.spec.ts`. (Before the review fixes: `69 passed (1.8m)`; the very first run, `2 failed`, is in step 9.)
+- `npm run test:e2e`: `69 passed (1.8m)` on the merged code, 5 of them new in `e2e/access.spec.ts`. (After the review fixes, before the merge: `69 passed (2.1m)`; the very first run, `2 failed`, is in step 9.)
 - `npm run build`, re-run after the review fixes because `saveGarage` now imports the checks (and so Better Auth) into the home page's import graph: the route list kept its shapes. `/` is still `○ /en`; `/en/login` and `/en/account` are still `◐` (a prebuilt shell plus a streamed part):
   ```
   ├   /[locale]                      30d      1y
@@ -187,7 +189,11 @@ To try it yourself (not done for this doc, so as not to start a dev server on th
   - **#4:** `CLAUDE.md` and `login.ts` still named the old callback; it's `onVerifiedLogin` now.
   - **Smaller notes, also done:** `requireUser` now *replaces* the history entry (inside a Server Action a redirect would otherwise add one); the proxy decodes the path first, so a logged-out `/%61ccount` gets the same 307; and three tests the review asked for: the `getAuth()` wiring, the cookie names read from our own Better Auth settings on http *and* https, and a role step that fails after the consents (no session, consents kept, a new code works).
   - **Left as notes for later tasks:** a later change of a user's phone number must go through a code (the number is the key to the owner role: task 21); once task 29 writes roles, `syncOwnerRole`'s read-then-write needs a compare-and-set; a leftover cookie keeps bouncing `/login` through `/account` until it expires (harmless, no loop).
-- **`code-reviewer` agent:** Pending.
+- **`code-reviewer` agent: "Needs changes", then fixed.** It found no way to escalate a role, no secrets and nothing that logs a person. Its two must-fixes:
+  - **The branch no longer merged with `main`.** Task 22 had landed there during the reviews. Merged and resolved (step 11). The rule now names task 22's exceptions, so nobody adds a session check inside a booking transaction.
+  - **This doc still taught the replaced rule** ("take the user from `authorize`" for a customer's own data) and listed three checks. Now four checks, with `authorizeUser()`; the task 21 backlog line and the `CLAUDE.md` repo map say so too.
+
+  Also done: "the 404 page" inside `<Suspense>` answers status 200 (said in `CLAUDE.md` and step 5), and "a Server Action *that needs a login* calls `requireUser` first". Noted, not changed: four early commit bodies were a single sentence, against the rule of two to four (history isn't rewritten; later commits follow it).
 - **SEO check:** Pending, if the hook asks (`AccountDetails` and a login page comment changed).
 - **Compound step:** Pending.
 - **Pull request:** Pending, after the owner says yes.
@@ -196,8 +202,8 @@ To try it yourself (not done for this doc, so as not to start a dev server on th
 
 - **`if (user.role === "owner")` in a page.** Ask `can(user.role, "…")` or call `requirePermission`. Only `permissions.ts` and `roles.ts` compare roles.
 - **Checking only in the page or the layout.** The proxy and the page are shortcuts. The save itself must call `authorize` on its first line.
-- **A `userId` parameter on a data-access function.** Take the user from `authorize`, and filter by it in the query.
-- **Calling `authorize` inside a transaction.** Its session read waits forever on PGlite's one connection.
+- **A `userId` parameter on a data-access function.** Take the user from `authorizeUser()` (or `authorize` for staff work), and filter by it in the query.
+- **Calling `authorize` or `authorizeUser` inside a transaction** (or adding one to a slot function that takes the caller's transaction). Its session read waits forever on PGlite's one connection: check before the transaction opens.
 - **Redirecting POSTs in the proxy.** Login and Log out are POSTs to `/login` and `/account`.
 - **Forgetting `?session=ended`.** A redirect to `/login` from a page without it can loop when a leftover cookie is present. `requireUser` adds it for you.
 - **Changing the table without the test copy.** `permissions.test.ts` fails until both agree, by design.
