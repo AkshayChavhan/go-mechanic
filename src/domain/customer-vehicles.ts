@@ -59,7 +59,7 @@ function checkDate(typed: string, latest: IndiaDate): { ok: true; date: IndiaDat
 /**
  * Checks a posted vehicle against the listed catalogue and India's `today`:
  * the clean vehicle, or every problem at once. An electric vehicle has no PUC
- * (pollution) certificate, so a PUC date sent with one is dropped.
+ * (pollution) certificate, so a PUC date sent with one is dropped unchecked.
  */
 export function checkVehicleInput(
   input: VehicleInput,
@@ -91,7 +91,10 @@ export function checkVehicleInput(
   if (!registration.ok) problems.push({ field: "registration", problem: registration.problem });
 
   const latest = addYears(today, YEARS_AHEAD);
-  const puc = checkDate(input.pucExpiresOn, latest);
+  // An electric vehicle has no PUC certificate, so its PUC date isn't
+  // checked at all: the form hides that field, and an error there could
+  // never show.
+  const puc = input.fuel === "electric" ? ({ ok: true, date: null } as const) : checkDate(input.pucExpiresOn, latest);
   if (!puc.ok) problems.push({ field: "pucExpiresOn", problem: puc.problem });
   const insurance = checkDate(input.insuranceExpiresOn, latest);
   if (!insurance.ok) problems.push({ field: "insuranceExpiresOn", problem: insurance.problem });

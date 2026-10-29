@@ -63,6 +63,13 @@ describe("checkVehicleInput (one vehicle a customer adds)", () => {
     expect(result).toMatchObject({ ok: true, vehicle: { fuel: "electric", pucExpiresOn: null } });
   });
 
+  test("an electric vehicle's PUC date isn't even checked: the form hides that field, so its error could never show", () => {
+    for (const pucExpiresOn of ["not a date", "1999-12-31"]) {
+      const result = checkVehicleInput({ ...valid, modelId: "car-maruti-evx", fuel: "electric", pucExpiresOn }, catalogue, today);
+      expect(result, pucExpiresOn).toMatchObject({ ok: true, vehicle: { pucExpiresOn: null } });
+    }
+  });
+
   test("dates: real calendar dates from 2000-01-01 to 10 years after today in India; the past is allowed", () => {
     expect(problemsOf({ pucExpiresOn: "2026-02-29" })).toEqual([{ field: "pucExpiresOn", problem: "date-invalid" }]);
     expect(problemsOf({ insuranceExpiresOn: "29-10-2026" })).toEqual([
