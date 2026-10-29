@@ -12,11 +12,14 @@ import { bookTarget, navItems } from "@/components/site/navigation";
 import { NotFoundContent } from "@/components/site/not-found-content";
 import { OfferBanner } from "@/components/site/offer-banner";
 import { OpenStatusView } from "@/components/site/open-status";
+import { PackageCard } from "@/components/site/package-card";
+import { PriceFinder } from "@/components/site/price-finder";
 import { Section } from "@/components/site/section";
 import { ReviewCard } from "@/components/site/review-card";
 import { SampleBadge } from "@/components/site/sample-badge";
 import { ScrollScene } from "@/components/site/scroll-scene";
 import { sceneMark } from "@/components/site/scroll-scene-attributes";
+import { ServicePrices } from "@/components/site/service-prices";
 import { ServiceTile } from "@/components/site/service-tile";
 import { SiteFooter } from "@/components/site/site-footer";
 import { MobileMenuContent, SiteHeader } from "@/components/site/site-header";
@@ -43,6 +46,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { selectReviews, selectTrustStats } from "@/content/home";
+import { selectPrices } from "@/content/sample-prices";
+import { fromPrice, servicePath } from "@/domain/services";
 import { formatRupees } from "@/i18n/format";
 import { whatsappHref } from "@/lib/contact-links";
 import { devOnly } from "@/lib/dev-only";
@@ -277,14 +282,20 @@ export default async function DesignPage() {
   // The real catalogue (the draft models, task 17), for the picker sample.
   const catalogue = await readVehicleCatalogue();
   const pickerLabels = await vehiclePickerLabels();
-  // The seeded services, for the tile samples.
-  const services = await readServices();
+  // The seeded services and packages, for the tile, package and price samples.
+  const allServices = await readServices();
+  const services = allServices.filter((service) => service.kind === "service");
+  const packages = allServices.filter((service) => service.kind === "package");
+  const tHome = await getTranslations("HomePage");
+  const tServices = await getTranslations("Services");
+  const tPackages = await getTranslations("Packages");
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
   // The samples, through the same switch the home page uses (showSamples()):
   // devOnly() keeps this page out of production, but a staging server that
   // shows dev pages must still show no samples. null there: the blocks below go.
   const shownStats = selectTrustStats(null);
   const shownReviews = selectReviews(null);
+  const shownPrices = selectPrices([]);
 
   return (
     <FontPreview>
@@ -922,18 +933,101 @@ export default async function DesignPage() {
 
             <Block
               title="Service tiles"
-              description="Flat tiles, not links: there are no service pages or prices yet. Periodic service gets the wide tile in the grid."
+              description="Each tile is one link to its service page: the name is the link, stretched over the whole tile. Hover turns it grey, focus rings it. Periodic service gets the wide tile in the grid. A sample From price shows only under npm run dev."
             >
               <Section tone="grey" className="rounded-xl py-(--gutter)">
                 <ul data-sample="service-tiles" className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                   {services.slice(0, 2).map((service, index) => (
                     <li key={service.id} className={index === 0 ? "sm:col-span-2" : undefined}>
-                      <ServiceTile service={service} />
+                      <ServiceTile
+                        service={service}
+                        href={servicePath(service.id)}
+                        fromPaise={shownPrices ? fromPrice(service, shownPrices.items) : null}
+                        sample={shownPrices?.sample ?? false}
+                      />
                     </li>
                   ))}
                 </ul>
               </Section>
             </Block>
+
+            {packages[0] && (
+              <Block
+                title="Package card"
+                description="One package on /packages: its checklist, then a price line, text only. Without a price it says to call or WhatsApp."
+              >
+                <ul data-sample="package-card" className="grid max-w-3xl gap-4 sm:grid-cols-2">
+                  {[shownPrices ? fromPrice(packages[0], shownPrices.items) : null, null].map((paise, index) => (
+                    <li key={index}>
+                      <PackageCard
+                        name={packages[0]!.name.en}
+                        summary={packages[0]!.summary.en}
+                        included={packages[0]!.included.map((line) => line.en)}
+                        price={
+                          paise !== null ? (
+                            <p className="flex items-center gap-2 type-body font-semibold">
+                              {tServices("from", { price: formatRupees(paise, "en") })}
+                              <SampleBadge />
+                            </p>
+                          ) : (
+                            <p className="type-callout text-muted-foreground">{tPackages("callForPrice")}</p>
+                          )
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              </Block>
+            )}
+
+            {services[0] && (
+              <Block
+                title="Service price block"
+                description="A service page's prices. Under npm run dev: a marked sample table per vehicle kind, with a line per fuel where they differ. On the live site, until real prices exist: Call or WhatsApp us for a price."
+              >
+                <div data-sample="service-prices-block" className="flex flex-col gap-10">
+                  <ServicePrices
+                    service={services[0]}
+                    shown={shownPrices}
+                    catalogue={catalogue}
+                    headingId="sample-price-1"
+                  />
+                  <ServicePrices service={services[0]} shown={null} catalogue={catalogue} headingId="sample-price-2" />
+                </div>
+              </Block>
+            )}
+
+            {shownPrices && (
+              <Block
+                title="Price finder"
+                description="Only under npm run dev, on /packages: pick a vehicle and see what each package costs for it. The result line is a polite live region."
+              >
+                <div data-sample="price-finder-block">
+                  <PriceFinder
+                    catalogue={catalogue}
+                    pickerLabels={pickerLabels}
+                    labels={{
+                      title: tPackages("finder.title"),
+                      lead: tPackages("finder.lead"),
+                      prompt: tPackages("finder.prompt"),
+                      resultsTitle: tPackages.raw("finder.resultsTitle") as string,
+                      notOffered: tPackages("finder.notOffered"),
+                      callForPrice: tPackages("finder.callForPrice"),
+                      sample: tHome("sample"),
+                    }}
+                    packages={packages.map(({ id, vehicleKinds, fuels, pricedAfterInspection, name }) => ({
+                      id,
+                      vehicleKinds,
+                      fuels,
+                      pricedAfterInspection,
+                      name: name.en,
+                    }))}
+                    prices={shownPrices.items}
+                    sample={shownPrices.sample}
+                  />
+                </div>
+              </Block>
+            )}
 
             {shownStats && (
               <Block
