@@ -15,7 +15,7 @@ import { Link } from "@/i18n/navigation";
 import { whatsappHref } from "@/lib/contact-links";
 import { cn } from "@/lib/utils";
 import { readGarage } from "@/server/dal/garage";
-import { readServicePrices, readServices } from "@/server/dal/services";
+import { readServicePrices, readServices, serviceIdsToBuild } from "@/server/dal/services";
 import { readVehicleCatalogue } from "@/server/dal/vehicles";
 
 import { HomeActions } from "../../_components/home-actions";
@@ -23,6 +23,14 @@ import { HomeActions } from "../../_components/home-actions";
 // /services/<id> (task 18): one service's page. Built ahead of time for every
 // service (generateStaticParams), from cached reads only (ensureStatic).
 export const ensureStatic = "navigation";
+
+// A navigation to this page may wait for the server instead of showing an
+// instant shell first (node_modules/next/dist/docs/01-app/03-api-reference/
+// 03-file-conventions/02-route-segment-config/instant.md). Next.js's dev check
+// asks for `params` to be read inside <Suspense>, but then an unknown id would
+// answer status 200: notFound() must run before any <Suspense> to give a real
+// 404. Every known service is prebuilt, so the wait is for a static file.
+export const instant = false;
 
 /** The service whose page this is. A package or an unknown id is a 404. */
 async function findService(slug: string): Promise<Service> {
@@ -32,13 +40,12 @@ async function findService(slug: string): Promise<Service> {
 }
 
 /**
- * Every service's id. Never empty: the seed has 11, and Cache Components fails
- * the build on an empty list (so staging must be seeded before its first
- * build, task 20). Packages have no pages of their own.
+ * The seeded services' ids (serviceIdsToBuild() says why not the database's:
+ * under `next dev` a database read here hangs). Never empty, which Cache
+ * Components requires. Packages have no pages of their own.
  */
-export async function generateStaticParams() {
-  const services = await readServices();
-  return services.filter((service) => service.kind === "service").map((service) => ({ slug: service.id }));
+export function generateStaticParams() {
+  return serviceIdsToBuild().map((slug) => ({ slug }));
 }
 
 // notFound() here as well as in the page, so an unknown id answers 404 with

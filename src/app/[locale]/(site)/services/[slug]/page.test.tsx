@@ -10,13 +10,17 @@ import { draftServices } from "@/server/db/service-seed-data";
 import { draftCatalogue } from "@/server/db/vehicle-seed-data";
 import messages from "../../../../../../messages/en.json";
 
-import ServicePage, { ensureStatic, generateMetadata, generateStaticParams } from "./page";
+import ServicePage, { ensureStatic, generateMetadata, generateStaticParams, instant } from "./page";
 
 // An async Server Component: each test renders `await ServicePage(...)` with
 // the cached reads replaced by the seed data, next-intl/server by next-intl's
 // own translator, and notFound() by a function that throws a known error.
 vi.mock("@/server/dal/garage", () => ({ readGarage: vi.fn() }));
-vi.mock("@/server/dal/services", () => ({ readServices: vi.fn(), readServicePrices: vi.fn() }));
+vi.mock("@/server/dal/services", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/server/dal/services")>()),
+  readServices: vi.fn(),
+  readServicePrices: vi.fn(),
+}));
 vi.mock("@/server/dal/vehicles", () => ({ readVehicleCatalogue: vi.fn() }));
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),
@@ -48,9 +52,14 @@ afterEach(() => {
 });
 
 describe("/services/[slug]", () => {
-  test("is built ahead of time for each of the eleven services, and no package", async () => {
+  test("is built ahead of time for each of the eleven services, and no package, without reading the database", async () => {
     expect(ensureStatic).toBe("navigation");
-    const params = await generateStaticParams();
+    // Reading params outside <Suspense> (for the real 404) blocks the instant shell: allowed on purpose.
+    expect(instant).toBe(false);
+    const params = generateStaticParams();
+    // `next dev` runs generateStaticParams in a helper process, where a
+    // database read never finishes (serviceIdsToBuild() in the DAL).
+    expect(readServices).not.toHaveBeenCalled();
     expect(params).toEqual(
       draftServices.filter((service) => service.kind === "service").map((service) => ({ slug: service.id })),
     );

@@ -7,7 +7,7 @@ import { servicePrices, services } from "@/server/db/schema";
 import { seedServices } from "@/server/db/seed";
 import { draftServices } from "@/server/db/service-seed-data";
 
-import { readServicePrices, readServices, SERVICE_PRICES_TAG, SERVICES_TAG } from "./services";
+import { readServicePrices, readServices, SERVICE_PRICES_TAG, SERVICES_TAG, serviceIdsToBuild } from "./services";
 
 // Starting PGlite (Postgres compiled to WebAssembly) and migrating it takes a
 // few seconds, and much longer when the full test run shares a busy machine
@@ -63,6 +63,17 @@ describe("readServices", () => {
     expect(SERVICES_TAG).toBe("services");
     expect(cacheTag).toHaveBeenCalledWith(SERVICES_TAG);
     expect(cacheLife).toHaveBeenCalledWith("max");
+  });
+});
+
+describe("serviceIdsToBuild", () => {
+  test("lists the seeded services' ids, in order, no package, without opening the database", () => {
+    vi.mocked(getDatabase).mockClear();
+    expect(serviceIdsToBuild()).toEqual(
+      draftServices.filter((service) => service.kind === "service").map((service) => service.id),
+    );
+    expect(serviceIdsToBuild()).toHaveLength(11);
+    expect(getDatabase).not.toHaveBeenCalled();
   });
 });
 

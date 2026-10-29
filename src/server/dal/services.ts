@@ -17,6 +17,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import type { Service, ServicePrice } from "@/domain/services";
 import { getDatabase } from "@/server/db";
 import { servicePrices, services } from "@/server/db/schema";
+import { draftServices } from "@/server/db/service-seed-data";
 
 /** The cache tag on every cached read of the services and packages. */
 export const SERVICES_TAG = "services";
@@ -50,6 +51,22 @@ export async function readServices(): Promise<Service[]> {
     .from(services)
     .where(eq(services.listed, true))
     .orderBy(asc(services.position), asc(services.id));
+}
+
+/**
+ * The ids of the service pages to build ahead of time: the seeded services
+ * (not the packages, which have no pages). For generateStaticParams only.
+ *
+ * Not read from the database, on purpose: `next dev` runs generateStaticParams
+ * in a helper process (its static-paths worker, a jest-worker child), and in
+ * a helper process getDatabase() never settles (openForThisProcess in
+ * src/server/db/index.ts), so a database read there would hang the page
+ * forever, with no error (seen in task 18). The seeded ids are safe to list:
+ * ids never change and services are hidden, never deleted. A service added
+ * later (task 39) is built on its first visit, and a hidden one gets the 404.
+ */
+export function serviceIdsToBuild(): string[] {
+  return draftServices.filter((service) => service.kind === "service").map((service) => service.id);
 }
 
 /**
