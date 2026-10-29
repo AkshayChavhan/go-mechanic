@@ -15,9 +15,12 @@ import { users } from "@/server/db/schema";
  * is left alone. An unknown user changes nothing.
  *
  * The session read applies the same rule on every request (getCurrentUser),
- * so this only keeps the table honest for the team list and reports (tasks
- * 29, 41). Called by the login service, not by a page, so it needs no
- * authorize(): it only applies the OWNER_PHONE_NUMBER setting.
+ * so access never depends on this. The stored role is only a hint: it goes
+ * stale for anyone who doesn't log in again, so code that reads another
+ * user's role (the team list, reports: tasks 29, 41) passes it through
+ * effectiveRole and never filters on role = 'owner' in SQL. Called by the
+ * login service during a login, before a session exists, so it can't (and
+ * needn't) call authorize(): nothing in it comes from a browser.
  */
 export async function syncOwnerRole(userId: string, phoneNumber: string, ownerPhoneNumber: string): Promise<void> {
   const db = await getDatabase();

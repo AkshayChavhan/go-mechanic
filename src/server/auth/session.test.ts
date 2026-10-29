@@ -114,7 +114,7 @@ describe("getCurrentUser (who is logged in, for pages)", () => {
 });
 
 describe("getCurrentUser: the owner rule on every read", () => {
-  test("a stored customer on the owner's number reads as the owner, with no new login", async () => {
+  test("a stored customer on the owner's number reads as the owner, with no new login (once the setting is live)", async () => {
     vi.mocked(headers).mockResolvedValue(new Headers({ cookie: await logIn() }));
     expect((await getCurrentUser())?.role).toBe("customer");
     settings.ownerPhoneNumber = number;

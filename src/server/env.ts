@@ -23,8 +23,10 @@
 //                 the garage's owner (src/domain/roles.ts, effectiveRole).
 //                 Required on staging and production; locally it defaults to
 //                 the garage's own number (the owner's choice, 2026-10-28).
-//                 Change it to move owner access: the old number becomes a
-//                 customer on its next request.
+//                 Change it to move owner access, then redeploy (or restart
+//                 the server): serverEnv() reads the settings once per
+//                 process. From then on the old number is a customer, even
+//                 inside a login that is already open.
 //
 // DATABASE_URL and BETTER_AUTH_SECRET are secrets, so error messages name a
 // variable but never print its value: errors end up in logs that more people

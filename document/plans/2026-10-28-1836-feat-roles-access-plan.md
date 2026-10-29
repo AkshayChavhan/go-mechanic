@@ -68,7 +68,7 @@ Two rough edges are left over from task 15. The session is read inside `<Suspens
 **The owner**
 
 - R3. Whoever logs in with the owner's number is the owner. Everyone else starts as a customer, and no browser request can choose or change a role.
-- R4. Changing the owner's number is a settings change with no code change. From the next request on, the new number is the owner and the old number is a customer.
+- R4. Changing the owner's number is a settings change with no code change. From the next request on, the new number is the owner and the old number is a customer. *(Corrected after `ce-code-review`, 2026-10-29: `serverEnv()` reads settings once per process, so the change needs a redeploy or restart first; from then on it applies even to open logins.)*
 
 **Protected pages and saves**
 

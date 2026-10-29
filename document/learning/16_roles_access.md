@@ -69,8 +69,8 @@ The branch's first commit, `c418507 docs(15): mark task 15 done`, is task 15's b
 
 4. **The effective role on every read, the stored role at each login.**
    - `effectiveRole(storedRole, phoneNumber, ownerPhoneNumber)`: the owner's number is `owner`; a stored `owner` on any other number is `customer` (the SIM may be lost); any other stored role stands.
-   - `getCurrentUser()` applies it on **every** session read. Change the setting, and the new number is the owner on its next request, even inside a 30-day login.
-   - `syncOwnerRole` writes the same rule into `users.role` at each login, after the consents, so the table is right for the team list and reports (tasks 29, 41). It runs inside Better Auth's `callbackOnVerification`, so a failure means no session.
+   - `getCurrentUser()` applies it on **every** session read. Change the setting, **then redeploy** (or restart the server: `serverEnv()` reads settings once per process), and the new number is the owner from then on, even inside a 30-day login. If the garage SIM is ever lost or stolen: change `OWNER_PHONE_NUMBER` on Vercel and redeploy at once. Until the redeploy, the old SIM keeps owner access. (The first version of this doc said "on its next request"; `ce-code-review` caught it.)
+   - `syncOwnerRole` writes the same rule into `users.role` at each login, after the consents. It runs inside Better Auth's `callbackOnVerification`, so a failure means no session. The stored role is only a hint: it goes stale for anyone who doesn't log in again, so code that reads another user's role (the team list in task 29, reports in task 41) must pass it through `effectiveRole`, never filter on `role = 'owner'` in SQL.
 
 5. **Three checks** (`src/server/auth/access.ts`). All read the session and ask the table:
 

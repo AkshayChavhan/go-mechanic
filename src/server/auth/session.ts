@@ -46,8 +46,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     // types just don't know it.
     if (!session?.user.phoneNumber) return null;
     const { id, phoneNumber, role } = session.user;
-    // The owner rule on every read, so a change of OWNER_PHONE_NUMBER applies
-    // on the next request, even to a login that is already open.
+    // The owner rule on every read: once a changed OWNER_PHONE_NUMBER is live
+    // (after a redeploy or restart), it applies even to an open login.
     return { id, phoneNumber, role: effectiveRole(role as Role, phoneNumber, ownerPhoneNumber) };
   });
 });
