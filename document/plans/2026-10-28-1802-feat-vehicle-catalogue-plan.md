@@ -294,7 +294,7 @@ These are planning bets, not checked with the owner (the scope check was skipped
 - **Dependencies:** U1.
 - **Files:**
   - modify `src/server/db/schema.ts` (a `// --- Vehicle catalogue (task 17) ---` block), `src/server/db/database.test.ts`, `e2e/server-boundary.spec.ts` (add `vehicle_models` to `MARKERS`);
-  - create `src/server/db/migrations/0002_vehicle_catalogue.sql` plus `meta/0002_snapshot.json` and the `meta/_journal.json` entry (generated, never hand-edited).
+  - create `src/server/db/migrations/0002_vehicle_catalogue.sql` (generated again as `0003_vehicle_catalogue.sql` after task 22's `0002_slot_engine` reached `main` first) plus `meta/0002_snapshot.json` and the `meta/_journal.json` entry (generated, never hand-edited).
 - **Approach:**
   - `vehicle_kind` and `fuel` enums pinned with `satisfies` to the domain lists.
   - Tables as in the HTD diagram. Every column names its snake_case name. Text ids. Composite unique (id, kind) on brands and groups, and composite foreign keys from models, with `restrict`. A CHECK for a non-empty fuels array, and a CHECK for a non-blank English name. Indexes for the read's ordering only if the query plan needs them (deferred).

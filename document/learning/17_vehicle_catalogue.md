@@ -26,13 +26,13 @@ Without one shared catalogue, each task would invent its own list, and a price f
 
 ## What: what changed
 
-40 files, 4,172 lines added. 1,070 of them are the generated migration snapshot, and 463 are the plan.
+Against `main` after task 22's merge, leaving out this doc: `40 files changed, 4360 insertions(+), 38 deletions(-)` (`git diff --stat origin/main...HEAD`). 1,198 of those lines are the generated migration snapshot, and 463 are the plan.
 
 | File or folder | Change | Why it exists |
 | --- | --- | --- |
 | `src/domain/vehicles.ts` + test | Added | Pure rules. `VEHICLE_KINDS` (moved here from `src/content/services.ts`), `FUELS` and the catalogue's types. `checkCatalogue` returns problem codes. The picker's rules: `vehicleOptions`, `changeSelection`, `normalizeSelection`, `resolveVehicle` |
 | `src/content/services.ts`, `home.ts` + tests, `src/components/site/service-tile.tsx` | Changed | They now import `VEHICLE_KINDS` from the domain |
-| `src/server/db/schema.ts`, `migrations/0002_vehicle_catalogue.sql` + `meta/` | Changed, Added | Two enums (`vehicle_kind`, `fuel`) and three tables: `vehicle_categories`, `vehicle_makes`, `vehicle_models` |
+| `src/server/db/schema.ts`, `migrations/0003_vehicle_catalogue.sql` + `meta/` | Changed, Added | Two enums (`vehicle_kind`, `fuel`) and three tables: `vehicle_categories`, `vehicle_makes`, `vehicle_models` |
 | `src/server/db/vehicle-catalogue.test.ts` | Added | Proves the database refuses what the rules forbid |
 | `src/server/db/vehicle-seed-data.ts` + test | Added | The draft: 22 brands, 142 models (78 cars, 64 two-wheelers), 6 price groups. Plain data, so Playwright can import it |
 | `src/server/db/seed.ts`, `index.ts` | Changed | `seedVehicleCatalogue`, called right after `seedGarage` in `createDatabase` |
@@ -90,7 +90,15 @@ Without one shared catalogue, each task would invent its own list, and a price f
    git fetch origin && git merge origin/main
    npm run db:generate -- --name=vehicle_catalogue
    ```
-   `--` passes `--name=...` through npm to drizzle-kit. The merge (`c89bc7e`) brought in task 15's follow-up pull request #16, with no conflicts. `main` had no new migration, so this one is `0002_vehicle_catalogue`. Whichever of tasks 17 and 22 merges second must delete its own migration files and journal entry, merge `main`, and generate again. Renaming its file to `0003` by hand is not enough: the journal would keep its older `when` time, and Drizzle's migrator skips a migration older than the newest one a database has already applied, so existing databases would never get it (found by the code review).
+   `--` passes `--name=...` through npm to drizzle-kit. The merge (`c89bc7e`) brought in task 15's follow-up pull request #16, with no conflicts. `main` had no new migration then, so this one was first `0002_vehicle_catalogue`. Whichever of tasks 17 and 22 merges second must delete its own migration files and journal entry, merge `main`, and generate again. Renaming its file to `0003` by hand is not enough: the journal would keep its older `when` time, and Drizzle's migrator skips a migration older than the newest one a database has already applied, so existing databases would never get it (found by the code review).
+
+   **That is what happened.** Task 22 merged first (pull request #17), and `code-reviewer` caught that this branch no longer merged. The second `git merge origin/main` (`edadde3`) stopped on seven conflicts, resolved like this:
+   - **The migration files:** this branch's `0002_vehicle_catalogue.sql` was deleted, and `meta/0002_snapshot.json` and `meta/_journal.json` were taken from `main` (`git show origin/main:<file> > <file>`). Then `npm run db:generate -- --name=vehicle_catalogue` wrote `0003_vehicle_catalogue.sql`. Its snapshot points back to `0002_slot_engine`'s, its `when` is later, and its SQL is identical to the old file's (checked with `diff`).
+   - **`schema.ts`:** only the import list clashed; both sides' tables stayed.
+   - **`seed.ts` and `index.ts`:** both new seeds stayed, called in the order `seedGarage`, `seedSlotRules`, `seedVehicleCatalogue`, with one combined header comment.
+   - **`CLAUDE.md` and `task.md`:** both sides kept: both sections, both sets of repo-map entries, and task 17's backlog lines after task 22's.
+
+   Then `npm run db:reset`, with the dev server stopped: the local database had recorded the old `0002_vehicle_catalogue` with a later `when` than `0002_slot_engine`, so the migrator would have skipped task 22's migration there.
 
 5. **The draft and the seed** (`vehicle-seed-data.ts`, `seedVehicleCatalogue` in `seed.ts`).
    - The data file has no `server-only` import, so the Playwright specs can import it as the values they expect.
@@ -196,7 +204,9 @@ Real output, from the work session unless marked:
   - **Notes acted on:** the picker's gap before hydration is now written down; every draft correction (not only a rename) needs `npm run db:reset` locally; the picker reuses the domain's `findMake` and `findModel`; the catalogue test file opens one database and resets it before each test, as `CLAUDE.md` asks; the dev picker spec says why its counts need a reset after a draft edit.
   - **Notes left for later:** `/dev/design`'s page is now 1,138 lines (its new samples could move to a `_components` file); the announcement separator `". "` is English punctuation outside `messages/en.json`; no test hydrates the picker's server HTML with a default.
   - After the fixes, `npm run check` passed again: `Test Files 78 passed`, `Tests 1147 passed`.
-- **code-reviewer: result added after it runs.**
+- **code-reviewer, first run: Needs changes.** One must-fix: task 22 had merged into `main` meanwhile, so the branch conflicted with it, with two migrations numbered `0002`. Two suggestions: this doc's size line didn't match the diff, and a line in `seed.ts`'s header was badly wrapped. All three fixed by the merge above and this doc's update.
+  - Re-run on the merged code: `npm run check`: `Test Files 81 passed`, `Tests 1270 passed`; `npm run test:e2e -- --workers=2`: `65 passed (2.2m)`, first try; `npm run build`: `○ /en`; the `e2e/dev` specs on port 3001: `43 passed (9.5m)`.
+- **code-reviewer, second run: result added after it runs.**
 - **Compound: decided after the reviews.**
 - **Not done yet, for later tasks:**
   - The owner still has to check the draft models, fuels and price groups before task 18 shows any model publicly.
