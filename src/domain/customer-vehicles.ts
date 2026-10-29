@@ -9,7 +9,7 @@
 
 import { addYears, type IndiaDate, parseIndiaDate } from "./india-time";
 import { parseRegistration, type RegistrationProblem } from "./registration";
-import { FUELS, type Fuel, resolveVehicle, type VehicleCatalogue } from "./vehicles";
+import { type Fuel, isFuel, resolveVehicle, type VehicleCatalogue } from "./vehicles";
 
 /** What the add form posts, as strings. An empty date means none. */
 export type VehicleInput = {
@@ -42,10 +42,6 @@ export type CheckedVehicle = {
 const EARLIEST_DATE = "2000-01-01";
 /** How far ahead an expiry date may be. */
 const YEARS_AHEAD = 10;
-
-function isFuel(value: string): value is Fuel {
-  return (FUELS as readonly string[]).includes(value);
-}
 
 /** An optional India date: null when empty, the date, or its problem. */
 function checkDate(typed: string, latest: IndiaDate): { ok: true; date: IndiaDate | null } | { ok: false; problem: DateProblem } {

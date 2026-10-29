@@ -12,13 +12,13 @@ import {
   findMake,
   findModel,
   type Fuel,
-  FUELS,
+  isFuel,
+  isVehicleKind,
   normalizeSelection,
   type SelectionChange,
   type VehicleCatalogue,
   type VehicleField,
   type VehicleKind,
-  VEHICLE_KINDS,
   vehicleOptions,
   type VehicleSelection,
 } from "@/domain/vehicles";
@@ -75,11 +75,6 @@ function fill(template: string, values: Record<string, string>): string {
 // Never changes: the picker only needs to know whether it has hydrated.
 const subscribeToNothing = () => () => {};
 
-/** `value` if it's one of `allowed`, else null. */
-function oneOf<T extends string>(allowed: readonly T[], value: string | undefined): T | null {
-  return (allowed as readonly string[]).includes(value ?? "") ? (value as T) : null;
-}
-
 /**
  * What the picker's fields in the page show right now, or null when they
  * aren't in the page. It runs during the first render in the browser, while
@@ -92,12 +87,14 @@ function fieldsInPage(id: string, name: string): VehicleSelection | null {
   if (typeof document === "undefined") return null;
   const picker = document.getElementById(`${id}-model`)?.closest('[data-slot="vehicle-picker"]');
   if (!picker) return null;
-  const value = (selector: string) => picker.querySelector<HTMLInputElement | HTMLSelectElement>(selector)?.value || undefined;
+  const value = (selector: string) => picker.querySelector<HTMLInputElement | HTMLSelectElement>(selector)?.value || "";
+  const kind = value(`input[name="${name}Kind"]:checked`);
+  const fuel = value(`input[name="${name}Fuel"]:checked`);
   return {
-    kind: oneOf(VEHICLE_KINDS, value(`input[name="${name}Kind"]:checked`)),
-    makeId: value(`select[name="${name}Make"]`) ?? null,
-    modelId: value(`select[name="${name}Model"]`) ?? null,
-    fuel: oneOf(FUELS, value(`input[name="${name}Fuel"]:checked`)),
+    kind: isVehicleKind(kind) ? kind : null,
+    makeId: value(`select[name="${name}Make"]`) || null,
+    modelId: value(`select[name="${name}Model"]`) || null,
+    fuel: isFuel(fuel) ? fuel : null,
   };
 }
 

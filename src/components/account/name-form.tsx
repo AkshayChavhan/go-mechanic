@@ -8,18 +8,15 @@
 // messages: /account reads them on the server and passes every label as a
 // prop.
 
-import { LoaderCircleIcon } from "lucide-react";
-import { unstable_rethrow } from "next/navigation";
-import { type ReactNode, useActionState, useEffect, useId, useRef } from "react";
-import { useFormStatus } from "react-dom";
+import { useActionState, useEffect, useId, useRef } from "react";
 
-import { Button } from "@/components/ui/button";
+import { type FormAction, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
 import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { initialNameFormState, type NameFormState } from "@/lib/account-forms";
 
 /** The saveName Server Action with the locale already bound: saveName.bind(null, locale). */
-export type NameAction = (previous: NameFormState, formData: FormData) => Promise<NameFormState>;
+export type NameAction = FormAction<NameFormState>;
 
 /** Every word the form shows, from the Account messages. The page reads them. */
 export type NameFormLabels = {
@@ -33,26 +30,15 @@ export type NameFormLabels = {
 };
 
 /**
- * Wraps the Server Action into the function useActionState runs on each
- * submit. A saved name makes the action redirect to /account, which reaches
- * the browser as a rejected promise: unstable_rethrow() must come first and
- * pass it on to Next.js. Any other failure (no network) becomes the
+ * What useActionState runs on each submit (submitterWithFallback): a saved
+ * name's redirect goes on to Next.js; a failed call (no network) becomes the
  * `connection` message, with what was typed kept.
  */
 export function nameSubmitter(action: NameAction, connectionText: string) {
-  return async function submit(previous: NameFormState, formData: FormData): Promise<NameFormState> {
-    try {
-      return await action(previous, formData);
-    } catch (error) {
-      unstable_rethrow(error);
-      const typed = formData.get("name");
-      return {
-        submission: previous.submission + 1,
-        nameTyped: typeof typed === "string" ? typed : "",
-        error: connectionText,
-      };
-    }
-  };
+  return submitterWithFallback(action, (previous, formData) => {
+    const typed = formData.get("name");
+    return { submission: previous.submission + 1, nameTyped: typeof typed === "string" ? typed : "", error: connectionText };
+  });
 }
 
 export function NameForm({ action, labels }: { action: NameAction; labels: NameFormLabels }) {
@@ -95,16 +81,5 @@ export function NameForm({ action, labels }: { action: NameAction; labels: NameF
         <SubmitButton pendingLabel={labels.saving}>{labels.submit}</SubmitButton>
       </form>
     </section>
-  );
-}
-
-/** "Save name", with a spinner and `pendingLabel` while it's being sent. */
-function SubmitButton({ pendingLabel, children }: { pendingLabel: string; children: ReactNode }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} className="w-full sm:w-fit">
-      {pending && <LoaderCircleIcon data-icon="inline-start" className="animate-spin" />}
-      {pending ? pendingLabel : children}
-    </Button>
   );
 }

@@ -14,29 +14,19 @@
 
 import "server-only";
 
-import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { RedirectType } from "next/navigation";
 
 import { needsName } from "@/domain/profile";
 import type { Locale } from "@/i18n/config";
 import { redirect } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
-import type { NameFormState, VehicleFormField, VehicleFormState, VehicleFormValues } from "@/lib/account-forms";
+import { type NameFormState, readVehicleForm, type VehicleFormField, type VehicleFormState } from "@/lib/account-forms";
 import { ACCOUNT_PATH } from "@/lib/access-routes";
 import { requireUser } from "@/server/auth/access";
 import { addMyVehicle } from "@/server/dal/customer-vehicles";
 import { readMyProfile, saveMyName } from "@/server/dal/profile";
 
-function checkedLocale(locale: string): Locale {
-  if (!hasLocale(routing.locales, locale)) throw new Error("Unknown locale");
-  return locale;
-}
-
-const text = (formData: FormData, name: string) => {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : "";
-};
+import { checkedLocale, formText } from "./form-input";
 
 /**
  * Back to /account. Outside any try: redirect() works by throwing.
@@ -51,7 +41,7 @@ function toAccount(locale: Locale): never {
 export async function saveName(locale: string, previous: NameFormState, formData: FormData): Promise<NameFormState> {
   const checked = checkedLocale(locale);
   await requireUser(checked);
-  const nameTyped = text(formData, "name");
+  const nameTyped = formText(formData, "name");
   const result = await saveMyName(nameTyped);
   if (result.ok) return toAccount(checked);
   const t = await getTranslations({ locale: checked, namespace: "Account" });
@@ -73,13 +63,7 @@ export async function addVehicle(
   await requireUser(checked);
   if (needsName(await readMyProfile())) return toAccount(checked);
 
-  const values: VehicleFormValues = {
-    modelId: text(formData, "vehicleModel"),
-    fuel: text(formData, "vehicleFuel"),
-    registration: text(formData, "registration"),
-    pucExpiresOn: text(formData, "pucExpiresOn"),
-    insuranceExpiresOn: text(formData, "insuranceExpiresOn"),
-  };
+  const values = readVehicleForm(formData);
   const result = await addMyVehicle(values);
   if (result.status === "saved") return toAccount(checked);
 

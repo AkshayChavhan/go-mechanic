@@ -5,6 +5,8 @@ import {
   checkCatalogue,
   EMPTY_SELECTION,
   FUELS,
+  isFuel,
+  isVehicleKind,
   normalizeSelection,
   resolveVehicle,
   type VehicleCatalogue,
@@ -327,4 +329,15 @@ describe("resolveVehicle (turning a posted model and fuel into a vehicle)", () =
 
 test("the fuels are listed in the order the picker shows them", () => {
   expect(FUELS).toEqual(["petrol", "diesel", "cng", "electric"]);
+});
+
+describe("isFuel and isVehicleKind (is a posted string one of ours?)", () => {
+  test("accept exactly the listed values", () => {
+    for (const fuel of ["petrol", "diesel", "cng", "electric"]) expect(isFuel(fuel), fuel).toBe(true);
+    for (const kind of ["car", "two-wheeler"]) expect(isVehicleKind(kind), kind).toBe(true);
+    for (const other of ["", "hydrogen", "Petrol", "car "]) {
+      expect(isFuel(other), other).toBe(false);
+      expect(isVehicleKind(other), other).toBe(false);
+    }
+  });
 });

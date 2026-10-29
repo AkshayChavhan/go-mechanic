@@ -16,23 +16,30 @@
 // - Each visit starts empty. Next.js hides a page you leave instead of
 //   unmounting it (React's <Activity>), which would keep the last draft, its
 //   errors and the action's answer for the next visit, even for the next
-//   customer on a shared phone. When the page is hidden, a layout effect's
-//   cleanup gives the form a new key, so it remounts empty.
+//   customer on a shared phone. FreshOnEachVisit (form-parts.tsx) gives the
+//   form a new key when the page is hidden, so it remounts empty.
 
-import { LoaderCircleIcon } from "lucide-react";
-import { unstable_rethrow } from "next/navigation";
-import { type ReactNode, useActionState, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 
+import {
+  type FormAction,
+  FreshOnEachVisit,
+  SubmitButton,
+  submitterWithFallback,
+} from "@/components/account/form-parts";
 import { VehiclePicker, type VehiclePickerLabels } from "@/components/site/vehicle-picker";
-import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { type Fuel, FUELS, type VehicleCatalogue } from "@/domain/vehicles";
-import { initialVehicleFormState, type VehicleFormState, type VehicleFormValues } from "@/lib/account-forms";
+import { isFuel, type VehicleCatalogue } from "@/domain/vehicles";
+import {
+  initialVehicleFormState,
+  readVehicleForm,
+  VEHICLE_FIELD_NAMES,
+  type VehicleFormState,
+} from "@/lib/account-forms";
 
 /** The addVehicle Server Action with the locale already bound: addVehicle.bind(null, locale). */
-export type VehicleAction = (previous: VehicleFormState, formData: FormData) => Promise<VehicleFormState>;
+export type VehicleAction = FormAction<VehicleFormState>;
 
 /** Every word the form shows, from the MyVehicles messages. The page reads them. */
 export type VehicleFormLabels = {
@@ -54,47 +61,26 @@ type VehicleFormProps = {
   pickerLabels: VehiclePickerLabels;
 };
 
-/** The form's fields as posted, read from a FormData. */
-function postedValues(formData: FormData): VehicleFormValues {
-  const text = (name: string) => {
-    const value = formData.get(name);
-    return typeof value === "string" ? value : "";
-  };
-  return {
-    modelId: text("vehicleModel"),
-    fuel: text("vehicleFuel"),
-    registration: text("registration"),
-    pucExpiresOn: text("pucExpiresOn"),
-    insuranceExpiresOn: text("insuranceExpiresOn"),
-  };
-}
-
 /**
- * Wraps the Server Action into the function useActionState runs on each
- * submit. A saved vehicle makes the action redirect to /account, which
- * reaches the browser as a rejected promise: unstable_rethrow() must come
- * first and pass it on to Next.js. Any other failure (no network) becomes
+ * What useActionState runs on each submit (submitterWithFallback): a saved
+ * vehicle's redirect goes on to Next.js; a failed call (no network) becomes
  * the `connection` message, with everything posted kept.
  */
 export function vehicleSubmitter(action: VehicleAction, connectionText: string) {
-  return async function submit(previous: VehicleFormState, formData: FormData): Promise<VehicleFormState> {
-    try {
-      return await action(previous, formData);
-    } catch (error) {
-      unstable_rethrow(error);
-      return { submission: previous.submission + 1, values: postedValues(formData), errors: { form: connectionText } };
-    }
-  };
+  return submitterWithFallback(action, (previous, formData) => ({
+    submission: previous.submission + 1,
+    values: readVehicleForm(formData),
+    errors: { form: connectionText },
+  }));
 }
 
 /** The add-vehicle form. It starts empty on every visit (see the top of this file). */
 export function VehicleForm(props: VehicleFormProps) {
-  const [visit, setVisit] = useState(0);
-  // The cleanup runs when the page is hidden (and on unmount, where the new
-  // key does nothing). A layout effect, so it happens before the page is
-  // hidden: no flash of the old draft.
-  useLayoutEffect(() => () => setVisit((count) => count + 1), []);
-  return <VehicleFormVisit key={visit} {...props} />;
+  return (
+    <FreshOnEachVisit>
+      <VehicleFormVisit {...props} />
+    </FreshOnEachVisit>
+  );
 }
 
 function VehicleFormVisit({ action, catalogue, labels, pickerLabels }: VehicleFormProps) {
@@ -110,11 +96,6 @@ function VehicleFormVisit({ action, catalogue, labels, pickerLabels }: VehicleFo
       pickerLabels={pickerLabels}
     />
   );
-}
-
-/** A posted fuel, if it is one: the picker's defaultValue takes a Fuel or nothing. */
-function fuelOrNull(value: string): Fuel | null {
-  return (FUELS as readonly string[]).includes(value) ? (value as Fuel) : null;
 }
 
 /** "a b" from the ids that are set: the value of an aria-describedby. */
@@ -148,7 +129,7 @@ function VehicleFields({
       <VehiclePicker
         catalogue={catalogue}
         labels={pickerLabels}
-        defaultValue={{ modelId: values.modelId || null, fuel: fuelOrNull(values.fuel) }}
+        defaultValue={{ modelId: values.modelId || null, fuel: isFuel(values.fuel) ? values.fuel : null }}
         onChange={(selection) => setElectric(selection.fuel === "electric")}
         error={errors.vehicle}
       />
@@ -159,7 +140,7 @@ function VehicleFields({
             the server reads them all. Capitals on phones, no autocorrect. */}
         <Input
           id={`${id}-registration`}
-          name="registration"
+          name={VEHICLE_FIELD_NAMES.registration}
           autoCapitalize="characters"
           autoCorrect="off"
           autoComplete="off"
@@ -176,7 +157,7 @@ function VehicleFields({
       {!electric && (
         <DateField
           id={`${id}-puc`}
-          name="pucExpiresOn"
+          name={VEHICLE_FIELD_NAMES.pucExpiresOn}
           label={labels.pucLabel}
           defaultValue={values.pucExpiresOn}
           error={errors.pucExpiresOn}
@@ -184,7 +165,7 @@ function VehicleFields({
       )}
       <DateField
         id={`${id}-insurance`}
-        name="insuranceExpiresOn"
+        name={VEHICLE_FIELD_NAMES.insuranceExpiresOn}
         label={labels.insuranceLabel}
         defaultValue={values.insuranceExpiresOn}
         error={errors.insuranceExpiresOn}
@@ -227,16 +208,5 @@ function DateField({
       />
       {error && <FieldError id={`${id}-error`}>{error}</FieldError>}
     </Field>
-  );
-}
-
-/** "Save vehicle", with a spinner and `pendingLabel` while it's being sent. */
-function SubmitButton({ pendingLabel, children }: { pendingLabel: string; children: ReactNode }) {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending} className="w-full sm:w-fit">
-      {pending && <LoaderCircleIcon data-icon="inline-start" className="animate-spin" />}
-      {pending ? pendingLabel : children}
-    </Button>
   );
 }

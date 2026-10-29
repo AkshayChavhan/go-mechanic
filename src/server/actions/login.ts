@@ -15,7 +15,6 @@
 
 import "server-only";
 
-import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 import { RedirectType } from "next/navigation";
@@ -23,13 +22,14 @@ import { RedirectType } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 import { formatDate, formatTime } from "@/i18n/format";
 import { redirect } from "@/i18n/navigation";
-import { routing } from "@/i18n/routing";
 import { systemClock } from "@/lib/clock";
 import { formatPhoneNumber } from "@/lib/contact-links";
 import { initialLoginState, type LoginState } from "@/lib/login-state";
 import { getAuth } from "@/server/auth/instance";
 import { clientIpKey, requestLoginCode, verifyLoginCode } from "@/server/auth/login";
 import { serverEnv } from "@/server/env";
+
+import { checkedLocale, formText } from "./form-input";
 
 /**
  * "Try again after 10:00 am", with the date when that's not today in India
@@ -47,15 +47,6 @@ function rateLimitedText(
     : t("errors.rateLimitedLater", { date, time });
 }
 
-function checkedLocale(locale: string): Locale {
-  if (!hasLocale(routing.locales, locale)) throw new Error("Unknown locale");
-  return locale;
-}
-
-const text = (formData: FormData, name: string) => {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : "";
-};
 
 /**
  * Every step of the login form, told apart by the button pressed
@@ -65,14 +56,14 @@ const text = (formData: FormData, name: string) => {
 export async function loginStep(locale: string, previous: LoginState, formData: FormData): Promise<LoginState> {
   const checked = checkedLocale(locale);
   const t = await getTranslations({ locale: checked, namespace: "Login" });
-  const intent = text(formData, "intent");
+  const intent = formText(formData, "intent");
   const requestHeaders = await headers();
   const auth = await getAuth();
 
   if (intent === "verify") {
     const result = await verifyLoginCode(
       auth,
-      { locale: checked, attemptId: text(formData, "attemptId"), codeTyped: text(formData, "code") },
+      { locale: checked, attemptId: formText(formData, "attemptId"), codeTyped: formText(formData, "code") },
       requestHeaders,
     );
     if (result.ok) {
@@ -100,14 +91,14 @@ export async function loginStep(locale: string, previous: LoginState, formData: 
   const ipKey = clientIpKey(requestHeaders, serverEnv().appEnv);
   const resend = intent === "resend";
   const kept = {
-    phoneTyped: resend ? previous.phoneTyped : text(formData, "phone"),
+    phoneTyped: resend ? previous.phoneTyped : formText(formData, "phone"),
     ageConfirmed: resend ? previous.ageConfirmed : formData.get("age") === "on",
     contactConsent: resend ? previous.contactConsent : formData.get("consent") === "on",
   };
   const result = await requestLoginCode(
     auth,
     resend
-      ? { locale: checked, intent: "resend", attemptId: text(formData, "attemptId"), ipKey }
+      ? { locale: checked, intent: "resend", attemptId: formText(formData, "attemptId"), ipKey }
       : { locale: checked, intent: "start", ...kept, phoneTyped: kept.phoneTyped, ipKey },
     systemClock,
   );

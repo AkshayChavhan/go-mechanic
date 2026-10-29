@@ -19,14 +19,42 @@ export type NameFormState = {
 
 export const initialNameFormState: NameFormState = { submission: 0, nameTyped: "" };
 
-/** The add-vehicle form's fields, as posted (the picker's model and fuel, then the typed fields). */
-export type VehicleFormValues = {
-  modelId: string;
-  fuel: string;
-  registration: string;
-  pucExpiresOn: string;
-  insuranceExpiresOn: string;
-};
+import type { VehicleInput } from "@/domain/customer-vehicles";
+
+/** The add-vehicle form's fields, as posted: what checkVehicleInput checks. */
+export type VehicleFormValues = VehicleInput;
+
+/**
+ * The name each field posts under. The picker (name="vehicle") posts
+ * vehicleKind, vehicleMake, vehicleModel and vehicleFuel; a save reads only
+ * the model and fuel, since the type and brand follow from the model.
+ */
+export const VEHICLE_FIELD_NAMES = {
+  modelId: "vehicleModel",
+  fuel: "vehicleFuel",
+  registration: "registration",
+  pucExpiresOn: "pucExpiresOn",
+  insuranceExpiresOn: "insuranceExpiresOn",
+} as const satisfies Record<keyof VehicleFormValues, string>;
+
+/**
+ * The add-vehicle form's values from what it posted, each as text ("" when
+ * missing). The Server Action reads them to save, the form to keep them
+ * after a failed call: one reader, so the two never disagree.
+ */
+export function readVehicleForm(formData: FormData): VehicleFormValues {
+  const text = (name: string) => {
+    const value = formData.get(name);
+    return typeof value === "string" ? value : "";
+  };
+  return {
+    modelId: text(VEHICLE_FIELD_NAMES.modelId),
+    fuel: text(VEHICLE_FIELD_NAMES.fuel),
+    registration: text(VEHICLE_FIELD_NAMES.registration),
+    pucExpiresOn: text(VEHICLE_FIELD_NAMES.pucExpiresOn),
+    insuranceExpiresOn: text(VEHICLE_FIELD_NAMES.insuranceExpiresOn),
+  };
+}
 
 /**
  * The parts of the form an error can belong to: "vehicle" is the picker, and
