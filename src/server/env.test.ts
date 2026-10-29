@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { LOCAL_AUTH_SECRET, parseServerEnv, ServerEnvError } from "./env";
+import { ownerGarage } from "./db/seed-data";
+import { LOCAL_AUTH_SECRET, LOCAL_OWNER_PHONE_NUMBER, parseServerEnv, ServerEnvError } from "./env";
 
 // parseServerEnv takes a plain object, so each test passes exactly the
 // variables it needs instead of changing process.env.
@@ -8,8 +9,16 @@ import { LOCAL_AUTH_SECRET, parseServerEnv, ServerEnvError } from "./env";
 const supabaseUrl = "postgresql://postgres.abc:fake-password@aws-0-ap-south-1.pooler.supabase.com:6543/postgres";
 const secret = "fake-secret-0123456789-abcdefghij-klmnop";
 
+/** An owner's number for deployed settings (any Indian mobile). */
+const ownerNumber = "+919812345678";
+
 /** What a local run gets for the settings a test doesn't set. */
-const localDefaults = { authSecret: LOCAL_AUTH_SECRET, smsProvider: "fake", e2eOutboxFile: undefined } as const;
+const localDefaults = {
+  authSecret: LOCAL_AUTH_SECRET,
+  smsProvider: "fake",
+  e2eOutboxFile: undefined,
+  ownerPhoneNumber: LOCAL_OWNER_PHONE_NUMBER,
+} as const;
 
 /** The error parseServerEnv throws for `vars` (fails the test if it doesn't throw). */
 function errorFor(vars: Record<string, string | undefined>): ServerEnvError {
@@ -45,18 +54,31 @@ describe("parseServerEnv (checks the server's settings)", () => {
 
   test("staging with a postgresql:// URL and a secret passes, with the fake SMS provider", () => {
     expect(
-      parseServerEnv({ APP_ENV: "staging", DATABASE_URL: supabaseUrl, BETTER_AUTH_SECRET: secret, VERCEL: "1" }),
+      parseServerEnv({
+        APP_ENV: "staging",
+        DATABASE_URL: supabaseUrl,
+        BETTER_AUTH_SECRET: secret,
+        OWNER_PHONE_NUMBER: ownerNumber,
+        VERCEL: "1",
+      }),
     ).toEqual({
       appEnv: "staging",
       databaseUrl: supabaseUrl,
       authSecret: secret,
       smsProvider: "fake",
       e2eOutboxFile: undefined,
+      ownerPhoneNumber: ownerNumber,
     });
   });
 
   test("production refuses the fake SMS provider, set or by default: it can't start before task 44", () => {
-    const complete = { APP_ENV: "production", DATABASE_URL: supabaseUrl, BETTER_AUTH_SECRET: secret, VERCEL: "1" };
+    const complete = {
+      APP_ENV: "production",
+      DATABASE_URL: supabaseUrl,
+      BETTER_AUTH_SECRET: secret,
+      OWNER_PHONE_NUMBER: ownerNumber,
+      VERCEL: "1",
+    };
     for (const vars of [complete, { ...complete, SMS_PROVIDER: "fake" }]) {
       const error = errorFor(vars);
       expect(error.problems).toEqual([{ variable: "SMS_PROVIDER", problem: "fake-in-production" }]);
@@ -78,6 +100,32 @@ describe("parseServerEnv (checks the server's settings)", () => {
       expect(error.message).toContain("BETTER_AUTH_SECRET");
     },
   );
+
+  test("the owner's number defaults locally to the garage's own number (the owner's choice, 2026-10-28)", () => {
+    expect(LOCAL_OWNER_PHONE_NUMBER).toBe(ownerGarage.phone);
+    expect(parseServerEnv({}).ownerPhoneNumber).toBe(ownerGarage.phone);
+  });
+
+  test("the owner's number can be set to any Indian mobile", () => {
+    expect(parseServerEnv({ OWNER_PHONE_NUMBER: ownerNumber }).ownerPhoneNumber).toBe(ownerNumber);
+  });
+
+  test.each(["staging", "production"])("%s without OWNER_PHONE_NUMBER throws and names it", (appEnv) => {
+    const error = errorFor({ APP_ENV: appEnv, DATABASE_URL: supabaseUrl, BETTER_AUTH_SECRET: secret });
+    expect(error.problems).toContainEqual({ variable: "OWNER_PHONE_NUMBER", problem: "missing" });
+    expect(error.message).toContain("OWNER_PHONE_NUMBER");
+  });
+
+  test.each([
+    ["with spaces", "+91 97647 50567"],
+    ["without +91", "9764750567"],
+    ["a landline", "+912012345678"],
+  ])("an owner's number %s is refused, without showing it", (_case, value) => {
+    const error = errorFor({ OWNER_PHONE_NUMBER: value });
+    expect(error.problems).toEqual([{ variable: "OWNER_PHONE_NUMBER", problem: "not-mobile" }]);
+    expect(error.message).toContain("OWNER_PHONE_NUMBER");
+    expect(error.message).not.toContain(value);
+  });
 
   test("a local run may set its own secret", () => {
     expect(parseServerEnv({ BETTER_AUTH_SECRET: secret }).authSecret).toBe(secret);
@@ -175,6 +223,7 @@ describe("serverEnv (reads process.env once)", () => {
     vi.stubEnv("APP_ENV", "staging");
     vi.stubEnv("DATABASE_URL", supabaseUrl);
     vi.stubEnv("BETTER_AUTH_SECRET", secret);
+    vi.stubEnv("OWNER_PHONE_NUMBER", ownerNumber);
     vi.resetModules();
     const { serverEnv } = await import("./env");
 
@@ -184,6 +233,7 @@ describe("serverEnv (reads process.env once)", () => {
       authSecret: secret,
       smsProvider: "fake",
       e2eOutboxFile: undefined,
+      ownerPhoneNumber: ownerNumber,
     });
 
     vi.stubEnv("APP_ENV", "production");

@@ -8,7 +8,9 @@ import { fileURLToPath } from "node:url";
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { describe, expect, test } from "vitest";
 
-import { config } from "./proxy";
+import { NextRequest } from "next/server";
+
+import proxy, { config } from "./proxy";
 
 // The proxy rewrites "/x" to "/en/x". That's right for pages, and wrong for a
 // real file: "/en/icon.svg" doesn't exist. So the proxy must skip every file
@@ -89,5 +91,63 @@ describe("the proxy matcher (src/proxy.ts)", () => {
 
   test("the folder walk handles a missing folder", () => {
     expect(urlsOfFilesIn("no-such-folder")).toEqual([]);
+  });
+});
+
+describe("the proxy's login redirects (a real request through the proxy, next-intl included)", () => {
+  /** Runs the proxy for a request and returns its status and where it points. */
+  async function run(path: string, { method = "GET", cookie, headers = {} }: { method?: string; cookie?: string; headers?: Record<string, string> } = {}) {
+    const request = new NextRequest(new URL(path, "http://localhost:3000"), {
+      method,
+      headers: { ...headers, ...(cookie ? { cookie } : {}) },
+    });
+    const response = await proxy(request);
+    const location = response.headers.get("location");
+    return {
+      status: response.status,
+      location: location && new URL(location).pathname + new URL(location).search,
+      rewrite: response.headers.get("x-middleware-rewrite"),
+    };
+  }
+
+  test("GET /account with no cookie: 307 to /login", async () => {
+    expect(await run("/account")).toMatchObject({ status: 307, location: "/login" });
+  });
+
+  test("GET /account with the http cookie: not sent to /login (next-intl serves the English page)", async () => {
+    const result = await run("/account", { cookie: "better-auth.session_token=abc.def" });
+    expect(result.location).toBeNull();
+    expect(result.rewrite).toMatch(/\/en\/account$/);
+  });
+
+  test("GET /login with the https cookie (__Secure-): 307 to /account", async () => {
+    expect(await run("/login", { cookie: "__Secure-better-auth.session_token=abc.def" })).toMatchObject({
+      status: 307,
+      location: "/account",
+    });
+  });
+
+  test("GET /login with an empty cookie value: no redirect", async () => {
+    expect((await run("/login", { cookie: "better-auth.session_token=" })).location).toBeNull();
+  });
+
+  test("GET /login?session=ended with a cookie: no redirect (a leftover cookie can't loop)", async () => {
+    expect((await run("/login?session=ended", { cookie: "better-auth.session_token=abc.def" })).location).toBeNull();
+  });
+
+  test("a form post to /login with a cookie (a Server Action): not redirected", async () => {
+    const result = await run("/login", {
+      method: "POST",
+      cookie: "better-auth.session_token=abc.def",
+      headers: { "next-action": "abc123" },
+    });
+    expect(result.status).not.toBe(307);
+    expect(result.location).toBeNull();
+  });
+
+  test("GET /en/services: next-intl still redirects to the clean URL", async () => {
+    const result = await run("/en/services");
+    expect(result.status).toBe(307);
+    expect(result.location).toBe("/services");
   });
 });

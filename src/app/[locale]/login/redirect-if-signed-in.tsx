@@ -7,9 +7,11 @@ import { getCurrentUser } from "@/server/auth/session";
  *
  * It reads the session cookie, so it must sit inside <Suspense>: the rest of
  * /login is still built ahead of time, and only this part waits for the
- * request. The catch: by the time it runs the page has started streaming,
- * so the redirect happens in the browser (status 200, not 307). Task 16's
- * proxy check gives a real redirect.
+ * request. Most logged-in visitors never get here: the proxy answers with a
+ * real 307 to /account when a session cookie is present
+ * (src/lib/access-routes.ts). This check remains for in-app navigation and
+ * for /login?session=ended, which the proxy lets through; by then the page
+ * has started streaming, so this redirect happens in the browser.
  */
 export async function RedirectIfSignedIn({ locale }: { locale: Locale }) {
   const user = await getCurrentUser();

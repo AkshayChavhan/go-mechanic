@@ -10,6 +10,10 @@ import { garageSettings, openingHours } from "@/server/db/schema";
 import { openingHoursRows, seedGarage } from "@/server/db/seed";
 import { ownerGarage } from "@/server/db/seed-data";
 
+import type { Role } from "@/domain/roles";
+import { AccessDeniedError } from "@/server/auth/access";
+import { getCurrentUser } from "@/server/auth/session";
+
 import { readGarage, saveGarage } from "./garage";
 
 // Starting PGlite (Postgres compiled to WebAssembly) and migrating it takes a
@@ -28,6 +32,9 @@ vi.mock("@/server/db", async (importOriginal) => ({
   getDatabase: vi.fn(),
 }));
 vi.mock("next/cache", () => ({ cacheTag: vi.fn(), cacheLife: vi.fn(), updateTag: vi.fn() }));
+// Who is logged in: the owner, unless a test says otherwise.
+vi.mock("@/server/auth/session", () => ({ getCurrentUser: vi.fn() }));
+const userWith = (role: Role) => ({ id: "u1", phoneNumber: "+919764750567", role });
 // openingHoursRows works as usual; one test makes it return rows the
 // database refuses, so a save fails halfway through its transaction.
 vi.mock("@/server/db/seed", async (importOriginal) => {
@@ -47,6 +54,7 @@ afterAll(async () => {
 beforeEach(async () => {
   vi.clearAllMocks();
   vi.mocked(getDatabase).mockResolvedValue(db);
+  vi.mocked(getCurrentUser).mockResolvedValue(userWith("owner"));
   // Back to the owner's garage, whatever the last test saved.
   await db.delete(openingHours);
   await db.delete(garageSettings);
@@ -169,5 +177,50 @@ describe("saveGarage (checked, all at once, then the cache is refreshed)", () =>
     expect(hoursBefore).toHaveLength(7);
     expect(await storedRow()).toEqual(rowBefore);
     expect(updateTag).not.toHaveBeenCalled();
+  });
+});
+
+describe("saveGarage: who may save (garage.edit, checked before anything else)", () => {
+  test("a manager may save, like the owner", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(userWith("manager"));
+    expect(await saveGarage(edited, fixedClock(savedAt))).toEqual({ ok: true });
+    expect(await readGarage()).toEqual(edited);
+  });
+
+  test.each(["customer", "mechanic"] as const)(
+    "a %s is refused before the database is touched: nothing written, the cache untouched",
+    async (role) => {
+      vi.mocked(getCurrentUser).mockResolvedValue(userWith(role));
+      const before = await storedRow();
+
+      const error = await saveGarage(edited, fixedClock(savedAt)).then(
+        () => "saved",
+        (failure: unknown) => failure,
+      );
+      expect(error).toBeInstanceOf(AccessDeniedError);
+      expect(error).toMatchObject({ reason: "notAllowed", permission: "garage.edit" });
+      expect(getDatabase).not.toHaveBeenCalled();
+      expect(updateTag).not.toHaveBeenCalled();
+      expect(await storedRow()).toEqual(before);
+    },
+  );
+
+  test("logged out: refused (signedOut), nothing written", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(null);
+    const before = await storedRow();
+    await expect(saveGarage(edited, fixedClock(savedAt))).rejects.toMatchObject({ reason: "signedOut" });
+    expect(await storedRow()).toEqual(before);
+  });
+
+  test("a customer sending invalid details is refused, not told what's wrong with them", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(userWith("customer"));
+    await expect(saveGarage({ ...edited, whatsapp: "+912012345678" }, fixedClock(savedAt))).rejects.toBeInstanceOf(
+      AccessDeniedError,
+    );
+  });
+
+  test("reading the garage needs nobody logged in", async () => {
+    await readGarage();
+    expect(getCurrentUser).not.toHaveBeenCalled();
   });
 });

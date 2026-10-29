@@ -46,7 +46,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `.nvmrc` | The Node.js version the project uses (24). |
 | `next.config.ts`, `tsconfig.json`, `eslint.config.mjs`, `components.json` | Settings for Next.js, TypeScript, ESLint and shadcn/ui. |
 | `drizzle.config.ts` | Settings for drizzle-kit, the tool that turns the database schema (`src/server/db/schema.ts`) into SQL migrations (`src/server/db/migrations/`). |
-| `.env.example` | The server settings you *could* set (`APP_ENV`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `SMS_PROVIDER`, `E2E_OUTBOX_FILE`), with fake values. Local development needs none of them. |
+| `.env.example` | The server settings you *could* set (`APP_ENV`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `SMS_PROVIDER`, `E2E_OUTBOX_FILE`, `OWNER_PHONE_NUMBER`), with fake values. Local development needs none of them. |
 | `.pglite/`, `.pglite.lock` | Your local database, made by the first `npm run dev`, and the lock file that stops a second program opening it at the same time. Git ignores both. |
 | `vitest.config.mts`, `vitest.setup.ts`, `playwright.config.ts`, `playwright.dev.config.ts` | Test settings. |
 | `AGENTS.md` | Notes from Next.js for AI coding agents. |
@@ -61,7 +61,7 @@ npm run dev            # start the dev server
 
 Open http://localhost:3000. There's no database to install: the first `npm run dev` creates one in `.pglite/` (PGlite, a Postgres that runs inside Node) and fills it with the garage's real details and the vehicle catalogue (the brands the garage serves, with a draft list of their models). Your changes to it stay there between restarts.
 
-To log in locally: open http://localhost:3000/login, type any Indian mobile number and tick both boxes. No SMS is sent until the launch: the code shows on http://localhost:3000/dev/outbox instead (newest first). Type it on `/login` and you land on `/account`. Test runs leave users with `60000...` numbers in your local database; `npm run db:reset` clears them.
+To log in locally: open http://localhost:3000/login, type any Indian mobile number and tick both boxes. No SMS is sent until the launch: the code shows on http://localhost:3000/dev/outbox instead (newest first). Type it on `/login` and you land on `/account`. Log in with the garage's own number (97647 50567) to be the owner; any other number is a customer. Test runs leave users with `60000...` numbers in your local database; `npm run db:reset` clears them.
 
 Other commands:
 

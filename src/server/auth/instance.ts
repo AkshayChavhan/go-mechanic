@@ -13,7 +13,7 @@ import { getDatabase } from "@/server/db";
 import { serverEnv } from "@/server/env";
 
 import { type Auth, createAuth } from "./auth";
-import { recordConsentsForVerifiedLogin, sendLoginCodeSms } from "./login";
+import { onVerifiedLogin, sendLoginCodeSms } from "./login";
 
 const globalForAuth = globalThis as typeof globalThis & { appAuth?: Promise<Auth> };
 
@@ -24,7 +24,7 @@ async function buildAuth(): Promise<Auth> {
     secret: env.authSecret,
     secureCookies: env.appEnv !== "local",
     sendCode: sendLoginCodeSms,
-    onVerified: recordConsentsForVerifiedLogin,
+    onVerified: onVerifiedLogin,
   });
 }
 
