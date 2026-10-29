@@ -15,8 +15,7 @@ import { readMyProfile } from "@/server/dal/profile";
  * It reads the session cookie, so it sits inside <Suspense>: the form around
  * it is still built ahead of time. By the time it runs the page has started
  * streaming, so its redirect happens in the browser. The addVehicle action
- * checks both again before saving, so a form posted without JavaScript
- * can't skip it.
+ * checks both again before saving, so a form posted directly can't skip it.
  */
 export async function AddVehicleGate({ locale }: { locale: Locale }) {
   await requireUser(locale);

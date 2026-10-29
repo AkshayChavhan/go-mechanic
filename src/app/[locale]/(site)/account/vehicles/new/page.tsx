@@ -23,8 +23,10 @@ import { AddVehicleGate } from "./add-vehicle-gate";
 // reads. Only <AddVehicleGate> waits for the request, inside <Suspense>,
 // because it reads the session. The proxy already sends a visitor with no
 // session cookie to /login with a real 307 (everything under /account).
-// Without JavaScript the form still posts: the action checks the login and
-// the name itself.
+// The form needs JavaScript, like the login form in front of every account
+// page: useActionState gets a browser-side wrapper (submitterWithFallback),
+// so the server's HTML has no address to post to. The action still checks
+// the login and the name itself, for a form posted some other way.
 
 // Static: reads no session. noindex: a personal page, nothing to list.
 export async function generateMetadata(): Promise<Metadata> {
