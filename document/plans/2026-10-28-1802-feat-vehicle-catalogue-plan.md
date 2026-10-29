@@ -196,7 +196,7 @@ flowchart TB
   k -->|a select back to its placeholder| p[Brand placeholder: brand and model cleared. Model placeholder: model cleared, every fuel offered again]
   p --> say
   k -->|model| m[Brand and type are set from the model; fuels narrow to the model's; a chosen fuel it lacks is cleared]
-  k -->|fuel| f[Any fuel while no model is chosen; afterwards only the model's fuels are offered. A fuel never narrows the models]
+  k -->|fuel| f[While no model is chosen, the fuels of the models still offered; afterwards only the model's fuels. A fuel never narrows the models]
   m --> one{Model has one fuel?}
   one -->|yes| auto[That fuel is selected]
   one -->|no| wait[Visitor picks a fuel]
