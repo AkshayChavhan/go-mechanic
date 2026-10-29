@@ -28,7 +28,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
-| 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress |  |
+| 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress | [19_info_pages.md](../learning/19_info_pages.md) |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
@@ -324,7 +324,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Set `live: true` for `about` and `contact` in `src/components/site/navigation.ts` with the pages. A directions link needs the owner's exact map link: one built from the address text lands at Mukai Chowk, not the garage (task 12)
 - [x] Link `/login`'s short notice to the new `/privacy` page, and change `LOGIN_NOTICE_VERSION` (`src/domain/consent.ts`) and the pinned wording in `consent.test.ts` in the same commit (task 15)
 - [x] Notes for tasks 23, 40, 42, 43 and the Hindi work at the end of the backlog
-- [ ] Write the learning doc
+- [x] Write the learning doc: [19_info_pages.md](../learning/19_info_pages.md)
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
@@ -659,7 +659,7 @@ Not in version 1. See [features.md](../website/features.md).
 - For task 43: deleting a customer's data releases their future bookings' places, locking each booking row first like a cancel (task 22)
 - For task 23: once `/book` is live, the FAQ's "How do I book a visit?" (`FaqPage.items.howToBook`) and the about page's "Visiting us" still say WhatsApp or call; add the booking page to both, and confirm the sample answer about booking from tomorrow up to 7 days ahead (`src/content/faq.ts`) as a real one (task 19)
 - For task 40: the about topics (`src/content/about.ts`) and FAQ answers (`src/content/faq.ts`, plus the confirmed ones in `FaqPage`) move to the database for the owner to edit; keep the "real, else samples under npm run dev, else nothing" rule (task 19)
-- For task 42: `/contact`, `/about` and `/faq` need titles of 50–60 characters, canonical URLs and Open Graph tags; `/faq` gets `FAQPage` JSON-LD from its questions (task 19)
+- For task 42: `/contact`, `/about` and `/faq` need titles of 50–60 characters, canonical URLs and Open Graph tags; `/faq` gets `FAQPage` JSON-LD built from the same confirmed list and `selectFaqItems()` the page uses. The five info pages' `metaTitle`s already end in `| {brand}`: a site-wide title template would double the brand, so drop it from them or use `title.absolute`. Keep `/privacy` and `/terms` out of the sitemap until task 43 (task 19)
 - For task 43: finalise `/privacy` and `/terms` with a lawyer: name the person who answers privacy questions (DPDP Rule 9) and a reply time (Rule 14: at most 90 days), name the SMS company and its retention, delete expired sessions and old login attempts on a schedule (or stop storing the session IP and user agent: Better Auth's `disableIpTracking`), settle the one-year log rule (Rule 8(3)) against deletion, decide whether the 18+ box is enough, offer the notice in Marathi or Hindi (Act s.5(3)), add a verified Data Protection Board link, and remove the draft line and `noindex` (task 19)
 - For the Hindi task: next-intl's language cookie (`NEXT_LOCALE`) starts being set once a second language exists; add it to the privacy notice's cookie section (task 19)
 - When the owner sends the garage's exact Google Maps link: add it to the garage's details (a seed change, with a migration if it needs a column) and a Directions button on `/contact` (task 19)
