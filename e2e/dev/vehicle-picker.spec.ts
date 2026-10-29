@@ -9,6 +9,11 @@ import { expectNoErrors, watchErrors } from "../helpers";
 // (src/components/site/vehicle-picker.test.tsx) cover each rule; this checks
 // the real catalogue from the local database, the hydrated narrowing, and the
 // page without JavaScript.
+//
+// The option counts come from vehicle-seed-data.ts, and `npm run dev` keeps
+// its local database between runs. The seed adds missing rows but never
+// removes or renames one, so after an edit to the draft these counts fail
+// until `npm run db:reset` gives the local database the new draft.
 
 const t = messages.Vehicles;
 const picker = (page: Page) => page.locator('[data-sample="vehicle-picker"]');

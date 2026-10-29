@@ -1,11 +1,16 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+
 import { eq } from "drizzle-orm";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { FUELS, VEHICLE_KINDS } from "@/domain/vehicles";
 
+import { lockPathFor } from "./folder-lock";
 import { closeDatabase, createDatabase, type Database } from "./index";
-import { fuel, vehicleCategories, vehicleKind, vehicleMakes, vehicleModels } from "./schema";
+import { fuel, garageSettings, vehicleCategories, vehicleKind, vehicleMakes, vehicleModels } from "./schema";
 import { seedVehicleCatalogue } from "./seed";
 import { draftCatalogue } from "./vehicle-seed-data";
 
@@ -14,6 +19,32 @@ import { draftCatalogue } from "./vehicle-seed-data";
 // (task 14 saw the 10-second hook limit time out under load). Database test
 // files get the longer limits.
 vi.setConfig({ testTimeout: 60_000, hookTimeout: 60_000 });
+
+// One in-memory database for the whole file, put back to the draft catalogue
+// before every test. Two tests open databases of their own, because a second
+// database is what they check: one compares two databases' ids, the other
+// closes and reopens a database in a folder, as `npm run dev` does.
+let db: Database;
+
+beforeAll(async () => {
+  db = await createDatabase({ driver: "pglite", dataDir: null });
+});
+
+afterAll(async () => {
+  await closeDatabase(db);
+});
+
+/** Deletes every catalogue row (models first: brands and groups refuse to go while models point to them). */
+async function emptyCatalogue(database: Database) {
+  await database.delete(vehicleModels);
+  await database.delete(vehicleMakes);
+  await database.delete(vehicleCategories);
+}
+
+beforeEach(async () => {
+  await emptyCatalogue(db);
+  await seedVehicleCatalogue(db);
+});
 
 /** The Postgres error behind a failed query: its code and the constraint it broke. */
 async function violation(query: Promise<unknown>): Promise<{ code?: string; constraint?: string }> {
@@ -29,6 +60,25 @@ async function violation(query: Promise<unknown>): Promise<{ code?: string; cons
   return { code, constraint };
 }
 
+/**
+ * Every id in each catalogue table, sorted, plus the model rows without their
+ * timestamps (two databases seeded a moment apart differ only there).
+ */
+async function snapshot(database: Database) {
+  const sortIds = (rows: { id: string }[]) => rows.map((row) => row.id).sort();
+  const { id, makeId, categoryId, kind, name, fuels, position, listed } = vehicleModels;
+  return {
+    categories: sortIds(await database.select({ id: vehicleCategories.id }).from(vehicleCategories)),
+    makes: sortIds(await database.select({ id: vehicleMakes.id }).from(vehicleMakes)),
+    models: await database
+      .select({ id, makeId, categoryId, kind, name, fuels, position, listed })
+      .from(vehicleModels)
+      .orderBy(id),
+  };
+}
+
+const draftModelCount = draftCatalogue.makes.reduce((count, make) => count + make.models.length, 0);
+
 describe("the catalogue's enums", () => {
   test("list the vehicle kinds exactly as the app does", () => {
     expect(vehicleKind.enumValues).toEqual([...VEHICLE_KINDS]);
@@ -40,26 +90,8 @@ describe("the catalogue's enums", () => {
 });
 
 describe("the catalogue's tables", () => {
-  // Rows with ids of their own ("test-..."), so the draft catalogue the seed
-  // puts in doesn't get in the way.
-  let db: Database;
-
-  beforeAll(async () => {
-    db = await createDatabase({ driver: "pglite", dataDir: null });
-  });
-
-  afterAll(async () => {
-    await closeDatabase(db);
-  });
-
+  // Rows with ids of their own ("test-..."), next to the draft catalogue.
   beforeEach(async () => {
-    await db.delete(vehicleModels).where(eq(vehicleModels.makeId, "car-test"));
-    await db.delete(vehicleModels).where(eq(vehicleModels.makeId, "two-wheeler-test"));
-    await db.delete(vehicleMakes).where(eq(vehicleMakes.id, "car-test"));
-    await db.delete(vehicleMakes).where(eq(vehicleMakes.id, "two-wheeler-test"));
-    await db.delete(vehicleCategories).where(eq(vehicleCategories.id, "test-car-group"));
-    await db.delete(vehicleCategories).where(eq(vehicleCategories.id, "test-scooter-group"));
-
     await db.insert(vehicleCategories).values([
       { id: "test-car-group", kind: "car", name: { en: "Test car group" }, position: 100 },
       { id: "test-scooter-group", kind: "two-wheeler", name: { en: "Test scooter group" }, position: 101 },
@@ -135,51 +167,22 @@ describe("the catalogue's tables", () => {
   });
 });
 
-/**
- * Every id in each catalogue table, sorted, plus the model rows without their
- * timestamps (two databases seeded a moment apart differ only there).
- */
-async function snapshot(db: Database) {
-  const sortIds = (rows: { id: string }[]) => rows.map((row) => row.id).sort();
-  const { id, makeId, categoryId, kind, name, fuels, position, listed } = vehicleModels;
-  return {
-    categories: sortIds(await db.select({ id: vehicleCategories.id }).from(vehicleCategories)),
-    makes: sortIds(await db.select({ id: vehicleMakes.id }).from(vehicleMakes)),
-    models: await db
-      .select({ id, makeId, categoryId, kind, name, fuels, position, listed })
-      .from(vehicleModels)
-      .orderBy(id),
-  };
-}
-
-const draftModelCount = draftCatalogue.makes.reduce((count, make) => count + make.models.length, 0);
-
 describe("seeding the catalogue", () => {
-  let db: Database;
-
-  beforeAll(async () => {
-    db = await createDatabase({ driver: "pglite", dataDir: null });
-  });
-
-  afterAll(async () => {
-    await closeDatabase(db);
-  });
-
   test("a new database holds every draft price group, brand and model", async () => {
-    const { categories, makes, models } = await snapshot(db);
-    expect(categories).toEqual(draftCatalogue.categories.map((category) => category.id).sort());
-    expect(makes).toEqual(draftCatalogue.makes.map((make) => make.id).sort());
-    expect(models).toHaveLength(draftModelCount);
-    const city = models.find((model) => model.id === "car-honda-city");
-    expect(city).toMatchObject({ makeId: "car-honda", kind: "car", categoryId: "sedan", listed: true });
-  });
-
-  test("two separate databases give every row the same id (each build worker seeds its own)", async () => {
-    const other = await createDatabase({ driver: "pglite", dataDir: null });
+    const fresh = await createDatabase({ driver: "pglite", dataDir: null });
     try {
-      expect(await snapshot(other)).toEqual(await snapshot(db));
+      const { categories, makes, models } = await snapshot(fresh);
+      expect(categories).toEqual(draftCatalogue.categories.map((category) => category.id).sort());
+      expect(makes).toEqual(draftCatalogue.makes.map((make) => make.id).sort());
+      expect(models).toHaveLength(draftModelCount);
+      const city = models.find((model) => model.id === "car-honda-city");
+      expect(city).toMatchObject({ makeId: "car-honda", kind: "car", categoryId: "sedan", listed: true });
+
+      // Each build worker seeds its own database, so a second one must give
+      // every row the same id.
+      expect(await snapshot(fresh)).toEqual(await snapshot(db));
     } finally {
-      await closeDatabase(other);
+      await closeDatabase(fresh);
     }
   });
 
@@ -215,5 +218,41 @@ describe("seeding the catalogue", () => {
     await expect(seedVehicleCatalogue(db, broken)).rejects.toThrow("The seed vehicle catalogue is invalid");
     const [row] = await db.select().from(vehicleModels).where(eq(vehicleModels.id, `${first!.id}-new`));
     expect(row).toBeUndefined();
+  });
+});
+
+describe("a local database in a folder (what npm run dev uses)", () => {
+  let dataDir: string;
+
+  beforeAll(() => {
+    dataDir = fs.mkdtempSync(path.join(os.tmpdir(), "gomechanic-catalogue-"));
+  });
+  afterAll(() => {
+    fs.rmSync(dataDir, { recursive: true, force: true });
+    fs.rmSync(lockPathFor(dataDir), { force: true });
+  });
+
+  test("gets the catalogue when it's opened again, even though it already has the garage", async () => {
+    // The state of every local database made before task 17: the garage is
+    // there, the catalogue tables are empty. seedGarage stops early on such a
+    // database, so only createDatabase's own seedVehicleCatalogue call can
+    // fill them.
+    const before = await createDatabase({ driver: "pglite", dataDir });
+    try {
+      await emptyCatalogue(before);
+      expect(await before.$count(garageSettings)).toBe(1);
+      expect(await before.$count(vehicleModels)).toBe(0);
+    } finally {
+      await closeDatabase(before);
+    }
+
+    const after = await createDatabase({ driver: "pglite", dataDir });
+    try {
+      expect(await after.$count(vehicleCategories)).toBe(draftCatalogue.categories.length);
+      expect(await after.$count(vehicleMakes)).toBe(draftCatalogue.makes.length);
+      expect(await after.$count(vehicleModels)).toBe(draftModelCount);
+    } finally {
+      await closeDatabase(after);
+    }
   });
 });
