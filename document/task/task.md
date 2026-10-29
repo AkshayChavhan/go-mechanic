@@ -348,10 +348,11 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `21_customer_vehicles`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-10-29-1348-feat-customer-vehicles-plan.md)
-- [ ] Customer vehicles with registration-number checks, profile
-- [ ] Ask the owner to start the DLT (SMS) and Meta (WhatsApp) paperwork: approvals take weeks
-- [ ] The header's "Log in"/"Account" entry (the owner's choice: not before this task), as a static link or a browser island, never a session read in the shell (`ensureStatic` on `/`), with `prefetch={false}` (task 15)
-- [ ] Ask for a name on the profile (users get an empty `name` at sign-up). Carriers reassign numbers that go unused: decide what a new SIM owner sees of the old account (task 15)
+- [x] Customer vehicles with registration-number checks, profile: the rules (`src/domain/registration.ts`, `profile.ts`, `customer-vehicles.ts`), the `customer_vehicles` table (migration `0004`), the data-access layer (`src/server/dal/profile.ts`, `customer-vehicles.ts`), the actions, the name step and vehicle list on `/account`, `/account/vehicles/new`, and browser tests (`e2e/account.spec.ts`)
+- [x] Ask the owner to start the DLT (SMS) and Meta (WhatsApp) paperwork: approvals take weeks. The owner started both on 2026-10-29
+- [x] The header's "Account" entry: one static link (`AccountLink`), `prefetch={false}`, never a session read in the shell (the owner's choice, 2026-10-29)
+- [x] Ask for a name on the profile: required, once, right after the first login (the owner's choice, 2026-10-29). Recycled numbers: accepted for v1 with no extra logic, so whoever holds the number sees the account; the garage can remove an old account in task 29, and customers can delete their data in task 43 (the owner's choice, 2026-10-29)
+- [x] The vehicle picker inside a real form: it keeps a choice made before hydration, follows its form's reset, and takes an `error` prop (task 17's note)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -667,6 +668,14 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 20: seed the vehicle catalogue on staging together with the garage, before the first build reads it: an empty catalogue raises no error, and the cached empty read stays for up to 30 days. Never change a catalogue id (task 17)
 - Tasks 21 and 23: the vehicle picker inside a real form. React 19 resets a form after its action, so the picker should return to its default on the form's `reset` event; a choice made before the page hydrates must not be lost; check a posted model and fuel with `resolveVehicle`; decide how to edit a saved vehicle whose model was later hidden; give `ChoiceGroup` and `NativeSelect` an error state like `CheckboxField`'s. Ask the owner first whether customers may say "my model isn't listed", and whether the garage also takes other brands such as Ford or Chevrolet (task 17)
 - Task 39: hide brands and models (`listed = false`) instead of deleting them, so saved vehicles keep their model; ids never change; saves call `updateTag("vehicle-catalogue")`; moving a model to another price group changes the price only for later bookings. Owner decision: today `readVehicleCatalogue()` leaves out a listed brand whose models are all hidden, which also takes it off the home page's brands row; keep that, or list every listed brand on the home row and drop empty brands only in the picker (task 17 code review)
+- New task (split from task 21 to keep it reviewable): edit and remove a saved vehicle, and change the name. A page `/account/vehicles/[vehicleId]` that reads `params` inside `<Suspense>`; a malformed or another customer's id shows the 404 page; a two-user browser test opens A's vehicle as B and sees the 404 page; remove with a confirmation step; a note when the saved model is no longer listed (a save then needs a listed model). It calls `updateMyVehicle` and `removeMyVehicle`, which already exist with their ownership tests (task 21)
+- Task 23: the booking picks one of `listMyVehicles()`, copies the vehicle's details onto the booking, and keeps a nullable foreign key to it with `on delete set null`; it asks for a name inline when `needsName()` says so; give `ChoiceGroup` and `NativeSelect` their own error states (task 21 only added the picker's `error` prop); revisit the phone action bar on form pages (task 21)
+- Task 36: reminders read `puc_expires_on` and `insurance_expires_on` as India dates (`date` columns, "YYYY-MM-DD"); electric vehicles have no PUC date (task 21)
+- Tasks 19 and 43: the privacy notice names the profile name, vehicles and expiry dates; deleting a user deletes their vehicles (`on delete cascade`), and the data export includes them (task 21)
+- Task 29: staff search by registration number across customers needs an index on `customer_vehicles.registration_number` (today only `(user_id, registration_number)` is indexed, by its unique constraint) (task 21)
+- Task 20: the owner checks the draft catalogue before staging testers save vehicles against it: a saved vehicle keeps its model id (task 21)
+- Task 42: add `src/app/favicon.ico`. Chrome sometimes asks for `/favicon.ico` after a page change and logs the 404 as a console error (seen in a different `e2e/account.spec.ts` test on each full run of task 21); that spec ignores the line (`withoutFaviconProbe`) until then. Remove the filter once the icon exists (task 21)
+- Owner questions from task 21, each with the default built: may customers add a vehicle the picker doesn't list (another brand, a missing model)? Default no: the add page offers the garage's phone and WhatsApp. Is a registration number required for every vehicle? Default yes. When removing arrives, should the garage keep a removed vehicle? Default no: the row is deleted, and bookings keep their own copy (task 21)
 
 ## How to add a task
 
