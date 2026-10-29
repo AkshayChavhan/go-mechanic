@@ -125,7 +125,7 @@
     "intro": "This notice explains what personal data the {brand} website keeps about you, why, who helps us handle it, how long we keep it, and what you can ask us to do. {brand} is one garage, at {address}.",
     "data": {
       "title": "What we keep, and why",
-      "lead": "The website keeps personal data only when you log in. Here is each thing it keeps."
+      "lead": "The website keeps personal data when you ask for a login code and when you log in. Here is each thing it keeps."
     },
     "labels": {
       "what": "What",
@@ -160,14 +160,14 @@
         "what": "The 6-digit code we text you, and how many wrong tries were made.",
         "why": "To check the code you type.",
         "who": "The garage, and the company that hosts the database.",
-        "howLong": "A code works for {minutes} minutes. We delete it when it's used or when a new one is sent to your number; until then, an unused code stays in our records after it stops working."
+        "howLong": "A code works for {minutes} minutes. We delete it once it's used, or after too many wrong tries. A code that has stopped working is deleted the next time anyone types a code on the website; until then it stays in our records, even after a new code is sent."
       },
       "session": {
         "title": "Your login on this device",
         "what": "A random token that keeps you logged in (in a cookie on your device, and in our records), your device's network address (IP address), your browser's description (its user agent), and when the login ends.",
         "why": "To keep you logged in for up to {days} days.",
         "who": "The garage, and the company that hosts the database.",
-        "howLong": "Until you log out. A login that simply runs out stays in our records until it's next used or we delete it; deleting these automatically is planned."
+        "howLong": "Until you log out. A login that simply runs out stays in our records for now; deleting these automatically is planned."
       },
       "sms": {
         "title": "The text message with your code",

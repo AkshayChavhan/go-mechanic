@@ -3,13 +3,12 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { Section } from "@/components/site/section";
-import { WhatsAppLink } from "@/components/site/whatsapp-link";
-import { LOGIN_NOTICE_VERSION } from "@/domain/consent";
+import { LOGIN_NOTICE_VERSION, PRIVACY_NOTICE_VALUES } from "@/domain/consent";
 import { indiaInstantOn } from "@/domain/india-time";
-import { LOGIN_RULES } from "@/domain/login";
 import { formatAddress, formatDate } from "@/i18n/format";
-import { formatPhoneNumber, telHref, whatsappHref } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
+
+import { contactRichText, inlineLinkClass } from "../_components/contact-rich-text";
 
 // /privacy (task 19): the full privacy notice the login's short notice links
 // to. A DRAFT under India's DPDP Act, 2023 and its 2025 Rules (their duties
@@ -48,24 +47,10 @@ export default async function PrivacyPage() {
   const garage = await readGarage();
   const brand = tBrand("name");
 
-  const linkClass = "text-link underline underline-offset-4";
-  const call = (chunks: ReactNode) => (
-    <a href={telHref(garage.phone)} className={`whitespace-nowrap ${linkClass}`}>
-      {chunks}
-    </a>
-  );
-  const whatsapp = (chunks: ReactNode) => (
-    <WhatsAppLink href={whatsappHref(garage.whatsapp, tContact("whatsappMessage"))} className={`${linkClass} [&_svg]:hidden`}>
-      {chunks}
-    </WhatsAppLink>
-  );
+  const contactLinks = contactRichText(garage, tContact("whatsappMessage"));
 
-  // Numbers come from the rules the code runs on, never typed in here.
-  const values = {
-    attempts: { hours: LOGIN_RULES.keepRecordsHours },
-    codes: { minutes: LOGIN_RULES.codeLifetimeSeconds / 60 },
-    session: { days: LOGIN_RULES.sessionDays },
-  };
+  // Numbers come from the rules the code runs on (PRIVACY_NOTICE_VALUES), never typed in here.
+  const values: Partial<Record<(typeof PRIVACY_ITEMS)[number], Record<string, number>>> = PRIVACY_NOTICE_VALUES;
 
   const sectionTitles: Record<(typeof SECTIONS)[number], string> = {
     cookies: t("cookies.title"),
@@ -79,7 +64,7 @@ export default async function PrivacyPage() {
     cookies: t("cookies.body"),
     rights: t("rights.body"),
     withdraw: t("withdraw.body"),
-    contact: t.rich("contact.body", { phone: formatPhoneNumber(garage.phone), call, whatsapp }),
+    contact: t.rich("contact.body", contactLinks),
     children: t("children.body"),
     changes: t("changes.body"),
   };
@@ -102,7 +87,7 @@ export default async function PrivacyPage() {
             {[["data", t("data.title")] as const, ...SECTIONS.map((key) => [key, sectionTitles[key]] as const)].map(
               ([key, title]) => (
                 <li key={key}>
-                  <a href={`#privacy-${key}`} className={`inline-flex pointer-coarse:min-h-11 items-center ${linkClass}`}>
+                  <a href={`#privacy-${key}`} className={`inline-flex pointer-coarse:min-h-11 items-center ${inlineLinkClass}`}>
                     {title}
                   </a>
                 </li>
@@ -127,7 +112,7 @@ export default async function PrivacyPage() {
                   <div key={field}>
                     <dt className="type-caption text-muted-foreground">{t(`labels.${field}`)}</dt>
                     <dd className="type-body text-pretty">
-                      {t(`items.${item}.${field}`, item in values ? values[item as keyof typeof values] : {})}
+                      {t(`items.${item}.${field}`, values[item] ?? {})}
                     </dd>
                   </div>
                 ))}

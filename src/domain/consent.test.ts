@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest";
 
 import messages from "../../messages/en.json";
 
-import { LOGIN_NOTICE_VERSION } from "./consent";
+import { LOGIN_NOTICE_VERSION, PRIVACY_NOTICE_VALUES } from "./consent";
 
 // Every consent record keeps the notice version it was given under, so the
 // version must change whenever the words people agree to change. This test
@@ -13,9 +13,11 @@ import { LOGIN_NOTICE_VERSION } from "./consent";
 // here) and it fails.
 //
 // Since task 19 the short notice links the full privacy notice (/privacy),
-// so its wording is part of what people agree to as well. It's pinned by a
-// SHA-256 fingerprint of the PrivacyPage messages (without the page title and
-// description), because a full copy would be a page long.
+// so its wording is part of what people agree to as well, with the numbers
+// it states (PRIVACY_NOTICE_VALUES: how long things are kept). Both are
+// pinned by one SHA-256 fingerprint of the PrivacyPage messages (without the
+// page title and description) and those numbers, because a full copy would
+// be a page long.
 
 type Login = { ageLabel: string; consentLabel: string; notice: string };
 type Pinned = Login & { privacyNotice: string | null };
@@ -36,26 +38,35 @@ const WORDING_BY_VERSION: Record<string, Pinned> = {
       "I agree that {brand} can use my mobile number to log me in and to contact me by SMS, WhatsApp or phone about my bookings.",
     notice:
       "We keep your mobile number, when you agreed, and your device's network address (IP address) and browser type. We use them only to log you in, to keep logins safe and to tell you about your bookings. The <privacy>privacy notice</privacy> has the details. To stop this or delete your data, call the garage.",
-    privacyNotice: "6feffe57e25b1d37c262bc56838e25e2d961d8a255ac1699eeabd5365a8eb5be",
+    privacyNotice: "17c59f3f2da1f3ae7f4eeb6bd4b687c648cc3943d1fd745927baaa4fb5881923",
   },
 };
 
-/** A fingerprint of the privacy notice's wording (everything but its page title and description). */
-function fingerprint(privacy: Record<string, unknown>): string {
-  const { metaTitle: _title, metaDescription: _description, ...wording } = privacy;
-  return createHash("sha256").update(JSON.stringify(wording)).digest("hex");
+type Values = Record<string, Record<string, number>>;
+
+/** A fingerprint of the privacy notice: its wording (but its page title and description) and the numbers it states. */
+function fingerprint(privacy: Record<string, unknown>, values: Values): string {
+  const wording = Object.fromEntries(
+    Object.entries(privacy).filter(([key]) => key !== "metaTitle" && key !== "metaDescription"),
+  );
+  return createHash("sha256").update(JSON.stringify({ wording, values })).digest("hex");
 }
 
 /** The words consent depends on: the login's three, and the privacy notice's fingerprint. */
-function wordingIn(login: Login, privacy: Record<string, unknown>): Pinned {
-  return { ageLabel: login.ageLabel, consentLabel: login.consentLabel, notice: login.notice, privacyNotice: fingerprint(privacy) };
+function wordingIn(login: Login, privacy: Record<string, unknown>, values: Values): Pinned {
+  return {
+    ageLabel: login.ageLabel,
+    consentLabel: login.consentLabel,
+    notice: login.notice,
+    privacyNotice: fingerprint(privacy, values),
+  };
 }
 
-function checkWording(login: Login, privacy: Record<string, unknown>): void {
+function checkWording(login: Login, privacy: Record<string, unknown>, values: Values = PRIVACY_NOTICE_VALUES): void {
   const pinned = WORDING_BY_VERSION[LOGIN_NOTICE_VERSION];
   if (!pinned) throw new Error(`No copy of the wording for ${LOGIN_NOTICE_VERSION}: add one to consent.test.ts`);
   expect(
-    wordingIn(login, privacy),
+    wordingIn(login, privacy, values),
     "The consent wording or the privacy notice changed: bump LOGIN_NOTICE_VERSION in src/domain/consent.ts and add the new words (and the notice's new fingerprint) here",
   ).toEqual(pinned);
 }
@@ -73,6 +84,16 @@ describe("the login notice version", () => {
   test("changing the privacy notice without bumping the version fails", () => {
     const edited = { ...messages.PrivacyPage, intro: `${messages.PrivacyPage.intro} Changed.` };
     expect(() => checkWording(messages.Login, edited)).toThrow("bump LOGIN_NOTICE_VERSION");
+  });
+
+  test("changing a number the privacy notice states (a login rule) without bumping the version fails", () => {
+    const longer = { ...PRIVACY_NOTICE_VALUES, attempts: { hours: 72 } };
+    expect(() => checkWording(messages.Login, messages.PrivacyPage, longer)).toThrow("bump LOGIN_NOTICE_VERSION");
+  });
+
+  test("the version is a YYYY-MM-DD date, because /privacy shows it as its last-updated date", () => {
+    expect(LOGIN_NOTICE_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(Number.isNaN(new Date(LOGIN_NOTICE_VERSION).getTime())).toBe(false);
   });
 
   test("the privacy page's title and description can change without a new version", () => {
