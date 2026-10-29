@@ -347,7 +347,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 21_customer_vehicles
 
 - [x] Create branch `21_customer_vehicles`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-29-1348-feat-customer-vehicles-plan.md)
 - [ ] Customer vehicles with registration-number checks, profile
 - [ ] Ask the owner to start the DLT (SMS) and Meta (WhatsApp) paperwork: approvals take weeks
 - [ ] The header's "Log in"/"Account" entry (the owner's choice: not before this task), as a static link or a browser island, never a session read in the shell (`ensureStatic` on `/`), with `prefetch={false}` (task 15)
