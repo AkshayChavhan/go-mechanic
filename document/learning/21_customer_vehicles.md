@@ -51,10 +51,10 @@ The branch's first commit, `27c6cc8 docs(16): mark task 16 done`, is task 16's b
 1. **Plan.** `ce-plan` wrote the plan with the owner's four answers, then hung after writing, as it usually does ([the known hang](../solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md)). The full scope came to about 2,950 lines, so editing and removing moved to a follow-up task.
 
 2. **Registration numbers** (`src/domain/registration.ts`). Two shapes are accepted, in any case, with or without spaces, `-` or `.`:
-   - **State series:** a state code (2 letters) + RTO (1–2 digits) + series (1–3 letters) + number (1–4 digits). An RTO is a regional transport office. Examples: `MH 12 AB 1234`, `DL 3 CAB 0042`.
+   - **State series:** a state code (2 letters) + RTO (1–2 digits) + series (1–3 letters) + number (1–4 digits). An RTO is a regional transport office. Examples: `MH 12 AB 1234`, `DL 03 CAB 0042`.
    - **Bharat series:** the year (21 or later) + `BH` + number (1–4 digits) + 1–2 letters, like `22 BH 1234 AB`. Since 2021, people who move between states can get one.
 
-   Plates are stored in a **compact form**: capitals, no spaces, and the number padded to 4 digits. So `mh-12 ab 42` and `MH12AB0042` are one plate, `MH12AB0042`, shown as `MH 12 AB 0042`. The state code must be on an **allowlist** of 40 codes, old ones included (`OR`/`OD`, `UA`/`UK`, `TS`/`TG`), which catches typos like `MX`.
+   Plates are stored in a **compact form**: capitals, no spaces, the RTO padded to 2 digits and the number to 4. So `mh-12 ab 42` and `MH12AB0042` are one plate, `MH12AB0042`, shown as `MH 12 AB 0042`, and `MH 1 AB 1234` is the same plate as `MH 01 AB 1234`. (The RTO padding came from the code review, below. Delhi writes its RTO without the zero, `DL 3C AB 1234`; here it shows as `DL 03 CAB 1234`, the price of one stored form per plate.) The state code must be on an **allowlist** of 40 codes, old ones included (`OR`/`OD`, `UA`/`UK`, `TS`/`TG`), which catches typos like `MX`.
 
    Some plates are refused on purpose, with a message that points to the garage's phone: plates with no series letters (`MH121234` could be RTO 12 or RTO 1), the pre-1989 three-letter series (`MHF 1234`), and temporary, trade, diplomatic and military plates. Per-state RTO ranges aren't checked: they change as new RTOs open. A database CHECK (`^[A-Z0-9]{8,11}$`) is a backstop.
 
@@ -114,6 +114,8 @@ The branch's first commit, `27c6cc8 docs(16): mark task 16 done`, is task 16's b
    - **After each answer, the form remounts.** The state carries a submission counter, and the form is keyed by it. It mounts again with what was posted as its defaults, so an error never empties it. React's own reset after an action then restores those same values.
    - **Each visit starts empty.** Next.js doesn't unmount a page you leave. It hides it with React's `<Activity>`, which keeps drafts, errors and the action's answer (bundled `node_modules/next/dist/docs/01-app/02-guides/preserving-ui-state.md`). On a shared phone, the next customer would see the last one's draft. In `VehicleForm`, a `useLayoutEffect` cleanup runs when the page is hidden and bumps the form's key, so it comes back fresh. As a check, removing that bump made the "leaving the page" test fail. `NameForm` is keyed by the user's id instead.
    - **`unstable_rethrow(error)` comes first** in each submit wrapper. A successful save redirects, and in the browser that arrives as a rejected promise. Without the rethrow, the wrapper would show the "connection" error instead of going to `/account`.
+   - **They need JavaScript**, like the login form in front of them. Because `useActionState` gets a browser-side wrapper (for the "no connection" message), the server's HTML has no address to post to. The first comments said the add form posts without JavaScript; the code review showed it doesn't, and the comments were corrected.
+   - After the review, the shared pieces moved to `src/components/account/form-parts.tsx`: `SubmitButton`, `FreshOnEachVisit` (the remount on hide) and `submitterWithFallback` (the rethrow-then-fallback wrapper).
 
 8. **The vehicle picker inside a real form** (`vehicle-picker.tsx`, task 17's open note).
    - **First a test, on the old picker.** It rendered the server's HTML, changed the model select, *then* hydrated. It **failed**: `expected '' to be 'car-honda-city'`. React 19 sets a controlled field back to what its first render says, and that render never saw the choice.
@@ -122,7 +124,7 @@ The branch's first commit, `27c6cc8 docs(16): mark task 16 done`, is task 16's b
    - **Two more changes:** the picker listens for its form's `reset` event and goes back to its default. A new `error` prop shows a message and sets `aria-invalid` and `aria-describedby` on the model select; `/dev/design` has a sample of it.
 
 9. **The two pages.**
-   - **`/account`** has two `<Suspense>` parts (the plan had one): who is logged in (`AccountDetails`), in the place of the loading line and with its classes; and, below Log out, the name form or the vehicle list (`AccountContent`). Log out stays a plain form outside both parts, so it works without JavaScript. Content that streams in arrives *below* what's already on screen, so nothing moves. `getCurrentUser()` is wrapped in React's `cache()`, so both parts share one session read.
+   - **`/account`** has two `<Suspense>` parts (the plan had one): who is logged in (`AccountDetails`), in the place of the loading line and with its classes; and, below Log out, the name form, or a hello by name and the vehicle list (`AccountContent`). The hello first sat in the "Logged in as" line, but a name made that line wrap on a phone, which pushed Log out down; the review caught it, and the hello moved below. Log out stays a plain form outside both parts, so it works without JavaScript. Content that streams in arrives *below* what's already on screen, so nothing moves. `getCurrentUser()` is wrapped in React's `cache()`, so both parts share one session read.
    - **`/account/vehicles/new`** is built ahead of time with the cached catalogue and garage reads. Only `AddVehicleGate` reads the session, inside `<Suspense>`. It sends a logged-out visitor to `/login` and a nameless customer to `/account`.
 
 10. **The header link** (`account-link.tsx`).
@@ -189,7 +191,15 @@ To try it by hand (not done for this doc):
 
 ## Checks and reviews
 
-- **`ce-code-review`:** pending. Results are added after it runs.
+- **`ce-code-review` (2026-10-29): all 8 findings confirmed, no P0 or P1.** It ran as a `claude -p` child with nine reviewers (correctness, adversarial, testing, maintainability, project standards, security, data migration, frontend races, saved lessons), then a merge step and an independent validator. Security, project standards and data migration found nothing. The child's printed report was only `You've hit your session limit · resets 5:50pm (Asia/Calcutta)`, but every stage had saved its files first (the reviewers' JSON, the merged findings, the validator's verdicts), so the results were read from those. What was fixed, one commit each:
+  - **P2, one plate stored twice:** `MH1AB1234` and `MH01AB1234` were different rows. The RTO is now padded to 2 digits (`a527162`).
+  - **P2, tests that couldn't fail:** dropping the vehicle-id filter, the duplicate check's user filter or `readMyProfile`'s `WHERE`, or checking an id or name before `authorizeUser()`, passed every test. New tests cover each; twelve deliberate breakages (plus India's today at 18:30 UTC, a type or fuel picked before hydration, and the name form's key) each failed a test, and every file was copied back unchanged (`6c549c0`).
+  - **P2, copy-paste:** `checkedLocale` and `formText` moved to `src/server/actions/form-input.ts`; the form parts to `form-parts.tsx`; one `readVehicleForm` and `VEHICLE_FIELD_NAMES` in `src/lib/account-forms.ts`; `isFuel` and `isVehicleKind` replaced three separate checks (`e71138b`).
+  - **P2, the add form can't post without JavaScript**, though comments said it could: comments and `CLAUDE.md` corrected (`9842f8d`).
+  - **P3, Log out moved** when a named customer's line wrapped, and **P3, the name form kept an old error** and took the cursor again when `/account` was shown again: the hello moved below Log out, and the name form starts fresh on each visit (`f4ec3c6`).
+  - **P3 (one reviewer, outside the merged 8), an electric vehicle's PUC date** was still checked though its field is hidden: now it isn't (`5dd54b6`).
+  - Not changed: React's Strict Mode makes `FreshOnEachVisit` mount its form twice in development only (explained in its comment), and a shared helper for the vehicle query's joins wasn't worth it for two uses.
+  - **A mistake of mine on the way:** the first breakage script restored files with `git checkout -- <file>`, which the owner's rules forbid. The auto-mode safety check blocked it before anything ran; it was redone by copying each file aside and back.
 - **`code-reviewer` agent:** pending. Results are added after it runs.
 - **Compound step:** pending.
 - **SEO check (`seo-reviewer`, read-only, 2026-10-29):** 3 pages checked, 3 pass: `/account` and `/account/vehicles/new` (both `noindex`, one `h1` each, headings in order) and the header on every public page (a plain, static link; the home page stays prerendered). Waiting for task 42: canonical URLs, Open Graph, sitemap, robots and JSON-LD. A note for task 42: page titles already end in "| {brand}", so a `%s | GoMechanic` title template would double the brand.
@@ -227,7 +237,7 @@ Answers.
 ```
 "mh-12 ab 42" -> {"ok":true,"compact":"MH12AB0042","display":"MH 12 AB 0042"}
 "MH12AB0042" -> {"ok":true,"compact":"MH12AB0042","display":"MH 12 AB 0042"}
-"dl 3 cab 7" -> {"ok":true,"compact":"DL3CAB0007","display":"DL 3 CAB 0007"}
+"dl 3 cab 7" -> {"ok":true,"compact":"DL03CAB0007","display":"DL 03 CAB 0007"}
 "22 bh 1234 a" -> {"ok":true,"compact":"22BH1234A","display":"22 BH 1234 A"}
 "20BH1234AB" -> {"ok":false,"problem":"registration-invalid"}
 "MX12AB1234" -> {"ok":false,"problem":"registration-unknown-state"}
