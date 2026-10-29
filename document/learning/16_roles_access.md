@@ -195,7 +195,10 @@ To try it yourself (not done for this doc, so as not to start a dev server on th
 
   Also done: "the 404 page" inside `<Suspense>` answers status 200 (said in `CLAUDE.md` and step 5), and "a Server Action *that needs a login* calls `requireUser` first". Noted, not changed: four early commit bodies were a single sentence, against the rule of two to four (history isn't rewritten; later commits follow it).
 - **SEO check:** Pending, if the hook asks (`AccountDetails` and a login page comment changed).
-- **Compound step:** Pending.
+- **Compound step: one lesson updated, one new**, because each would otherwise cost the next session the same investigation, and both matter to all three sessions:
+  - [`ce-plan-child-session-hangs-use-idle-watcher.md`](../solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md), updated: `claude -p` can exit with no plan (its helpers stopped after 10 minutes; `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`), and with parallel sessions the watcher and the stop command match only your own run.
+  - [`full-check-times-out-under-parallel-session-load.md`](../solutions/workflow-issues/full-check-times-out-under-parallel-session-load.md), new: how to tell timeouts from real failures when sessions share the laptop, and how to wait for the load to drop instead of raising limits.
+  - Not written: a lesson on the proxy's 307 with the `?session=ended` marker. The "Roles and access" rules in `CLAUDE.md` already say it, and task 26 will read them.
 - **Pull request:** Pending, after the owner says yes.
 
 ## Common mistakes

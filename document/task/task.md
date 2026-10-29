@@ -280,8 +280,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] `requireUser`/`requirePermission` built on `getCurrentUser()` (`src/server/auth/session.ts`; no `requireRole`: checks ask for a permission). Proxy redirects: a logged-out `/account` gets a real 307 to `/login`, and a logged-in `/login` goes to `/account`, by a session-cookie check, with `?session=ended` against a leftover-cookie loop (task 15)
 - [x] A way to make the owner's number `owner`: the `OWNER_PHONE_NUMBER` setting (the garage's own number, the owner's choice on 2026-10-28), applied on every session read (`effectiveRole`) and stored at each login (`syncOwnerRole`). Everyone else signs up as `customer`, and Better Auth refuses a role sent by the browser (task 15)
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `code-reviewer` and fix what it finds (after `ce-code-review`: "Ready with fixes", 5 findings fixed; `code-reviewer`: 2 must-fixes fixed, including the merge with task 22)
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [ce-plan lesson, updated](../solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md), [check timeouts under load](../solutions/workflow-issues/full-check-times-out-under-parallel-session-load.md)
 - [ ] Merge into `main`
 
 ### 17_vehicle_catalogue
