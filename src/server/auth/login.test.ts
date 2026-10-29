@@ -8,6 +8,7 @@ import { systemClock } from "@/lib/clock";
 import { closeDatabase, createDatabase, type Database, getDatabase } from "@/server/db";
 import { consents, devMessages, loginAttempts, sessions, users, verifications } from "@/server/db/schema";
 import { recordLoginConsents } from "@/server/dal/consents";
+import { syncOwnerRole } from "@/server/dal/users";
 import { smsProvider } from "@/server/providers/sms";
 
 import allMessages from "../../../messages/en.json";
@@ -62,6 +63,10 @@ vi.mock("next-intl/server", async () => {
 vi.mock("@/server/dal/consents", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/dal/consents")>();
   return { recordLoginConsents: vi.fn(actual.recordLoginConsents) };
+});
+vi.mock("@/server/dal/users", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/server/dal/users")>();
+  return { syncOwnerRole: vi.fn(actual.syncOwnerRole) };
 });
 vi.mock("@/server/providers/sms", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/server/providers/sms")>();
@@ -474,6 +479,17 @@ describe("the owner (OWNER_PHONE_NUMBER)", () => {
     moveTo(10 * 60);
     await check(await askForCode(), await latestCode());
     expect(await storedRole()).toBe("owner");
+  });
+
+  test("when the role step fails after the consents: no session, the consents kept, and a new code logs in", async () => {
+    vi.mocked(syncOwnerRole).mockRejectedValueOnce(new Error("role write failed"));
+    await expect(check(await askForCode(), await latestCode())).rejects.toBeInstanceOf(LoginServiceError);
+    expect(await db.$count(sessions)).toBe(0);
+    expect(await db.$count(consents)).toBe(2);
+
+    moveTo(31);
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await db.$count(sessions)).toBe(1);
   });
 
   test("a login refused for its consent leaves the stored role alone", async () => {

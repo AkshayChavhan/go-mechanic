@@ -4,6 +4,7 @@ import { getDatabase } from "@/server/db";
 
 import { createAuth } from "./auth";
 import { getAuth } from "./instance";
+import { onVerifiedLogin, sendLoginCodeSms } from "./login";
 
 vi.mock("@/server/db", () => ({ getDatabase: vi.fn() }));
 vi.mock("./auth", () => ({ createAuth: vi.fn(() => ({ api: {} })) }));
@@ -30,6 +31,14 @@ describe("getAuth (one Better Auth per process)", () => {
     expect(createAuth).toHaveBeenCalledTimes(1);
     expect(createAuth).toHaveBeenCalledWith(
       expect.objectContaining({ secret: "s".repeat(32), secureCookies: true }),
+    );
+  });
+
+  test("wires Better Auth's callbacks to the login service: the SMS, and consents then the owner rule", async () => {
+    vi.mocked(getDatabase).mockResolvedValue({} as never);
+    await getAuth();
+    expect(createAuth).toHaveBeenCalledWith(
+      expect.objectContaining({ sendCode: sendLoginCodeSms, onVerified: onVerifiedLogin }),
     );
   });
 
