@@ -31,7 +31,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
-| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress | [22_slot_engine.md](../learning/22_slot_engine.md) |
+| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
@@ -369,7 +369,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc: [22_slot_engine.md](../learning/22_slot_engine.md)
 - [x] Review with `ce-code-review` and `code-reviewer` and fix what they find (verdicts and fixes in the learning doc)
 - [x] Compound: [pglite-parallel-tests-bare-database-not-transaction-per-call.md](../solutions/conventions/pglite-parallel-tests-bare-database-not-transaction-per-call.md)
-- [ ] Merge into `main`
+- [x] Merge into `main` (PR #17, 2026-10-29)
 
 ### 23_booking_flow
 
