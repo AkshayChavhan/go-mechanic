@@ -18,7 +18,7 @@ import {
   type Shown,
   type TrustStat,
 } from "./home";
-import { VEHICLE_KINDS } from "./services";
+import { VEHICLE_KINDS } from "@/domain/vehicles";
 
 // The home page's trust stats and reviews are real, or samples, or nothing
 // (plan KTD7, owner's decision of 2026-10-27):

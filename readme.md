@@ -38,7 +38,7 @@ New here? Read the learning docs in order, starting with [01_project_setup](docu
 | `.compound-engineering/` | Compound Engineering settings: `config.yaml` (ours) and `config.example.yaml` (every option explained). |
 | `document/plans/` | Plans: the project's master plan, plus one plan per task written by Compound Engineering's `ce-plan`. |
 | `document/solutions/` | Reusable lessons, written by `ce-compound`. Claude reads them before similar work. |
-| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/components/` the shared components (`ui/` from shadcn/ui, `site/` our own), `src/i18n/` the language setup and the ₹ and date helpers, `src/server/` code that only runs on the server (the database in `db/`, the code that reads and saves its data in `dal/`, the checked settings in `env.ts`, login in `auth/` and `actions/`, the fake SMS sender in `providers/`), `src/content/` typed content the database hasn't taken over yet (services, the offer, home page stats), `src/domain/` pure business logic such as opening hours and the garage's rules, `src/lib/` small helpers. |
+| `src/` | The website's code. `src/app/[locale]/` holds the pages (one folder per URL; `[locale]` is the language), `src/components/` the shared components (`ui/` from shadcn/ui, `site/` our own), `src/i18n/` the language setup and the ₹ and date helpers, `src/server/` code that only runs on the server (the database in `db/`, the code that reads and saves its data in `dal/`, the checked settings in `env.ts`, login in `auth/` and `actions/`, the fake SMS sender in `providers/`), `src/content/` typed content the database hasn't taken over yet (services, the offer, home page stats), `src/domain/` pure business logic such as opening hours, the garage's rules and the vehicle picker's rules, `src/lib/` small helpers. |
 | `design-system/` | The design system written out for people: tokens, rules and the brand. |
 | `messages/` | The website's text, one file per language (`en.json` for now). |
 | `e2e/` | Browser tests: Playwright opens the real site in Chrome and checks it. `e2e/login.spec.ts` logs in with a fresh number on a production build. `e2e/dev/` checks the development-only pages (`/dev/design`, `/dev/outbox`) and the home page under `npm run dev`. |
@@ -59,7 +59,7 @@ npm install            # install dependencies (first time, or after package.json
 npm run dev            # start the dev server
 ```
 
-Open http://localhost:3000. There's no database to install: the first `npm run dev` creates one in `.pglite/` (PGlite, a Postgres that runs inside Node) and fills it with the garage's real details. Your changes to it stay there between restarts.
+Open http://localhost:3000. There's no database to install: the first `npm run dev` creates one in `.pglite/` (PGlite, a Postgres that runs inside Node) and fills it with the garage's real details and the vehicle catalogue (the brands the garage serves, with a draft list of their models). Your changes to it stay there between restarts.
 
 To log in locally: open http://localhost:3000/login, type any Indian mobile number and tick both boxes. No SMS is sent until the launch: the code shows on http://localhost:3000/dev/outbox instead (newest first). Type it on `/login` and you land on `/account`. Log in with the garage's own number (97647 50567) to be the owner; any other number is a customer. Test runs leave users with `60000...` numbers in your local database; `npm run db:reset` clears them.
 

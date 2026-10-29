@@ -27,7 +27,7 @@ This is the product plan: who the site is for, what it does, and what's left for
 
 ### A. Public website
 1. ✅ **Home:** what GoMechanic does, trust signals (years, vehicles serviced, rating, warranty), big **Book / Call / WhatsApp** buttons. The trust signals and the reviews preview appear once they're real: until the owner gives real numbers and task 37 brings real reviews, only `npm run dev` shows them, as labelled samples (owner, 2026-10-27). Built in task 13.
-2. ✅ **Prices by vehicle:** pick type (car or two-wheeler) → brand → model → fuel (petrol, diesel, CNG, electric) and see that vehicle's prices ("from ₹…").
+2. ✅ **Prices by vehicle:** pick type (car or two-wheeler) → brand → model → fuel (petrol, diesel, CNG, electric) and see that vehicle's prices ("from ₹…"). The garage serves 12 car brands (Maruti Suzuki, Hyundai, Tata, Mahindra, Kia, Toyota, Honda, MG, Renault, Skoda, Volkswagen, Nissan) and 10 two-wheeler brands (Hero, Honda, TVS, Bajaj, Royal Enfield, Yamaha, Suzuki, KTM, Ather, Ola Electric) (owner, 2026-10-28). The home page lists them by name, with no logos. Task 17 built the catalogue and the picker, with a draft of the models for the owner to check; task 18 adds the prices.
 3. ✅ **Service packages:** Basic / Standard / Comprehensive, side by side with a checklist of what's included.
 4. ✅ **Service pages:** periodic service, AC, denting and painting, battery, tyres and alignment, brakes, clutch and suspension, engine, electricals, wash and detailing, insurance claim help.
 5. ✅ **About:** story, team, certifications, workshop photos, genuine parts (OEM/OES), warranty.

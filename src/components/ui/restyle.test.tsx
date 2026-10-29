@@ -7,6 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 
 // Locks in our restyle of the shadcn components (see the "Our changes to
@@ -116,6 +117,41 @@ describe("Input", () => {
     const classes = classesOf(screen.getByRole("textbox"));
     expect(classes).not.toContain("dark:bg-input/30");
     expect(classes).not.toContain("dark:disabled:bg-input/80");
+  });
+});
+
+describe("NativeSelect", () => {
+  const renderSelect = () =>
+    render(
+      <NativeSelect aria-label="Brand">
+        <NativeSelectOption value="car-honda">Honda</NativeSelectOption>
+      </NativeSelect>,
+    );
+
+  test("is 44px tall, full width, with text of at least 16px so iOS doesn't zoom in", () => {
+    renderSelect();
+    const select = screen.getByRole("combobox", { name: "Brand" });
+    const classes = classesOf(select);
+    expect(heightPx(classes)).toBeGreaterThanOrEqual(TOUCH);
+    expect(classes).toContain("type-body"); // 17px
+    expect(classes.filter((name) => /^(?:(?:sm|md|lg|xl|2xl):)?text-(?:xs|sm)$/.test(name))).toEqual([]);
+    expect(classes).toEqual(expect.arrayContaining(["rounded-lg", "border-input"]));
+    // shadcn's wrapper was w-fit; ours fills the row like every other field.
+    expect(classesOf(select.parentElement!)).toContain("w-full");
+  });
+
+  test("has no small size (shadcn's was 28px tall)", () => {
+    renderSelect();
+    const classes = classesOf(screen.getByRole("combobox"));
+    expect(classes.filter((name) => name.startsWith("data-[size=sm]"))).toEqual([]);
+  });
+
+  test("has no grey fill inside .dark sections, and keeps the full red border when invalid", () => {
+    renderSelect();
+    const classes = classesOf(screen.getByRole("combobox"));
+    expect(classes).not.toContain("dark:bg-input/30");
+    expect(classes).not.toContain("dark:hover:bg-input/50");
+    expect(classes).not.toContain("dark:aria-invalid:border-destructive/50");
   });
 });
 
