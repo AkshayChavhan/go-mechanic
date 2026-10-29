@@ -30,7 +30,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
-| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
+| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | In progress |  |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
@@ -346,7 +346,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 21_customer_vehicles
 
-- [ ] Create branch `21_customer_vehicles`
+- [x] Create branch `21_customer_vehicles`
 - [ ] Plan with `ce-plan`
 - [ ] Customer vehicles with registration-number checks, profile
 - [ ] Ask the owner to start the DLT (SMS) and Meta (WhatsApp) paperwork: approvals take weeks
