@@ -325,8 +325,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Link `/login`'s short notice to the new `/privacy` page, and change `LOGIN_NOTICE_VERSION` (`src/domain/consent.ts`) and the pinned wording in `consent.test.ts` in the same commit (task 15)
 - [x] Notes for tasks 23, 40, 42, 43 and the Hindi work at the end of the backlog
 - [x] Write the learning doc: [19_info_pages.md](../learning/19_info_pages.md)
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `ce-code-review` and `code-reviewer` and fix what they find (verdicts and fixes in the learning doc)
+- [x] Compound: [privacy-notice-retention-from-delete-code-not-expiry.md](../solutions/conventions/privacy-notice-retention-from-delete-code-not-expiry.md)
 - [ ] Merge into `main`
 
 ### 20_staging_deploy
@@ -680,6 +680,7 @@ Not in version 1. See [features.md](../website/features.md).
 - For task 40: the plan for task 19 also promised sample workshop photos on `/about` (grey `VisualSlot` stand-ins under `npm run dev`); they weren't built. Add the section with the owner's real photos instead, `VisualSlot` with `photo` and an `alt` from messages (task 19 code review)
 - For task 43: `TermsPage.updatedOn` is a date kept in `messages/en.json`, so a `hi.json` would have to copy it and nothing makes it move when the terms' wording changes. Move it next to the page, with a fingerprint test like `consent.test.ts`'s, when the terms are finalised (task 19 code review)
 - On `/faq` the group headings (`h2`) use `type-headline`, the same size as the page's `h1`, so the title doesn't stand out. Try `type-title` for the groups and a smaller style for the questions, and check it on `/dev/design`-style screenshots (task 19 code review)
+- `e2e/access.spec.ts` (task 16): its tests that run first take 17–23 s even alone (the others 5–8 s), against a 30 s limit, and time out when several sessions load the laptop (seen four times in task 19). Find out why the first logged-in page load is slow (perhaps the server building its in-memory database with the vehicle catalogue on first use), then warm it up in the spec or raise those tests' limit (task 19)
 
 ## How to add a task
 

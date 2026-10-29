@@ -1,6 +1,6 @@
 # 19_info_pages: contact, about, FAQ, and draft privacy and terms pages
 
-> **Branch:** `19_info_pages` · **Date:** 2026-10-29 · **Status:** In progress (ready for review)
+> **Branch:** `19_info_pages` · **Date:** 2026-10-29 · **Status:** In progress (ready to merge)
 
 ## In one minute
 
@@ -32,7 +32,7 @@ The owner answered four questions on 2026-10-29:
 | `src/app/[locale]/(site)/contact/`, `about/`, `faq/`, `privacy/`, `terms/` | Added | The five pages and their tests |
 | `src/app/[locale]/(site)/privacy/coverage.test.ts` | Added | Lists every database table against the privacy notice; fails when a new one appears |
 | `src/app/[locale]/(site)/_components/page-tones.ts` | Added | Picks section tones from how many sections a page shows |
-| `src/app/[locale]/(site)/_components/contact-rich-text.tsx` | Added | The call and WhatsApp links inside sentences, shared by contact, FAQ and terms |
+| `src/app/[locale]/(site)/_components/contact-rich-text.tsx` | Added | The call and WhatsApp links inside sentences, shared by contact, FAQ, privacy and terms |
 | `src/content/about.ts`, `faq.ts` | Added | The unconfirmed facts as samples, each with a "canary" phrase, read only through selectors |
 | `src/lib/samples.ts`, `src/content/home.ts` | Changed | `realOrSamples()` moved here, shared by all three content files |
 | `src/components/site/navigation.ts`, `site-footer.tsx`, `site-chrome.tsx` | Changed | About and Contact go live; a footer-only list (FAQ, Privacy, Terms) |
@@ -71,12 +71,19 @@ npm run check      # lint, types and unit tests
 npm run test:e2e   # the production build; e2e/info-pages.spec.ts covers these pages
 ```
 
-Results so far: `npm run check` passed with 84 files and 1278 tests, and `npm run test:e2e` passed 88 of 88 (2.8 minutes). The guard checks were each run once with the code broken on purpose: removing a table from `coverage.test.ts`'s list made it fail with a message naming the table.
+Before the reviews, `npm run check` passed with 84 files and 1278 tests, and `npm run test:e2e` passed 88 of 88 (2.8 minutes). The guard checks were each run once with the code broken on purpose: removing a table from `coverage.test.ts`'s list made it fail with a message naming the table.
+
+The final code, after the review fixes and the merge, with three sessions loading the laptop (load average 15 to 40):
+
+- `npm run check`: lint and the type check passed. The unit tests failed only by timeouts (15 files, all `Hook timed out` or `Test timed out`, no wrong answers) in database and lint files this task didn't touch. Run alone, as `full-check-times-out-under-parallel-session-load.md` says, every one passed: `npx vitest run src/server src/i18n/lint-guards.test.ts`, then the last three files alone (79 tests). After the merge, before the review fixes, the full check had passed cleanly: 95 files, 1442 tests.
+- `npm run test:e2e`: three full runs. The last one had 93 of 95 passing. The failures were always tests from task 16's `e2e/access.spec.ts`, plus once this task's new login-cookie test. All of them timed out waiting for a logged-in page or a login, never with a wrong answer. Run alone, `access.spec.ts` passed 5 of 5 (twice). `e2e/info-pages.spec.ts` passed in full on the final code: run with `access.spec.ts`, 27 tests passed, and only the 4 access tests failed. The access tests that run first take 17 to 23 seconds even alone; the 30-second limit is close. A likely cause: the first logged-in page builds the server's in-memory database, now with task 17's catalogue. That's a guess, not checked (backlog).
+- `npm run test:design`: **not run.** It needs port 3000, which belongs to Session 1, and the owner's instructions say never to run it here. The footer and its `/dev/design` sample changed, so it must run before or right after the merge (the pull request says so).
 
 ## Common mistakes
 
 - **Letting a pipe hide a failure.** `npm run check | grep … && git commit` committed two commits (`54096fd`, `f5196e1`) while the check showed 10 failing tests: a pipe's exit status is the last command's, here `grep`'s. The failures were only 5-second timeouts while three sessions loaded the machine (load average about 27). A re-run with the exit code captured passed (exit 0, 1247 tests), so the commits were fine. From then on: `npm run check > log; echo $?`.
-- **Writing a privacy notice from memory.** Read what each table stores and when it's deleted, in the code, before writing a word.
+- **Writing a privacy notice from memory.** Read what each table stores and when it's deleted, in the code, before writing a word. This task got it wrong six times before the code was read: see the lesson below.
+- **Listing cookies from what you expect.** The notice said "one cookie" until a browser test showed next-intl's language cookie on a request with no `Accept-Language` header. Read the real `Set-Cookie` headers.
 - **Putting samples in messages.** Messages ship with every build; samples live in `src/content/` and are read only through selectors.
 - **A page export Next.js doesn't allow.** A page file may export only what Next.js knows (`default`, `generateMetadata`, `ensureStatic` …), so the privacy page's item list stayed private.
 
@@ -90,10 +97,10 @@ Results so far: `npm run check` passed with 84 files and 1278 tests, and `npm ru
     - Attempts: the notice said we keep data "only when you log in", but asking for a code already stores it.
     The reworded notice moved the fingerprint, and the version stays `2026-10-29` because the earlier wording never shipped.
   - **The fingerprint skipped the numbers.** The notice's hours, minutes and days come from `LOGIN_RULES`, so changing a rule changed the notice without failing the test. Now they're hashed with the wording (`PRIVACY_NOTICE_VALUES`), and a test changes one to prove the check fails.
-  - **The coverage test missed new columns.** It now lists every personal table's columns, so a new column fails it too. Checked by adding a column on purpose.
+  - **The coverage test missed new columns.** It now lists every personal table's columns, so a new column fails it too. Checked by removing one from the test's list on purpose, which looks to the test like a new column.
   - **Untested paths.** Real (owner-given) about topics and FAQ answers: a test each, with no Sample mark. The browser test for `/terms` now looks for the terms page's own draft line, not the privacy page's.
   - **Code shape.**
-    - The call and WhatsApp links were written three times: now `contact-rich-text.tsx`.
+    - The call and WhatsApp links were written out in four pages: now `contact-rich-text.tsx`.
     - The FAQ's answer maps are typed by their real keys.
     - The footer list is `liveNavItems(footerItems)` instead of a copy of the same logic, and `footerOnlyItems` names it plainly.
     - A test keeps `LOGIN_NOTICE_VERSION` a date, because `/privacy` shows it as one.
@@ -102,7 +109,18 @@ Results so far: `npm run check` passed with 84 files and 1278 tests, and `npm ru
   - `8fac218` has a one-sentence body.
   - `9a38c93` and `6ae4ac9` are `feat` commits that also update tests, because flipping a page's `live` flag broke them.
   - `ad85d5f` is typed `feat`, but nothing in it is visible to a visitor (`refactor` would fit).
-- Not run yet: `code-reviewer` and the compound step. Their results go here when they happen.
+  - `e685872` is a `fix`, but it also created `contact-rich-text.tsx` and moved the privacy page onto it, which is refactor work that `e539cb8` then finished.
+- **`code-reviewer`**: **Not ready**, with two "must fix" items and no code bugs. It checked the privacy notice line by line against the code and Better Auth's source and found it accurate. Fixed:
+  - **Must fix: the coverage test's comment promised too much.** It said a customer's name would fail the test, but `users.name` already exists, so a task that starts filling it (task 21, being built now) fails nothing. The comment, `CLAUDE.md` and a task 21 backlog line now say so (`51c2228`, `d2e009c`).
+  - **Must fix: the final test runs.** See "Check that it works": `test:e2e` on the final code, and `test:design`, which this session may not run.
+  - **The session item gave no reason for the IP address and browser type.** No code reads them, so the notice now says the login software records them and we don't use them yet (`43b0977`).
+  - **The task 43 note got Better Auth wrong.** `disableIpTracking` stops only the IP; the browser type is always saved. Checked in `@better-auth/core`'s `getIP` and reworded.
+  - **A version couldn't change twice in one day.** Versions may now end in `.2`, and `noticeDate()` gives the date `/privacy` shows (`43b0977`).
+  - Also: the readme mentions the new samples; the code's length ("6-digit") comes from `LOGIN_RULES` like the other numbers; the `dev_messages` note says staging stores testers' numbers there (task 20 backlog); a browser test checks the notice's cookie claim; a stray blank line in `navigation.ts`; and this doc's corrections.
+  - **The new cookie test found a real gap.** The notice said "one cookie", but next-intl also sets `NEXT_LOCALE` on a page request with no `Accept-Language` header. The notice now says so, and a test checks both cases (`528ca6e`).
+  - **Not built: the plan's sample workshop photos** (R2: grey `VisualSlot` boxes under `npm run dev`). They were missed during the build, and `code-reviewer` noticed. A placeholder with no photo shows the owner nothing, so instead of adding it at review time, it's a backlog note for task 40, with the owner's real photos.
+  - Left for later (backlog): `TermsPage.updatedOn` sits in messages (task 43), and the FAQ's group headings are the same size as its title.
+- **Compound**: [privacy-notice-retention-from-delete-code-not-expiry.md](../solutions/conventions/privacy-notice-retention-from-delete-code-not-expiry.md). The same mistake happened six times: an expiry setting, or an expected cookie list, written down as what the site really does. The lesson lists what really deletes each kind of data and what the coverage test can't see. The pipe that hid a failing check (Common mistakes) wasn't made a lesson of its own: it's a general shell habit, and the check's exit code is now always captured.
 
 ## Try it yourself
 
