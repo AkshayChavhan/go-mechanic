@@ -5,6 +5,7 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import messages from "../messages/en.json";
 import { sceneSelector } from "../src/components/site/scroll-scene-attributes";
 import { ownerGarage } from "../src/server/db/seed-data";
+import { draftCatalogue } from "../src/server/db/vehicle-seed-data";
 import { sampleCanary, sampleReviews } from "../src/content/home";
 import { services } from "../src/content/services";
 import { formatPhoneNumber, telHref } from "../src/lib/contact-links";
@@ -168,6 +169,23 @@ test.describe("what the production build ships", () => {
     const call = hero(page).getByRole("link", { name: `${messages.Contact.call} ${formatPhoneNumber(ownerGarage.phone)}` });
     await expect(call).toHaveAttribute("href", telHref(ownerGarage.phone));
     await expect(call).toHaveAttribute("href", "tel:+919764750567");
+  });
+
+  test("the services section lists every brand the garage works on, from the database, in order", async ({ page }) => {
+    await page.goto("/");
+    const block = page
+      .getByRole("region", { name: home.services.title })
+      .getByRole("heading", { level: 3, name: home.services.brands.title })
+      .locator("..");
+    for (const [kind, label] of [
+      ["car", home.services.brands.cars],
+      ["two-wheeler", home.services.brands.twoWheelers],
+    ] as const) {
+      const expected = draftCatalogue.makes.filter((make) => make.kind === kind).map((make) => make.name.en);
+      const list = block.locator("dt", { hasText: label }).locator("+ dd li");
+      await expect(list).toHaveText(expected);
+    }
+    await expect(block.locator("a, button, img")).toHaveCount(0);
   });
 });
 

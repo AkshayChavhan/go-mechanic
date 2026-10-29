@@ -26,7 +26,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | Done | [14_database_setup.md](../learning/14_database_setup.md) |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | In progress | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
-| 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
+| 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | In progress | [17_vehicle_catalogue.md](../learning/17_vehicle_catalogue.md) |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
@@ -286,13 +286,13 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 17_vehicle_catalogue
 
-- [ ] Create branch `17_vehicle_catalogue`
-- [ ] Plan with `ce-plan`
-- [ ] Vehicle types, brands, models; vehicle picker
-- [ ] If the owner names the brands the garage serves, consider a brands row on the home page (task 13)
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `17_vehicle_catalogue`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-28-1802-feat-vehicle-catalogue-plan.md)
+- [x] Vehicle types, brands, models; vehicle picker: tables for price groups, brands (one row per kind) and models with their fuels, ids made from names, the owner's 22 brands with a draft of 142 models seeded into every new database, `readVehicleCatalogue()`, and `VehiclePicker` on native controls (`NativeSelect`, `ChoiceGroup`), shown on `/dev/design`
+- [x] If the owner names the brands the garage serves, consider a brands row on the home page (task 13): the owner named them on 2026-10-28 and chose a names-only row, now under the services grid
+- [x] Write the learning doc
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
 ### 18_services_pricing
@@ -655,6 +655,10 @@ Not in version 1. See [features.md](../website/features.md).
 - For task 26: `reserveSlot` and `moveSlot` apply the customer window (tomorrow to 7 days ahead). Phone and walk-in bookings need a staff rule (today, later dates; may staff go over "full"?): ask the owner, then add it as an option (task 22)
 - For task 28: edit slot rules (`checkSlotRules`) and closed dates. Before saving rules, hours (`saveGarage`) or a closed date, list the future reservations it would strand; lock the `slot_rules` row in each save and have `reserveSlot` read it `for share`, so the list includes reservations still being made. Add a cached closed-dates read so the open badge says "Closed" on those dates (task 22)
 - For task 43: deleting a customer's data releases their future bookings' places, locking each booking row first like a cancel (task 22)
+- Task 18: the owner checks the draft models, their fuels and their price groups in `src/server/db/vehicle-seed-data.ts` before any model shows on a public page. Prices key on the price group (`vehicle_categories`) and the fuel. The prices page gets the picker with `readVehicleCatalogue()` and `vehiclePickerLabels()` (task 17)
+- Task 20: seed the vehicle catalogue on staging together with the garage, before the first build reads it: an empty catalogue raises no error, and the cached empty read stays for up to 30 days. Never change a catalogue id (task 17)
+- Tasks 21 and 23: the vehicle picker inside a real form. React 19 resets a form after its action, so the picker should return to its default on the form's `reset` event; a choice made before the page hydrates must not be lost; check a posted model and fuel with `resolveVehicle`; decide how to edit a saved vehicle whose model was later hidden; give `ChoiceGroup` and `NativeSelect` an error state like `CheckboxField`'s. Ask the owner first whether customers may say "my model isn't listed", and whether the garage also takes other brands such as Ford or Chevrolet (task 17)
+- Task 39: hide brands and models (`listed = false`) instead of deleting them, so saved vehicles keep their model; ids never change; saves call `updateTag("vehicle-catalogue")`; moving a model to another price group changes the price only for later bookings. Owner decision: today `readVehicleCatalogue()` leaves out a listed brand whose models are all hidden, which also takes it off the home page's brands row; keep that, or list every listed brand on the home row and drop empty brands only in the picker (task 17 code review)
 
 ## How to add a task
 

@@ -16,7 +16,7 @@
 import type { LocalizedText } from "@/i18n/localized-text";
 import { showSamples } from "@/lib/samples";
 
-import type { VehicleKind } from "./services";
+import type { VehicleKind } from "@/domain/vehicles";
 
 /** One trust stat. The four ids are the ones the brief asks for (features.md, Home). */
 export type TrustStat = {
