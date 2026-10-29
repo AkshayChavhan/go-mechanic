@@ -1,12 +1,15 @@
 import { getTranslations } from "next-intl/server";
 
+import { needsName } from "@/domain/profile";
 import type { Locale } from "@/i18n/config";
 import { formatPhoneNumber } from "@/lib/contact-links";
 import { requireUser } from "@/server/auth/access";
+import { readMyProfile } from "@/server/dal/profile";
 
 /**
- * The account's details on /account: "Logged in as +91 98765 43210", or a
- * redirect to /login when nobody is logged in.
+ * Who is logged in, on /account: "Logged in as +91 98765 43210", with a
+ * hello by name once the customer gave it (task 21). Or a redirect to
+ * /login when nobody is logged in.
  *
  * An async Server Component that reads the session cookie, so /account puts
  * it inside <Suspense>: the rest of the page is built ahead of time. A
@@ -19,10 +22,16 @@ import { requireUser } from "@/server/auth/access";
  * (detailsClass), so nothing moves when it replaces it.
  */
 export async function AccountDetails({ locale }: { locale: Locale }) {
-  const user = await requireUser(locale);
+  await requireUser(locale);
+  const profile = await readMyProfile();
   const t = await getTranslations({ locale, namespace: "Account" });
-  return <p className={detailsClass}>{t("signedInAs", { number: formatPhoneNumber(user.phoneNumber) })}</p>;
+  const number = formatPhoneNumber(profile.phoneNumber);
+  return (
+    <p className={detailsClass}>
+      {needsName(profile) ? t("signedInAs", { number }) : t("signedInAsNamed", { name: profile.name, number })}
+    </p>
+  );
 }
 
 /** One line of lead text: the details, and the loading line in their place. */
-export const detailsClass = "type-lead text-muted-foreground";
+export const detailsClass = "type-lead text-pretty text-muted-foreground";
