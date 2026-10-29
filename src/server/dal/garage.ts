@@ -6,18 +6,24 @@
 // 2. Public reads need no check: anyone can see the garage's phone and
 //    hours. readGarage() is cached, so the pages that show them stay
 //    prebuilt (`○ /en` in the build's route list).
-// 3. Every function that isn't a public cached read checks who is asking on
-//    its first line, before it checks its input, calls getDatabase() or
-//    opens a transaction (src/server/auth/access.ts). The check reads the
-//    session itself, so no caller can hand it a made-up user, and a
-//    forgotten check in a page can't open the data:
+// 3. Every other function checks who is asking on its first line, before it
+//    checks its input, calls getDatabase() or opens a transaction
+//    (src/server/auth/access.ts). The check reads the session itself, so no
+//    caller can hand it a made-up user, and a forgotten check in a page
+//    can't open the data:
 //    - staff work calls authorize(permission): saveGarage needs
 //      "garage.edit" (owner or manager);
 //    - a customer's own data calls authorizeUser() and filters the query by
 //      the returned user's id, never a user id from its caller.
-//    The one exception: writes made during a login, before a session exists
-//    (login-codes.ts, consents.ts, users.ts). Only the login service calls
-//    them, and nothing in them comes from a browser.
+//    Three kinds of function don't check, by design:
+//    - public reads, cached or live (readGarage, readAvailableSlots);
+//    - writes made during a login, before a session exists (login-codes.ts,
+//      consents.ts, users.ts): only the login service calls them, and
+//      nothing in them comes from a browser;
+//    - functions that take the caller's transaction (reserveSlot,
+//      releaseSlot, moveSlot): the function that opens the transaction
+//      checks before it opens it. A session read is a query, and inside an
+//      open transaction it would wait forever on PGlite.
 //    Tasks 28 and 40 call saveGarage from a Server Action that calls
 //    requireUser(locale) first.
 
@@ -51,7 +57,12 @@ function dayHours(row: HoursRow | undefined): DayHours {
   return { opens: row.opens.slice(0, 5), closes: row.closes.slice(0, 5) };
 }
 
-function weeklyHours(rows: HoursRow[]): WeeklyHours {
+/**
+ * The week's hours from the opening_hours rows, a missing or half-filled day
+ * counting as closed. The slot engine (slots.ts) reads hours through this
+ * too, so the open badge and the slots never disagree about a bad row.
+ */
+export function weeklyHours(rows: HoursRow[]): WeeklyHours {
   const byWeekday = new Map(rows.map((row) => [row.weekday, row]));
   return Object.fromEntries(WEEKDAYS.map((weekday) => [weekday, dayHours(byWeekday.get(weekday))])) as WeeklyHours;
 }

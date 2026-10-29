@@ -31,7 +31,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
-| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | To do |  |
+| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
@@ -359,13 +359,16 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 22_slot_engine
 
-- [ ] Create branch `22_slot_engine`
-- [ ] Plan with `ce-plan`
-- [ ] Time slots, capacity, holidays; atomic slot reservation
-- [ ] The slot engine reads the hours through the data-access layer (`readGarage()` or a new read in `src/server/dal/`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `22_slot_engine`
+- [x] Plan with `ce-plan`: [2026-10-28-1754-feat-slot-engine-plan.md](../plans/2026-10-28-1754-feat-slot-engine-plan.md)
+- [x] Time slots, capacity, holidays; atomic slot reservation
+- [x] Notes for the tasks that build on the slot engine (20, 23 to 28, 43) at the end of the backlog: this task may edit only its own steps (three sessions work in parallel)
+- [x] Slot rules from the owner (2026-10-28): 1-hour slots; customers book up to 7 days ahead, from tomorrow on (no same-day slots). Capacity is a **placeholder**: 2 vehicles per slot, cars and two-wheelers together, until the owner gives the real number
+- [x] The slot engine reads the hours through the data-access layer (`readSchedule` in `src/server/dal/slots.ts`, through `weeklyHours` from `garage.ts`) and the time through a `Clock` (`@/lib/clock`), so tests can fix it (task 14)
+- [x] Rules for slot callers in `CLAUDE.md` ("Booking slots")
+- [x] Write the learning doc: [22_slot_engine.md](../learning/22_slot_engine.md)
+- [x] Review with `ce-code-review` and `code-reviewer` and fix what they find (verdicts and fixes in the learning doc)
+- [x] Compound: [pglite-parallel-tests-bare-database-not-transaction-per-call.md](../solutions/conventions/pglite-parallel-tests-bare-database-not-transaction-per-call.md)
 - [ ] Merge into `main`
 
 ### 23_booking_flow
@@ -645,9 +648,16 @@ Not in version 1. See [features.md](../website/features.md).
 - App-like install for customers, roadside-assistance dispatch, more branches
 - The local database lock (`src/server/db/folder-lock.ts`): if two processes start within milliseconds of each other and both find a lock left by a stopped process, both can take it over (each deletes the old file, and the second can delete the first one's new lock). Take it over by renaming the old file aside and checking it still names the stopped process, instead of deleting it. Rare: it needs two `npm run dev` starting together after a crash (task 14 code review)
 - `npm audit` shows 3 low findings from a deepmerge advisory through the shadcn CLI (also on `main`, seen in task 14). Revisit when shadcn updates; don't run `npm audit fix --force` (it would install shadcn 1.0.0)
+- For task 20: the Supabase seed also writes the `slot_rules` row (`ownerSlotRules` in `src/server/db/seed-data.ts`; the slot reads throw without it). Then prove "never overbooked" on real Postgres: N parallel `reserveSlot` calls on one slot never pass its capacity (PGlite runs one query or one transaction at a time, so the unit tests can't) (task 22)
+- For task 23: in the booking transaction, call `reserveSlot(tx, ...)` before writing the booking and return a non-ok answer at once; write the booking only after an ok. Confirm with the owner that a pending booking holds a place from creation (task 22 assumes so). Add a test that every slot's counter equals its active bookings. Read slots with `readAvailableSlots` inside `<Suspense>`, after `await io()` (it reads the clock before its first query) (task 22)
+- For task 24: a pickup booking's slot is the time the vehicle reaches the garage, and it takes a place like any booking (task 22)
+- For tasks 25 and 27: a cancel or reschedule first locks the booking row (`select ... for update`) and reads its slot and status from that row, then calls `releaseSlot` or `moveSlot` (inside the same transaction), then writes the booking. Two changes at once then run one after the other; without the lock both give the old slot's place back and it can be overbooked. Add a test, and prove it on Postgres with task 20's race test (task 22)
+- For task 26: `reserveSlot` and `moveSlot` apply the customer window (tomorrow to 7 days ahead). Phone and walk-in bookings need a staff rule (today, later dates; may staff go over "full"?): ask the owner, then add it as an option (task 22)
+- For task 28: edit slot rules (`checkSlotRules`) and closed dates. Before saving rules, hours (`saveGarage`) or a closed date, list the future reservations it would strand; lock the `slot_rules` row in each save and have `reserveSlot` read it `for share`, so the list includes reservations still being made. Add a cached closed-dates read so the open badge says "Closed" on those dates (task 22)
+- For task 43: deleting a customer's data releases their future bookings' places, locking each booking row first like a cancel (task 22)
 - Task 20: set `OWNER_PHONE_NUMBER` on Vercel staging (required there, like `BETTER_AUTH_SECRET`) (task 16)
-- Task 21: vehicle and profile data take the user from `authorize`/`requireUser` and filter by it in the query, never a user id from the caller; a test that customer A can't read or change customer B's vehicle by its id (task 16)
-- Task 23: a booking takes its customer from the session after the inline code, never from a form field (task 16)
+- Task 21: vehicle and profile data take the user from `authorizeUser()` in the data-access layer (`requireUser(locale)` in pages and actions) and filter by it in the query, never a user id from the caller; a test that customer A can't read or change customer B's vehicle by its id (task 16)
+- Task 23: a booking takes its customer from the session after the inline code (`authorizeUser()`, called before the booking transaction opens, never inside it), never from a form field (task 16)
 - Task 25: another customer's booking id gives the 404 page, not a 403 (task 16)
 - Task 26: add `/admin` to `PROTECTED_PREFIXES` in `src/lib/access-routes.ts`; every `/admin` page calls `requirePermission(locale, "admin.open")` itself, not only its layout; browser tests that a customer gets the 404 and a logged-out visitor a 307; revisit `forbidden()` (task 16)
 - Tasks 28 and 40: `saveGarage` now checks `garage.edit` itself; their Server Action calls `requireUser(locale)` first (their steps still say "after task 16's role check") (task 16)
