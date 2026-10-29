@@ -6,14 +6,20 @@
 // 2. Public reads need no check: anyone can see the garage's phone and
 //    hours. readGarage() is cached, so the pages that show them stay
 //    prebuilt (`○ /en` in the build's route list).
-// 3. Every write calls authorize(permission) (src/server/auth/access.ts) on
-//    its first line, before it checks its input, calls getDatabase() or opens
-//    a transaction. authorize reads the session itself, so no caller can hand
-//    it a made-up user, and a forgotten check in a page can't open a save.
-//    Functions over a user's own data take the user from authorize, never a
-//    user id from their caller, and filter by it in the query. saveGarage
-//    needs "garage.edit" (owner or manager); tasks 28 and 40 call it from a
-//    Server Action that calls requireUser(locale) first.
+// 3. Every function that isn't a public cached read checks who is asking on
+//    its first line, before it checks its input, calls getDatabase() or
+//    opens a transaction (src/server/auth/access.ts). The check reads the
+//    session itself, so no caller can hand it a made-up user, and a
+//    forgotten check in a page can't open the data:
+//    - staff work calls authorize(permission): saveGarage needs
+//      "garage.edit" (owner or manager);
+//    - a customer's own data calls authorizeUser() and filters the query by
+//      the returned user's id, never a user id from its caller.
+//    The one exception: writes made during a login, before a session exists
+//    (login-codes.ts, consents.ts, users.ts). Only the login service calls
+//    them, and nothing in them comes from a browser.
+//    Tasks 28 and 40 call saveGarage from a Server Action that calls
+//    requireUser(locale) first.
 
 import "server-only";
 

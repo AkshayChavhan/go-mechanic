@@ -6,9 +6,12 @@
 //                                    user, or a redirect to /login
 //   requirePermission(locale, perm)  pages and Server Actions: also needs the
 //                                    permission, or shows the 404 page
-//   authorize(perm)                  the data-access layer: the real check,
-//                                    first thing in every save, before any
+//   authorize(perm)                  the data-access layer, staff work: the
+//                                    real check, first thing, before any
 //                                    database work; throws AccessDeniedError
+//   authorizeUser()                  the data-access layer, a customer's own
+//                                    data: logged in is enough; the function
+//                                    then filters by the user's id itself
 //
 // Why the data-access layer checks the session itself, instead of trusting
 // its caller: no caller can hand it a made-up user, a forgotten check in a
@@ -27,13 +30,16 @@ import { LOGIN_PATH, SESSION_ENDED } from "@/lib/access-routes";
 
 import { type CurrentUser, getCurrentUser } from "./session";
 
-/** Thrown by authorize(). It names the reason and the permission, never a person. */
+/**
+ * Thrown by authorize() and authorizeUser(). It names the reason and the
+ * permission (none for authorizeUser), never a person.
+ */
 export class AccessDeniedError extends Error {
   readonly reason: "signedOut" | "notAllowed";
-  readonly permission: Permission;
+  readonly permission: Permission | null;
 
-  constructor(reason: "signedOut" | "notAllowed", permission: Permission) {
-    super(`Access denied (${reason}: ${permission})`);
+  constructor(reason: "signedOut" | "notAllowed", permission: Permission | null) {
+    super(`Access denied (${reason}${permission ? `: ${permission}` : ""})`);
     this.name = "AccessDeniedError";
     this.reason = reason;
     this.permission = permission;
@@ -67,13 +73,26 @@ export async function requirePermission(locale: Locale, permission: Permission):
 }
 
 /**
- * The real check, for the data-access layer: call it on the first line of
- * every save, before checking the input, calling getDatabase() or opening a
+ * The real check for staff work, in the data-access layer: call it on the
+ * first line, before checking the input, calling getDatabase() or opening a
  * transaction. Returns the user, or throws AccessDeniedError.
  */
 export async function authorize(permission: Permission): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) throw new AccessDeniedError("signedOut", permission);
   if (!can(user.role, permission)) throw new AccessDeniedError("notAllowed", permission);
+  return user;
+}
+
+/**
+ * The real check for a customer's own data (their vehicles, their bookings),
+ * in the data-access layer: logged in is enough, since customers hold no
+ * permission in the table. Call it on the first line, like authorize, then
+ * filter the query by the returned user's id: never take a user id from the
+ * caller. Throws AccessDeniedError (signedOut) when nobody is logged in.
+ */
+export async function authorizeUser(): Promise<CurrentUser> {
+  const user = await getCurrentUser();
+  if (!user) throw new AccessDeniedError("signedOut", null);
   return user;
 }

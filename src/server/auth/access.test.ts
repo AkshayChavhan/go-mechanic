@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import type { Role } from "@/domain/roles";
 
-import { AccessDeniedError, authorize, requirePermission, requireUser } from "./access";
+import { AccessDeniedError, authorize, authorizeUser, requirePermission, requireUser } from "./access";
 import { getCurrentUser } from "./session";
 
 // getCurrentUser() reads the session cookie; here a stand-in answers with
@@ -80,5 +80,20 @@ describe("authorize (the data-access layer's check)", () => {
     const error = await thrownBy(authorize("team.manage"));
     expect((error as Error).message).toBe("Access denied (notAllowed: team.manage)");
     expect(inspect(error)).not.toMatch(/9876543210|u1/);
+  });
+});
+
+describe("authorizeUser (the data-access layer's check for a customer's own data)", () => {
+  test("a logged-in customer: the user (customers hold no permission, and need none here)", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(userWith("customer"));
+    expect(await authorizeUser()).toEqual(userWith("customer"));
+  });
+
+  test("logged out: AccessDeniedError (signedOut), naming no permission and no person", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(null);
+    const error = await thrownBy(authorizeUser());
+    expect(error).toBeInstanceOf(AccessDeniedError);
+    expect(error).toMatchObject({ reason: "signedOut", permission: null });
+    expect((error as Error).message).toBe("Access denied (signedOut)");
   });
 });
