@@ -15,14 +15,14 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import type { Service, ServiceId } from "@/content/services";
+import type { Service } from "@/domain/services";
 import type { VehicleKind } from "@/domain/vehicles";
 import { localize } from "@/i18n/localized-text";
 import { cn } from "@/lib/utils";
 
-// One icon per service. A Record over every ServiceId: adding a service to
-// src/content/services.ts without an icon here fails `npm run typecheck`.
-const icons: Record<ServiceId, LucideIcon> = {
+// One icon per seeded service (service-tile.test.tsx checks each has its
+// own). A service the owner adds later (task 39) gets the wrench.
+const icons: Partial<Record<string, LucideIcon>> = {
   "periodic-service": WrenchIcon,
   ac: SnowflakeIcon,
   "denting-painting": SprayCanIcon,
@@ -37,12 +37,12 @@ const icons: Record<ServiceId, LucideIcon> = {
 };
 
 /**
- * The service's icon; a wrench for a service added later without one (task 18
- * reads them from the database). A component, so the icon is picked from the
- * fixed list above rather than made while the tile renders.
+ * The service's icon; a wrench for a service without one. A component, so the
+ * icon is picked from the fixed list above rather than made while the tile
+ * renders.
  */
 function ServiceIcon({ id, className }: { id: string; className?: string }) {
-  const Icon = Object.hasOwn(icons, id) ? icons[id as ServiceId] : WrenchIcon;
+  const Icon = (Object.hasOwn(icons, id) ? icons[id] : undefined) ?? WrenchIcon;
   return <Icon aria-hidden="true" className={className} />;
 }
 
@@ -76,7 +76,7 @@ export function ServiceTile({ service, className }: { service: Service; classNam
       </CardHeader>
       {/* mt-auto: the vehicles line sits at the bottom of every tile in a row. */}
       <CardContent className="mt-auto">
-        <p className="type-caption text-muted-foreground">{t(vehiclesKey(service.vehicles))}</p>
+        <p className="type-caption text-muted-foreground">{t(vehiclesKey(service.vehicleKinds))}</p>
       </CardContent>
     </Card>
   );

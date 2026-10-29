@@ -33,6 +33,10 @@ describe("the draft services", () => {
     expect(checkServices(draftServices, [], draftCatalogue.categories)).toEqual([]);
   });
 
+  test("each summary is one line", () => {
+    for (const service of draftServices) expect(service.summary.en, service.id).not.toContain("\n");
+  });
+
   test("each service lists the signs you need it", () => {
     for (const service of servicesOnly) expect(service.signs.length, service.id).toBeGreaterThan(0);
   });

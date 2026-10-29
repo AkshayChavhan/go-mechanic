@@ -43,12 +43,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { selectReviews, selectTrustStats } from "@/content/home";
-import { services } from "@/content/services";
 import { formatRupees } from "@/i18n/format";
 import { whatsappHref } from "@/lib/contact-links";
 import { devOnly } from "@/lib/dev-only";
 import { countDuration, distance, duration, ease } from "@/lib/motion";
 import { readGarage } from "@/server/dal/garage";
+import { readServices } from "@/server/dal/services";
 import { readVehicleCatalogue } from "@/server/dal/vehicles";
 
 import { ColorPair } from "./_components/color-pair";
@@ -276,6 +276,8 @@ export default async function DesignPage() {
   // The real catalogue (the draft models, task 17), for the picker sample.
   const catalogue = await readVehicleCatalogue();
   const pickerLabels = await vehiclePickerLabels();
+  // The seeded services, for the tile samples.
+  const services = await readServices();
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
   // The samples, through the same switch the home page uses (showSamples()):
   // devOnly() keeps this page out of production, but a staging server that
@@ -918,12 +920,11 @@ export default async function DesignPage() {
             >
               <Section tone="grey" className="rounded-xl py-(--gutter)">
                 <ul data-sample="service-tiles" className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                  <li className="sm:col-span-2">
-                    <ServiceTile service={services[0]} />
-                  </li>
-                  <li>
-                    <ServiceTile service={services[1]} />
-                  </li>
+                  {services.slice(0, 2).map((service, index) => (
+                    <li key={service.id} className={index === 0 ? "sm:col-span-2" : undefined}>
+                      <ServiceTile service={service} />
+                    </li>
+                  ))}
                 </ul>
               </Section>
             </Block>

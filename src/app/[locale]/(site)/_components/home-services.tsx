@@ -3,7 +3,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { sceneMark } from "@/components/site/scroll-scene-attributes";
 import { Section } from "@/components/site/section";
 import { ServiceTile } from "@/components/site/service-tile";
-import type { Service } from "@/content/services";
+import type { Service } from "@/domain/services";
 import { VEHICLE_KINDS, type VehicleMake } from "@/domain/vehicles";
 import { localize } from "@/i18n/localized-text";
 

@@ -3,11 +3,12 @@ import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi } fro
 
 import { isLivePage } from "@/components/site/navigation";
 import { sceneSelector } from "@/components/site/scroll-scene-attributes";
-import { services } from "@/content/services";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { readGarage } from "@/server/dal/garage";
+import { readServices } from "@/server/dal/services";
 import { readVehicleCatalogue } from "@/server/dal/vehicles";
 import { ownerGarage } from "@/server/db/seed-data";
+import { draftServices } from "@/server/db/service-seed-data";
 import { draftCatalogue } from "@/server/db/vehicle-seed-data";
 import messages from "../../../../messages/en.json";
 
@@ -23,6 +24,8 @@ import Home, { ensureStatic } from "./page";
 vi.mock("@/server/dal/garage", () => ({ readGarage: vi.fn() }));
 // The brands row (task 17) reads the vehicle catalogue: the draft here.
 vi.mock("@/server/dal/vehicles", () => ({ readVehicleCatalogue: vi.fn() }));
+// The services (task 18): the draft services and packages here.
+vi.mock("@/server/dal/services", () => ({ readServices: vi.fn() }));
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
   const { default: allMessages } = await import("../../../../messages/en.json");
@@ -36,7 +39,10 @@ const home = messages.HomePage;
 beforeEach(() => {
   vi.mocked(readGarage).mockResolvedValue(ownerGarage);
   vi.mocked(readVehicleCatalogue).mockResolvedValue(draftCatalogue);
+  vi.mocked(readServices).mockResolvedValue([...draftServices]);
 });
+
+const services = draftServices.filter((service) => service.kind === "service");
 
 afterEach(() => {
   vi.unstubAllEnvs();

@@ -7,7 +7,7 @@ import { sceneSelector } from "../src/components/site/scroll-scene-attributes";
 import { ownerGarage } from "../src/server/db/seed-data";
 import { draftCatalogue } from "../src/server/db/vehicle-seed-data";
 import { sampleCanary, sampleReviews } from "../src/content/home";
-import { services } from "../src/content/services";
+import { draftServices } from "../src/server/db/service-seed-data";
 import { formatPhoneNumber, telHref } from "../src/lib/contact-links";
 
 import {
@@ -229,7 +229,7 @@ test.describe("every word is readable without the animation", () => {
     const page = await context.newPage();
     await page.goto("/");
     const names = await page.getByRole("heading", { level: 3 }).allTextContents();
-    for (const service of services) expect(names).toContain(service.name.en);
+    for (const service of draftServices.filter(({ kind }) => kind === "service")) expect(names).toContain(service.name.en);
     for (const selector of ["h1", "h2", "h3", REVEAL_TARGETS]) {
       const opacities = await effectiveOpacities(page, selector);
       expect(opacities.length, selector).toBeGreaterThan(0);
