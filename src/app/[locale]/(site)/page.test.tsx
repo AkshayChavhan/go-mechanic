@@ -2,6 +2,7 @@ import { screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, onTestFinished, test, vi } from "vitest";
 
 import { isLivePage } from "@/components/site/navigation";
+import { servicePath } from "@/domain/services";
 import { sceneSelector } from "@/components/site/scroll-scene-attributes";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { readGarage } from "@/server/dal/garage";
@@ -152,13 +153,25 @@ describe("Home page", () => {
     expect(calls.map((link) => link.getAttribute("href"))).toEqual(["tel:+912012345678"]);
   });
 
-  test("lists all eleven services, with no links (no service pages or prices yet)", async () => {
-    renderWithIntl(await Home());
+  test("lists all eleven services, each linking to its page, then All services, and no price", async () => {
+    const { container } = renderWithIntl(await Home());
     const section = sectionOf(home.services.title);
     for (const service of services) {
-      expect(within(section).getByRole("heading", { level: 3, name: service.name.en })).toBeTruthy();
+      const heading = within(section).getByRole("heading", { level: 3, name: service.name.en });
+      expect(within(heading).getByRole("link").getAttribute("href")).toBe(servicePath(service.id));
     }
-    expect(section.querySelector("a, button")).toBeNull();
+    const all = within(section).getByRole("link", { name: messages.Services.allServices });
+    expect(all.getAttribute("href")).toBe("/services");
+    expect(section.querySelector("button")).toBeNull();
+    expect(container.textContent).not.toContain("₹");
+  });
+
+  test("the hero links to the packages, as a text link under its two buttons", async () => {
+    renderWithIntl(await Home());
+    const hero = screen.getByRole("heading", { level: 1 }).closest("section")!;
+    const link = within(hero).getByRole("link", { name: messages.Packages.seePackages });
+    expect(link.getAttribute("href")).toBe("/packages");
+    expect(link.getAttribute("data-slot")).toBeNull();
   });
 
   test("under the services, lists the brands the garage works on, cars and two-wheelers, in order, with no links", async () => {
@@ -208,8 +221,10 @@ describe("Home page", () => {
     const { container } = renderWithIntl(await Home());
     const hrefs = [...container.querySelectorAll("a[href]")].map((link) => link.getAttribute("href")!);
     expect(hrefs.length).toBeGreaterThan(0);
+    const servicePages = services.map((service) => servicePath(service.id));
     for (const href of hrefs) {
-      if (href.startsWith("/")) expect(isLivePage(href), href).toBe(true);
+      if (href.startsWith("/services/")) expect(servicePages, href).toContain(href);
+      else if (href.startsWith("/")) expect(isLivePage(href), href).toBe(true);
       else expect(href).toMatch(/^(?:https:\/\/wa\.me\/|tel:)/);
     }
   });

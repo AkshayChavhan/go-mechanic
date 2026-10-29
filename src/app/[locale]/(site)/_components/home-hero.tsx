@@ -1,14 +1,16 @@
+import { ArrowRightIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-import type { BookTarget } from "@/components/site/navigation";
+import { isLivePage, type BookTarget } from "@/components/site/navigation";
 import { Section } from "@/components/site/section";
 import { VisualSlot } from "@/components/site/visual-slot";
+import { Link } from "@/i18n/navigation";
 
 import { HomeActions } from "./home-actions";
 
 /**
  * The first screen: what the garage does and where (the page's only h1),
- * Book and Call, and the picture slot. On large screens (the story: query)
+ * Book and Call, a "See packages" text link (task 18), and the picture slot. On large screens (the story: query)
  * the words and the picture sit side by side and fill the screen below the
  * header; elsewhere the picture follows the words, so on a phone the heading
  * and both buttons fit above the action bar.
@@ -18,6 +20,7 @@ import { HomeActions } from "./home-actions";
  */
 export function HomeHero({ book, phone }: { book: BookTarget; phone: string }) {
   const t = useTranslations("HomePage");
+  const tPackages = useTranslations("Packages");
 
   return (
     <Section
@@ -31,7 +34,20 @@ export function HomeHero({ book, phone }: { book: BookTarget; phone: string }) {
             {t("title")}
           </h1>
           <p className="max-w-xl type-lead text-pretty text-muted-foreground">{t("hero.lead")}</p>
-          <HomeActions book={book} phone={phone} />
+          <div className="flex flex-col gap-3">
+            <HomeActions book={book} phone={phone} />
+            {/* A text link, outside HomeActions: the final call to action
+                shares those two buttons, and one blue button is enough. */}
+            {isLivePage("/packages") && (
+              <Link
+                href="/packages"
+                className="inline-flex items-center gap-2 self-start type-callout text-link underline-offset-4 hover:underline pointer-coarse:min-h-11"
+              >
+                {tPackages("seePackages")}
+                <ArrowRightIcon aria-hidden="true" className="size-4" />
+              </Link>
+            )}
+          </div>
         </div>
         {/* No photo yet: the line drawing. A photo here loads eagerly (the
             page's largest image); its alt text joins messages with it. */}
