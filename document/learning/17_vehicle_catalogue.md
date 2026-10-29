@@ -35,7 +35,7 @@ Against `main` after task 22's merge, leaving out this doc: `40 files changed, 4
 | `src/server/db/schema.ts`, `migrations/0003_vehicle_catalogue.sql` + `meta/` | Changed, Added | Two enums (`vehicle_kind`, `fuel`) and three tables: `vehicle_categories`, `vehicle_makes`, `vehicle_models` |
 | `src/server/db/vehicle-catalogue.test.ts` | Added | Proves the database refuses what the rules forbid |
 | `src/server/db/vehicle-seed-data.ts` + test | Added | The draft: 22 brands, 142 models (78 cars, 64 two-wheelers), 6 price groups. Plain data, so Playwright can import it |
-| `src/server/db/seed.ts`, `index.ts` | Changed | `seedVehicleCatalogue`, called right after `seedGarage` in `createDatabase` |
+| `src/server/db/seed.ts`, `index.ts` | Changed | `seedVehicleCatalogue`, called after `seedGarage` and `seedSlotRules` in `createDatabase` |
 | `src/server/dal/vehicles.ts` + test | Added | `readVehicleCatalogue()`: one cached read, listed rows only |
 | `src/components/ui/native-select.tsx`, `restyle.test.tsx` | Added, Changed | shadcn's native select, restyled to 44px like our other fields |
 | `src/components/site/choice-group.tsx` + test | Added | `ChoiceGroup`: native radios drawn as 44px pills |
@@ -104,7 +104,7 @@ Against `main` after task 22's merge, leaving out this doc: `40 files changed, 4
    - The data file has no `server-only` import, so the Playwright specs can import it as the values they expect.
    - The seed checks the draft with `checkCatalogue` and throws on any problem. Then it runs one transaction with one insert per table, each with `onConflictDoNothing` on the id.
    - So a new database gets everything, and an existing one gets only the rows it lacks. It never updates a row, so the owner's later edits survive restarts.
-   - It is called right after `seedGarage`, not inside it, because `seedGarage` returns early on every database that already has the garage.
+   - It is called after `seedGarage` (and, since the merge with task 22, after `seedSlotRules`), not inside `seedGarage`, because `seedGarage` returns early on every database that already has the garage.
    - Timing, from a throwaway test that was deleted and never committed: `createDatabase 3710 ms; seed into empty 40 ms; seed again 28 ms`.
 
 6. **One cached read** (`src/server/dal/vehicles.ts`). `readVehicleCatalogue()` copies `readGarage()`: `'use cache'`, `cacheTag("vehicle-catalogue")`, `cacheLife("max")`. It returns listed rows only, in order, and also leaves out a brand whose models are all hidden. An empty catalogue gives empty lists, not an error: the home row is optional. Task 20 must seed staging before its first build, or staging shows no brands. Whether a brand whose models are all hidden should still show on the home row is an owner decision for task 39 (in its backlog line).
@@ -206,8 +206,9 @@ Real output, from the work session unless marked:
   - After the fixes, `npm run check` passed again: `Test Files 78 passed`, `Tests 1147 passed`.
 - **code-reviewer, first run: Needs changes.** One must-fix: task 22 had merged into `main` meanwhile, so the branch conflicted with it, with two migrations numbered `0002`. Two suggestions: this doc's size line didn't match the diff, and a line in `seed.ts`'s header was badly wrapped. All three fixed by the merge above and this doc's update.
   - Re-run on the merged code: `npm run check`: `Test Files 81 passed`, `Tests 1270 passed`; `npm run test:e2e -- --workers=2`: `65 passed (2.2m)`, first try; `npm run build`: `○ /en`; the `e2e/dev` specs on port 3001: `43 passed (9.5m)`.
-- **code-reviewer, second run: result added after it runs.**
-- **Compound: decided after the reviews.**
+- **code-reviewer, second run: Ready to merge.** It confirmed the branch now merges with `main` without conflicts (`git merge-tree`), that the migration chain is valid (`0003`'s snapshot points to `0002_slot_engine`'s, and the journal times only go up), and that `npm run check` passes (81 files, 1270 tests). Two wording suggestions, both fixed: this doc and the plan still named the old seed order and the old snapshot file.
+- **SEO check** (`seo-reviewer`, run by hand: the SEO Stop hook watches the folder this session started in, which is Session 1's, so it never fired for this worktree): `/` Pass (the brands are real text in the server's HTML, the heading order is unchanged, no links or images), `/dev/design` Pass (a 404 with `noindex` in production). The home page's own title, canonical link, social tags and JSON-LD wait for task 42.
+- **Compound: one lesson saved.** The counterfactual question: without it, would a future session repeat the mistake? Yes. Three sessions keep adding tables in parallel, and renaming a clashing migration looks right but fails silently on every existing database. The lesson is [`parallel-branches-same-migration-number-regenerate-not-rename.md`](../solutions/workflow-issues/parallel-branches-same-migration-number-regenerate-not-rename.md), written with `/compound-engineering:ce-compound mode:non-interactive depth:lightweight`.
 - **Not done yet, for later tasks:**
   - The owner still has to check the draft models, fuels and price groups before task 18 shows any model publicly.
   - The owner still has to decide whether customers may say "my model isn't listed" (tasks 21 and 23).
