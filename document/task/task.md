@@ -28,7 +28,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | To do |  |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | To do |  |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
-| 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
+| 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
@@ -317,9 +317,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 19_info_pages
 
-- [ ] Create branch `19_info_pages`
+- [x] Create branch `19_info_pages`
 - [ ] Plan with `ce-plan`
 - [ ] Contact, about, FAQ, privacy and terms pages
+- [ ] Facts from the owner (2026-10-29): no directions link until the owner sends the garage's exact Google Maps link; the emergency number is the garage phone; payment at the garage is cash or UPI. The story, team, certifications, warranty, genuine parts and job times aren't known yet: labelled samples under `npm run dev` only (`showSamples()`), never on staging or production
 - [ ] Set `live: true` for `about` and `contact` in `src/components/site/navigation.ts` with the pages. A directions link needs the owner's exact map link: one built from the address text lands at Mukai Chowk, not the garage (task 12)
 - [ ] Link `/login`'s short notice to the new `/privacy` page, and change `LOGIN_NOTICE_VERSION` (`src/domain/consent.ts`) and the pinned wording in `consent.test.ts` in the same commit (task 15)
 - [ ] Write the learning doc
