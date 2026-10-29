@@ -24,7 +24,7 @@ export type NavItem = SitePage & { label: NavLabel };
 export const navItems: readonly NavItem[] = [
   { label: "services", href: "/services", live: false }, // task 18
   { label: "prices", href: "/packages", live: false }, // task 18
-  { label: "about", href: "/about", live: false }, // task 19
+  { label: "about", href: "/about", live: true }, // task 19
   { label: "contact", href: "/contact", live: true }, // task 19
 ];
 

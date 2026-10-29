@@ -79,6 +79,14 @@
     "breakdownTitle": "Broken down?",
     "breakdown": "Call the garage on <call>{phone}</call> and tell us what happened. We can help during our opening hours."
   },
+  "AboutPage": {
+    "metaTitle": "About the garage | {brand}",
+    "metaDescription": "{brand} is a garage at Mukai Chowk, Kiwale, Pune, that services and repairs cars and two-wheelers. See when we're open and how to book a visit.",
+    "heading": "About the garage",
+    "lead": "One garage at Mukai Chowk, Kiwale, in Pune, that services and repairs cars and two-wheelers.",
+    "visitTitle": "Visiting us",
+    "visit": "Message us on WhatsApp with your vehicle and what it needs, or call us, and we'll agree a time for you to bring it in."
+  },
   "NotFound": {
     "metaTitle": "Page not found | {brand}",
     "title": "Page not found",
