@@ -71,6 +71,24 @@ describe("SiteFooter", () => {
     ]);
   });
 
+  test("lists the footer-only pages after the menu pages, in the same list", () => {
+    renderWithIntl(
+      <SiteFooter items={demoItems} moreItems={[{ label: "faq", href: "/faq", live: true }]} garage={ownerGarage} />,
+    );
+    const nav = within(screen.getByRole("contentinfo")).getByRole("navigation", { name: messages.Footer.pages });
+    expect(within(nav).getAllByRole("link").map((link) => link.getAttribute("href"))).toEqual([
+      "/services",
+      "/about",
+      "/faq",
+    ]);
+  });
+
+  test("shows the page list when only footer-only pages are live", () => {
+    renderWithIntl(<SiteFooter items={[]} moreItems={[{ label: "faq", href: "/faq", live: true }]} garage={ownerGarage} />);
+    const nav = within(screen.getByRole("contentinfo")).getByRole("navigation", { name: messages.Footer.pages });
+    expect(within(nav).getByRole("link", { name: messages.Nav.faq }).getAttribute("href")).toBe("/faq");
+  });
+
   test("its text links are 44px tall on touch screens", () => {
     const footer = renderFooter(demoItems);
     for (const link of within(footer).getAllByRole("link")) {
