@@ -27,7 +27,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | Done | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | In progress | [16_roles_access.md](../learning/16_roles_access.md) |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | Done | [17_vehicle_catalogue.md](../learning/17_vehicle_catalogue.md) |
-| 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
+| 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | In progress |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
@@ -297,7 +297,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 18_services_pricing
 
-- [ ] Create branch `18_services_pricing`
+- [x] Create branch `18_services_pricing`
 - [ ] Plan with `ce-plan`
 - [ ] Services, packages, prices by vehicle; `/services`, `/packages`
 - [ ] Services move to the database the way the garage did in task 14: a typed seed made from `src/content/services.ts` (like `src/server/db/seed-data.ts`), a cached read in `src/server/dal/` with its own tag, and `src/content/services.ts` deleted (task 14)
