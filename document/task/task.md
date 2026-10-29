@@ -318,7 +318,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 19_info_pages
 
 - [x] Create branch `19_info_pages`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [2026-10-29-1118-feat-info-pages-plan.md](../plans/2026-10-29-1118-feat-info-pages-plan.md)
 - [ ] Contact, about, FAQ, privacy and terms pages
 - [ ] Facts from the owner (2026-10-29): no directions link until the owner sends the garage's exact Google Maps link; the emergency number is the garage phone; payment at the garage is cash or UPI. The story, team, certifications, warranty, genuine parts and job times aren't known yet: labelled samples under `npm run dev` only (`showSamples()`), never on staging or production
 - [ ] Set `live: true` for `about` and `contact` in `src/components/site/navigation.ts` with the pages. A directions link needs the owner's exact map link: one built from the address text lands at Mukai Chowk, not the garage (task 12)
