@@ -141,6 +141,16 @@ test.describe("links to the info pages", () => {
     expect(names).toEqual(["better-auth.session_token"]);
   });
 
+  test("the language cookie is set only for a request that names no language, as the privacy notice says", async ({ page }) => {
+    // next-intl's proxy sets NEXT_LOCALE when the browser's languages pick
+    // another locale than the page's (syncCookie). With English only, that's
+    // a request with no Accept-Language at all: browsers always send one.
+    const browserLike = await page.request.get("/contact", { headers: { "accept-language": "mr-IN,mr;q=0.9,hi;q=0.8" } });
+    expect(browserLike.headers()["set-cookie"] ?? "").not.toContain("NEXT_LOCALE");
+    const noLanguage = await page.request.get("/contact");
+    expect(noLanguage.headers()["set-cookie"] ?? "").toContain("NEXT_LOCALE=en");
+  });
+
   test("the login notice links the privacy notice, opening a new tab", async ({ page }) => {
     await page.goto("/login");
     const link = page.locator('a[href="/privacy"]');

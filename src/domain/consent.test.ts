@@ -38,7 +38,7 @@ const WORDING_BY_VERSION: Record<string, Pinned> = {
       "I agree that {brand} can use my mobile number to log me in and to contact me by SMS, WhatsApp or phone about my bookings.",
     notice:
       "We keep your mobile number, when you agreed, and your device's network address (IP address) and browser type. We use them only to log you in, to keep logins safe and to tell you about your bookings. The <privacy>privacy notice</privacy> has the details. To stop this or delete your data, call the garage.",
-    privacyNotice: "1982199cf6ba621f4e10c1877da221df54b5ae4275d6943db594bc19ef673a06",
+    privacyNotice: "d19680c354595c4cc0baf354aa21bc4cce989b59098a0210f200c01f2e6c74b7",
   },
 };
 
