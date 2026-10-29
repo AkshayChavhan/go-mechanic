@@ -227,7 +227,8 @@ The frame around every public page (task 12). Pages in `src/app/[locale]/(site)/
 | Component | What it does |
 | --- | --- |
 | `SiteChrome` (`site-chrome.tsx`) | The frame, in order: skip link, header, offer banner, the page in `<main id="main">`, footer, action bar, then a phone-only spacer the bar's height. It gets the garage as a prop (`garage`) from its callers, the `(site)` layout and `global-not-found.tsx`, which read it from the database with `readGarage()` (`src/server/dal/garage.ts`; the home page and both 404 pages call it too). It reads the offer and `navigation.ts` itself, and passes all of them down as props |
-| `SiteHeader` (`site-header.tsx`) | Frosted, sticky. The Wordmark links home; from 768px, the live page links and one blue "Book a service"; below 768px, the menu button |
+| `SiteHeader` (`site-header.tsx`) | Frosted, sticky. The Wordmark links home; from 768px, the live page links, "Account" and one blue "Book a service"; below 768px, "Account" and the menu button |
+| `AccountLink` (`account-link.tsx`) | The header's static link to `/account` (task 21): a ghost button, the word "Account" from 1024px and a 44px person icon below (the word stays for screen readers; the word didn't fit the 768px header). Outside the `<nav>`, `prefetch={false}`, and it never reads the session: a logged-out visitor gets the proxy's 307 to `/login` |
 | `MobileMenu` (`mobile-menu.tsx`) | Client island: the menu button and the sheet that slides in. Only holds the open state |
 | `MobileMenuContent` (`site-header.tsx`) | What the menu holds: live page links, open status, hours, address, Call and WhatsApp. Rendered on the server, passed to `MobileMenu` as children |
 | `SiteFooter` (`site-footer.tsx`) | A grey band: Wordmark, address, phone, WhatsApp, the hours with the open status, and the live page links once there are any. No copyright year (reading the date would stop prerendering) |
