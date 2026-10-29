@@ -36,6 +36,7 @@ const MARKERS = [
   "BETTER_AUTH_SECRET",
   "sendPhoneNumberOTP",
   "vehicle_models",
+  "service_prices",
 ];
 
 /** Every file under a folder, as full paths. */

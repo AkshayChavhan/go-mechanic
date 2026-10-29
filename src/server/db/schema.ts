@@ -39,6 +39,7 @@ import {
 import type { ConsentPurpose } from "@/domain/consent";
 import type { Weekday } from "@/domain/opening-hours";
 import type { Role } from "@/domain/roles";
+import type { ServiceKind } from "@/domain/services";
 import type { Fuel, VehicleKind } from "@/domain/vehicles";
 import type { LocalizedText } from "@/i18n/localized-text";
 
@@ -376,10 +377,11 @@ export const vehicleKind = pgEnum("vehicle_kind", ["car", "two-wheeler"] as cons
 export const fuel = pgEnum("fuel", ["petrol", "diesel", "cng", "electric"] as const satisfies readonly Fuel[]);
 
 /**
- * A CHECK that the English name is filled in. Spelled out with coalesce: a
- * name with no "en" key gives NULL, and a CHECK whose result is NULL passes.
+ * A CHECK that a LocalizedText's English is filled in. Spelled out with
+ * coalesce: text with no "en" key gives NULL, and a CHECK whose result is
+ * NULL passes.
  */
-const englishNameFilled = (name: unknown) => sql`coalesce(btrim(${name} ->> 'en'), '') <> ''`;
+const englishFilled = (text: unknown) => sql`coalesce(btrim(${text} ->> 'en'), '') <> ''`;
 
 /**
  * Price groups within a kind: task 18 prices services by group and fuel.
@@ -401,7 +403,7 @@ export const vehicleCategories = pgTable(
     // Lets a model's (category, kind) pair point here: the database then
     // refuses a car model in a two-wheeler group.
     unique("vehicle_categories_id_kind").on(table.id, table.kind),
-    check("vehicle_categories_english_name", englishNameFilled(table.name)),
+    check("vehicle_categories_english_name", englishFilled(table.name)),
   ],
 );
 
@@ -422,7 +424,7 @@ export const vehicleMakes = pgTable(
   },
   (table) => [
     unique("vehicle_makes_id_kind").on(table.id, table.kind),
-    check("vehicle_makes_english_name", englishNameFilled(table.name)),
+    check("vehicle_makes_english_name", englishFilled(table.name)),
   ],
 );
 
@@ -462,6 +464,90 @@ export const vehicleModels = pgTable(
       foreignColumns: [vehicleCategories.id, vehicleCategories.kind],
     }).onDelete("restrict"),
     check("vehicle_models_has_fuels", sql`cardinality(${table.fuels}) > 0`),
-    check("vehicle_models_english_name", englishNameFilled(table.name)),
+    check("vehicle_models_english_name", englishFilled(table.name)),
+  ],
+);
+
+// --- Services and prices (task 18) -------------------------------------------
+//
+// The services (brakes, AC...) and packages (Basic, Standard, Comprehensive)
+// in one table, and their real prices (src/domain/services.ts explains each).
+// Ids are text made from names, like the catalogue's, for the same reason:
+// every process seeds its own copy. A service the garage stops offering gets
+// listed = false; nothing is deleted while a price (or, from task 23, a
+// booking) points to it.
+
+/** Every kind, as in SERVICE_KINDS (src/domain/services.ts; services-tables.test.ts checks they match). */
+export const serviceKind = pgEnum("service_kind", ["service", "package"] as const satisfies readonly ServiceKind[]);
+
+export const services = pgTable(
+  "services",
+  {
+    /** "periodic-service", "car-basic". A service's id is its page address. */
+    id: text("id").primaryKey(),
+    kind: serviceKind("kind").notNull(),
+    name: jsonb("name").$type<LocalizedText>().notNull(),
+    summary: jsonb("summary").$type<LocalizedText>().notNull(),
+    /** Cars, two-wheelers or both (a package: exactly one). */
+    vehicleKinds: vehicleKind("vehicle_kinds").array().notNull(),
+    /** The fuels it's offered for, in FUELS order. */
+    fuels: fuel("fuels").array().notNull(),
+    /** What's included, in order: a list of LocalizedText, at least one. */
+    included: jsonb("included").$type<LocalizedText[]>().notNull(),
+    /** "Signs you need it": a list of LocalizedText, empty for a package. */
+    signs: jsonb("signs").$type<LocalizedText[]>().notNull(),
+    /** True when the garage prices it only after seeing the vehicle. */
+    pricedAfterInspection: boolean("priced_after_inspection").notNull().default(false),
+    /** The list order, smallest first. */
+    position: integer("position").notNull(),
+    /** False hides it from the site without deleting it. */
+    listed: boolean("listed").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("services_has_vehicle_kinds", sql`cardinality(${table.vehicleKinds}) > 0`),
+    check("services_package_one_kind", sql`${table.kind} <> 'package' or cardinality(${table.vehicleKinds}) = 1`),
+    check("services_has_fuels", sql`cardinality(${table.fuels}) > 0`),
+    check("services_english_name", englishFilled(table.name)),
+    check("services_english_summary", englishFilled(table.summary)),
+    // Only operators that can't fail: jsonb_array_length() would raise an
+    // error on a non-list, and Postgres doesn't promise to test the type first.
+    check("services_included_list", sql`jsonb_typeof(${table.included}) = 'array' and ${table.included} <> '[]'::jsonb`),
+    check("services_signs_list", sql`jsonb_typeof(${table.signs}) = 'array'`),
+  ],
+);
+
+/**
+ * Real prices only: the sample prices that `npm run dev` shows live in code
+ * (src/content/sample-prices.ts) and never reach this table. It starts empty;
+ * task 39 lets the owner fill it in.
+ */
+export const servicePrices = pgTable(
+  "service_prices",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    serviceId: text("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "restrict" }),
+    /** The price group (a vehicle_categories row): "hatchback". */
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => vehicleCategories.id, { onDelete: "restrict" }),
+    /** Null prices every fuel the service covers; a row for one fuel wins over it. */
+    fuel: fuel("fuel"),
+    /** In paise: ₹1,500 is 150000. */
+    pricePaise: integer("price_paise").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    // NULLS NOT DISTINCT: without it, two "every fuel" rows (fuel null) for
+    // the same service and group would both be allowed, since NULL never
+    // equals NULL.
+    unique("service_prices_service_category_fuel")
+      .on(table.serviceId, table.categoryId, table.fuel)
+      .nullsNotDistinct(),
+    check("service_prices_positive", sql`${table.pricePaise} > 0`),
   ],
 );
