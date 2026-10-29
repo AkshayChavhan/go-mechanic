@@ -41,9 +41,35 @@ describe("ServiceTile", () => {
     expect(screen.getByText(text)).toBeTruthy();
   });
 
-  test("isn't a link, and holds no link or button (no prices or service pages yet)", () => {
+  test("without href: isn't a link, and holds no link or button", () => {
     const { container } = renderWithIntl(<ServiceTile service={tile()} />);
     expect(container.querySelector("a, button")).toBeNull();
+  });
+
+  test("with href: one link, named after the service, stretched over the tile", () => {
+    const { container } = renderWithIntl(<ServiceTile service={tile()} href="/services/brakes" />);
+    const links = container.querySelectorAll("a");
+    expect(links).toHaveLength(1);
+    expect(screen.getByRole("link", { name: "Brakes" }).getAttribute("href")).toBe("/services/brakes");
+    expect(links[0]!.className).toContain("after:inset-0");
+    expect(container.querySelector('[data-slot="card"]')!.className).toContain("relative");
+  });
+
+  test("shows no price unless it gets one", () => {
+    const { container } = renderWithIntl(<ServiceTile service={tile()} fromPaise={null} />);
+    expect(container.textContent).not.toContain("₹");
+  });
+
+  test("a real price: From ₹…, unmarked; a sample: marked with data-sample and the Sample badge", () => {
+    const real = renderWithIntl(<ServiceTile service={tile()} fromPaise={129_900} />);
+    expect(real.container.textContent).toContain("From ₹1,299");
+    expect(real.container.querySelector("[data-sample]")).toBeNull();
+    real.unmount();
+
+    const { container } = renderWithIntl(<ServiceTile service={tile()} fromPaise={129_900} sample />);
+    const mark = container.querySelector('[data-sample="service-price"]')!;
+    expect(mark.textContent).toContain("From ₹1,299");
+    expect(mark.textContent).toContain(messages.HomePage.sample);
   });
 
   test("a service with no icon of its own gets the wrench", () => {

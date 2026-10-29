@@ -44,6 +44,9 @@ export type Service = {
   pricedAfterInspection: boolean;
 };
 
+/** What pricing needs to know about a service: which vehicles it covers, and how it's priced. */
+export type PricedService = Pick<Service, "id" | "vehicleKinds" | "fuels" | "pricedAfterInspection">;
+
 /** One price: a service, a price group, a fuel (null: every fuel) and the amount. */
 export type ServicePrice = {
   serviceId: string;
@@ -78,7 +81,7 @@ export function servicePath(id: string): `/services/${string}` {
 
 /** The row that prices this fuel in this group: the fuel's own row, else the every-fuel row. */
 function findPrice(
-  service: Service,
+  service: PricedService,
   prices: readonly ServicePrice[],
   categoryId: string,
   fuel: Fuel,
@@ -93,7 +96,7 @@ function findPrice(
 }
 
 /** What `vehicle` pays for `service`, or why there's no number. */
-export function priceFor(service: Service, prices: readonly ServicePrice[], vehicle: PricedVehicle): PriceResult {
+export function priceFor(service: PricedService, prices: readonly ServicePrice[], vehicle: PricedVehicle): PriceResult {
   if (!service.vehicleKinds.includes(vehicle.kind) || !service.fuels.includes(vehicle.fuel)) {
     return { status: "not-offered" };
   }
@@ -108,7 +111,7 @@ export function priceFor(service: Service, prices: readonly ServicePrice[], vehi
  * fuel with the same rule as priceFor(), so an every-fuel row that the
  * fuels' own rows all replace never counts.
  */
-export function fromPrice(service: Service, prices: readonly ServicePrice[]): number | null {
+export function fromPrice(service: PricedService, prices: readonly ServicePrice[]): number | null {
   if (service.pricedAfterInspection) return null;
   const groups = new Set(prices.filter((row) => row.serviceId === service.id).map((row) => row.categoryId));
   let lowest: number | null = null;
