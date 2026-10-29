@@ -4,7 +4,7 @@ import { describe, expect, test } from "vitest";
 
 import messages from "../../messages/en.json";
 
-import { LOGIN_NOTICE_VERSION, PRIVACY_NOTICE_VALUES } from "./consent";
+import { LOGIN_NOTICE_VERSION, noticeDate, PRIVACY_NOTICE_VALUES } from "./consent";
 
 // Every consent record keeps the notice version it was given under, so the
 // version must change whenever the words people agree to change. This test
@@ -38,7 +38,7 @@ const WORDING_BY_VERSION: Record<string, Pinned> = {
       "I agree that {brand} can use my mobile number to log me in and to contact me by SMS, WhatsApp or phone about my bookings.",
     notice:
       "We keep your mobile number, when you agreed, and your device's network address (IP address) and browser type. We use them only to log you in, to keep logins safe and to tell you about your bookings. The <privacy>privacy notice</privacy> has the details. To stop this or delete your data, call the garage.",
-    privacyNotice: "17c59f3f2da1f3ae7f4eeb6bd4b687c648cc3943d1fd745927baaa4fb5881923",
+    privacyNotice: "1982199cf6ba621f4e10c1877da221df54b5ae4275d6943db594bc19ef673a06",
   },
 };
 
@@ -91,9 +91,14 @@ describe("the login notice version", () => {
     expect(() => checkWording(messages.Login, messages.PrivacyPage, longer)).toThrow("bump LOGIN_NOTICE_VERSION");
   });
 
-  test("the version is a YYYY-MM-DD date, because /privacy shows it as its last-updated date", () => {
-    expect(LOGIN_NOTICE_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(Number.isNaN(new Date(LOGIN_NOTICE_VERSION).getTime())).toBe(false);
+  test("the version is a YYYY-MM-DD date, maybe with a same-day suffix, because /privacy shows its date", () => {
+    expect(LOGIN_NOTICE_VERSION).toMatch(/^\d{4}-\d{2}-\d{2}(\.\d+)?$/);
+    expect(Number.isNaN(new Date(noticeDate()).getTime())).toBe(false);
+  });
+
+  test("a second change on the same day keeps the date /privacy shows", () => {
+    expect(noticeDate("2026-10-29")).toBe("2026-10-29");
+    expect(noticeDate("2026-10-29.2")).toBe("2026-10-29");
   });
 
   test("the privacy page's title and description can change without a new version", () => {

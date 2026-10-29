@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
-import { LOGIN_NOTICE_VERSION } from "@/domain/consent";
+import { noticeDate } from "@/domain/consent";
 import { indiaInstantOn } from "@/domain/india-time";
 import { LOGIN_RULES } from "@/domain/login";
 import { formatDate } from "@/i18n/format";
@@ -33,7 +33,7 @@ describe("Privacy page", () => {
     const { container } = renderWithIntl(await PrivacyPage());
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual([t.heading]);
     expect(screen.getByText(t.draft)).toBeTruthy();
-    const date = formatDate(indiaInstantOn(LOGIN_NOTICE_VERSION, 12 * 60), "en");
+    const date = formatDate(indiaInstantOn(noticeDate(), 12 * 60), "en");
     expect(container.textContent).toContain(t.updated.replace("{date}", date));
   });
 

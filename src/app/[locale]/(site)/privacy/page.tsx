@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { Section } from "@/components/site/section";
-import { LOGIN_NOTICE_VERSION, PRIVACY_NOTICE_VALUES } from "@/domain/consent";
+import { noticeDate, PRIVACY_NOTICE_VALUES } from "@/domain/consent";
 import { indiaInstantOn } from "@/domain/india-time";
 import { formatAddress, formatDate } from "@/i18n/format";
 import { readGarage } from "@/server/dal/garage";
@@ -69,7 +69,7 @@ export default async function PrivacyPage() {
     changes: t("changes.body"),
   };
   // Midday India time on the version's date, so the date shown is that date wherever the server runs.
-  const updated = formatDate(indiaInstantOn(LOGIN_NOTICE_VERSION, 12 * 60), locale);
+  const updated = formatDate(indiaInstantOn(noticeDate(), 12 * 60), locale);
 
   return (
     <Section width="wide">

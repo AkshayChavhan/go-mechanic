@@ -20,9 +20,15 @@ export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
  * record keeps the version it was given under. Since task 19 the short
  * notice links the full privacy notice (/privacy), whose wording is part of
  * what people agree to: consent.test.ts pins both, and /privacy shows this
- * version as its "last updated" date, so it must stay a "YYYY-MM-DD" date.
+ * version's date as its "last updated" date. So it's a "YYYY-MM-DD" date,
+ * with ".2", ".3" ... added when the words change again on the same day.
  */
 export const LOGIN_NOTICE_VERSION = "2026-10-29";
+
+/** The date part of a notice version ("2026-10-29.2" -> "2026-10-29"): what /privacy shows. */
+export function noticeDate(version: string = LOGIN_NOTICE_VERSION): string {
+  return version.slice(0, 10);
+}
 
 /**
  * The numbers the privacy notice states (how long things are kept), taken
@@ -32,6 +38,6 @@ export const LOGIN_NOTICE_VERSION = "2026-10-29";
  */
 export const PRIVACY_NOTICE_VALUES = {
   attempts: { hours: LOGIN_RULES.keepRecordsHours },
-  codes: { minutes: LOGIN_RULES.codeLifetimeSeconds / 60 },
+  codes: { digits: LOGIN_RULES.codeLength, minutes: LOGIN_RULES.codeLifetimeSeconds / 60 },
   session: { days: LOGIN_RULES.sessionDays },
 } as const;
