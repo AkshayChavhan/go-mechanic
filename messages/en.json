@@ -70,6 +70,15 @@
     },
     "sample": "Sample"
   },
+  "ContactPage": {
+    "metaTitle": "Contact and opening hours | {brand}",
+    "metaDescription": "Call or WhatsApp {brand} at Mukai Chowk, Kiwale, Pune, about a car or two-wheeler service or repair. The address and opening hours are here.",
+    "heading": "Contact us",
+    "lead": "Call us, or message us on WhatsApp, about a service, a repair or a price.",
+    "findUs": "Where to find us",
+    "breakdownTitle": "Broken down?",
+    "breakdown": "Call the garage on <call>{phone}</call> and tell us what happened. We can help during our opening hours."
+  },
   "NotFound": {
     "metaTitle": "Page not found | {brand}",
     "title": "Page not found",
