@@ -28,10 +28,10 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | In progress | [16_roles_access.md](../learning/16_roles_access.md) |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | In progress | [17_vehicle_catalogue.md](../learning/17_vehicle_catalogue.md) |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
-| 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | To do |  |
+| 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress | [19_info_pages.md](../learning/19_info_pages.md) |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
-| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | In progress | [22_slot_engine.md](../learning/22_slot_engine.md) |
+| 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
@@ -317,14 +317,16 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 19_info_pages
 
-- [ ] Create branch `19_info_pages`
-- [ ] Plan with `ce-plan`
-- [ ] Contact, about, FAQ, privacy and terms pages
-- [ ] Set `live: true` for `about` and `contact` in `src/components/site/navigation.ts` with the pages. A directions link needs the owner's exact map link: one built from the address text lands at Mukai Chowk, not the garage (task 12)
-- [ ] Link `/login`'s short notice to the new `/privacy` page, and change `LOGIN_NOTICE_VERSION` (`src/domain/consent.ts`) and the pinned wording in `consent.test.ts` in the same commit (task 15)
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `19_info_pages`
+- [x] Plan with `ce-plan`: [2026-10-29-1118-feat-info-pages-plan.md](../plans/2026-10-29-1118-feat-info-pages-plan.md)
+- [x] Contact, about, FAQ, privacy and terms pages
+- [x] Facts from the owner (2026-10-29): no directions link until the owner sends the garage's exact Google Maps link; the emergency number is the garage phone; payment at the garage is cash or UPI. The story, team, certifications, warranty, genuine parts and job times aren't known yet: labelled samples under `npm run dev` only (`showSamples()`), never on staging or production
+- [x] Set `live: true` for `about` and `contact` in `src/components/site/navigation.ts` with the pages. A directions link needs the owner's exact map link: one built from the address text lands at Mukai Chowk, not the garage (task 12)
+- [x] Link `/login`'s short notice to the new `/privacy` page, and change `LOGIN_NOTICE_VERSION` (`src/domain/consent.ts`) and the pinned wording in `consent.test.ts` in the same commit (task 15)
+- [x] Notes for tasks 23, 40, 42, 43 and the Hindi work at the end of the backlog
+- [x] Write the learning doc: [19_info_pages.md](../learning/19_info_pages.md)
+- [x] Review with `ce-code-review` and `code-reviewer` and fix what they find (verdicts and fixes in the learning doc)
+- [x] Compound: [privacy-notice-retention-from-delete-code-not-expiry.md](../solutions/conventions/privacy-notice-retention-from-delete-code-not-expiry.md)
 - [ ] Merge into `main`
 
 ### 20_staging_deploy
@@ -369,7 +371,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc: [22_slot_engine.md](../learning/22_slot_engine.md)
 - [x] Review with `ce-code-review` and `code-reviewer` and fix what they find (verdicts and fixes in the learning doc)
 - [x] Compound: [pglite-parallel-tests-bare-database-not-transaction-per-call.md](../solutions/conventions/pglite-parallel-tests-bare-database-not-transaction-per-call.md)
-- [ ] Merge into `main`
+- [x] Merge into `main` (PR #17, 2026-10-29)
 
 ### 23_booking_flow
 
@@ -667,6 +669,18 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 20: seed the vehicle catalogue on staging together with the garage, before the first build reads it: an empty catalogue raises no error, and the cached empty read stays for up to 30 days. Never change a catalogue id (task 17)
 - Tasks 21 and 23: the vehicle picker inside a real form. React 19 resets a form after its action, so the picker should return to its default on the form's `reset` event; a choice made before the page hydrates must not be lost; check a posted model and fuel with `resolveVehicle`; decide how to edit a saved vehicle whose model was later hidden; give `ChoiceGroup` and `NativeSelect` an error state like `CheckboxField`'s. Ask the owner first whether customers may say "my model isn't listed", and whether the garage also takes other brands such as Ford or Chevrolet (task 17)
 - Task 39: hide brands and models (`listed = false`) instead of deleting them, so saved vehicles keep their model; ids never change; saves call `updateTag("vehicle-catalogue")`; moving a model to another price group changes the price only for later bookings. Owner decision: today `readVehicleCatalogue()` leaves out a listed brand whose models are all hidden, which also takes it off the home page's brands row; keep that, or list every listed brand on the home row and drop empty brands only in the picker (task 17 code review)
+- For task 23: once `/book` is live, the FAQ's "How do I book a visit?" (`FaqPage.items.howToBook`) and the about page's "Visiting us" still say WhatsApp or call; add the booking page to both, and confirm the sample answer about booking from tomorrow up to 7 days ahead (`src/content/faq.ts`) as a real one (task 19)
+- For task 40: the about topics (`src/content/about.ts`) and FAQ answers (`src/content/faq.ts`, plus the confirmed ones in `FaqPage`) move to the database for the owner to edit; keep the "real, else samples under npm run dev, else nothing" rule (task 19)
+- For task 42: `/contact`, `/about` and `/faq` need titles of 50–60 characters, canonical URLs and Open Graph tags; `/faq` gets `FAQPage` JSON-LD built from the same confirmed list and `selectFaqItems()` the page uses. The five info pages' `metaTitle`s already end in `| {brand}`: a site-wide title template would double the brand, so drop it from them or use `title.absolute`. Keep `/privacy` and `/terms` out of the sitemap until task 43 (task 19)
+- For task 43: finalise `/privacy` and `/terms` with a lawyer: name the person who answers privacy questions (DPDP Rule 9) and a reply time (Rule 14: at most 90 days), name the SMS company and its retention, delete expired sessions and old login attempts on a schedule (or stop storing the session IP and user agent: Better Auth's `advanced.ipAddress.disableIpTracking` stops only the IP; the user agent is always written, `internal-adapter.mjs` in 1.7.14, so blanking it needs something else, perhaps a `databaseHooks.session.create.before` hook, not yet checked), settle the one-year log rule (Rule 8(3)) against deletion, decide whether the 18+ box is enough, offer the notice in Marathi or Hindi (Act s.5(3)), add a verified Data Protection Board link, and remove the draft line and `noindex` (task 19)
+- For the Hindi task: next-intl's language cookie (`NEXT_LOCALE`) is set today only for page requests with no `Accept-Language` header; once Hindi exists it's also set for browsers that prefer Hindi but read an English page. Update the privacy notice's cookie section (`PrivacyPage.cookies`) and the cookie test in `e2e/info-pages.spec.ts` (task 19)
+- When the owner sends the garage's exact Google Maps link: add it to the garage's details (a seed change, with a migration if it needs a column) and a Directions button on `/contact` (task 19)
+- For task 21: saving a customer's name fills the existing `users.name`, which `privacy/coverage.test.ts` can't notice (the column is already listed). Add the name to the privacy notice (`PrivacyPage.items.number`, or an item of its own) and move `LOGIN_NOTICE_VERSION` (`2026-10-29.2` if it's still 29 October); new tables such as the customer's vehicles fail the coverage test until they're listed and described (task 19 code review)
+- For task 20: the fake SMS provider writes testers' numbers and full code texts into `dev_messages` on staging, kept 48 hours. Production refuses that provider, so the privacy notice leaves it out; tell staging testers, or use test numbers only (task 19 code review)
+- For task 40: the plan for task 19 also promised sample workshop photos on `/about` (grey `VisualSlot` stand-ins under `npm run dev`); they weren't built. Add the section with the owner's real photos instead, `VisualSlot` with `photo` and an `alt` from messages (task 19 code review)
+- For task 43: `TermsPage.updatedOn` is a date kept in `messages/en.json`, so a `hi.json` would have to copy it and nothing makes it move when the terms' wording changes. Move it next to the page, with a fingerprint test like `consent.test.ts`'s, when the terms are finalised (task 19 code review)
+- On `/faq` the group headings (`h2`) use `type-headline`, the same size as the page's `h1`, so the title doesn't stand out. Try `type-title` for the groups and a smaller style for the questions, and check it on `/dev/design`-style screenshots (task 19 code review)
+- `e2e/access.spec.ts` (task 16): its tests that run first take 17–23 s even alone (the others 5–8 s), against a 30 s limit, and time out when several sessions load the laptop (seen four times in task 19). Find out why the first logged-in page load is slow (perhaps the server building its in-memory database with the vehicle catalogue on first use), then warm it up in the spec or raise those tests' limit (task 19)
 
 ## How to add a task
 

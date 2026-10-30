@@ -24,6 +24,7 @@ import {
   useState,
   useSyncExternalStore,
   type ComponentProps,
+  type ReactNode,
   type RefObject,
 } from "react";
 import { useFormStatus } from "react-dom";
@@ -45,7 +46,8 @@ export type LoginFormLabels = {
   phoneHint: string;
   ageLabel: string;
   consentLabel: string;
-  notice: string;
+  /** The short privacy notice; the login page passes it with a link to /privacy. */
+  notice: ReactNode;
   sendCode: string;
   sending: string;
   codeLabel: string;

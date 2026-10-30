@@ -12,13 +12,16 @@ import { formatCountdown, LoginForm, loginSubmitter, type LoginAction, type Logi
 // answers (src/server/actions/login.test.ts tests that side).
 
 const t = messages.Login;
+// The notice without its <privacy> tag: the text a person reads.
+const noticeText = t.notice.replace(/<\/?privacy>/g, "");
 const labels: LoginFormLabels = {
   phoneLabel: t.phoneLabel,
   countryCode: t.countryCode,
   phoneHint: t.phoneHint,
   ageLabel: t.ageLabel,
   consentLabel: t.consentLabel.replace("{brand}", messages.Brand.name),
-  notice: t.notice,
+  // The page passes the notice with a link (t.rich); plain text is enough here.
+  notice: noticeText,
   sendCode: t.sendCode,
   sending: t.sending,
   codeLabel: t.codeLabel,
@@ -108,7 +111,7 @@ describe("LoginForm: the phone step", () => {
       expect(box.required).toBe(true);
       expect(box.checked).toBe(false);
     }
-    expect(screen.getByText(t.notice)).toBeTruthy();
+    expect(screen.getByText(noticeText)).toBeTruthy();
     expect(screen.getByRole("button", { name: t.sendCode }).getAttribute("type")).toBe("submit");
     // Nothing takes the focus when the page opens (that would pop a phone's keyboard).
     expect(document.activeElement).toBe(document.body);
@@ -168,7 +171,7 @@ describe("LoginForm: the phone step", () => {
   test("the notice describes the consent box", () => {
     renderForm();
     const ids = consentBox().getAttribute("aria-describedby")!.split(" ");
-    expect(ids.map((id) => document.getElementById(id)?.textContent)).toEqual([t.notice]);
+    expect(ids.map((id) => document.getElementById(id)?.textContent)).toEqual([noticeText]);
   });
 
   test("a call that fails: the connection message, and the number and ticks stay", async () => {

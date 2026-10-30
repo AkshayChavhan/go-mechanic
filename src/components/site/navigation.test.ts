@@ -6,7 +6,16 @@ import { describe, expect, test } from "vitest";
 
 import messages from "../../../messages/en.json";
 
-import { bookPage, bookTarget, isLivePage, liveNavItems, navItems, sitePages, type NavItem } from "./navigation";
+import {
+  bookPage,
+  bookTarget,
+  footerItems,
+  isLivePage,
+  liveNavItems,
+  navItems,
+  sitePages,
+  type NavItem,
+} from "./navigation";
 
 // The shell must never link to a page that doesn't exist (and must show the
 // link once it does). So each `live` flag in navigation.ts is checked against
@@ -54,8 +63,14 @@ describe("the navigation registry", () => {
     }
   });
 
-  test("sitePages lists the menu items and the booking page", () => {
-    expect(sitePages).toEqual([...navItems, bookPage]);
+  test("sitePages lists the menu items, the footer's own items and the booking page", () => {
+    expect(sitePages).toEqual([...navItems, ...footerItems, bookPage]);
+  });
+
+  test("footer-only pages never reach the header, phone menu or action bar (liveNavItems)", () => {
+    const menu = liveNavItems().map((item) => item.href);
+    for (const item of footerItems) expect(menu, item.href).not.toContain(item.href);
+    expect(liveNavItems(footerItems).every((item) => item.live)).toBe(true);
   });
 
   test("isLivePage: only a listed page with live: true", () => {

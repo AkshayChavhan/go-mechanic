@@ -8,7 +8,7 @@ import { ActionBar } from "@/components/site/action-bar";
 import { CheckboxField } from "@/components/site/checkbox-field";
 import { ChoiceGroup } from "@/components/site/choice-group";
 import { MobileMenu } from "@/components/site/mobile-menu";
-import { bookTarget, navItems } from "@/components/site/navigation";
+import { bookTarget, footerItems, navItems } from "@/components/site/navigation";
 import { NotFoundContent } from "@/components/site/not-found-content";
 import { OfferBanner } from "@/components/site/offer-banner";
 import { OpenStatusView } from "@/components/site/open-status";
@@ -177,6 +177,7 @@ const price = formatRupees(249_900, "en");
 // Layout shell samples: every menu item as if its page were live, and a demo
 // offer whose link counts as live.
 const allPagesLive = navItems.map((item) => ({ ...item, live: true }));
+const allFooterPagesLive = footerItems.map((item) => ({ ...item, live: true }));
 const demoOffer = { text: { en: "10% off every car service this week" }, href: "/packages" };
 // The open status in each state, at fixed times (26 Oct 2026 is a Monday).
 const statusSamples = [
@@ -866,7 +867,7 @@ export default async function DesignPage() {
 
             <Block title="Footer" description="On every public page: contact details, the weekly hours with the live status, and the live pages.">
               <div className="overflow-hidden rounded-xl border border-border">
-                <SiteFooter items={allPagesLive} garage={garage} />
+                <SiteFooter items={allPagesLive} footerOnlyItems={allFooterPagesLive} garage={garage} />
               </div>
             </Block>
 

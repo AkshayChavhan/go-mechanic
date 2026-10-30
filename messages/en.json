@@ -102,6 +102,171 @@
       "announceCleared": "{field} cleared"
     }
   },
+  "ContactPage": {
+    "metaTitle": "Contact and opening hours | {brand}",
+    "metaDescription": "Call or WhatsApp {brand} at Mukai Chowk, Kiwale, Pune, about a car or two-wheeler service or repair. The address and opening hours are here.",
+    "heading": "Contact us",
+    "lead": "Call us, or message us on WhatsApp, about a service, a repair or a price.",
+    "findUs": "Where to find us",
+    "breakdownTitle": "Broken down?",
+    "breakdown": "Call the garage on <call>{phone}</call> and tell us what happened. We can help during our opening hours."
+  },
+  "AboutPage": {
+    "metaTitle": "About the garage | {brand}",
+    "metaDescription": "{brand} is a garage at Mukai Chowk, Kiwale, Pune, that services and repairs cars and two-wheelers. See when we're open and how to book a visit.",
+    "heading": "About the garage",
+    "lead": "One garage at Mukai Chowk, Kiwale, in Pune, that services and repairs cars and two-wheelers.",
+    "visitTitle": "Visiting us",
+    "visit": "Message us on WhatsApp with your vehicle and what it needs, or call us, and we'll agree a time for you to bring it in."
+  },
+  "FaqPage": {
+    "metaTitle": "Questions and answers | {brand}",
+    "metaDescription": "How to pay at {brand} in Kiwale, Pune (cash or UPI), how to book a car or two-wheeler service, and when the garage is open.",
+    "heading": "Questions and answers",
+    "lead": "Paying, booking and visiting the garage.",
+    "groups": {
+      "paying": "Paying and booking",
+      "visit": "When you visit",
+      "work": "The work and the parts"
+    },
+    "items": {
+      "howToPay": {
+        "question": "How do I pay?",
+        "answer": "At the garage, in cash or by UPI."
+      },
+      "payOnline": {
+        "question": "Can I pay online?",
+        "answer": "Not on this website. You pay at the garage."
+      },
+      "howToBook": {
+        "question": "How do I book a visit?",
+        "answer": "Message us on <whatsapp>WhatsApp</whatsapp> with your vehicle and what it needs, or call us on <call>{phone}</call>. We'll agree a time with you."
+      },
+      "hours": {
+        "question": "When are you open?"
+      }
+    }
+  },
+  "PrivacyPage": {
+    "metaTitle": "Privacy notice | {brand}",
+    "metaDescription": "What the {brand} website keeps about you when you log in, why, who handles it and for how long, and how to ask us to show, correct or delete it.",
+    "heading": "Privacy notice",
+    "draft": "This is a draft. We're finalising it before the website opens to customers.",
+    "updated": "Last updated {date}",
+    "contents": "On this page",
+    "intro": "This notice explains what personal data the {brand} website keeps about you, why, who helps us handle it, how long we keep it, and what you can ask us to do. {brand} is one garage, at {address}.",
+    "data": {
+      "title": "What we keep, and why",
+      "lead": "The website keeps personal data when you ask for a login code and when you log in. Here is each thing it keeps."
+    },
+    "labels": {
+      "what": "What",
+      "why": "Why",
+      "who": "Who handles it",
+      "howLong": "How long we keep it"
+    },
+    "items": {
+      "number": {
+        "title": "Your mobile number",
+        "what": "Your 10-digit mobile number, with India's +91. It is also your login.",
+        "why": "To log you in with a code we send by SMS, and to contact you about your bookings by SMS, WhatsApp or phone.",
+        "who": "The garage, and the company that hosts the website and its database.",
+        "howLong": "As long as you have a login with us. You can ask us to delete it."
+      },
+      "consent": {
+        "title": "Your agreement",
+        "what": "That you said you're 18 or older and agreed to how we use your number, with the time, the language of the page and the version of this notice you were shown.",
+        "why": "So we can show what you agreed to, as the law asks.",
+        "who": "The garage, and the company that hosts the database.",
+        "howLong": "As long as you have a login with us."
+      },
+      "attempts": {
+        "title": "Each request for a login code",
+        "what": "Your mobile number, your device's network address (IP address) when the website can see it, the time, and the agreement you gave on the form.",
+        "why": "To limit how many codes go to one number or one network, so nobody can flood a phone with texts, and to record your agreement until you log in.",
+        "who": "The garage, and the company that hosts the database.",
+        "howLong": "We delete these records once they're more than {hours} hours old, the next time anyone asks for a code. They aren't yet deleted on a timer."
+      },
+      "codes": {
+        "title": "Login codes",
+        "what": "The {digits}-digit code we text you, and how many wrong tries were made.",
+        "why": "To check the code you type.",
+        "who": "The garage, and the company that hosts the database.",
+        "howLong": "A code works for {minutes} minutes. We delete it once it's used, or after too many wrong tries. A code that has stopped working is deleted the next time anyone types a code on the website; until then it stays in our records, even after a new code is sent."
+      },
+      "session": {
+        "title": "Your login on this device",
+        "what": "A random token that keeps you logged in (in a cookie on your device, and in our records), your device's network address (IP address), your browser's description (its user agent), and when the login ends.",
+        "why": "The token keeps you logged in for up to {days} days. The network address and browser description are recorded by the login software with every login; we don't use them for anything yet.",
+        "who": "The garage, and the company that hosts the database.",
+        "howLong": "Until you log out. A login that simply runs out stays in our records for now; deleting these automatically is planned."
+      },
+      "sms": {
+        "title": "The text message with your code",
+        "what": "Your mobile number and the message, which includes the code.",
+        "why": "To send you the code.",
+        "who": "The company that delivers SMS for us. We'll name it here before the website opens to customers.",
+        "howLong": "As long as that company keeps its delivery records. We'll say how long here when we name it."
+      }
+    },
+    "cookies": {
+      "title": "Cookies",
+      "body": "When you log in, the website sets one cookie, which keeps you logged in. If your browser doesn't tell websites which language you prefer (most browsers do), the website also sets a language cookie, which remembers that you read it in English. It sets no advertising or tracking cookies."
+    },
+    "rights": {
+      "title": "Your rights",
+      "body": "Under India's Digital Personal Data Protection Act, 2023, you can ask us to show you a summary of the personal data we keep about you and who we've shared it with, to correct it or bring it up to date, to delete it, or to let someone you name act for you if you can't. To ask, call or message us from the mobile number you log in with: that's how we check the request is yours."
+    },
+    "withdraw": {
+      "title": "Taking back your agreement",
+      "body": "You can take back your agreement at any time: call or message us. We'll stop using your number and delete your login and the data above, except anything a law requires us to keep. You can't log in again unless you agree again."
+    },
+    "contact": {
+      "title": "Questions and complaints",
+      "body": "Contact the garage: call <call>{phone}</call> or message us on <whatsapp>WhatsApp</whatsapp>. If you're not satisfied with our answer, you can complain to the Data Protection Board of India."
+    },
+    "children": {
+      "title": "If you're under 18",
+      "body": "Only people aged 18 or older can log in. If you're younger, please ask a parent or guardian to contact the garage for you."
+    },
+    "changes": {
+      "title": "Changes to this notice",
+      "body": "If we change what we keep or why, we'll update this notice and its date, and ask for your agreement again the next time you log in."
+    }
+  },
+  "TermsPage": {
+    "metaTitle": "Terms of use | {brand}",
+    "metaDescription": "The terms for using the {brand} website and visiting the garage in Kiwale, Pune: booking a visit, approving work before it starts and paying at the garage.",
+    "heading": "Terms of use",
+    "draft": "This is a draft. We're finalising it before the website opens to customers.",
+    "updated": "Last updated {date}",
+    "updatedOn": "2026-10-29",
+    "intro": "These terms cover using this website and visiting {brand}, a garage at {address}. Parts that aren't decided yet are listed below.",
+    "booking": {
+      "title": "Booking a visit",
+      "body": "When you book, you're asking for a time to bring your vehicle to the garage. We confirm the time with you by phone or WhatsApp."
+    },
+    "work": {
+      "title": "Work on your vehicle",
+      "body": "We tell you what we plan to do, and the price, before we start. If we find something more that needs doing, we ask you first: we don't do extra work without your agreement."
+    },
+    "paying": {
+      "title": "Paying",
+      "body": "You pay at the garage, in cash or by UPI. This website doesn't take payments."
+    },
+    "login": {
+      "title": "Your login",
+      "body": "You log in with a code we text to your mobile number. Keep the code to yourself: anyone who has it can log in as you. The <privacy>privacy notice</privacy> explains what we keep about you."
+    },
+    "undecided": {
+      "title": "Not decided yet",
+      "body": "Cancelling or moving a booking, any warranty on our work, and our responsibility for vehicles in our care will be added here before the website opens to customers. Until then, please ask us."
+    },
+    "questions": {
+      "title": "Questions",
+      "body": "Call <call>{phone}</call> or message us on <whatsapp>WhatsApp</whatsapp>."
+    }
+  },
   "NotFound": {
     "metaTitle": "Page not found | {brand}",
     "title": "Page not found",
@@ -123,7 +288,10 @@
     "services": "Services",
     "prices": "Prices",
     "about": "About",
-    "contact": "Contact"
+    "contact": "Contact",
+    "faq": "FAQ",
+    "privacy": "Privacy",
+    "terms": "Terms"
   },
   "Header": {
     "navLabel": "Main",
@@ -169,7 +337,8 @@
     "phoneHint": "10 digits, like 98765 43210",
     "ageLabel": "I am 18 or older.",
     "consentLabel": "I agree that {brand} can use my mobile number to log me in and to contact me by SMS, WhatsApp or phone about my bookings.",
-    "notice": "We keep your mobile number and when you agreed. We use it only to log you in and to tell you about your bookings. To stop this or delete your data, call the garage.",
+    "notice": "We keep your mobile number, when you agreed, and your device's network address (IP address) and browser type. We use them only to log you in, to keep logins safe and to tell you about your bookings. The <privacy>privacy notice</privacy> has the details. To stop this or delete your data, call the garage.",
+    "opensInNewTab": "(opens in a new tab)",
     "sendCode": "Send code",
     "sending": "Sending…",
     "codeSentTo": "We sent a 6-digit code to {number}.",
