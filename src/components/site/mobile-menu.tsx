@@ -2,6 +2,7 @@
 
 import { MenuIcon, XIcon } from "lucide-react";
 import { Component, lazy, Suspense, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
@@ -27,8 +28,8 @@ type MobileMenuProps = {
 
 // The panel and the Radix dialog code it brings (about 14 KB compressed,
 // measured in task 18) load only when the menu is first needed: on the
-// button's pointer-down or focus, so they're usually in by the time the tap
-// ends. Before task 18 they loaded on every page, desktop too.
+// button's pointer-down or focus. Before task 18 they loaded on every page,
+// desktop too.
 const loadPanel = () => import("./mobile-menu-panel");
 const LazyPanel = lazy(() => loadPanel().then((module) => ({ default: module.MobileMenuPanel })));
 
@@ -42,9 +43,12 @@ function preload() {
 type PlainPanelProps = Pick<MobileMenuProps, "title" | "closeLabel" | "links"> & { onClose: () => void };
 
 /**
- * What shows for the moment the real panel is loading, or for good if it
- * can't be downloaded: the title and the live pages as plain links, so the
- * pages are always reachable, and a close button.
+ * What shows when the menu is opened before the real panel has loaded (a slow
+ * connection), or for good if it can't be downloaded: the title and the live
+ * pages as plain links, so the pages are always reachable, and a close button.
+ * Drawn into document.body, like the real panel: inside the header, whose
+ * backdrop-filter makes it the box that `fixed` is measured against, it would
+ * be only as tall as the header.
  */
 function PlainPanel({ title, closeLabel, links, onClose }: PlainPanelProps) {
   return (
@@ -99,7 +103,8 @@ class PlainPanelOnError extends Component<{ fallback: ReactNode; children: React
  */
 export function MobileMenu({ openLabel, title, closeLabel, links, children }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
-  // Once the menu has been opened, the panel stays mounted, so it can animate out.
+  // Once the menu has been wanted (pointer-down, focus or a click), the panel
+  // stays mounted, so it can load ahead and animate out.
   const [requested, setRequested] = useState(false);
   const button = useRef<HTMLButtonElement>(null);
 
@@ -107,7 +112,21 @@ export function MobileMenu({ openLabel, title, closeLabel, links, children }: Mo
     setOpen(false);
     button.current?.focus();
   };
-  const plain = <PlainPanel title={title} closeLabel={closeLabel} links={links} onClose={close} />;
+  // Only called once the menu has been asked for, so in the browser:
+  // document.body exists there and never on the server.
+  const plain = () =>
+    open
+      ? createPortal(<PlainPanel title={title} closeLabel={closeLabel} links={links} onClose={close} />, document.body)
+      : null;
+  // Pointer-down and focus come before the click: start the download and
+  // mount the panel, still closed, so React.lazy has its code by the click and
+  // the real panel opens at once. Mounting it only on the click would always
+  // show the plain panel first (lazy suspends on its first render), and React
+  // then holds the swap for about 300 ms.
+  const prepare = () => {
+    preload();
+    setRequested(true);
+  };
 
   return (
     <>
@@ -118,8 +137,8 @@ export function MobileMenu({ openLabel, title, closeLabel, links, children }: Mo
         aria-label={openLabel}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onPointerDown={preload}
-        onFocus={preload}
+        onPointerDown={prepare}
+        onFocus={prepare}
         onClick={() => {
           setRequested(true);
           setOpen(true);
@@ -128,8 +147,8 @@ export function MobileMenu({ openLabel, title, closeLabel, links, children }: Mo
         <MenuIcon />
       </Button>
       {requested && (
-        <PlainPanelOnError fallback={open ? plain : null}>
-          <Suspense fallback={open ? plain : null}>
+        <PlainPanelOnError fallback={plain()}>
+          <Suspense fallback={plain()}>
             <LazyPanel
               open={open}
               onOpenChange={setOpen}

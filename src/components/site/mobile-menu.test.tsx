@@ -64,6 +64,30 @@ describe("MobileMenu", () => {
     await waitFor(() => expect(panel.loaded).toHaveBeenCalled());
   });
 
+  test("focus starts the download too (the keyboard path)", async () => {
+    vi.doMock("./mobile-menu-panel", async () => {
+      panel.loaded();
+      return vi.importActual("./mobile-menu-panel");
+    });
+    const trigger = await renderMenu();
+    fireEvent.focus(trigger);
+    await waitFor(() => expect(panel.loaded).toHaveBeenCalled());
+  });
+
+  test("once the panel has loaded after pointer-down, the click opens the real panel at once, never the plain one", async () => {
+    const trigger = await renderMenu();
+    fireEvent.pointerDown(trigger);
+    // The panel mounts closed and loads: nothing shows yet.
+    await act(async () => {
+      await import("./mobile-menu-panel");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(trigger);
+    // Straight after the click, without waiting: the real panel's own content.
+    expect(screen.getByRole("dialog", { name: messages.Header.menuTitle }).textContent).toContain("Open today");
+  });
+
   test("the button opens a dialog titled from messages, holding the content it was given", async () => {
     await renderMenu();
     const { trigger, dialog } = await openMenu();
@@ -117,9 +141,33 @@ describe("MobileMenu", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.getByRole("dialog", { name: messages.Header.menuTitle })).toBe(dialog);
     expect(dialog.textContent).not.toContain("Open today");
+    // Drawn into document.body, not inside the header: there `fixed` would be
+    // measured against the header's box (its backdrop-filter), not the screen.
+    expect(dialog.parentElement).toBe(document.body);
     fireEvent.click(screen.getByRole("button", { name: messages.Common.close }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(trigger);
+    quiet.mockRestore();
+  });
+
+  test("if the panel can't be downloaded: following a plain link closes the menu", async () => {
+    vi.doMock("./mobile-menu-panel", () => {
+      throw new Error("the chunk failed to load");
+    });
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const trigger = await renderMenu();
+    fireEvent.click(trigger);
+    await screen.findByRole("dialog", { name: messages.Header.menuTitle });
+    // jsdom can't load another page: this listener on document stops its page
+    // load after React has handled the click.
+    const stayOnPage = (event: Event) => event.preventDefault();
+    document.addEventListener("click", stayOnPage);
+    try {
+      fireEvent.click(screen.getByRole("link", { name: "Services" }));
+    } finally {
+      document.removeEventListener("click", stayOnPage);
+    }
+    expect(screen.queryByRole("dialog")).toBeNull();
     quiet.mockRestore();
   });
 });
