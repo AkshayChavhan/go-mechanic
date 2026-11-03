@@ -64,8 +64,18 @@ describe("/login", () => {
     expect(screen.getByLabelText(t.phoneLabel)).toBeTruthy();
     expect(screen.getByRole("checkbox", { name: t.ageLabel })).toBeTruthy();
     expect(screen.getByRole("checkbox", { name: t.consentLabel.replace("{brand}", brand) })).toBeTruthy();
-    expect(screen.getByText(t.notice)).toBeTruthy();
     expect(screen.getByRole("button", { name: t.sendCode })).toBeTruthy();
+  });
+
+  test("the notice links the full privacy notice, in a new tab, and says so to screen readers", async () => {
+    renderWithIntl(await LoginPage());
+    const link = screen.getAllByRole("link").find((anchor) => anchor.getAttribute("href") === "/privacy");
+    expect(link?.textContent).toBe(`privacy notice ${t.opensInNewTab}`);
+    expect(link?.getAttribute("target")).toBe("_blank");
+    // The paragraph reads as the notice, plus the hidden "(opens in a new tab)".
+    expect(link?.closest("p")?.textContent).toBe(
+      t.notice.replace("<privacy>privacy notice</privacy>", `privacy notice ${t.opensInNewTab}`),
+    );
   });
 
   test("the form posts to loginStep, with the locale bound as its first argument", async () => {
