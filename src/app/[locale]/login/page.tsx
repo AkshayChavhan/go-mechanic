@@ -45,6 +45,14 @@ export default async function LoginPage() {
       {chunks}
     </a>
   );
+  // The full privacy notice opens in a new tab, so a half-filled form here
+  // isn't lost (the number and both boxes live only in this page).
+  const privacy = (chunks: ReactNode) => (
+    <Link href="/privacy" target="_blank" rel="noopener" className="text-link underline underline-offset-4">
+      {chunks}
+      <span className="sr-only"> {t("opensInNewTab")}</span>
+    </Link>
+  );
 
   return (
     <>
@@ -77,7 +85,7 @@ export default async function LoginPage() {
                 phoneHint: t("phoneHint"),
                 ageLabel: t("ageLabel"),
                 consentLabel: t("consentLabel", { brand: tBrand("name") }),
-                notice: t("notice"),
+                notice: t.rich("notice", { privacy }),
                 sendCode: t("sendCode"),
                 sending: t("sending"),
                 codeLabel: t("codeLabel"),

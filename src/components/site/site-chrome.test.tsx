@@ -5,6 +5,7 @@ import { renderWithIntl } from "@/i18n/test-utils";
 import { ownerGarage } from "@/server/db/seed-data";
 import messages from "../../../messages/en.json";
 
+import { liveNavItems } from "./navigation";
 import { SiteChrome } from "./site-chrome";
 
 // SiteChrome reads the real registry (navigation.ts), where no page is live
@@ -78,13 +79,16 @@ describe("SiteChrome (the frame around every public page)", () => {
   });
 
   test.each([
-    ["today, with no live pages", false],
+    ["with today's live pages", false],
     ["once every page is live", true],
   ])("every navigation landmark has its own name (%s)", (_case, allLive) => {
     registry.allLive = allLive;
     renderChrome();
     const names = screen.getAllByRole("navigation").map((nav) => nav.getAttribute("aria-label"));
-    expect(names.length).toBe(allLive ? 3 : 1);
+    // The phone bar always; the header's menu and the footer's pages once
+    // any page is live (contact is, from task 19).
+    const anyLive = allLive || liveNavItems().length > 0;
+    expect(names.length).toBe(anyLive ? 3 : 1);
     expect(new Set(names).size).toBe(names.length);
   });
 });
