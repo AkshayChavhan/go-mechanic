@@ -1,6 +1,6 @@
 # 19_info_pages: contact, about, FAQ, and draft privacy and terms pages
 
-> **Branch:** `19_info_pages` · **Date:** 2026-10-29 · **Status:** In progress (ready to merge)
+> **Branch:** `19_info_pages` · **Date:** 2026-10-29 · **Status:** Done (PR #20, merged 2026-10-30)
 
 ## In one minute
 

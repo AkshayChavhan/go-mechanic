@@ -28,7 +28,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | In progress | [16_roles_access.md](../learning/16_roles_access.md) |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | In progress | [17_vehicle_catalogue.md](../learning/17_vehicle_catalogue.md) |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
-| 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress | [19_info_pages.md](../learning/19_info_pages.md) |
+| 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | Done | [19_info_pages.md](../learning/19_info_pages.md) |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | In progress |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
@@ -327,7 +327,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc: [19_info_pages.md](../learning/19_info_pages.md)
 - [x] Review with `ce-code-review` and `code-reviewer` and fix what they find (verdicts and fixes in the learning doc)
 - [x] Compound: [privacy-notice-retention-from-delete-code-not-expiry.md](../solutions/conventions/privacy-notice-retention-from-delete-code-not-expiry.md)
-- [ ] Merge into `main`
+- [x] Merge into `main` (PR #20, 2026-10-30)
 
 ### 20_staging_deploy
 
