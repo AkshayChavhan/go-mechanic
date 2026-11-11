@@ -7,6 +7,7 @@ import { inspect } from "node:util";
 import { PGlite } from "@electric-sql/pglite";
 import { sql } from "drizzle-orm";
 import { DrizzleQueryError } from "drizzle-orm/errors";
+import type { Sql } from "postgres";
 import { afterAll, afterEach, beforeAll, describe, expect, test, vi } from "vitest";
 
 import { CONSENT_PURPOSES } from "@/domain/consent";
@@ -15,7 +16,15 @@ import { ROLES } from "@/domain/roles";
 import { SLOT_RULE_LIMITS, type SlotRules } from "@/domain/slots";
 
 import { lockPathFor } from "./folder-lock";
-import { chooseDatabase, closeDatabase, createDatabase, type Database, isNextHelperProcess } from "./index";
+import {
+  chooseDatabase,
+  closeDatabase,
+  createDatabase,
+  type Database,
+  isNextHelperProcess,
+  POOLER_OPTIONS,
+  postgresClient,
+} from "./index";
 import {
   calendarExceptions,
   consentPurpose,
@@ -546,6 +555,28 @@ describe("a real Postgres (DATABASE_URL)", () => {
     expect((error as Error).message).toContain("DATABASE_URL");
     // inspect() is what console.error prints, so this covers every property
     // a log would show: the message, the stack, a cause, Node's `input`.
+    expect(inspect(error, { depth: 10 })).not.toContain("s3cret");
+  });
+
+  test("talks to Supabase's transaction pooler: no prepared statements, TLS, a small pool that lets go", async () => {
+    const db = await createDatabase({ driver: "postgres", url: "postgres://nobody:fake@127.0.0.1:1/none" });
+    const { options } = db.$client as Sql;
+    expect(options.prepare).toBe(false);
+    expect(options.ssl).toBe("require");
+    expect(options.max).toBe(3);
+    expect(options.idle_timeout).toBe(10);
+    expect(POOLER_OPTIONS).toEqual({ prepare: false, ssl: "require", max: 3, idle_timeout: 10 });
+    await closeDatabase(db);
+  });
+
+  test("a broken URL from another setting names that setting, still without the password", () => {
+    let error: unknown;
+    try {
+      postgresClient("postgresql://u:fake/s3cret@db.example.com:5432/postgres", {}, "STAGING_DATABASE_URL");
+    } catch (failure) {
+      error = failure;
+    }
+    expect((error as Error).message).toMatch(/^STAGING_DATABASE_URL is not a valid Postgres URL/);
     expect(inspect(error, { depth: 10 })).not.toContain("s3cret");
   });
 });

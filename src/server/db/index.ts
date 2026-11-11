@@ -77,6 +77,22 @@ export function chooseDatabase(env: Pick<ServerEnv, "databaseUrl">, run: RunCont
   return { driver: "pglite", dataDir: null };
 }
 
+/** postgres.js's connection options (the second argument of `postgres(url, options)`). */
+export type PostgresOptions = NonNullable<Parameters<typeof postgres>[1]>;
+
+/**
+ * How the app talks to Supabase's transaction pooler (port 6543; task 20):
+ * - `prepare: false`: in transaction mode each transaction may run on a
+ *   different server connection, so a statement prepared on one isn't there
+ *   on the next.
+ * - `ssl: "require"`: postgres.js connects without TLS unless told to.
+ * - `max: 3`: each server process (and each build worker) opens its own pool;
+ *   Supabase Free's pooler takes 200 clients, so a few per process is plenty.
+ * - `idle_timeout: 10`: seconds before an unused connection is closed, so a
+ *   process that has gone quiet gives its pooler places back.
+ */
+export const POOLER_OPTIONS = { prepare: false, ssl: "require", max: 3, idle_timeout: 10 } as const satisfies PostgresOptions;
+
 /**
  * A postgres.js client for `url`, without the password ever reaching a log.
  *
@@ -85,16 +101,18 @@ export function chooseDatabase(env: Pick<ServerEnv, "databaseUrl">, run: RunCont
  * whole URL, password included, in its `input` property; Next.js logs the
  * error object when a build or a cached read fails. So the two errors a
  * broken URL causes (TypeError from `new URL`, URIError from decoding a bad
- * "%" escape) become a new error with a fixed message and no `cause`.
- * Anything else is passed on unchanged.
+ * "%" escape) become a new error with a fixed message and no `cause`, naming
+ * the setting the URL came from (`DATABASE_URL` for the app,
+ * `STAGING_DATABASE_URL` for the staging scripts). Anything else is passed on
+ * unchanged.
  */
-function postgresClient(url: string): Sql {
+export function postgresClient(url: string, options: PostgresOptions = {}, variableName = "DATABASE_URL"): Sql {
   try {
-    return postgres(url);
+    return postgres(url, options);
   } catch (error) {
     if (error instanceof TypeError || error instanceof URIError) {
       throw new Error(
-        "DATABASE_URL is not a valid Postgres URL. Percent-encode special characters in the password " +
+        `${variableName} is not a valid Postgres URL. Percent-encode special characters in the password ` +
           '("/" as %2F, "?" as %3F, "#" as %23, "@" as %40, "%" as %25).',
       );
     }
@@ -109,9 +127,8 @@ function postgresClient(url: string): Sql {
  */
 export async function createDatabase(config: DatabaseConfig): Promise<Database> {
   if (config.driver === "postgres") {
-    // Task 20 tunes this for Supabase: `prepare: false` for its transaction
-    // pooler, and a pool size that fits the build's worker processes.
-    return drizzlePostgres({ client: postgresClient(config.url), schema });
+    // The app's only real Postgres is Supabase, through its transaction pooler.
+    return drizzlePostgres({ client: postgresClient(config.url, POOLER_OPTIONS), schema });
   }
 
   // A folder is opened by one process at a time: the lock throws if another
