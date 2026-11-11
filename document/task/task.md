@@ -30,7 +30,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress | [19_info_pages.md](../learning/19_info_pages.md) |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
-| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | In progress | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
+| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | Done | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
@@ -358,7 +358,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc: [21_customer_vehicles.md](../learning/21_customer_vehicles.md)
 - [x] Review with `ce-code-review` (8 findings, all fixed) and `code-reviewer` (1 must-fix, fixed)
 - [x] Compound: [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #21 on GitHub
 
 ### 22_slot_engine
 
