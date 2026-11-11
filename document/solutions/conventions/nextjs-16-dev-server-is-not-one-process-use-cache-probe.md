@@ -1,6 +1,7 @@
 ---
 title: "Next.js 16: `next dev` is not one process. A slow 'use cache' read re-runs in a helper process, so per-process resources get opened twice"
 date: 2026-10-28
+last_updated: 2026-11-11
 category: conventions
 module: src/server/db/index.ts
 problem_type: convention
@@ -11,15 +12,17 @@ applies_when:
   - Code under `next dev` opens something only one process may hold (a PGlite data folder, a lock file, a SQLite file, a port, a file watcher)
   - A singleton is kept on globalThis and you assume that makes it one per dev server
   - A 'use cache' function can take over 10 seconds (a cold first start, a busy machine, a slow first migration)
+  - Writing a generateStaticParams for a dynamic route (next dev runs it in a helper process too)
   - Deciding how a resource should fail when a second process asks for it
   - Upgrading Next.js (isNextHelperProcess depends on its internal helper entry script)
 symptoms:
   - Two processes held .pglite/ at once under one `npm run dev` (task 14); two writers corrupt PGlite
   - With only a lock file, the helper hit the lock and threw, and the real page request failed with a 500 "deadlock" error
+  - Under npm run dev, a dynamic page (/services/brakes, task 18) answered nothing for minutes, with no error, while the production build and the unit tests passed
 root_cause: concurrency
 resolution_type: code_fix
-retire_when: "Next.js stops re-running slow 'use cache' fills in a jest-worker child, or starts counting errors thrown inside the cached function as an inconclusive probe; check node_modules/next/dist/server/dev/use-cache-probe-pool.js and use-cache-probe-worker.js after every Next.js upgrade"
-tags: [nextjs-16, use-cache, dev-server, use-cache-probe, jest-worker, pglite, file-lock, deadlock]
+retire_when: "Next.js stops re-running slow 'use cache' fills in a jest-worker child, or starts counting errors thrown inside the cached function as an inconclusive probe; check node_modules/next/dist/server/dev/use-cache-probe-pool.js, use-cache-probe-worker.js and next-dev-server.js (getStaticPathsWorker) after every Next.js upgrade"
+tags: [nextjs-16, use-cache, dev-server, use-cache-probe, jest-worker, pglite, file-lock, deadlock, generate-static-params, static-paths-worker]
 ---
 
 # Next.js 16: `next dev` is not one process
@@ -79,12 +82,35 @@ A known gap is in the backlog in `document/task/task.md`: two processes starting
 
 **3. Pick dev-only resources by build phase too, not `NODE_ENV` alone.** `next build --debug-prerender` builds with `NODE_ENV=development`, and the build renders pages in several worker processes at once. `next build` sets `NEXT_PHASE` to `phase-production-build` before it starts them (`node_modules/next/dist/build/index.js:1232`). So `chooseDatabase` in `src/server/db/index.ts` uses the folder only when `NODE_ENV === "development" && NEXT_PHASE !== PHASE_PRODUCTION_BUILD` (`PHASE_PRODUCTION_BUILD` from `next/constants`). Every other run gets a memory database.
 
+## A second helper: `generateStaticParams` (task 18)
+
+The cache probe is not the only helper. `next dev` also runs every route's `generateStaticParams` in a jest-worker child: `getStaticPathsWorker()` in `node_modules/next/dist/server/dev/next-dev-server.js` creates `new _jestworker.Worker(require.resolve('./static-paths-worker'), ...)` and calls `loadStaticPaths` on it. So `isNextHelperProcess()` is true there, and guard 1 above makes `getDatabase()` wait forever.
+
+Task 18's first `/services/[slug]` page read the services from the database in `generateStaticParams`. The result: under `npm run dev` every service page answered nothing (the dev log said `GET /services/brakes 200 in 60s` with no body, `curl` timed out), with no error anywhere. `next build` and the unit tests passed, because a build uses an in-memory database and tests call the function directly. Only the dev specs' warm-up, which timed out loading the page, caught it.
+
+**Rule: a `generateStaticParams` never reads the database.** Take the ids from the seed data, through the data-access layer, so pages still don't import `@/server/db`:
+
+```ts
+// src/server/dal/services.ts
+export function serviceIdsToBuild(): string[] {
+  return draftServices.filter((service) => service.kind === "service").map((service) => service.id);
+}
+
+// src/app/[locale]/(site)/services/[slug]/page.tsx
+export function generateStaticParams() {
+  return serviceIdsToBuild().map((slug) => ({ slug }));
+}
+```
+
+This is safe because ids never change and rows are hidden, never deleted: every seeded id exists, a hidden one gets the 404, and an id added later (by the owner) is built on its first visit. A unit test checks the page's `generateStaticParams` calls no read (`readServices` not called) and the DAL test that `getDatabase` isn't called. Don't fix it by letting helpers open the folder: that breaks guard 1.
+
 ## Why This Matters
 
 The failure only shows up when a cached read is slow, so it hides on a fast, warm machine and appears on a cold start or a busy laptop. When it does, the result is either a corrupted local database (no guard) or a 500 on a page that would have loaded fine (a guard that throws). Trusting the comments in Next.js's own source would lead you straight to the second one.
 
 ## When to Apply
 
+- Any `generateStaticParams`: list ids from seed data, never a database read.
 - Any new per-process resource used during `next dev` (later tasks: fake SMS or email providers that write to a file, anything with a lock or a single connection). Decide what it does in a helper process before it ships.
 - Never make a guard *throw* inside a `'use cache'` function to stop a helper. Make the helper wait instead.
 - After every Next.js upgrade, check that the probe still runs in `jest-worker/processChild.js` (`use-cache-probe-pool.js`) and that the `isNextHelperProcess` cases in `src/server/db/database.test.ts` still describe it. If Next.js starts the probe some other way, the lock still keeps the folder safe; only that one slow request would fail with a 500.
