@@ -152,7 +152,7 @@ To stay out of each other's way, files were staged by name, `main` was merged ri
 | Services and packages in one table | Task 23's booking items point at one table | A `kind` column, and a CHECK that a package covers one vehicle kind |
 | Sample prices in code, not the database | `service_prices` only ever holds real prices; the first real one turns every sample off | Two places a price can come from, joined only in `selectPrices()` |
 | Price by group and fuel, not by model | A hidden model still gets a price; the list stays short | Two sedans of the same fuel cost the same |
-| `selectPrices` has its own rule | Avoids touching `home.ts`, which task 19 may move | Three lines that repeat `realOrSamples` |
+| `selectPrices` reuses `realOrSamples` | One rule for every sample (home, about, FAQ, prices), possible once task 19 moved it to `src/lib/samples.ts` | None |
 | Finder prices in their own panel | The cards stay server-rendered and the same everywhere | The prices aren't next to each package's checklist |
 | A plain menu button, not a Radix trigger | Keeps the dialog chunk out of every page | This file now sets `aria-expanded` and returns focus itself |
 | Tiles no longer reveal on scroll | A link must never sit inside a reveal target | A little less motion on the home page |
@@ -191,7 +191,7 @@ From the work session:
 
 - **`npm run check`** (after both merges and every fix): `Test Files  120 passed (120)`, `Tests  1724 passed (1724)`.
 - **`npm run build`:** the route list shows `○ /en`, `○ /en/services`, `○ /en/packages` and the service pages as prerendered.
-- **`npm run test:e2e -- --workers=2`:** `--workers=2` runs two tests at a time, because the other sessions kept the machine busy. <!-- VERIFY: e2e -->
+- **`npm run test:e2e -- --workers=2`:** `--workers=2` runs two tests at a time, because the other sessions kept the machine busy. On the final code: `118 passed (57.4s)`. Once it had to wait: port 3210 was in use by Session 3's run, so it was run again after theirs finished.
 - **The 404 without JavaScript:** `curl -s -o page.html -w "%{http_code}"` against the production build (`npx next start -p 3001`). `-s` hides the progress bar, `-o` saves the page, and `-w "%{http_code}"` prints only the status code. `/services/not-a-service` and `/services/car-basic` answered `404` with `noindex` (Next.js's error page; the branded 404 draws once JavaScript runs, as task 12 noted); `/services`, `/services/brakes` and `/packages` answered `200`, with no `₹` in the HTML. `e2e/services.spec.ts` checks the same without JavaScript on every run.
 - **The dev specs** (`e2e/dev/`, scratch config, port 3001): `49 passed (1.1m)` on the final code. On the way they caught the dev-only hang (step 13), two test bugs, and the header overflow above.
 
@@ -204,8 +204,9 @@ From the work session:
   - P3: `MASTER.md`'s site shell table still described the old menu;
   - P3: `readme.md` still said the services live in `src/content/`.
   - Also done from its notes: a service with no price of its own, once real prices exist elsewhere, now says to call instead of showing a table of "Ask us" rows, with tests for real prices on the service and packages pages. Left as notes: `fromPrice` walks every fuel the service covers while a service page shows only the fuels its price groups' models run on, so with real data a "From" price could be lower than any price on the page (task 39 backlog); the plain fallback panel has no Escape key or focus move (it only shows on a slow or failed download).
-- **code-reviewer:** <!-- REVIEW: code-reviewer -->
-- **Compound:** <!-- COMPOUND -->
+- **code-reviewer** (the final gate): **"Ready after fixes"**, no bugs or rule breaks; it re-ran `npm run check` (1724 tests) and confirmed the `0005` migration matches the old `0004`. One must-fix, fixed: a row in "Decisions worth knowing" still said `selectPrices` had its own rule. Suggestions taken: two `CLAUDE.md` sentences now say exactly what protects the sample prices, and the price finder's `data-sample` mark has a comment (it marks the draft models). Left for the backlog: Escape, focus and `aria-modal` on the plain fallback menu panel.
+- **SEO check** (`seo-reviewer`, by hand: the SEO hook watches another folder): `/services`, `/packages` and `/` Pass; the service pages Needs work, all nice to have (longer, search-like titles such as "Car AC service and repair", fuller descriptions, links to related services). Not applied: they wait for the owner's say, as the repo's SEO rule asks.
+- **Compound:** yes. Without a note, the next dynamic route would hang under `npm run dev` the same way and need the same digging through Next.js's source. `ce-compound` (lightweight) updated `document/solutions/conventions/nextjs-16-dev-server-is-not-one-process-use-cache-probe.md` with "a `generateStaticParams` never reads the database", instead of writing a second lesson about the same helper processes.
 - **Left for later, in `task.md`'s backlog:**
   - **Task 20:** seed the services on staging before its first build: the build prebuilds the seeded ids, and against an unseeded database each of those pages would be a cached 404.
   - **Tasks 23 and 34:** price with `priceFor()` over `readServicePrices()` only, never `selectPrices()`; ask the owner whether a booking may pick a package.

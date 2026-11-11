@@ -311,8 +311,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Once the menu has real links, load the phone menu's panel only on the first tap (`next/dynamic` inside `MobileMenu`; `node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md`): today its code, about 32 KB gzipped, loads on every page, desktop too (SEO check in task 12). Done: 224.9 → 212.5 KB gzipped of scripts up front on `/` (the dialog code was 14.4 KB of it)
 - [x] If the scroll effects change, guard every setup run: GSAP re-runs `media.add` on a breakpoint change from its own listener, so move the `try`/`catch` in `scroll-scene-effects.tsx` inside the callback, undo what was set up, and test it (code-reviewer in task 13). Not needed: task 18 didn't change the scroll effects, so it moved to the backlog
 - [x] Write the learning doc: [18_services_pricing.md](../learning/18_services_pricing.md)
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
 ### 19_info_pages
@@ -696,6 +696,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 42: canonical and Open Graph for `/services`, `/services/<id>` and `/packages`; `Service` JSON-LD with offers only once real prices exist (task 18)
 - Owner, from task 18: check the drafted service details and package checklists (`src/server/db/service-seed-data.ts`) and the sample price levels (`src/content/sample-prices.ts`); say what periodic service and the packages include for electric vehicles (today they leave electric out); say whether the real price list follows the six draft price groups
 - If the scroll effects change, guard every setup run: GSAP re-runs `media.add` on a breakpoint change from its own listener, so move the `try`/`catch` in `scroll-scene-effects.tsx` inside the callback, undo what was set up, and test it (code-reviewer in task 13; moved from task 18, which didn't change the effects)
+- The phone menu's plain fallback panel (`PlainPanel` in `src/components/site/mobile-menu.tsx`, shown only on a slow or failed download of the real panel): move focus into it when it opens, close it on Escape, add `aria-modal="true"`, with tests (task 18 code-reviewer)
 
 ## How to add a task
 
