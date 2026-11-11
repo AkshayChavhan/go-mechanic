@@ -187,6 +187,25 @@ test("the page blocks: illustrations in three tones, a slot, a wide and a normal
   await expect(sample(page, "scroll-values").locator("dt")).toHaveCount(5);
 });
 
+test("the service blocks (task 18): linked tiles, a package card, the price block and the price finder", async ({
+  page,
+}) => {
+  await open(page);
+  const tiles = sample(page, "service-tiles");
+  await expect(tiles.getByRole("link")).toHaveCount(2);
+  await expect(tiles.getByText(messages.HomePage.sample, { exact: true })).toHaveCount(2);
+  const cards = sample(page, "package-card").locator(":scope > li");
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(0)).toContainText("From ₹");
+  await expect(cards.nth(1)).toContainText(messages.Packages.callForPrice);
+  const prices = sample(page, "service-prices-block");
+  await expect(prices.getByRole("table")).toHaveCount(2);
+  await expect(prices.getByText(messages.Services.price.callForPrice)).toBeVisible();
+  await expect(sample(page, "price-finder-block").locator('p[role="status"]:not(.sr-only)')).toHaveText(
+    messages.Packages.finder.prompt,
+  );
+});
+
 test("the checkbox field: native boxes, ticked by pressing the label's text, the error tied to its box", async ({
   page,
 }) => {

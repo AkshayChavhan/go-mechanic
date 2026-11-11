@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 
 import { ownerGarage } from "@/server/db/seed-data";
@@ -74,14 +74,16 @@ describe("SiteHeader with live pages", () => {
 });
 
 describe("SiteHeader's phone menu", () => {
-  function openMenu(items: NavItem[] = []) {
+  // The panel loads lazily (task 18): wait for its content, which only the real panel shows.
+  async function openMenu(items: NavItem[] = []) {
     renderWithIntl(<SiteHeader items={items} book={whatsappBook} garage={ownerGarage} />);
     fireEvent.click(screen.getByRole("button", { name: messages.Header.openMenu }));
+    await screen.findByRole("heading", { name: messages.Hours.title });
     return screen.getByRole("dialog", { name: messages.Header.menuTitle });
   }
 
-  test("holds the open status, the hours and the address, even with no live pages", () => {
-    const menu = openMenu();
+  test("holds the open status, the hours and the address, even with no live pages", async () => {
+    const menu = await openMenu();
     expect(menu.querySelector("[data-open-status]")).not.toBeNull();
     expect(within(menu).getByRole("heading", { name: messages.Hours.title })).toBeTruthy();
     expect(within(menu).getByText(messages.Hours.indiaTime)).toBeTruthy();
@@ -89,8 +91,8 @@ describe("SiteHeader's phone menu", () => {
     expect(within(menu).queryByRole("navigation")).toBeNull();
   });
 
-  test("calls the garage, and opens WhatsApp with the general message", () => {
-    const menu = openMenu();
+  test("calls the garage, and opens WhatsApp with the general message", async () => {
+    const menu = await openMenu();
     expect(within(menu).getByRole("link", { name: messages.Contact.call }).getAttribute("href")).toBe(
       telHref(ownerGarage.phone),
     );
@@ -100,8 +102,8 @@ describe("SiteHeader's phone menu", () => {
     expect(new URL(whatsapp.getAttribute("href")!).searchParams.get("text")).toBe(messages.Contact.whatsappMessage);
   });
 
-  test("lists the live pages, and following one closes the menu", () => {
-    const menu = openMenu(demoItems);
+  test("lists the live pages, and following one closes the menu", async () => {
+    const menu = await openMenu(demoItems);
     const nav = within(menu).getByRole("navigation", { name: messages.Header.navLabel });
     // jsdom can't load another page. This listener on document runs after
     // React's own click handling (React listens lower down, on its root), so
@@ -113,6 +115,6 @@ describe("SiteHeader's phone menu", () => {
     } finally {
       document.removeEventListener("click", stayOnPage);
     }
-    expect(screen.queryByRole("dialog")).toBeNull();
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 });

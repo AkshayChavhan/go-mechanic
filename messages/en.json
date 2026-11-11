@@ -300,7 +300,7 @@
   },
   "Nav": {
     "services": "Services",
-    "prices": "Prices",
+    "prices": "Packages",
     "about": "About",
     "contact": "Contact",
     "faq": "FAQ",
@@ -434,6 +434,54 @@
       "registration-duplicate": "You've already added a vehicle with this number.",
       "date-invalid": "Enter a real date.",
       "date-out-of-range": "Enter a date from 2000 up to 10 years from today."
+    }
+  },
+  "Services": {
+    "metaTitle": "Car and two-wheeler services in Kiwale, Pune | {brand}",
+    "metaDescription": "What each service at our garage on Mukai Chowk, Kiwale covers: periodic service, AC, brakes, tyres, batteries, denting and more, for cars and two-wheelers.",
+    "title": "Our services",
+    "lead": "What each one covers, for cars and two-wheelers. Choose a service to see what's included.",
+    "from": "From {price}",
+    "allServices": "All services",
+    "service": {
+      "metaTitle": "{service} in Kiwale, Pune | {brand}",
+      "metaDescription": "{summary} At our garage on Mukai Chowk, Kiwale, Pune.",
+      "included": "What's included",
+      "signs": "Signs you need it",
+      "packages": "Compare the Basic, Standard and Comprehensive packages",
+      "actionsTitle": "Book this service",
+      "actionsLead": "Book on WhatsApp, or call us with any questions."
+    },
+    "price": {
+      "title": "Price",
+      "callForPrice": "Call or WhatsApp us for a price.",
+      "onInspection": "Priced after an inspection: we look at your vehicle first and tell you the price before any work starts.",
+      "byType": "By vehicle type. Your vehicle's price depends on its model and fuel.",
+      "typeHeader": "Vehicle type",
+      "priceHeader": "Price",
+      "fuelPrice": "{fuel}: {price}",
+      "noPrice": "Ask us"
+    }
+  },
+  "Packages": {
+    "metaTitle": "Service packages for cars and two-wheelers in Kiwale, Pune | {brand}",
+    "metaDescription": "Basic, Standard and Comprehensive service packages for cars and two-wheelers at our garage on Mukai Chowk, Kiwale, Pune. See what each one includes.",
+    "title": "Service packages",
+    "lead": "Three levels of periodic service, for cars and for two-wheelers. See what each one includes.",
+    "jumpTo": "Packages by vehicle type",
+    "cars": "For cars",
+    "twoWheelers": "For two-wheelers",
+    "callForPrice": "Call or WhatsApp us for a price",
+    "seePackages": "See packages",
+    "actionsTitle": "Not sure which one you need?",
+    "actionsLead": "Call or message us on WhatsApp with your vehicle and when it was last serviced.",
+    "finder": {
+      "title": "Price for your vehicle",
+      "lead": "Choose your vehicle to see what each package costs for it.",
+      "prompt": "Choose your vehicle to see its prices.",
+      "resultsTitle": "Prices for {brand} {model}, {fuel}",
+      "notOffered": "Not for this vehicle",
+      "callForPrice": "Call or WhatsApp us for a price"
     }
   }
 }

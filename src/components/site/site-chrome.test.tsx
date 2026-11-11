@@ -5,24 +5,29 @@ import { renderWithIntl } from "@/i18n/test-utils";
 import { ownerGarage } from "@/server/db/seed-data";
 import messages from "../../../messages/en.json";
 
-import { liveNavItems } from "./navigation";
 import { SiteChrome } from "./site-chrome";
 
-// SiteChrome reads the real registry (navigation.ts), where no page is live
-// yet. To see the shell as it will be once pages ship, one test switches
-// every item on through this flag. vi.hoisted: vi.mock runs before the
-// imports above, so the flag must exist by then.
-const registry = vi.hoisted(() => ({ allLive: false }));
+// SiteChrome reads the real registry (navigation.ts), where some pages are
+// live (Services and Packages since task 18). To see the shell with no page
+// live, or with every page live, one test switches the items through this
+// flag. vi.hoisted: vi.mock runs before the imports above, so the flag must
+// exist by then.
+const registry = vi.hoisted(() => ({ pages: "real" as "none" | "real" | "all" }));
 vi.mock("./navigation", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./navigation")>();
   return {
     ...actual,
-    liveNavItems: () => (registry.allLive ? actual.navItems.map((item) => ({ ...item, live: true })) : actual.liveNavItems()),
+    liveNavItems: () =>
+      registry.pages === "none"
+        ? []
+        : registry.pages === "all"
+          ? actual.navItems.map((item) => ({ ...item, live: true }))
+          : actual.liveNavItems(),
   };
 });
 
 afterEach(() => {
-  registry.allLive = false;
+  registry.pages = "real";
 });
 
 function renderChrome() {
@@ -79,16 +84,14 @@ describe("SiteChrome (the frame around every public page)", () => {
   });
 
   test.each([
-    ["with today's live pages", false],
-    ["once every page is live", true],
-  ])("every navigation landmark has its own name (%s)", (_case, allLive) => {
-    registry.allLive = allLive;
+    ["with no live pages", "none", 1],
+    ["with today's live pages", "real", 3],
+    ["once every page is live", "all", 3],
+  ] as const)("every navigation landmark has its own name (%s)", (_case, pages, count) => {
+    registry.pages = pages;
     renderChrome();
     const names = screen.getAllByRole("navigation").map((nav) => nav.getAttribute("aria-label"));
-    // The phone bar always; the header's menu and the footer's pages once
-    // any page is live (contact is, from task 19).
-    const anyLive = allLive || liveNavItems().length > 0;
-    expect(names.length).toBe(anyLive ? 3 : 1);
+    expect(names.length).toBe(count);
     expect(new Set(names).size).toBe(names.length);
   });
 });

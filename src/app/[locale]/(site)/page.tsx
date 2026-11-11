@@ -3,9 +3,9 @@ import { getTranslations } from "next-intl/server";
 import { bookTarget } from "@/components/site/navigation";
 import { ScrollScene } from "@/components/site/scroll-scene";
 import { selectReviews, selectTrustStats } from "@/content/home";
-import { services } from "@/content/services";
 import { whatsappHref } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
+import { readServices } from "@/server/dal/services";
 import { readVehicleCatalogue } from "@/server/dal/vehicles";
 
 import { HomeCta } from "./_components/home-cta";
@@ -31,9 +31,10 @@ export const ensureStatic = "navigation";
  * the scroll motion in the browser, for visitors who allow it. No <main>
  * here: the shell around every public page ((site)/layout.tsx) provides it.
  *
- * Async because it reads the garage and the vehicle brands from the database
- * (both reads are cached, so the page is still built ahead of time). An async component
- * reads its text with getTranslations instead of useTranslations.
+ * Async because it reads the garage, the services and the vehicle brands from
+ * the database (every read is cached, so the page is still built ahead of
+ * time). An async component reads its text with getTranslations instead of
+ * useTranslations.
  */
 export default async function Home() {
   const tContact = await getTranslations("Contact");
@@ -41,6 +42,9 @@ export default async function Home() {
   // The garage is read the way the shell and the 404 pages read it.
   const garage = await readGarage();
   const book = bookTarget(whatsappHref(garage.whatsapp, tContact("bookingMessage")));
+
+  // The services, without the packages (those are on /packages).
+  const services = (await readServices()).filter((service) => service.kind === "service");
 
   // The brands the garage works on, for the row under the services (cached
   // too). Only their names go to the section, not the models.

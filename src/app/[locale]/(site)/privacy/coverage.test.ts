@@ -66,6 +66,9 @@ const TABLES: Record<string, Personal | null> = {
   vehicle_categories: null,
   vehicle_makes: null,
   vehicle_models: null,
+  // Services, packages and their prices (task 18): the garage's own price list.
+  services: null,
+  service_prices: null,
 };
 
 /** Every table schema.ts defines, by its database name. */

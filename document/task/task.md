@@ -26,8 +26,8 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | Done | [14_database_setup.md](../learning/14_database_setup.md) |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | Done | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
 | 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | Done | [16_roles_access.md](../learning/16_roles_access.md) |
-| 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | In progress | [17_vehicle_catalogue.md](../learning/17_vehicle_catalogue.md) |
-| 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
+| 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | Done | [17_vehicle_catalogue.md](../learning/17_vehicle_catalogue.md) |
+| 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | In progress | [18_services_pricing.md](../learning/18_services_pricing.md) |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress | [19_info_pages.md](../learning/19_info_pages.md) |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | In progress | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
@@ -293,26 +293,26 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds
 - [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 18_services_pricing
 
-- [ ] Create branch `18_services_pricing`
-- [ ] Plan with `ce-plan`
-- [ ] Services, packages, prices by vehicle; `/services`, `/packages`
-- [ ] Services move to the database the way the garage did in task 14: a typed seed made from `src/content/services.ts` (like `src/server/db/seed-data.ts`), a cached read in `src/server/dal/` with its own tag, and `src/content/services.ts` deleted (task 14)
-- [ ] Switch the home page services grid from `src/content/services.ts` to database services. The table mirrors its fields (id, `LocalizedText` name and summary, vehicle kinds); `ServiceTile` gives an id it has no icon for a wrench (task 13)
-- [ ] Each home page service tile links to its `/services/[slug]` page (the ids are the slugs), and the hero gets "See prices" and the grid an "All services" link, each only once its page is live (`isLivePage`) (task 13)
-- [ ] An e2e test that goes from the home page to a service page and back: no console errors, and nothing left hidden (the scroll scene's reveals set themselves up again) (task 13)
-- [ ] Set `live: true` for `services` and `prices` in `src/components/site/navigation.ts` in the same commit as the pages (`navigation.test.ts` checks the flags) (task 12)
-- [ ] `aria-current` on the live navigation links, inside a `<Suspense>` with a plain-links fallback (`usePathname` suspends under Cache Components), with an e2e check for the attribute and for no hydration errors (task 12)
-- [ ] An unknown service slug calls `notFound()` in `generateMetadata` as well as in the page, before any `<Suspense>`, so the status is 404 and the title comes from `src/app/[locale]/not-found.tsx`. Add `src/app/[locale]/(site)/not-found.tsx` if that 404 should keep the full shell. Add an e2e status check for an unknown slug (task 12)
-- [ ] A page that calls `notFound()` while it's prerendered serves Next.js's bare error HTML to clients without JavaScript; the branded 404 appears only after hydration. Check the unknown-slug 404 with `curl`, not only in a browser (task 12)
-- [ ] Once the menu has real links, load the phone menu's panel only on the first tap (`next/dynamic` inside `MobileMenu`; `node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md`): today its code, about 32 KB gzipped, loads on every page, desktop too (SEO check in task 12)
-- [ ] If the scroll effects change, guard every setup run: GSAP re-runs `media.add` on a breakpoint change from its own listener, so move the `try`/`catch` in `scroll-scene-effects.tsx` inside the callback, undo what was set up, and test it (code-reviewer in task 13)
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `18_services_pricing`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-29-1346-feat-services-pricing-plan.md)
+- [x] Services, packages, prices by vehicle; `/services`, `/packages`
+- [x] Services move to the database the way the garage did in task 14: a typed seed made from `src/content/services.ts` (like `src/server/db/seed-data.ts`), a cached read in `src/server/dal/` with its own tag, and `src/content/services.ts` deleted (task 14)
+- [x] Switch the home page services grid from `src/content/services.ts` to database services. The table mirrors its fields (id, `LocalizedText` name and summary, vehicle kinds); `ServiceTile` gives an id it has no icon for a wrench (task 13)
+- [x] Each home page service tile links to its `/services/[slug]` page (the ids are the slugs), and the hero gets "See prices" and the grid an "All services" link, each only once its page is live (`isLivePage`) (task 13). The hero's link says "See packages" until real prices exist (owner, 2026-10-29)
+- [x] An e2e test that goes from the home page to a service page and back: no console errors, and nothing left hidden (the scroll scene's reveals set themselves up again) (task 13)
+- [x] Set `live: true` for `services` and `prices` in `src/components/site/navigation.ts` in the same commit as the pages (`navigation.test.ts` checks the flags) (task 12)
+- [x] `aria-current` on the live navigation links, inside a `<Suspense>` with a plain-links fallback (`usePathname` suspends under Cache Components), with an e2e check for the attribute and for no hydration errors (task 12)
+- [x] An unknown service slug calls `notFound()` in `generateMetadata` as well as in the page, before any `<Suspense>`, so the status is 404 and the title comes from `src/app/[locale]/not-found.tsx`. Add `src/app/[locale]/(site)/not-found.tsx` if that 404 should keep the full shell. Add an e2e status check for an unknown slug (task 12). No `(site)/not-found.tsx`: every `(site)` page would then carry the 404 content (plan, Scope Boundaries)
+- [x] A page that calls `notFound()` while it's prerendered serves Next.js's bare error HTML to clients without JavaScript; the branded 404 appears only after hydration. Check the unknown-slug 404 with `curl`, not only in a browser (task 12)
+- [x] Once the menu has real links, load the phone menu's panel only on the first tap (`next/dynamic` inside `MobileMenu`; `node_modules/next/dist/docs/01-app/02-guides/lazy-loading.md`): today its code, about 32 KB gzipped, loads on every page, desktop too (SEO check in task 12). Done: 224.9 → 212.5 KB gzipped of scripts up front on `/` (the dialog code was 14.4 KB of it)
+- [x] If the scroll effects change, guard every setup run: GSAP re-runs `media.add` on a breakpoint change from its own listener, so move the `try`/`catch` in `scroll-scene-effects.tsx` inside the callback, undo what was set up, and test it (code-reviewer in task 13). Not needed: task 18 didn't change the scroll effects, so it moved to the backlog
+- [x] Write the learning doc: [18_services_pricing.md](../learning/18_services_pricing.md)
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
 ### 19_info_pages
@@ -690,6 +690,13 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 20: the owner checks the draft catalogue before staging testers save vehicles against it: a saved vehicle keeps its model id (task 21)
 - Task 42: add `src/app/favicon.ico`. Chrome sometimes asks for `/favicon.ico` after a page change and logs the 404 as a console error (seen in a different `e2e/account.spec.ts` test on each full run of task 21); that spec ignores the line (`withoutFaviconProbe`) until then. Remove the filter once the icon exists (task 21)
 - Owner questions from task 21, each with the default built: may customers add a vehicle the picker doesn't list (another brand, a missing model)? Default no: the add page offers the garage's phone and WhatsApp. Is a registration number required for every vehicle? Default yes. When removing arrives, should the garage keep a removed vehicle? Default no: the row is deleted, and bookings keep their own copy (task 21)
+- Task 20: seed the services and packages on staging together with the garage and the vehicle catalogue, before the first build: the build prerenders `/services/<id>` for the seeded ids (`serviceIdsToBuild()`), and against an unseeded database each of those pages, cached for up to 30 days, would be the 404 (task 18)
+- Tasks 23 and 34: price a booking or an estimate with `priceFor()` over `readServicePrices()` rows only, never `selectPrices()` (that gives samples under `npm run dev`); a booking item points at `services.id`. Ask the owner whether a booking may pick a package (task 18)
+- Task 39: real prices (`service_prices`; a save calls `updateTag("service-prices")`, service edits `updateTag("services")`; hide with `listed = false`, never delete), a "time taken" per service, and a "models approved" switch, separate from `showSamples()`, that lets the price finder on `/packages` go live. When the first real price is saved, rename `Nav.prices` back to "Prices" and `Packages.seePackages` to "See prices", and decide whether visitors may see the price groups' names in the service pages' price tables (task 17 kept them hidden). Also make `fromPrice()` use the same fuels a service page shows (the fuels its price group's models run on): today it walks every fuel the service covers, so an every-fuel row for a fuel no model in that group runs could make a "From" price lower than any price on the page (task 18 code review)
+- Task 42: canonical and Open Graph for `/services`, `/services/<id>` and `/packages`; `Service` JSON-LD with offers only once real prices exist (task 18)
+- Owner, from task 18: check the drafted service details and package checklists (`src/server/db/service-seed-data.ts`) and the sample price levels (`src/content/sample-prices.ts`); say what periodic service and the packages include for electric vehicles (today they leave electric out); say whether the real price list follows the six draft price groups
+- If the scroll effects change, guard every setup run: GSAP re-runs `media.add` on a breakpoint change from its own listener, so move the `try`/`catch` in `scroll-scene-effects.tsx` inside the callback, undo what was set up, and test it (code-reviewer in task 13; moved from task 18, which didn't change the effects)
+- The phone menu's plain fallback panel (`PlainPanel` in `src/components/site/mobile-menu.tsx`, shown only on a slow or failed download of the real panel): move focus into it when it opens, close it on Escape, add `aria-modal="true"`, with tests (task 18 code-reviewer)
 
 ## How to add a task
 

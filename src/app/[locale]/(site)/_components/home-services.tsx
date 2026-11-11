@@ -1,11 +1,14 @@
+import { ArrowRightIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
+import { isLivePage } from "@/components/site/navigation";
 import { sceneMark } from "@/components/site/scroll-scene-attributes";
 import { Section } from "@/components/site/section";
 import { ServiceTile } from "@/components/site/service-tile";
-import type { Service } from "@/content/services";
+import { servicePath, type Service } from "@/domain/services";
 import { VEHICLE_KINDS, type VehicleMake } from "@/domain/vehicles";
 import { localize } from "@/i18n/localized-text";
+import { Link } from "@/i18n/navigation";
 
 /**
  * Periodic service, the garage's everyday job, gets a double-width tile. With
@@ -18,9 +21,11 @@ const WIDE_TILE = "periodic-service";
 export type HomeBrand = Pick<VehicleMake, "id" | "kind" | "name">;
 
 /**
- * The services grid (the bento), on the grey band. No prices and no links
- * until task 18 adds the service pages. The tiles reveal one after another
- * as they scroll into view (a reveal group), with motion allowed.
+ * The services grid (the bento), on the grey band. Each tile links to its
+ * service page (task 18), and "All services" leads to /services. No prices
+ * here: the services pages show them. The tiles don't reveal on scroll any
+ * more: a link must never sit inside a reveal target (a hidden link could
+ * take keyboard focus while invisible); the heading above still reveals.
  *
  * Under the grid, the brands the garage works on (task 17): names only, no
  * logos (other companies' trademarks) and no links, one quiet list per kind.
@@ -28,6 +33,7 @@ export type HomeBrand = Pick<VehicleMake, "id" | "kind" | "name">;
  */
 export function HomeServices({ services, brands }: { services: readonly Service[]; brands: readonly HomeBrand[] }) {
   const t = useTranslations("HomePage.services");
+  const tServices = useTranslations("Services");
   const locale = useLocale();
   const brandLists = VEHICLE_KINDS.map((kind) => ({
     kind,
@@ -44,13 +50,24 @@ export function HomeServices({ services, brands }: { services: readonly Service[
           </h2>
           <p className="type-lead text-pretty text-muted-foreground">{t("lead")}</p>
         </div>
-        <ul {...sceneMark("revealGroup")} className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          {services.map((service) => (
-            <li key={service.id} className={service.id === WIDE_TILE ? "sm:col-span-2" : undefined}>
-              <ServiceTile service={service} />
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-6">
+          <ul className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {services.map((service) => (
+              <li key={service.id} className={service.id === WIDE_TILE ? "sm:col-span-2" : undefined}>
+                <ServiceTile service={service} href={servicePath(service.id)} />
+              </li>
+            ))}
+          </ul>
+          {isLivePage("/services") && (
+            <Link
+              href="/services"
+              className="inline-flex items-center gap-2 self-start type-body text-link underline-offset-4 hover:underline pointer-coarse:min-h-11"
+            >
+              {tServices("allServices")}
+              <ArrowRightIcon aria-hidden="true" className="size-4" />
+            </Link>
+          )}
+        </div>
         {brandLists.length > 0 && (
           <div {...sceneMark("reveal")} className="flex flex-col gap-4 border-t border-border pt-8">
             <h3 className="type-body font-semibold">{t("brands.title")}</h3>
