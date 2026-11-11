@@ -86,7 +86,8 @@ describe("no price reaches a build by another way", () => {
   });
 
   test("no client component imports the sample prices", () => {
-    const clients = files.filter((file) => /^\s*["']use client["']/.test(read(file)));
+    // Anywhere at the start of a line: a few files put a comment block first.
+    const clients = files.filter((file) => /^["']use client["'];?\s*$/m.test(read(file)));
     expect(clients.length).toBeGreaterThan(0);
     const importers = clients.filter((file) => read(file).includes("@/content/sample-prices"));
     expect(importers, "pass prices to client components as props").toEqual([]);

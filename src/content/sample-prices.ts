@@ -11,13 +11,15 @@
 // the layout; the owner's real list replaces them (task 39).
 //
 // Read them only through selectPrices(), from server code. Pass the result to
-// client components as props (the price finder does).
+// client components as props (the price finder does). The server-only import
+// below makes any import from browser code (direct, relative or through
+// another file) fail the build, so the table can never ship to visitors.
+
+import "server-only";
 
 import type { ServicePrice } from "@/domain/services";
 import type { Fuel } from "@/domain/vehicles";
-import { showSamples } from "@/lib/samples";
-
-import type { Shown } from "./home";
+import { realOrSamples, type Shown } from "@/lib/samples";
 
 /** One sample row, in whole rupees. */
 function row(serviceId: string, categoryId: string, rupees: number, fuel: Fuel | null = null): ServicePrice {
@@ -61,10 +63,9 @@ export const samplePrices: readonly ServicePrice[] = [
 /**
  * The prices to show: the real ones, else the samples under `npm run dev`,
  * else null (the page then says to call or WhatsApp for a price). Any real
- * price turns every sample off, so a page never mixes the two.
+ * price turns every sample off, so a page never mixes the two: the same rule
+ * as the home page's samples (realOrSamples in src/lib/samples.ts).
  */
 export function selectPrices(real: readonly ServicePrice[]): Shown<ServicePrice> | null {
-  if (real.length > 0) return { items: real, sample: false };
-  if (showSamples()) return { items: samplePrices, sample: true };
-  return null;
+  return realOrSamples(real, samplePrices);
 }
