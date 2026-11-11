@@ -23,7 +23,7 @@ export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
  * version's date as its "last updated" date. So it's a "YYYY-MM-DD" date,
  * with ".2", ".3" ... added when the words change again on the same day.
  */
-export const LOGIN_NOTICE_VERSION = "2026-10-29";
+export const LOGIN_NOTICE_VERSION = "2026-11-03";
 
 /** The date part of a notice version ("2026-10-29.2" -> "2026-10-29"): what /privacy shows. */
 export function noticeDate(version: string = LOGIN_NOTICE_VERSION): string {

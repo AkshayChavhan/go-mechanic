@@ -26,7 +26,7 @@ import { contactRichText, inlineLinkClass } from "../_components/contact-rich-te
 export const ensureStatic = "navigation";
 
 /** The data items, in page order (their text is PrivacyPage.items.<key>). */
-const PRIVACY_ITEMS = ["number", "consent", "attempts", "codes", "session", "sms"] as const;
+const PRIVACY_ITEMS = ["number", "name", "vehicles", "consent", "attempts", "codes", "session", "sms"] as const;
 
 /** The sections after the data items, each with a title and a body (PrivacyPage.<key>). */
 const SECTIONS = ["cookies", "rights", "withdraw", "contact", "children", "changes"] as const;

@@ -8,6 +8,7 @@ import { formatAddress } from "@/i18n/format";
 import { Link } from "@/i18n/navigation";
 import { telHref, whatsappHref } from "@/lib/contact-links";
 
+import { AccountLink } from "./account-link";
 import { MobileMenu } from "./mobile-menu";
 import type { BookTarget, NavItem } from "./navigation";
 import { OpenStatus } from "./open-status";
@@ -26,8 +27,9 @@ type SiteHeaderProps = {
 
 /**
  * The bar at the top of every public page: the Wordmark (a link home), the
- * links to the live pages and "Book a service". On phones (below 768px) the
- * links and the button make way for the menu button.
+ * links to the live pages, "Account" and "Book a service". On phones (below
+ * 768px) the links and the button make way for the menu button. "Account"
+ * is an icon below 1024px.
  *
  * A server component that takes everything as props, so /dev/design can show
  * it with demo data, and task 14 only changes the code that reads the data.
@@ -65,9 +67,9 @@ export function SiteHeader({ items, book, garage }: SiteHeaderProps) {
         )}
 
         <div className="ml-auto flex items-center gap-2">
-          {/* Task 15: a login or account entry goes here, inside a <Suspense>
-              slot or a client island. Never read cookies in this component:
-              it would make every public page render on each visit. */}
+          {/* Static: never read cookies in this component, it would make
+              every public page render on each visit. */}
+          <AccountLink />
           <div className="hidden md:block">
             <Button asChild size="sm">
               {book.kind === "page" ? (

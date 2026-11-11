@@ -129,6 +129,8 @@ grep -i "session limit" <output file>
 
 If it's the limit message, run it again after the time it names. Until then the review hasn't happened, so don't record it as done.
 
+**Look for saved stages before re-running (task 21).** Task 21's `ce-code-review` child also printed only the limit message (70 bytes), but it had reached the very end first. `ce-code-review` saves each stage as it goes, in the child session's own scratchpad: `/private/tmp/claude-501/<project folder>/<child session id>/scratchpad/ce-code-review/<run>/`. That folder held every reviewer's JSON, `synthesized-findings.json` and `validator-verdicts.json`, so the review was complete; only the final summary was missing. Find the folder by its time (`find /private/tmp/claude-501 -newer <a file touched before the run> -path "*ce-code-review*"`), read the validator's verdicts, and re-run only if a stage is missing. It's your own child's folder, in this project; the privacy rule about other projects' session files doesn't apply to it.
+
 ## Why This Matters
 
 Without the watcher, the hang looks like a slow plan. Task 10 lost about 21 hours this way. With it, task 11 noticed the hang 10 minutes after the plan stopped changing. The plan is the useful output, and it's on disk long before the process would exit, if it ever does.

@@ -3,6 +3,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import {
   formatAddress,
   formatDate,
+  formatIndiaDate,
   formatNumber,
   formatRupees,
   formatTime,
@@ -166,5 +167,29 @@ describe("keepTogether", () => {
 
   test("leaves a single word alone", () => {
     expect(keepTogether("Tue")).toBe("Tue");
+  });
+});
+
+describe("formatIndiaDate (a stored India date)", () => {
+  const originalTz = process.env.TZ;
+  afterEach(() => {
+    if (originalTz === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTz;
+  });
+
+  test("shows the day as stored", () => {
+    expect(formatIndiaDate("2027-03-12", "en")).toBe("12 Mar 2027");
+  });
+
+  test("the computer's time zone never moves it to another day", () => {
+    for (const zone of ["UTC", "Asia/Kolkata", "America/Los_Angeles", "Pacific/Kiritimati"]) {
+      process.env.TZ = zone;
+      expect(formatIndiaDate("2027-01-01", "en"), zone).toBe("1 Jan 2027");
+    }
+  });
+
+  test("text it can't read is shown as stored", () => {
+    expect(formatIndiaDate("2027-02-30", "en")).toBe("2027-02-30");
+    expect(formatIndiaDate("soon", "en")).toBe("soon");
   });
 });

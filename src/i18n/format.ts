@@ -2,6 +2,7 @@
 // Plain functions (no next-intl or Next.js imports), so they work in server
 // and client components, tests, and later in SMS, email and CSV code.
 
+import { type IndiaDate, indiaInstantOn, parseIndiaDate } from "@/domain/india-time";
 import { minutesAfterMidnight, WEEKDAYS, type Weekday } from "@/domain/opening-hours";
 
 import { GARAGE_TIME_ZONE, intlLocales, type Locale } from "./config";
@@ -62,6 +63,18 @@ export function formatDate(date: Date, locale: Locale): string {
     dateStyle: "medium",
     timeZone: GARAGE_TIME_ZONE,
   }).format(date);
+}
+
+/**
+ * A date on India's calendar, stored as "YYYY-MM-DD" (a PUC expiry date):
+ * "2027-03-12" -> "12 Mar 2027", like formatDate. It formats noon of that
+ * day in India, so no time zone can move it to the day before or after.
+ * Text it can't read is shown as stored instead of throwing: this runs while
+ * a page renders.
+ */
+export function formatIndiaDate(date: IndiaDate, locale: Locale): string {
+  const day = parseIndiaDate(date);
+  return day ? formatDate(indiaInstantOn(day, 12 * 60), locale) : date;
 }
 
 /** "10:00 am", in India time whatever time zone the computer is in. */

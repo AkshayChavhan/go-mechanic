@@ -465,3 +465,45 @@ export const vehicleModels = pgTable(
     check("vehicle_models_english_name", englishNameFilled(table.name)),
   ],
 );
+
+// --- Customers' vehicles (task 21) -------------------------------------------
+//
+// The vehicles customers add to their account. Only src/server/dal/
+// customer-vehicles.ts reads or changes them, always for the logged-in user
+// (never a user id from the browser). Ids are uuids: rows are made at
+// runtime, so the catalogue's reason for name-based ids doesn't apply.
+
+/**
+ * A customer's vehicle. The brand and kind come from the model by a join, so
+ * no copy of them can disagree with it.
+ * - Deleting a user deletes their vehicles ("cascade"): a vehicle means
+ *   nothing without its owner (task 43 erases a user's data).
+ * - A model a vehicle uses can't be deleted ("restrict"): the garage hides
+ *   models (listed = false), and the vehicle still shows its name.
+ * - One customer can't save one registration number twice; two customers can.
+ */
+export const customerVehicles = pgTable(
+  "customer_vehicles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    modelId: text("model_id")
+      .notNull()
+      .references(() => vehicleModels.id, { onDelete: "restrict" }),
+    fuel: fuel("fuel").notNull(),
+    /** The compact form from parseRegistration: "MH12AB1234", "22BH1234AB". */
+    registrationNumber: text("registration_number").notNull(),
+    /** India dates ("2027-03-12"); null when the customer didn't add one. Electric vehicles have no PUC date. */
+    pucExpiresOn: date("puc_expires_on"),
+    insuranceExpiresOn: date("insurance_expires_on"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("customer_vehicles_user_registration").on(table.userId, table.registrationNumber),
+    // A backstop: the data-access layer only ever writes parseRegistration's compact form.
+    check("customer_vehicles_registration_compact", sql`${table.registrationNumber} ~ '^[A-Z0-9]{8,11}$'`),
+  ],
+);

@@ -1,6 +1,6 @@
 # 16_roles_access: who may do what, and real redirects for login pages
 
-> **Branch:** `16_roles_access` · **Date:** 2026-10-28 · **Status:** In progress
+> **Branch:** `16_roles_access` · **Date:** 2026-10-28 · **Status:** Done (merged through PR #19)
 
 ## In one minute
 
@@ -199,7 +199,7 @@ To try it yourself (not done for this doc, so as not to start a dev server on th
   - [`ce-plan-child-session-hangs-use-idle-watcher.md`](../solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md), updated: `claude -p` can exit with no plan (its helpers stopped after 10 minutes; `CLAUDE_CODE_PRINT_BG_WAIT_CEILING_MS=0`), and with parallel sessions the watcher and the stop command match only your own run.
   - [`full-check-times-out-under-parallel-session-load.md`](../solutions/workflow-issues/full-check-times-out-under-parallel-session-load.md), new: how to tell timeouts from real failures when sessions share the laptop, and how to wait for the load to drop instead of raising limits.
   - Not written: a lesson on the proxy's 307 with the `?session=ended` marker. The "Roles and access" rules in `CLAUDE.md` already say it, and task 26 will read them.
-- **Pull request:** Pending, after the owner says yes.
+- **Pull request:** [#19](https://github.com/AkshayChavhan/go-mechanic/pull/19), opened after the owner's OK and merged on 2026-10-29. Task 17 (Session 2) had reached `main` meanwhile, so #19 conflicted; another Claude session merged `main` into the branch first (`ec2a87c`): only `CLAUDE.md` and `task.md` conflicted, both sides were kept, and `npm run check` passed on the result (1353 tests).
 
 ## Common mistakes
 

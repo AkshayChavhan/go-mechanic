@@ -1,0 +1,100 @@
+"use client";
+
+// The name form on /account (task 21): asked once, right after the first
+// login.
+//
+// A client component ("island") like the login form: it keeps the action's
+// answer (useActionState) and moves the cursor after an error. It reads no
+// messages: /account reads them on the server and passes every label as a
+// prop.
+
+import { useActionState, useEffect, useId, useRef } from "react";
+
+import { type FormAction, FreshOnEachVisit, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { initialNameFormState, type NameFormState } from "@/lib/account-forms";
+
+/** The saveName Server Action with the locale already bound: saveName.bind(null, locale). */
+export type NameAction = FormAction<NameFormState>;
+
+/** Every word the form shows, from the Account messages. The page reads them. */
+export type NameFormLabels = {
+  heading: string;
+  note: string;
+  label: string;
+  submit: string;
+  saving: string;
+  /** What a failed call says: no network, or the server broke. */
+  connection: string;
+};
+
+/**
+ * What useActionState runs on each submit (submitterWithFallback): a saved
+ * name's redirect goes on to Next.js; a failed call (no network) becomes the
+ * `connection` message, with what was typed kept.
+ */
+export function nameSubmitter(action: NameAction, connectionText: string) {
+  return submitterWithFallback(action, (previous, formData) => {
+    const typed = formData.get("name");
+    return { submission: previous.submission + 1, nameTyped: typeof typed === "string" ? typed : "", error: connectionText };
+  });
+}
+
+type NameFormProps = { action: NameAction; labels: NameFormLabels };
+
+/**
+ * The name form. It starts fresh on every visit (FreshOnEachVisit): coming
+ * back to /account after an error shows no old error and doesn't move the
+ * cursor (on a phone, that would pop up the keyboard).
+ */
+export function NameForm(props: NameFormProps) {
+  return (
+    <FreshOnEachVisit>
+      <NameFormVisit {...props} />
+    </FreshOnEachVisit>
+  );
+}
+
+function NameFormVisit({ action, labels }: NameFormProps) {
+  const [state, formAction] = useActionState(nameSubmitter(action, labels.connection), initialNameFormState);
+  const id = useId();
+  const input = useRef<HTMLInputElement>(null);
+
+  // After an answer (always an error: a saved name leaves the page), the
+  // cursor goes back to the field. Not when the page opens: on a phone that
+  // would pop the keyboard over the page.
+  useEffect(() => {
+    if (state.submission > 0) input.current?.focus();
+  }, [state.submission]);
+
+  return (
+    <section aria-labelledby={`${id}-heading`} className="flex max-w-md flex-col gap-6">
+      <div className="flex flex-col gap-2">
+        <h2 id={`${id}-heading`} className="type-title">
+          {labels.heading}
+        </h2>
+        <p className="type-body text-pretty text-muted-foreground">{labels.note}</p>
+      </div>
+      {/* Keyed by the answer: the form remounts after each one, with what
+          was typed as its value, so an error never empties it. */}
+      <form key={state.submission} action={formAction} className="flex flex-col gap-6">
+        <Field data-invalid={state.error ? true : undefined}>
+          <FieldLabel htmlFor={`${id}-name`}>{labels.label}</FieldLabel>
+          <Input
+            ref={input}
+            id={`${id}-name`}
+            name="name"
+            autoComplete="name"
+            required
+            defaultValue={state.nameTyped}
+            aria-invalid={state.error ? true : undefined}
+            aria-describedby={state.error ? `${id}-error` : undefined}
+          />
+          {state.error && <FieldError id={`${id}-error`}>{state.error}</FieldError>}
+        </Field>
+        <SubmitButton pendingLabel={labels.saving}>{labels.submit}</SubmitButton>
+      </form>
+    </section>
+  );
+}

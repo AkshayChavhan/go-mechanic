@@ -25,12 +25,12 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 13 | `13_home_page` | Apple-style home page with GSAP scroll storytelling | Done | [13_home_page.md](../learning/13_home_page.md) |
 | 14 | `14_database_setup` | Drizzle + PGlite/Postgres, migrations, seed, env and clock helpers | Done | [14_database_setup.md](../learning/14_database_setup.md) |
 | 15 | `15_auth_otp_login` | Mobile OTP login (Better Auth) with a fake SMS sender and `/dev/outbox` | Done | [15_auth_otp_login.md](../learning/15_auth_otp_login.md) |
-| 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | In progress | [16_roles_access.md](../learning/16_roles_access.md) |
+| 16 | `16_roles_access` | Roles (customer, mechanic, manager, owner), `can()` matrix, protected areas | Done | [16_roles_access.md](../learning/16_roles_access.md) |
 | 17 | `17_vehicle_catalogue` | Vehicle types, brands, models; vehicle picker | In progress | [17_vehicle_catalogue.md](../learning/17_vehicle_catalogue.md) |
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | To do |  |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress | [19_info_pages.md](../learning/19_info_pages.md) |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
-| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | To do |  |
+| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | In progress | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
@@ -282,7 +282,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds (after `ce-code-review`: "Ready with fixes", 5 findings fixed; `code-reviewer`: 2 must-fixes fixed, including the merge with task 22)
 - [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question: [ce-plan lesson, updated](../solutions/workflow-issues/ce-plan-child-session-hangs-use-idle-watcher.md), [check timeouts under load](../solutions/workflow-issues/full-check-times-out-under-parallel-session-load.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #19 on GitHub (task 17 was merged into the branch first, `ec2a87c`, because #19 conflicted)
 
 ### 17_vehicle_catalogue
 
@@ -348,15 +348,16 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 21_customer_vehicles
 
-- [ ] Create branch `21_customer_vehicles`
-- [ ] Plan with `ce-plan`
-- [ ] Customer vehicles with registration-number checks, profile
-- [ ] Ask the owner to start the DLT (SMS) and Meta (WhatsApp) paperwork: approvals take weeks
-- [ ] The header's "Log in"/"Account" entry (the owner's choice: not before this task), as a static link or a browser island, never a session read in the shell (`ensureStatic` on `/`), with `prefetch={false}` (task 15)
-- [ ] Ask for a name on the profile (users get an empty `name` at sign-up). Carriers reassign numbers that go unused: decide what a new SIM owner sees of the old account (task 15)
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `21_customer_vehicles`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-10-29-1348-feat-customer-vehicles-plan.md)
+- [x] Customer vehicles with registration-number checks, profile: the rules (`src/domain/registration.ts`, `profile.ts`, `customer-vehicles.ts`), the `customer_vehicles` table (migration `0004`), the data-access layer (`src/server/dal/profile.ts`, `customer-vehicles.ts`), the actions, the name step and vehicle list on `/account`, `/account/vehicles/new`, and browser tests (`e2e/account.spec.ts`)
+- [x] Ask the owner to start the DLT (SMS) and Meta (WhatsApp) paperwork: approvals take weeks. The owner started both on 2026-10-29
+- [x] The header's "Account" entry: one static link (`AccountLink`), `prefetch={false}`, never a session read in the shell (the owner's choice, 2026-10-29)
+- [x] Ask for a name on the profile: required, once, right after the first login (the owner's choice, 2026-10-29). Recycled numbers: accepted for v1 with no extra logic, so whoever holds the number sees the account; the garage can remove an old account in task 29, and customers can delete their data in task 43 (the owner's choice, 2026-10-29)
+- [x] The vehicle picker inside a real form: it keeps a choice made before hydration, follows its form's reset, and takes an `error` prop (task 17's note)
+- [x] Write the learning doc: [21_customer_vehicles.md](../learning/21_customer_vehicles.md)
+- [x] Review with `ce-code-review` (8 findings, all fixed) and `code-reviewer` (1 must-fix, fixed)
+- [x] Compound: [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md)
 - [ ] Merge into `main`
 
 ### 22_slot_engine
@@ -681,6 +682,14 @@ Not in version 1. See [features.md](../website/features.md).
 - For task 43: `TermsPage.updatedOn` is a date kept in `messages/en.json`, so a `hi.json` would have to copy it and nothing makes it move when the terms' wording changes. Move it next to the page, with a fingerprint test like `consent.test.ts`'s, when the terms are finalised (task 19 code review)
 - On `/faq` the group headings (`h2`) use `type-headline`, the same size as the page's `h1`, so the title doesn't stand out. Try `type-title` for the groups and a smaller style for the questions, and check it on `/dev/design`-style screenshots (task 19 code review)
 - `e2e/access.spec.ts` (task 16): its tests that run first take 17–23 s even alone (the others 5–8 s), against a 30 s limit, and time out when several sessions load the laptop (seen four times in task 19). Find out why the first logged-in page load is slow (perhaps the server building its in-memory database with the vehicle catalogue on first use), then warm it up in the spec or raise those tests' limit (task 19)
+- New task (split from task 21 to keep it reviewable): edit and remove a saved vehicle, and change the name. A page `/account/vehicles/[vehicleId]` that reads `params` inside `<Suspense>`; a malformed or another customer's id shows the 404 page; a two-user browser test opens A's vehicle as B and sees the 404 page; remove with a confirmation step; a note when the saved model is no longer listed (a save then needs a listed model). It calls `updateMyVehicle` and `removeMyVehicle`, which already exist with their ownership tests (task 21)
+- Task 23: the booking picks one of `listMyVehicles()`, copies the vehicle's details onto the booking, and keeps a nullable foreign key to it with `on delete set null`; it asks for a name inline when `needsName()` says so; give `ChoiceGroup` and `NativeSelect` their own error states (task 21 only added the picker's `error` prop); revisit the phone action bar on form pages (task 21)
+- Task 36: reminders read `puc_expires_on` and `insurance_expires_on` as India dates (`date` columns, "YYYY-MM-DD"); electric vehicles have no PUC date (task 21)
+- Tasks 19 and 43: the privacy notice names the profile name, vehicles and expiry dates; deleting a user deletes their vehicles (`on delete cascade`), and the data export includes them (task 21)
+- Task 29: staff search by registration number across customers needs an index on `customer_vehicles.registration_number` (today only `(user_id, registration_number)` is indexed, by its unique constraint) (task 21)
+- Task 20: the owner checks the draft catalogue before staging testers save vehicles against it: a saved vehicle keeps its model id (task 21)
+- Task 42: add `src/app/favicon.ico`. Chrome sometimes asks for `/favicon.ico` after a page change and logs the 404 as a console error (seen in a different `e2e/account.spec.ts` test on each full run of task 21); that spec ignores the line (`withoutFaviconProbe`) until then. Remove the filter once the icon exists (task 21)
+- Owner questions from task 21, each with the default built: may customers add a vehicle the picker doesn't list (another brand, a missing model)? Default no: the add page offers the garage's phone and WhatsApp. Is a registration number required for every vehicle? Default yes. When removing arrives, should the garage keep a removed vehicle? Default no: the row is deleted, and bookings keep their own copy (task 21)
 
 ## How to add a task
 
