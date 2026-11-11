@@ -73,6 +73,7 @@ Other commands:
 | `npm run build` / `npm start` | Build the production version / run it |
 | `npm run lint`, `npm run typecheck`, `npm run test` | The three parts of `check`, one at a time |
 | `npm run db:reset` | Deletes your local database (`.pglite/` and its lock); the next `npm run dev` starts a fresh one with the garage's details. Use it when the local data is in a mess or a migration you were writing went wrong. Stop `npm run dev` first. |
+| `npm run staging:migrate`, `staging:seed`, `staging:race-test` | Staging only (task 20): bring the staging database up to `main` from your laptop, and prove a slot is never overbooked. Setup, every click and what to do after each merge: [document/operations/staging.md](document/operations/staging.md). |
 | `npm run db:generate -- --name=<what_changed>` | After changing `src/server/db/schema.ts`: writes the SQL migration for it. Commit it with the schema change, then restart `npm run dev` to apply it. |
 
 ## Prerequisites

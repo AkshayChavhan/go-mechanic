@@ -683,6 +683,8 @@ Not in version 1. See [features.md](../website/features.md).
 - For task 43: `TermsPage.updatedOn` is a date kept in `messages/en.json`, so a `hi.json` would have to copy it and nothing makes it move when the terms' wording changes. Move it next to the page, with a fingerprint test like `consent.test.ts`'s, when the terms are finalised (task 19 code review)
 - On `/faq` the group headings (`h2`) use `type-headline`, the same size as the page's `h1`, so the title doesn't stand out. Try `type-title` for the groups and a smaller style for the questions, and check it on `/dev/design`-style screenshots (task 19 code review)
 - `e2e/access.spec.ts` (task 16): its tests that run first take 17–23 s even alone (the others 5–8 s), against a 30 s limit, and time out when several sessions load the laptop (seen four times in task 19). Find out why the first logged-in page load is slow (perhaps the server building its in-memory database with the vehicle catalogue on first use), then warm it up in the spec or raise those tests' limit (task 19)
+- Tasks 28, 39 and 40: once the owner can edit the garage, the slot rules or the catalogue on staging, `compareWithSeed` (`src/server/db/seed.ts`) will report those edits as differences and `staging:check` will fail every staging build. Before that task merges, make `staging:check` warn about owner-edited rows instead of failing (for example, compare only rows whose `updated_at` is unchanged since seeding) (task 20)
+- Tasks 25 and 27: reuse `src/server/dal/slots.postgres.test.ts` (10 calls, separate connections, a naive negative control) to prove a cancel and a reschedule at once can't give back one place twice, on staging (task 20)
 
 ## How to add a task
 
