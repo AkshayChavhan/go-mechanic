@@ -32,7 +32,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | Done | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
-| 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
+| 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | In progress |  |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | Admin navigation by role, bookings board, phone and walk-in bookings | To do |  |
@@ -376,7 +376,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 23_booking_flow
 
-- [ ] Create branch `23_booking_flow`
+- [x] Create branch `23_booking_flow`
 - [ ] Plan with `ce-plan`
 - [ ] `/book` wizard with OTP, server-side prices, e2e test
 - [ ] e2e tests run on a production server whose database is PGlite in memory: every run starts from the seed, and whatever a test creates is gone after a restart. Write booking tests that don't depend on an earlier run (task 14)
