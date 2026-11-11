@@ -356,8 +356,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Ask for a name on the profile: required, once, right after the first login (the owner's choice, 2026-10-29). Recycled numbers: accepted for v1 with no extra logic, so whoever holds the number sees the account; the garage can remove an old account in task 29, and customers can delete their data in task 43 (the owner's choice, 2026-10-29)
 - [x] The vehicle picker inside a real form: it keeps a choice made before hydration, follows its form's reset, and takes an `error` prop (task 17's note)
 - [x] Write the learning doc: [21_customer_vehicles.md](../learning/21_customer_vehicles.md)
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `ce-code-review` (8 findings, all fixed) and `code-reviewer` (1 must-fix, fixed)
+- [x] Compound: [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md)
 - [ ] Merge into `main`
 
 ### 22_slot_engine
