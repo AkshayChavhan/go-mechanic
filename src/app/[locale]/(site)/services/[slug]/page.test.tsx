@@ -128,6 +128,28 @@ describe("/services/[slug]", () => {
     expect(hatchback.textContent).toContain("₹1,299");
   });
 
+  test("with a real price for this service: shown in every build, unmarked, and 'Ask us' where a group has none", async () => {
+    vi.mocked(readServicePrices).mockResolvedValue([
+      { serviceId: "brakes", categoryId: "hatchback", fuel: null, pricePaise: 140_000 },
+    ]);
+    const { container } = await render("brakes");
+    expect(container.querySelector("[data-sample]")).toBeNull();
+    expect(container.textContent).not.toContain(messages.HomePage.sample);
+    const [cars] = screen.getAllByRole("table");
+    expect(within(cars!).getByRole("row", { name: /Hatchback/ }).textContent).toContain("₹1,400");
+    expect(within(cars!).getByRole("row", { name: /Sedan/ }).textContent).toContain(t.price.noPrice);
+  });
+
+  test("with real prices for other services only: this page still asks to call or WhatsApp", async () => {
+    vi.mocked(readServicePrices).mockResolvedValue([
+      { serviceId: "ac", categoryId: "hatchback", fuel: null, pricePaise: 150_000 },
+    ]);
+    const { container } = await render("brakes");
+    expect(screen.getByText(t.price.callForPrice)).toBeTruthy();
+    expect(screen.queryByRole("table")).toBeNull();
+    expect(container.textContent).not.toContain("₹");
+  });
+
   test("periodic service: a line per fuel where the prices differ, and a link to the packages", async () => {
     vi.stubEnv("NODE_ENV", "development");
     await render("periodic-service");

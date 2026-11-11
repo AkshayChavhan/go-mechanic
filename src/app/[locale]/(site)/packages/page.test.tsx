@@ -84,6 +84,18 @@ describe("/packages", () => {
     expect(readVehicleCatalogue).not.toHaveBeenCalled();
   });
 
+  test("with a real price: that card's From price in every build, unmarked; the others ask to call; no finder", async () => {
+    vi.mocked(readServicePrices).mockResolvedValue([
+      { serviceId: "car-basic", categoryId: "hatchback", fuel: null, pricePaise: 249_900 },
+    ]);
+    const { container } = renderWithIntl(await PackagesPage());
+    expect(container.querySelector("[data-sample]")).toBeNull();
+    const basic = screen.getAllByRole("heading", { level: 3, name: "Basic service" })[0]!.closest('[data-slot="card"]')!;
+    expect(basic.textContent).toContain("From ₹2,499");
+    expect(screen.getAllByText(t.callForPrice)).toHaveLength(packages.length - 1);
+    expect(screen.queryByText(t.finder.title)).toBeNull();
+  });
+
   test("one action group at the end: Book as the only blue button", async () => {
     const { container } = renderWithIntl(await PackagesPage());
     const blue = container.querySelectorAll('[data-slot="button"][data-variant="default"]');

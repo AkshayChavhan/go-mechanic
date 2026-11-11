@@ -1,10 +1,10 @@
 import { useLocale, useTranslations } from "next-intl";
 
-import type { Shown } from "@/content/home";
 import { priceFor, type Service, type ServicePrice } from "@/domain/services";
 import { FUELS, type Fuel, type VehicleCatalogue, type VehicleKind } from "@/domain/vehicles";
 import { formatRupees } from "@/i18n/format";
 import { localize } from "@/i18n/localized-text";
+import type { Shown } from "@/lib/samples";
 
 import { SampleBadge } from "./sample-badge";
 
@@ -32,7 +32,8 @@ type ServicePricesProps = {
  * A service page's price block. Text only: the page's one action group, below
  * it, holds the buttons.
  * - Priced after an inspection: says so, whatever prices exist.
- * - No prices (the live site until the owner gives them): "Call or WhatsApp us".
+ * - No prices for this service (the live site until the owner gives them):
+ *   "Call or WhatsApp us".
  * - Prices: one table per vehicle kind, a row per price group, with a line
  *   per fuel when the fuels' prices differ. Samples carry data-sample and the
  *   Sample badge. Price group names show only here, and only under
@@ -46,14 +47,18 @@ export function ServicePrices({ service, shown, catalogue, headingId }: ServiceP
   const kindLabel = (kind: VehicleKind) => (kind === "car" ? tKinds("car") : tKinds("twoWheeler"));
   const fuelLabel = (fuel: Fuel) => tFuels(fuel);
 
+  // Real prices can exist for some services and not yet for this one: then
+  // this page asks to call too, as its tile and its package card do.
+  const ownPrices = shown !== null && shown.items.some((row) => row.serviceId === service.id);
+
   const heading = (
     <h2 id={headingId} className="flex items-center gap-3 type-title">
       {t("title")}
-      {shown?.sample && !service.pricedAfterInspection && <SampleBadge />}
+      {ownPrices && shown?.sample && !service.pricedAfterInspection && <SampleBadge />}
     </h2>
   );
 
-  if (service.pricedAfterInspection || shown === null) {
+  if (service.pricedAfterInspection || shown === null || !ownPrices) {
     return (
       <div className="flex max-w-2xl flex-col gap-3">
         {heading}
