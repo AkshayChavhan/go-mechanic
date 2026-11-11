@@ -11,6 +11,9 @@
   "enabledPlugins": {
     "compound-engineering@compound-engineering-plugin": true
   },
+  "permissions": {
+    "deny": ["Read(./.env.staging)", "Edit(./.env.staging)", "Bash(cat .env.staging)", "Bash(cat ./.env.staging)"]
+  },
   "hooks": {
     "Stop": [
       {
