@@ -334,6 +334,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Create branch `20_staging_deploy`
 - [x] Owner decisions (2026-10-29): staging on **Vercel Hobby** (free) and **Supabase Free**, accounts created by the owner. Known risk, accepted by the owner: Vercel's Hobby plan is for personal, non-commercial use only, a garage's site counts as commercial, so Vercel may pause the project, and on Hobby Vercel may use the code to train its AI. Supabase Free pauses a project after 7 days of low activity (the data stays). Moving to Vercel Pro stays in task 46
 - [x] Plan with `ce-plan`: [2026-11-03-0851-feat-staging-deploy-plan.md](../plans/2026-11-03-0851-feat-staging-deploy-plan.md)
+- [x] Owner decisions (2026-11-11): testers read fake login codes in Supabase's table editor (`dev_messages`); staging settings live in `.env.staging` (never `.env.local`); Claude is denied reading or editing `.env.staging` (`.claude/settings.json`)
 - [ ] Staging on Vercel + Supabase (Mumbai) with fake providers
 - [ ] Set `APP_ENV` (`staging`) and `DATABASE_URL` on Vercel: Supabase's transaction pooler (port 6543), with postgres.js's `prepare: false` (`createDatabase` in `src/server/db/index.ts`) (task 14)
 - [ ] Run `drizzle-kit migrate` over the direct connection before `next build`: prerendering reads the database during the build (task 14)
