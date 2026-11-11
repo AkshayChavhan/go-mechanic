@@ -68,6 +68,8 @@ export function PriceFinder({ catalogue, pickerLabels, labels, packages, prices,
   const vehicle = found && fuel ? { kind: found.make.kind, categoryId: found.model.categoryId, fuel } : null;
 
   return (
+    // data-sample: the finder always shows the draft vehicle models, so it is
+    // sample content even once real prices exist (the Sample badge follows `sample`).
     <div data-sample="price-finder" className="flex flex-col gap-8">
       <div className="flex max-w-2xl flex-col gap-3">
         <h2 className="flex items-center gap-3 type-title">
