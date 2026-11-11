@@ -16,7 +16,9 @@ import { requireUser } from "@/server/auth/access";
  * streaming, so its redirect (to /login?session=ended) happens in the browser.
  *
  * Its paragraph uses the same classes as the page's loading line
- * (detailsClass), so nothing moves when it replaces it.
+ * (detailsClass), and both fit on one line, so nothing moves when it
+ * replaces it. That's why the customer's name isn't here: a name makes the
+ * line wrap on a phone. AccountContent greets them below Log out instead.
  */
 export async function AccountDetails({ locale }: { locale: Locale }) {
   const user = await requireUser(locale);

@@ -44,6 +44,14 @@ describe("SiteHeader with no live pages (today)", () => {
     renderWithIntl(<SiteHeader items={[]} book={whatsappBook} garage={ownerGarage} />);
     expect(screen.getByRole("button", { name: messages.Header.openMenu })).toBeTruthy();
   });
+
+  test("links to the account, outside any navigation landmark, and Book stays the only blue button", () => {
+    const { container } = renderWithIntl(<SiteHeader items={demoItems} book={whatsappBook} garage={ownerGarage} />);
+    const account = screen.getByRole("link", { name: messages.Account.headerLink });
+    expect(account.getAttribute("href")).toBe("/account");
+    expect(account.closest("nav")).toBeNull();
+    expect(container.querySelectorAll('[data-variant="default"]')).toHaveLength(1);
+  });
 });
 
 describe("SiteHeader with live pages", () => {

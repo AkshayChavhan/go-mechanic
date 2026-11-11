@@ -33,10 +33,11 @@ async function thrownBy(run: Promise<unknown>): Promise<unknown> {
 }
 
 describe("AccountDetails", () => {
-  test("logged in: the number the way people read it", async () => {
+  test("logged in: one line with the number the way people read it, and no name (it would wrap on a phone)", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue({ id: "u1", phoneNumber: "+919876543210", role: "customer" });
-    render(await AccountDetails({ locale: "en" }));
+    const { container } = render(await AccountDetails({ locale: "en" }));
     expect(screen.getByText(messages.Account.signedInAs.replace("{number}", "+91 98765 43210"))).toBeTruthy();
+    expect(container.querySelectorAll("p")).toHaveLength(1);
   });
 
   test("logged out (a leftover cookie): sent to /login?session=ended", async () => {

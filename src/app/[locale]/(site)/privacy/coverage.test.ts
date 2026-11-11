@@ -15,8 +15,8 @@ import messages from "../../../../../messages/en.json";
 // the wording).
 //
 // What it can't see: a task that starts filling a column that already exists
-// but is empty today (users.name, users.image). Task 21 saving a name does
-// exactly that, so it must update the notice without this test's reminder.
+// but is empty today (users.image). Task 21 started filling users.name and
+// added the "name" item to the notice by hand, for this reason.
 
 type Personal = { item: keyof typeof messages.PrivacyPage.items; columns: readonly string[] };
 
@@ -38,6 +38,21 @@ const TABLES: Record<string, Personal | null> = {
   login_attempts: {
     item: "attempts",
     columns: ["id", "phone_number", "ip_address", "locale", "notice_version", "consent_given_at", "sms_sent", "created_at"],
+  },
+  // A customer's own vehicles (task 21).
+  customer_vehicles: {
+    item: "vehicles",
+    columns: [
+      "id",
+      "user_id",
+      "model_id",
+      "fuel",
+      "registration_number",
+      "puc_expires_on",
+      "insurance_expires_on",
+      "created_at",
+      "updated_at",
+    ],
   },
   // No personal data in production.
   accounts: null, // Better Auth's sign-in methods: phone login never writes here

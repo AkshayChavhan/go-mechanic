@@ -26,6 +26,7 @@ const nextFolder = path.join(__dirname, "..", ".next");
  * ignoring case. The login ones (task 15): a table, a setting, and the
  * Better Auth call only the login service makes. The catalogue (task 17):
  * the models table, which the browser's vehicle picker must never import.
+ * Customers' vehicles (task 21): the table the add-vehicle form saves to.
  */
 const MARKERS = [
   "garage_settings",
@@ -37,6 +38,7 @@ const MARKERS = [
   "sendPhoneNumberOTP",
   "vehicle_models",
   "service_prices",
+  "customer_vehicles",
 ];
 
 /** Every file under a folder, as full paths. */

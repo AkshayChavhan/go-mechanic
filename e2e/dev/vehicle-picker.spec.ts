@@ -52,6 +52,17 @@ test("narrows to a type, fills in a model's brand and type, picks its only fuel,
   await expectNoErrors(page, errors);
 });
 
+test("the error sample shows its message under the picker and marks the model invalid, keeping the model", async ({ page }) => {
+  await open(page);
+  const sample = page.locator('[data-sample="vehicle-picker-error"]');
+  const errorModel = sample.getByRole("combobox", { name: t.picker.modelLabel });
+  const message = sample.getByText(messages.MyVehicles.errors["vehicle-missing"], { exact: true });
+  await expect(message).toBeVisible();
+  await expect(errorModel).toHaveValue("car-honda-city");
+  await expect(errorModel).toHaveAttribute("aria-invalid", "true");
+  await expect(errorModel).toHaveAttribute("aria-describedby", (await message.getAttribute("id"))!);
+});
+
 test.describe("without JavaScript", () => {
   test.use({ javaScriptEnabled: false });
 

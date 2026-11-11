@@ -33,8 +33,15 @@
     {
       "idx": 4,
       "version": "7",
-      "when": 1793263567121,
-      "tag": "0004_services_pricing",
+      "when": 1793263631779,
+      "tag": "0004_customer_vehicles",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794407747791,
+      "tag": "0005_services_pricing",
       "breakpoints": true
     }
   ]

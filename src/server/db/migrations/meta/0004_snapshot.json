@@ -1,5 +1,5 @@
 {
-  "id": "10108959-a354-417e-9511-da84db716210",
+  "id": "778fd8e6-0f45-4c87-91b1-d542fbe2e263",
   "prevId": "ca0c3f5d-40f6-4cb3-8938-876767009906",
   "version": "7",
   "dialect": "postgresql",
@@ -226,6 +226,118 @@
       },
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.customer_vehicles": {
+      "name": "customer_vehicles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "model_id": {
+          "name": "model_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fuel": {
+          "name": "fuel",
+          "type": "fuel",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "registration_number": {
+          "name": "registration_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "puc_expires_on": {
+          "name": "puc_expires_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "insurance_expires_on": {
+          "name": "insurance_expires_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "customer_vehicles_user_id_users_id_fk": {
+          "name": "customer_vehicles_user_id_users_id_fk",
+          "tableFrom": "customer_vehicles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "customer_vehicles_model_id_vehicle_models_id_fk": {
+          "name": "customer_vehicles_model_id_vehicle_models_id_fk",
+          "tableFrom": "customer_vehicles",
+          "tableTo": "vehicle_models",
+          "columnsFrom": [
+            "model_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "customer_vehicles_user_registration": {
+          "name": "customer_vehicles_user_registration",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id",
+            "registration_number"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "customer_vehicles_registration_compact": {
+          "name": "customer_vehicles_registration_compact",
+          "value": "\"customer_vehicles\".\"registration_number\" ~ '^[A-Z0-9]{8,11}$'"
+        }
+      },
       "isRLSEnabled": false
     },
     "public.dev_messages": {
@@ -492,234 +604,6 @@
         "opening_hours_closed_or_opens_before_closes": {
           "name": "opening_hours_closed_or_opens_before_closes",
           "value": "(\"opening_hours\".\"opens\" is null and \"opening_hours\".\"closes\" is null) or (\"opening_hours\".\"opens\" is not null and \"opening_hours\".\"closes\" is not null and \"opening_hours\".\"opens\" < \"opening_hours\".\"closes\")"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.service_prices": {
-      "name": "service_prices",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "service_id": {
-          "name": "service_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "category_id": {
-          "name": "category_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fuel": {
-          "name": "fuel",
-          "type": "fuel",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "price_paise": {
-          "name": "price_paise",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "service_prices_service_id_services_id_fk": {
-          "name": "service_prices_service_id_services_id_fk",
-          "tableFrom": "service_prices",
-          "tableTo": "services",
-          "columnsFrom": [
-            "service_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "service_prices_category_id_vehicle_categories_id_fk": {
-          "name": "service_prices_category_id_vehicle_categories_id_fk",
-          "tableFrom": "service_prices",
-          "tableTo": "vehicle_categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "service_prices_service_category_fuel": {
-          "name": "service_prices_service_category_fuel",
-          "nullsNotDistinct": true,
-          "columns": [
-            "service_id",
-            "category_id",
-            "fuel"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {
-        "service_prices_positive": {
-          "name": "service_prices_positive",
-          "value": "\"service_prices\".\"price_paise\" > 0"
-        }
-      },
-      "isRLSEnabled": false
-    },
-    "public.services": {
-      "name": "services",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "kind": {
-          "name": "kind",
-          "type": "service_kind",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "name": {
-          "name": "name",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "summary": {
-          "name": "summary",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "vehicle_kinds": {
-          "name": "vehicle_kinds",
-          "type": "vehicle_kind[]",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "fuels": {
-          "name": "fuels",
-          "type": "fuel[]",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "included": {
-          "name": "included",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "signs": {
-          "name": "signs",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "priced_after_inspection": {
-          "name": "priced_after_inspection",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "position": {
-          "name": "position",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "listed": {
-          "name": "listed",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {
-        "services_has_vehicle_kinds": {
-          "name": "services_has_vehicle_kinds",
-          "value": "cardinality(\"services\".\"vehicle_kinds\") > 0"
-        },
-        "services_package_one_kind": {
-          "name": "services_package_one_kind",
-          "value": "\"services\".\"kind\" <> 'package' or cardinality(\"services\".\"vehicle_kinds\") = 1"
-        },
-        "services_has_fuels": {
-          "name": "services_has_fuels",
-          "value": "cardinality(\"services\".\"fuels\") > 0"
-        },
-        "services_english_name": {
-          "name": "services_english_name",
-          "value": "coalesce(btrim(\"services\".\"name\" ->> 'en'), '') <> ''"
-        },
-        "services_english_summary": {
-          "name": "services_english_summary",
-          "value": "coalesce(btrim(\"services\".\"summary\" ->> 'en'), '') <> ''"
-        },
-        "services_included_list": {
-          "name": "services_included_list",
-          "value": "jsonb_typeof(\"services\".\"included\") = 'array' and \"services\".\"included\" <> '[]'::jsonb"
-        },
-        "services_signs_list": {
-          "name": "services_signs_list",
-          "value": "jsonb_typeof(\"services\".\"signs\") = 'array'"
         }
       },
       "isRLSEnabled": false
@@ -1379,14 +1263,6 @@
         "sms",
         "whatsapp",
         "email"
-      ]
-    },
-    "public.service_kind": {
-      "name": "service_kind",
-      "schema": "public",
-      "values": [
-        "service",
-        "package"
       ]
     },
     "public.user_role": {

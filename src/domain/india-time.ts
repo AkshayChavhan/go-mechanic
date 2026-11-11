@@ -122,3 +122,23 @@ export function weekdayIndexOf(date: IndiaDate): number {
 export function indiaInstantOn(date: IndiaDate, minutes: number): Date {
   return indiaInstant(calendarDay(date), 0, minutes);
 }
+
+/**
+ * A date posted as "YYYY-MM-DD" (a date field's value), or null when it
+ * isn't one or isn't a real calendar day ("2026-02-29").
+ */
+export function parseIndiaDate(text: string): IndiaDate | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  const { year, month, day } = calendarDay(text);
+  const check = new Date(Date.UTC(year, month - 1, day));
+  const real =
+    check.getUTCFullYear() === year && check.getUTCMonth() === month - 1 && check.getUTCDate() === day;
+  return real ? text : null;
+}
+
+/** `date` plus `years`; 29 February in a year without one becomes 28 February. */
+export function addYears(date: IndiaDate, years: number): IndiaDate {
+  const { year, month, day } = calendarDay(date);
+  const lastDay = new Date(Date.UTC(year + years, month, 0)).getUTCDate();
+  return formatDay({ year: year + years, month, day: Math.min(day, lastDay) });
+}

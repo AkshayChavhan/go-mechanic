@@ -8,9 +8,9 @@ import messages from "../../../../../messages/en.json";
 import AccountPage, { generateMetadata } from "./page";
 
 // Stand-ins for what only works inside a Next.js request:
-// - AccountDetails (it reads the session cookie) is tested on its own
-//   (src/components/account/account-details.test.tsx); here it's replaced
-//   by a marker, so the test can see where the page puts it;
+// - AccountDetails and AccountContent (they read the session cookie) are
+//   tested on their own (src/components/account/); here they're replaced by
+//   markers, so the test can see where the page puts them;
 // - the Server Action module (Better Auth, cookies) becomes empty functions;
 // - getTranslations (next-intl/server, for the metadata) is next-intl's own
 //   translator over the real messages.
@@ -26,6 +26,16 @@ vi.mock("@/components/account/account-details", async () => {
       return <p data-testid="account-details" />;
     },
     detailsClass: "type-lead text-muted-foreground",
+  };
+});
+vi.mock("@/components/account/account-content", async () => {
+  const { use } = await import("react");
+  const never = new Promise<never>(() => {});
+  return {
+    AccountContent: () => {
+      if (details.suspend) use(never);
+      return <div data-testid="account-content" />;
+    },
   };
 });
 vi.mock("@/server/actions/login", () => ({ loginStep: vi.fn(), logOut: vi.fn() }));
@@ -51,14 +61,22 @@ describe("/account", () => {
     expect(screen.getByTestId("account-details")).toBeTruthy();
   });
 
+  test("the main part (name form or vehicles) comes after Log out, so it streams in below what's shown", () => {
+    renderWithIntl(<AccountPage />);
+    const logOutButton = screen.getByRole("button", { name: t.logOut });
+    const content = screen.getByTestId("account-content");
+    expect(logOutButton.compareDocumentPosition(content) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   test("Log out is a submit button in a form, outside the part that streams in (works without JavaScript)", () => {
     renderWithIntl(<AccountPage />);
     const button = screen.getByRole("button", { name: t.logOut });
     expect(button.getAttribute("type")).toBe("submit");
     const form = button.closest("form");
     expect(form).not.toBeNull();
-    // The form doesn't hold the session-reading details.
+    // The form doesn't hold the session-reading parts.
     expect(form!.contains(screen.getByTestId("account-details"))).toBe(false);
+    expect(form!.contains(screen.getByTestId("account-content"))).toBe(false);
     // Not blue: logging out isn't the page's main action.
     expect(button.getAttribute("data-variant")).toBe("secondary");
   });
@@ -69,6 +87,7 @@ describe("/account", () => {
       renderWithIntl(<AccountPage />);
       expect(screen.getByText(t.loading)).toBeTruthy();
       expect(screen.queryByTestId("account-details")).toBeNull();
+      expect(screen.queryByTestId("account-content")).toBeNull();
       expect(screen.getByRole("button", { name: t.logOut })).toBeTruthy();
     } finally {
       details.suspend = false;

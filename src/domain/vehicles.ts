@@ -22,6 +22,11 @@ export const VEHICLE_KINDS = ["car", "two-wheeler"] as const;
 
 export type VehicleKind = (typeof VEHICLE_KINDS)[number];
 
+/** Whether a posted or read string is one of VEHICLE_KINDS. */
+export function isVehicleKind(value: string): value is VehicleKind {
+  return (VEHICLE_KINDS as readonly string[]).includes(value);
+}
+
 /**
  * What a vehicle runs on, in the order the picker lists them. Only factory
  * fuels: a strong hybrid (Hyryder, City e:HEV) counts as petrol, and an
@@ -31,6 +36,11 @@ export type VehicleKind = (typeof VEHICLE_KINDS)[number];
 export const FUELS = ["petrol", "diesel", "cng", "electric"] as const;
 
 export type Fuel = (typeof FUELS)[number];
+
+/** Whether a posted or read string is one of FUELS. */
+export function isFuel(value: string): value is Fuel {
+  return (FUELS as readonly string[]).includes(value);
+}
 
 /**
  * A price group within a kind (hatchback, sedan, scooter...). Task 18 prices
