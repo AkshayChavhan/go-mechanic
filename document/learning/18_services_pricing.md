@@ -39,7 +39,7 @@ The commits up to `bc4c228`: `54 files changed, 5348 insertions(+), 352 deletion
 | --- | --- | --- |
 | `src/domain/services.ts` + test | Added | Pure rules: the `Service` and `ServicePrice` types, `priceFor`, `fromPrice`, `checkServices` (problem codes) and `servicePath` |
 | `src/domain/vehicles.ts` | Changed | `isTextId` is now shared, so services and vehicles check ids the same way |
-| `src/server/db/schema.ts`, `migrations/0004_services_pricing.sql` + `meta/` | Changed, Added | The `service_kind` enum and two tables: `services` and `service_prices` |
+| `src/server/db/schema.ts`, `migrations/0005_services_pricing.sql` + `meta/` | Changed, Added | The `service_kind` enum and two tables: `services` and `service_prices` |
 | `src/server/db/services-tables.test.ts` | Added | Proves the database refuses what the rules forbid, and tests the seed |
 | `src/server/db/service-seed-data.ts` + test | Added | 11 services (the owner's names and summaries, Claude's drafted details) and 6 packages, with no prices. Plain data, so Playwright can import it |
 | `src/server/db/seed.ts`, `index.ts` | Changed | `seedServices`, called last in `createDatabase` |
@@ -81,7 +81,7 @@ The commits up to `bc4c228`: `54 files changed, 5348 insertions(+), 352 deletion
    git fetch origin && git merge origin/main
    npm run db:generate -- --name=services_pricing
    ```
-   `--` passes `--name=...` through npm to drizzle-kit. `main` had no new commits, so the merge changed nothing, and the file became `0004_services_pricing.sql`.
+   `--` passes `--name=...` through npm to drizzle-kit. `main` had no new commits then, so the file became `0004_services_pricing.sql`. Task 21 then merged first with its own `0004`, so this migration was generated again as `0005_services_pricing.sql` (see "Built alongside other sessions").
 
 4. **The seed** (`service-seed-data.ts`, `seedServices`). It works like task 17's catalogue seed. It checks the data first and throws on a problem, then inserts with `onConflictDoNothing`. So a new database gets everything, an existing one gets only the rows it lacks, and the owner's later edits survive restarts. It writes no prices. Periodic service, engine work and the six packages leave out electric vehicles until the owner says what those include.
 
@@ -109,9 +109,10 @@ The commits up to `bc4c228`: `54 files changed, 5348 insertions(+), 352 deletion
     The phone menu now closes on any link tap through one click listener on the panel, instead of a `SheetClose` around each link. So `site-header.tsx` no longer imports `ui/sheet`.
 
 11. **The lazy phone menu, measured first.** Before this task, the phone menu's dialog code (Radix) loaded on every page, desktop too.
-    - **The change:** `mobile-menu-panel.tsx` now holds the panel and loads on the menu button's first pointer-down or focus, so it's usually in before the tap ends. It loads with React's `lazy()` and `<Suspense>`, the same thing `next/dynamic` does inside the App Router (the plan had named `next/dynamic`).
+    - **The change:** `mobile-menu-panel.tsx` now holds the panel. The menu button's first pointer-down or focus starts the download *and mounts the panel, still closed*, so by the time the tap's click arrives React has the code and opens the real panel at once. It loads with React's `lazy()` and `<Suspense>`, the same thing `next/dynamic` does inside the App Router (the plan had named `next/dynamic`).
+    - **A bug the review caught:** the first version mounted the panel only on the click. `React.lazy` always suspends on a component's first render, so every first tap showed the plain fallback panel, and React then holds the swap to the real one for about 300 ms. Mounting it on pointer-down fixed that; a test checks that a click after the panel has loaded shows the real panel straight away (it fails on the old code).
     - **A change from the plan:** the plan wanted to keep a Radix `SheetTrigger` as the button. That would have kept the whole Radix dialog chunk in every page. So the button is a plain button that sets `aria-expanded` itself and gets focus back when the menu closes.
-    - **The fallback:** while the panel loads, or if the download fails (an error boundary catches it), a plain panel shows the title, the page links and a close button.
+    - **The fallback:** if the tap comes before the panel has loaded (a slow connection), or the download fails (an error boundary catches it), a plain panel shows the title, the page links and a close button. It is drawn into `document.body` with `createPortal`: inside the header, whose `backdrop-filter` makes it the box that `position: fixed` is measured against, it was only as tall as the header (another review finding).
 
     A throwaway script (not committed) added up the scripts each prerendered page's HTML loads, gzipped at level 9:
 
@@ -138,9 +139,11 @@ Session 2 built this task in its own git worktree (`go-mechanic-s2`, dev server 
 - **Session 1, task 21 (customer vehicles),** which also adds a table. Its migration is also numbered `0004` (`0004_customer_vehicles`), so whichever branch merges second must generate its migration again.
 - **Session 3, task 19 (info pages),** which may change `navigation.ts`, `samples.ts` and `messages/en.json`.
 
-To stay out of each other's way, files were staged by name, `main` was merged right before `db:generate`, and only task 18's row and steps (plus new backlog lines at the end) were edited in `task.md`. Until this doc was written, `origin/main` had no new commits since the branch started, so there was no conflict yet. If task 21 lands first with its own `0004`, the fix is the task 17 lesson: delete this task's migration files and journal entry, take `main`'s, generate again, then `npm run db:reset`. Renaming the file is not enough.
+To stay out of each other's way, files were staged by name, `main` was merged right before `db:generate`, and only task 18's row and steps (plus new backlog lines at the end) were edited in `task.md`. Both other tasks merged into `main` while this one was under review, so `main` was merged in twice:
 
-<!-- MERGE -->
+1. **Task 19 (info pages).** Conflicts in `navigation.ts` (each task had turned on its own menu pages: all four are now live, plus task 19's footer-only items), the shell test's navigation counts, the `CLAUDE.md` repo map and the tracker. Task 19 also moved `Shown` and `realOrSamples` into `src/lib/samples.ts`, so `selectPrices` now reuses `realOrSamples` (what the plan wanted), and its privacy coverage test (every table must be listed) got `services` and `service_prices` as "no personal data".
+2. **Task 21 (customer vehicles).** It merged first with `0004_customer_vehicles`, so the task 17 lesson applied: `git rm` this task's `0004_services_pricing.sql`, take `main`'s `meta/0004_snapshot.json` and `meta/_journal.json` with `git show origin/main:<file> > <file>`, keep both sides everywhere else, run `npm run db:generate -- --name=services_pricing` again, and `npm run db:reset`. The new file is `0005_services_pricing.sql`; `diff` against the old `0004` printed nothing, and its journal time is later than task 21's, so an existing database applies it. Renaming the file would have kept the old, earlier time, and Drizzle would have skipped it.
+3. **A side effect of the merges:** with four live menu pages, the longer "Packages" label and task 21's new Account link, the header sample on `/dev/design` overflowed at 768px by 21px (its column is narrower than the screen), and the real header had about 16px to spare. Below 1024px the menu links now have 8px side padding instead of 12px.
 
 ## Decisions worth knowing
 
@@ -186,16 +189,21 @@ Re-run for this doc (`npx vitest run <file>`):
 
 From the work session:
 
-- **Unit tests:** at one point the whole component, page, i18n, content and lib suites passed together (839 tests).
-- **`npm run check`:** <!-- VERIFY: check -->
+- **`npm run check`** (after both merges and every fix): `Test Files  120 passed (120)`, `Tests  1724 passed (1724)`.
 - **`npm run build`:** the route list shows `○ /en`, `○ /en/services`, `○ /en/packages` and the service pages as prerendered.
 - **`npm run test:e2e -- --workers=2`:** `--workers=2` runs two tests at a time, because the other sessions kept the machine busy. <!-- VERIFY: e2e -->
-- **The 404 without JavaScript:** `curl -s -o /dev/null -w "%{http_code}"` on `/services/not-a-service` against the production build. `-s` hides the progress bar, `-o /dev/null` throws the page away, and `-w "%{http_code}"` prints only the status code. <!-- VERIFY: curl -->
-- **The dev specs** (`e2e/dev/`, scratch config, port 3001): <!-- VERIFY: dev specs -->
+- **The 404 without JavaScript:** `curl -s -o page.html -w "%{http_code}"` against the production build (`npx next start -p 3001`). `-s` hides the progress bar, `-o` saves the page, and `-w "%{http_code}"` prints only the status code. `/services/not-a-service` and `/services/car-basic` answered `404` with `noindex` (Next.js's error page; the branded 404 draws once JavaScript runs, as task 12 noted); `/services`, `/services/brakes` and `/packages` answered `200`, with no `₹` in the HTML. `e2e/services.spec.ts` checks the same without JavaScript on every run.
+- **The dev specs** (`e2e/dev/`, scratch config, port 3001): `49 passed (1.1m)` on the final code. On the way they caught the dev-only hang (step 13), two test bugs, and the header overflow above.
 
 ## Checks and reviews
 
-- **ce-code-review:** <!-- REVIEW: ce-code-review -->
+- **ce-code-review** (nine reviewers, run in this session because other model providers are switched off; one independent validator checked each finding): verdict **"Ready with fixes"**, no P0 or P1, five findings, all confirmed and all fixed:
+  - P2: the phone menu showed the plain fallback panel on every first open (step 11);
+  - P2: that fallback panel was only as tall as the header (step 11);
+  - P2: the leak test for the sample prices missed `"use client"` files that start with a comment, and missed imports through another file. Fixed by `import "server-only"` at the top of `sample-prices.ts` (any browser-side import now fails the build) and a test that finds the directive anywhere at the start of a line;
+  - P3: `MASTER.md`'s site shell table still described the old menu;
+  - P3: `readme.md` still said the services live in `src/content/`.
+  - Also done from its notes: a service with no price of its own, once real prices exist elsewhere, now says to call instead of showing a table of "Ask us" rows, with tests for real prices on the service and packages pages. Left as notes: `fromPrice` walks every fuel the service covers while a service page shows only the fuels its price groups' models run on, so with real data a "From" price could be lower than any price on the page (task 39 backlog); the plain fallback panel has no Escape key or focus move (it only shows on a slow or failed download).
 - **code-reviewer:** <!-- REVIEW: code-reviewer -->
 - **Compound:** <!-- COMPOUND -->
 - **Left for later, in `task.md`'s backlog:**
