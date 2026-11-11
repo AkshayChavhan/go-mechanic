@@ -17,7 +17,8 @@
     "db:reset": "node -e \"const fs = require('node:fs'); fs.rmSync('.pglite', { recursive: true, force: true }); fs.rmSync('.pglite.lock', { force: true }); console.log('Deleted .pglite/ and its lock. The next npm run dev creates a fresh database with the owner details.')\"",
     "staging:migrate": "tsx --tsconfig tsconfig.scripts.json scripts/staging/migrate.ts",
     "staging:seed": "tsx --tsconfig tsconfig.scripts.json scripts/staging/seed.ts",
-    "staging:check": "tsx --tsconfig tsconfig.scripts.json scripts/staging/check.ts"
+    "staging:check": "tsx --tsconfig tsconfig.scripts.json scripts/staging/check.ts",
+    "staging:race-test": "vitest run --config vitest.staging.config.mts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.9",

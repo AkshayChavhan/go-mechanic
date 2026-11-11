@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 // Unit tests live next to the code they test, under src/:
 // - *.test.ts  -> "node" project:  plain logic (pricing, slots, validators...)
@@ -38,6 +38,8 @@ export default defineConfig({
           environment: "node",
           // scripts/: the staging scripts' logic (task 20).
           include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
+          // The slot race on staging's Postgres: npm run staging:race-test only.
+          exclude: [...configDefaults.exclude, "src/**/*.postgres.test.ts"],
         },
       },
       {
