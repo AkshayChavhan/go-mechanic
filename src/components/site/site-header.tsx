@@ -54,7 +54,7 @@ export function SiteHeader({ items, book, garage }: SiteHeaderProps) {
             <NavLinks
               items={items.map((item) => ({ href: item.href, label: tNav(item.label) }))}
               listClassName="flex items-center gap-1"
-              linkClassName="inline-flex min-h-11 items-center px-3 type-callout text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground"
+              linkClassName="inline-flex min-h-11 items-center px-2 lg:px-3 type-callout text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground"
             />
           </nav>
         )}
