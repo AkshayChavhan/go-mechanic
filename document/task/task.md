@@ -377,7 +377,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 23_booking_flow
 
 - [x] Create branch `23_booking_flow`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [2026-11-11-2016-feat-booking-flow-plan.md](../plans/2026-11-11-2016-feat-booking-flow-plan.md) (split: task 23 is the booking engine, the new task 47 the `/book` page; task 23's code waits for task 18 to merge)
 - [ ] `/book` wizard with OTP, server-side prices, e2e test
 - [ ] e2e tests run on a production server whose database is PGlite in memory: every run starts from the seed, and whatever a test creates is gone after a restart. Write booking tests that don't depend on an earlier run (task 14)
 - [ ] Set `bookPage.live` to true in `src/components/site/navigation.ts`: "Book a service" and the phone bar's Book then go to `/book` instead of WhatsApp. Decide the phone bar on `/book`, where its Book repeats the page and can cover the wizard's own buttons (task 12)
