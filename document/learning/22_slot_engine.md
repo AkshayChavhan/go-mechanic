@@ -1,6 +1,6 @@
 # 22_slot_engine: booking slots that can't be overbooked
 
-> **Branch:** `22_slot_engine` · **Date:** 2026-10-28 · **Status:** In progress (ready for review)
+> **Branch:** `22_slot_engine` · **Date:** 2026-10-28 · **Status:** Done (merged through PR #17 on 2026-10-29)
 
 ## In one minute
 

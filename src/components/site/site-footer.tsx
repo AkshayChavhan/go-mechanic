@@ -21,8 +21,10 @@ const contactLink = cn(textLink, "text-link underline-offset-4 hover:underline")
 const pageLink = cn(textLink, "text-muted-foreground transition-colors hover:text-foreground");
 
 type SiteFooterProps = {
-  /** The live pages to link to (liveNavItems() in navigation.ts). Empty until task 18. */
+  /** The live menu pages to link to (liveNavItems() in navigation.ts). */
   items: readonly NavItem[];
+  /** The live footer-only pages, listed after the menu pages (liveNavItems(footerItems)): FAQ, privacy, terms. */
+  footerOnlyItems?: readonly NavItem[];
   /** The garage's details. */
   garage: Garage;
 };
@@ -35,17 +37,18 @@ type SiteFooterProps = {
  * A server component that takes everything as props. No copyright year:
  * reading today's date would stop the pages from being built ahead of time.
  */
-export function SiteFooter({ items, garage }: SiteFooterProps) {
+export function SiteFooter({ items, footerOnlyItems = [], garage }: SiteFooterProps) {
   const tHours = useTranslations("Hours");
   const tContact = useTranslations("Contact");
   const tFooter = useTranslations("Footer");
   const tNav = useTranslations("Nav");
   const locale = useLocale();
+  const pages = [...items, ...footerOnlyItems];
 
   return (
     <footer>
       <Section tone="grey" width="wide">
-        <div className={cn("grid gap-10 md:grid-cols-2", items.length > 0 && "lg:grid-cols-3")}>
+        <div className={cn("grid gap-10 md:grid-cols-2", pages.length > 0 && "lg:grid-cols-3")}>
           {/* <address>: the contact details of whoever runs the site. */}
           <address className="flex flex-col gap-3 not-italic">
             <Wordmark className="type-callout" />
@@ -75,11 +78,11 @@ export function SiteFooter({ items, garage }: SiteFooterProps) {
             <OpeningHoursList hours={garage.hours} />
           </div>
 
-          {items.length > 0 && (
+          {pages.length > 0 && (
             <nav aria-label={tFooter("pages")} className="flex flex-col gap-3">
               <h2 className="type-callout font-semibold">{tFooter("pages")}</h2>
               <ul className="flex flex-col type-callout">
-                {items.map((item) => (
+                {pages.map((item) => (
                   <li key={item.href}>
                     <Link href={item.href} className={pageLink}>
                       {tNav(item.label)}

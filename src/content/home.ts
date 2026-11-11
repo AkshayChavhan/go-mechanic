@@ -14,7 +14,7 @@
 // only values and review text, and never the brand name.
 
 import type { LocalizedText } from "@/i18n/localized-text";
-import { showSamples } from "@/lib/samples";
+import { realOrSamples, type Shown } from "@/lib/samples";
 
 import type { VehicleKind } from "@/domain/vehicles";
 
@@ -42,8 +42,8 @@ export type Review = {
   text: LocalizedText;
 };
 
-/** What a section gets: its items, and whether they are samples (each then shows a "Sample" badge). */
-export type Shown<T> = { items: readonly T[]; sample: boolean };
+/** What a section gets (from src/lib/samples.ts, shared by every content file with samples). */
+export type { Shown };
 
 /**
  * The real trust stats, or null until the owner gives them. Years in business
@@ -103,11 +103,4 @@ export function selectTrustStats(real: readonly TrustStat[] | null = trustStats)
 /** The reviews to show: the real ones, else the samples under `npm run dev`, else null. */
 export function selectReviews(real: readonly Review[] | null = reviews): Shown<Review> | null {
   return realOrSamples(real, sampleReviews);
-}
-
-function realOrSamples<T>(real: readonly T[] | null, samples: readonly T[]): Shown<T> | null {
-  // An empty list counts as no data: an empty section would look broken.
-  if (real && real.length > 0) return { items: real, sample: false };
-  if (showSamples()) return { items: samples, sample: true };
-  return null;
 }
