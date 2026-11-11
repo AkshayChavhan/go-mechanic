@@ -7,8 +7,12 @@
 // restarts. The same goes for the slot rules row, seeded on its own so a
 // database made before task 22 gets it on its next start, and for the vehicle
 // catalogue (task 17), which gains only the rows it doesn't have. A real
-// Postgres (staging, production) is never seeded by the app; task 20 does that
-// on purpose, slot rules and catalogue included.
+// Postgres (staging) is never seeded by the app: `npm run staging:seed`
+// (scripts/staging/seed.ts, task 20) calls seedAll on purpose.
+//
+// Because nothing here ever changes an existing row, a later correction to
+// the seed data never reaches a database that already has the row.
+// compareWithSeed lists those rows, so staging can't drift from main unseen.
 
 import "server-only";
 
@@ -17,10 +21,18 @@ import { WEEKDAYS, type WeeklyHours } from "@/domain/opening-hours";
 import { checkSlotRules, type SlotRules } from "@/domain/slots";
 import { checkCatalogue, type VehicleCatalogue } from "@/domain/vehicles";
 
+import { eq } from "drizzle-orm";
+
 import type { Database } from "./index";
 import { garageSettings, openingHours, slotRules, vehicleCategories, vehicleMakes, vehicleModels } from "./schema";
 import { ownerGarage, ownerSlotRules } from "./seed-data";
 import { draftCatalogue } from "./vehicle-seed-data";
+
+/**
+ * What the seed functions write to: a database, or a transaction inside one
+ * (seedAll runs all three in one).
+ */
+export type SeedTarget = Pick<Database, "insert" | "transaction">;
 
 /** The garage_settings row for `garage` (id, created_at and updated_at use their defaults). */
 export function garageSettingsRow(garage: Garage): typeof garageSettings.$inferInsert {
@@ -48,7 +60,7 @@ export function openingHoursRows(hours: WeeklyHours): (typeof openingHours.$infe
  * typo in seed-data.ts fails loudly instead of reaching the site.
  * All in one transaction: the row and its hours go in together, or not at all.
  */
-export async function seedGarage(db: Database, garage: Garage = ownerGarage): Promise<void> {
+export async function seedGarage(db: SeedTarget, garage: Garage = ownerGarage): Promise<void> {
   const problems = checkGarage(garage);
   if (problems.length > 0) {
     throw new Error(`The seed garage is invalid: ${JSON.stringify(problems)}`);
@@ -86,7 +98,7 @@ export function slotRulesRow(rules: SlotRules): typeof slotRules.$inferInsert {
  * loudly. Separate from seedGarage, so the tests that delete and re-seed the
  * garage don't touch it.
  */
-export async function seedSlotRules(db: Database, rules: SlotRules = ownerSlotRules): Promise<void> {
+export async function seedSlotRules(db: SeedTarget, rules: SlotRules = ownerSlotRules): Promise<void> {
   const problems = checkSlotRules(rules);
   if (problems.length > 0) {
     throw new Error(`The seed slot rules are invalid: ${JSON.stringify(problems)}`);
@@ -136,7 +148,7 @@ export function vehicleCatalogueRows(catalogue: VehicleCatalogue) {
  * every start of a local or build database runs this, and a slow start could
  * push a cached read past the dev server's 10-second probe.
  */
-export async function seedVehicleCatalogue(db: Database, catalogue: VehicleCatalogue = draftCatalogue): Promise<void> {
+export async function seedVehicleCatalogue(db: SeedTarget, catalogue: VehicleCatalogue = draftCatalogue): Promise<void> {
   const problems = checkCatalogue(catalogue);
   if (problems.length > 0) {
     throw new Error(`The seed vehicle catalogue is invalid: ${JSON.stringify(problems)}`);
@@ -149,4 +161,102 @@ export async function seedVehicleCatalogue(db: Database, catalogue: VehicleCatal
     if (rows.makes.length > 0) await tx.insert(vehicleMakes).values(rows.makes).onConflictDoNothing();
     if (rows.models.length > 0) await tx.insert(vehicleModels).values(rows.models).onConflictDoNothing();
   });
+}
+
+/** Everything the seed writes. */
+export type SeedData = { garage: Garage; rules: SlotRules; catalogue: VehicleCatalogue };
+
+/** The owner's seed data: seed-data.ts and vehicle-seed-data.ts. */
+export const ownerSeedData: SeedData = { garage: ownerGarage, rules: ownerSlotRules, catalogue: draftCatalogue };
+
+/**
+ * Seeds everything a new database needs, in one transaction: the garage and
+ * its hours, the slot rules, the vehicle catalogue. A failure anywhere leaves
+ * nothing half-written (a half-seeded catalogue would be cached, empty, for up
+ * to 30 days). Local databases (createDatabase) and staging
+ * (`npm run staging:seed`) both use it, so new seed rows reach both the same way.
+ */
+export async function seedAll(db: Database, seed: SeedData = ownerSeedData): Promise<void> {
+  await db.transaction(async (tx) => {
+    await seedGarage(tx, seed.garage);
+    await seedSlotRules(tx, seed.rules);
+    await seedVehicleCatalogue(tx, seed.catalogue);
+  });
+}
+
+/**
+ * The seeded rows a database has but with other values than the seed data,
+ * one plain line each ("slot rules: capacity is 3, the seed data says 2").
+ * Rows the seed data doesn't have (added later by the owner) are ignored, and
+ * so is `listed` (hiding a row is the owner's choice). A missing seed row is
+ * reported as missing. Empty when the database matches.
+ */
+export async function compareWithSeed(db: Database, seed: SeedData = ownerSeedData): Promise<string[]> {
+  const differences: string[] = [];
+  const differ = (what: string, field: string, stored: unknown, wanted: unknown) => {
+    if (JSON.stringify(stored) !== JSON.stringify(wanted)) {
+      differences.push(`${what}: ${field} is ${JSON.stringify(stored)}, the seed data says ${JSON.stringify(wanted)}`);
+    }
+  };
+
+  const [garage] = await db.select().from(garageSettings).limit(1);
+  if (!garage) differences.push("garage: missing");
+  else {
+    const wanted = garageSettingsRow(seed.garage);
+    differ("garage", "phone", garage.phone, wanted.phone);
+    differ("garage", "whatsapp", garage.whatsapp, wanted.whatsapp);
+    differ("garage", "address", garage.addressText, wanted.addressText);
+    differ("garage", "postal code", garage.postalCode, wanted.postalCode);
+    const hours = new Map((await db.select().from(openingHours)).map((row) => [row.weekday, row]));
+    for (const wantedDay of openingHoursRows(seed.garage.hours)) {
+      const day = hours.get(wantedDay.weekday);
+      if (!day) differences.push(`opening hours ${wantedDay.weekday}: missing`);
+      else {
+        differ(`opening hours ${wantedDay.weekday}`, "opens", day.opens?.slice(0, 5) ?? null, wantedDay.opens ?? null);
+        differ(`opening hours ${wantedDay.weekday}`, "closes", day.closes?.slice(0, 5) ?? null, wantedDay.closes ?? null);
+      }
+    }
+  }
+
+  const [rules] = await db.select().from(slotRules).limit(1);
+  if (!rules) differences.push("slot rules: missing");
+  else {
+    const wanted = slotRulesRow(seed.rules);
+    for (const field of ["slotMinutes", "capacity", "minDaysAhead", "maxDaysAhead"] as const) {
+      differ("slot rules", field, rules[field], wanted[field]);
+    }
+  }
+
+  const rows = vehicleCatalogueRows(seed.catalogue);
+  const compareRows = async <Row extends { id: string }>(
+    what: string,
+    wanted: Row[],
+    read: (id: string) => Promise<Record<string, unknown> | undefined>,
+    fields: (keyof Row & string)[],
+  ) => {
+    for (const row of wanted) {
+      const stored = await read(row.id);
+      if (!stored) differences.push(`${what} ${row.id}: missing`);
+      else for (const field of fields) differ(`${what} ${row.id}`, field, stored[field], row[field]);
+    }
+  };
+  await compareRows(
+    "vehicle category",
+    rows.categories as (typeof rows.categories[number] & { id: string })[],
+    async (id) => (await db.select().from(vehicleCategories).where(eq(vehicleCategories.id, id)))[0],
+    ["kind", "name", "position"],
+  );
+  await compareRows(
+    "vehicle brand",
+    rows.makes as (typeof rows.makes[number] & { id: string })[],
+    async (id) => (await db.select().from(vehicleMakes).where(eq(vehicleMakes.id, id)))[0],
+    ["kind", "name", "position"],
+  );
+  await compareRows(
+    "vehicle model",
+    rows.models as (typeof rows.models[number] & { id: string })[],
+    async (id) => (await db.select().from(vehicleModels).where(eq(vehicleModels.id, id)))[0],
+    ["makeId", "categoryId", "kind", "name", "fuels", "position"],
+  );
+  return differences;
 }
