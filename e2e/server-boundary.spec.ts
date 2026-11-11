@@ -37,6 +37,7 @@ const MARKERS = [
   "BETTER_AUTH_SECRET",
   "sendPhoneNumberOTP",
   "vehicle_models",
+  "service_prices",
   "customer_vehicles",
 ];
 

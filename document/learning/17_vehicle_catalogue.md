@@ -1,6 +1,6 @@
 # 17_vehicle_catalogue: the brands and models the garage works on, and a picker for them
 
-> **Branch:** `17_vehicle_catalogue` · **Date:** 2026-10-28 · **Status:** In progress
+> **Branch:** `17_vehicle_catalogue` · **Date:** 2026-10-28 · **Status:** Done
 
 ## In one minute
 

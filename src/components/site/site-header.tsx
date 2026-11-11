@@ -2,7 +2,6 @@ import { PhoneIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
-import { SheetClose } from "@/components/ui/sheet";
 import type { Garage } from "@/domain/garage";
 import { formatAddress } from "@/i18n/format";
 import { Link } from "@/i18n/navigation";
@@ -10,6 +9,7 @@ import { telHref, whatsappHref } from "@/lib/contact-links";
 
 import { AccountLink } from "./account-link";
 import { MobileMenu } from "./mobile-menu";
+import { NavLinks } from "./nav-links";
 import type { BookTarget, NavItem } from "./navigation";
 import { OpenStatus } from "./open-status";
 import { OpeningHoursList } from "./opening-hours-list";
@@ -17,7 +17,7 @@ import { WhatsAppLink } from "./whatsapp-link";
 import { Wordmark } from "./wordmark";
 
 type SiteHeaderProps = {
-  /** The live pages to link to (liveNavItems() in navigation.ts). Empty until task 18. */
+  /** The live pages to link to (liveNavItems() in navigation.ts). */
   items: readonly NavItem[];
   /** Where "Book a service" goes (bookTarget() in navigation.ts). */
   book: BookTarget;
@@ -51,18 +51,11 @@ export function SiteHeader({ items, book, garage }: SiteHeaderProps) {
 
         {items.length > 0 && (
           <nav aria-label={t("navLabel")} className="hidden md:block">
-            <ul className="flex items-center gap-1">
-              {items.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className="inline-flex min-h-11 items-center px-3 type-callout text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    {tNav(item.label)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <NavLinks
+              items={items.map((item) => ({ href: item.href, label: tNav(item.label) }))}
+              listClassName="flex items-center gap-1"
+              linkClassName="inline-flex min-h-11 items-center px-2 lg:px-3 type-callout text-muted-foreground transition-colors hover:text-foreground aria-[current=page]:font-semibold aria-[current=page]:text-foreground"
+            />
           </nav>
         )}
 
@@ -80,7 +73,12 @@ export function SiteHeader({ items, book, garage }: SiteHeaderProps) {
             </Button>
           </div>
           <div className="md:hidden">
-            <MobileMenu openLabel={t("openMenu")} title={t("menuTitle")} closeLabel={tCommon("close")}>
+            <MobileMenu
+              openLabel={t("openMenu")}
+              title={t("menuTitle")}
+              closeLabel={tCommon("close")}
+              links={items.map((item) => ({ href: item.href, label: tNav(item.label) }))}
+            >
               <MobileMenuContent items={items} garage={garage} />
             </MobileMenu>
           </div>
@@ -107,18 +105,12 @@ export function MobileMenuContent({ items, garage }: Pick<SiteHeaderProps, "item
     <div className="flex flex-col gap-8 px-4 pb-8">
       {items.length > 0 && (
         <nav aria-label={t("navLabel")}>
-          <ul className="flex flex-col">
-            {items.map((item) => (
-              <li key={item.href}>
-                {/* SheetClose: following the link closes the menu. */}
-                <SheetClose asChild>
-                  <Link href={item.href} className="flex min-h-11 items-center type-title">
-                    {tNav(item.label)}
-                  </Link>
-                </SheetClose>
-              </li>
-            ))}
-          </ul>
+          {/* Following a link closes the menu: MobileMenu closes on any link tap. */}
+          <NavLinks
+            items={items.map((item) => ({ href: item.href, label: tNav(item.label) }))}
+            listClassName="flex flex-col"
+            linkClassName="flex min-h-11 items-center type-title aria-[current=page]:text-link"
+          />
         </nav>
       )}
 

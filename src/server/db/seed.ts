@@ -1,25 +1,36 @@
-// Puts the owner's garage, slot rules and the draft vehicle catalogue into a
-// new database.
+// Puts the owner's garage, slot rules, the draft vehicle catalogue and the
+// services and packages into a new database.
 //
 // Runs on every start of a local (PGlite) database, right after the
 // migrations (src/server/db/index.ts). It only fills what's missing: once the
 // garage row exists, it never changes it, so the owner's later edits survive
 // restarts. The same goes for the slot rules row, seeded on its own so a
 // database made before task 22 gets it on its next start, and for the vehicle
-// catalogue (task 17), which gains only the rows it doesn't have. A real
-// Postgres (staging, production) is never seeded by the app; task 20 does that
-// on purpose, slot rules and catalogue included.
+// catalogue (task 17) and the services (task 18), which gain only the rows they
+// don't have. A real Postgres (staging, production) is never seeded by the
+// app; task 20 does that on purpose, slot rules, catalogue and services
+// included.
 
 import "server-only";
 
 import { checkGarage, type Garage } from "@/domain/garage";
 import { WEEKDAYS, type WeeklyHours } from "@/domain/opening-hours";
+import { checkServices, type Service } from "@/domain/services";
 import { checkSlotRules, type SlotRules } from "@/domain/slots";
 import { checkCatalogue, type VehicleCatalogue } from "@/domain/vehicles";
 
 import type { Database } from "./index";
-import { garageSettings, openingHours, slotRules, vehicleCategories, vehicleMakes, vehicleModels } from "./schema";
+import {
+  garageSettings,
+  openingHours,
+  services as servicesTable,
+  slotRules,
+  vehicleCategories,
+  vehicleMakes,
+  vehicleModels,
+} from "./schema";
 import { ownerGarage, ownerSlotRules } from "./seed-data";
+import { draftServices } from "./service-seed-data";
 import { draftCatalogue } from "./vehicle-seed-data";
 
 /** The garage_settings row for `garage` (id, created_at and updated_at use their defaults). */
@@ -149,4 +160,40 @@ export async function seedVehicleCatalogue(db: Database, catalogue: VehicleCatal
     if (rows.makes.length > 0) await tx.insert(vehicleMakes).values(rows.makes).onConflictDoNothing();
     if (rows.models.length > 0) await tx.insert(vehicleModels).values(rows.models).onConflictDoNothing();
   });
+}
+
+/** The services rows for `services`, numbered in list order. */
+export function serviceRows(services: readonly Service[]): (typeof servicesTable.$inferInsert)[] {
+  return services.map((service, index) => ({
+    id: service.id,
+    kind: service.kind,
+    name: service.name,
+    summary: service.summary,
+    vehicleKinds: [...service.vehicleKinds],
+    fuels: [...service.fuels],
+    included: [...service.included],
+    signs: [...service.signs],
+    pricedAfterInspection: service.pricedAfterInspection,
+    position: index + 1,
+  }));
+}
+
+/**
+ * Adds the services and packages of `services` (the draft by default) that
+ * the database doesn't have yet, matched by id, the way seedVehicleCatalogue
+ * does: it never changes a row that's there, so the owner's edits survive,
+ * and other corrections to the draft reach a local database after
+ * `npm run db:reset`. Writes no prices: those are real and come from the
+ * owner (task 39).
+ *
+ * Checks the services first and throws on any problem. One insert, so a
+ * start stays fast.
+ */
+export async function seedServices(db: Database, services: readonly Service[] = draftServices): Promise<void> {
+  const problems = checkServices(services, [], []);
+  if (problems.length > 0) {
+    throw new Error(`The seed services are invalid: ${JSON.stringify(problems)}`);
+  }
+  if (services.length === 0) return;
+  await db.insert(servicesTable).values(serviceRows(services)).onConflictDoNothing();
 }

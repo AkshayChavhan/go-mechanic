@@ -7,7 +7,7 @@ import { sceneSelector } from "../src/components/site/scroll-scene-attributes";
 import { ownerGarage } from "../src/server/db/seed-data";
 import { draftCatalogue } from "../src/server/db/vehicle-seed-data";
 import { sampleCanary, sampleReviews } from "../src/content/home";
-import { services } from "../src/content/services";
+import { draftServices } from "../src/server/db/service-seed-data";
 import { formatPhoneNumber, telHref } from "../src/lib/contact-links";
 
 import {
@@ -206,7 +206,7 @@ test.describe("from 768px, Call shows the number", () => {
 test.describe("on a 375px phone, on first load", () => {
   test.use({ ...phone, reducedMotion: "reduce" });
 
-  test("the h1 and both buttons sit above the phone bar", async ({ page }) => {
+  test("the h1, both buttons and See packages sit above the phone bar", async ({ page }) => {
     await page.goto("/");
     const barTop = await page
       .getByRole("navigation", { name: messages.ActionBar.label })
@@ -214,7 +214,7 @@ test.describe("on a 375px phone, on first load", () => {
     const bottoms = await hero(page)
       .locator("h1, a")
       .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().bottom));
-    expect(bottoms).toHaveLength(3); // the h1, Book and Call
+    expect(bottoms).toHaveLength(4); // the h1, Book, Call and See packages
     for (const bottom of bottoms) expect(bottom).toBeLessThanOrEqual(barTop);
   });
 });
@@ -229,7 +229,7 @@ test.describe("every word is readable without the animation", () => {
     const page = await context.newPage();
     await page.goto("/");
     const names = await page.getByRole("heading", { level: 3 }).allTextContents();
-    for (const service of services) expect(names).toContain(service.name.en);
+    for (const service of draftServices.filter(({ kind }) => kind === "service")) expect(names).toContain(service.name.en);
     for (const selector of ["h1", "h2", "h3", REVEAL_TARGETS]) {
       const opacities = await effectiveOpacities(page, selector);
       expect(opacities.length, selector).toBeGreaterThan(0);
@@ -281,7 +281,8 @@ test.describe("with motion allowed (no fixed clock)", () => {
     await waitForEffects(page);
     const target = cta(page).getByRole("link", { name: bookName });
     let reached = false;
-    for (let presses = 0; presses < 30 && !reached; presses++) {
+    // The header, the hero, eleven service tiles and All services come first.
+    for (let presses = 0; presses < 50 && !reached; presses++) {
       await page.keyboard.press("Tab");
       reached = await target.evaluate((link) => link === document.activeElement);
       // Wherever focus lands, it's fully visible at that moment.
@@ -291,6 +292,34 @@ test.describe("with motion allowed (no fixed clock)", () => {
     // Focus scrolled the section into view, so its heading reveals.
     const headingId = await cta(page).getAttribute("aria-labelledby");
     await expect.poll(() => effectiveOpacities(page, `#${headingId}`)).toEqual([1]);
+  });
+});
+
+test.describe("from the home page to a service page and back (motion allowed)", () => {
+  test.use({ ...desktop, reducedMotion: "no-preference" });
+
+  test("no errors, and every reveal shows again after coming back", async ({ page }) => {
+    const errors = watchErrors(page);
+    await page.goto("/");
+    await waitForEffects(page);
+    await expectNoErrors(page, errors);
+
+    const brakes = draftServices.find((service) => service.id === "brakes")!;
+    await page.getByRole("region", { name: home.services.title }).getByRole("link", { name: brakes.name.en }).click();
+    await expect(page).toHaveURL(/\/services\/brakes$/);
+    await expect(page.getByRole("heading", { level: 1, name: brakes.name.en })).toBeVisible();
+
+    await page.goBack();
+    await expect(page.getByRole("heading", { level: 1, name: home.title })).toBeVisible();
+    // The scroll scene set itself up again: scrolling to the bottom reveals everything.
+    await scrollThrough(page);
+    await expect
+      .poll(async () => (await effectiveOpacities(page, REVEAL_TARGETS)).filter((opacity) => opacity !== 1), { timeout: 5_000 })
+      .toEqual([]);
+    // Not expectNoErrors here: it waits for the network to go quiet, which
+    // never happens once a page has been loaded a second time in the same
+    // browser (document/solutions/conventions/playwright-networkidle-hangs-after-second-page-load.md).
+    expect(errors).toEqual([]);
   });
 });
 

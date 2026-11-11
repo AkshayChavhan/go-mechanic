@@ -110,6 +110,11 @@ export type CatalogueProblem = {
 // ids may become page addresses, and the proxy treats a dot as a file.
 const ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/** True for an id made of lowercase words joined by hyphens ("car-honda-city"). */
+export function isTextId(id: string): boolean {
+  return ID.test(id);
+}
+
 /** Everything wrong with `catalogue`. An empty list means it can be saved. */
 export function checkCatalogue(catalogue: VehicleCatalogue): CatalogueProblem[] {
   const problems: CatalogueProblem[] = [];
@@ -117,7 +122,7 @@ export function checkCatalogue(catalogue: VehicleCatalogue): CatalogueProblem[] 
 
   const seen = { category: new Set<string>(), make: new Set<string>(), model: new Set<string>() };
   const checkId = (list: keyof typeof seen, id: string) => {
-    if (!ID.test(id)) report("bad-id", id);
+    if (!isTextId(id)) report("bad-id", id);
     if (seen[list].has(id)) report("duplicate-id", id);
     seen[list].add(id);
   };
