@@ -36,7 +36,8 @@ export default defineConfig({
         test: {
           name: "node",
           environment: "node",
-          include: ["src/**/*.test.ts"],
+          // scripts/: the staging scripts' logic (task 20).
+          include: ["src/**/*.test.ts", "scripts/**/*.test.ts"],
         },
       },
       {

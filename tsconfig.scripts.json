@@ -1,0 +1,14 @@
+{
+  // Only for the staging scripts (scripts/staging/), run with
+  // `tsx --tsconfig tsconfig.scripts.json`. Next.js and Vitest stand in for
+  // the `server-only` package themselves; outside them it isn't installed, so
+  // this maps it to Next's own empty stub (a file path: `paths` targets are
+  // files, not package names). tsconfig.json, which Turbopack reads, stays as it is.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "server-only": ["./node_modules/next/dist/compiled/server-only/empty.js"]
+    }
+  }
+}

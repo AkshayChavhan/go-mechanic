@@ -14,7 +14,10 @@
     "test:e2e": "playwright test",
     "test:design": "playwright test --config playwright.dev.config.ts",
     "db:generate": "drizzle-kit generate",
-    "db:reset": "node -e \"const fs = require('node:fs'); fs.rmSync('.pglite', { recursive: true, force: true }); fs.rmSync('.pglite.lock', { force: true }); console.log('Deleted .pglite/ and its lock. The next npm run dev creates a fresh database with the owner details.')\""
+    "db:reset": "node -e \"const fs = require('node:fs'); fs.rmSync('.pglite', { recursive: true, force: true }); fs.rmSync('.pglite.lock', { force: true }); console.log('Deleted .pglite/ and its lock. The next npm run dev creates a fresh database with the owner details.')\"",
+    "staging:migrate": "tsx --tsconfig tsconfig.scripts.json scripts/staging/migrate.ts",
+    "staging:seed": "tsx --tsconfig tsconfig.scripts.json scripts/staging/seed.ts",
+    "staging:check": "tsx --tsconfig tsconfig.scripts.json scripts/staging/check.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.9",

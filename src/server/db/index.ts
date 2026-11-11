@@ -120,6 +120,11 @@ export function postgresClient(url: string, options: PostgresOptions = {}, varia
   }
 }
 
+/** A Database on a postgres.js client (the staging scripts bring their own, for the session pooler). */
+export function postgresDatabase(client: Sql): Database {
+  return drizzlePostgres({ client, schema });
+}
+
 /**
  * Opens a database. A PGlite one is also set to UTC, migrated and seeded
  * before it's returned. A postgres.js one doesn't connect yet: postgres.js
@@ -128,7 +133,7 @@ export function postgresClient(url: string, options: PostgresOptions = {}, varia
 export async function createDatabase(config: DatabaseConfig): Promise<Database> {
   if (config.driver === "postgres") {
     // The app's only real Postgres is Supabase, through its transaction pooler.
-    return drizzlePostgres({ client: postgresClient(config.url, POOLER_OPTIONS), schema });
+    return postgresDatabase(postgresClient(config.url, POOLER_OPTIONS));
   }
 
   // A folder is opened by one process at a time: the lock throws if another
