@@ -13,7 +13,7 @@ export type PhotoToken = { key: string; action: PhotoAction; expiresAt: number }
 
 /** A key just for photo links, made from the login secret, so the two never share a key. */
 export function photoSigningKey(authSecret: string): Buffer {
-  return createHmac("sha256", authSecret).update("gomechanic photo links").digest();
+  return createHmac("sha256", authSecret).update("photo links, version 1").digest();
 }
 
 function signature(payload: string, key: Buffer): string {
