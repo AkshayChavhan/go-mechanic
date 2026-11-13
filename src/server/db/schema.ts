@@ -640,6 +640,7 @@ export const photos = pgTable(
   },
   (table) => [
     index("photos_set_index").on(table.setId),
+    // 2097152 is PHOTO_RULES.maxBytes; photos-tables.test.ts keeps the two in step.
     check("photos_bytes_limit", sql`${table.bytes} is null or (${table.bytes} > 0 and ${table.bytes} <= 2097152)`),
     check("photos_stored_complete", sql`${table.status} <> 'stored' or (${table.bytes} is not null and ${table.storedAt} is not null)`),
   ],

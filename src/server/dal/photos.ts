@@ -40,13 +40,16 @@ export type StartPhotoUploadResult =
 export type PhotoDependencies = { storage?: PhotoStorage; clock?: Clock };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+/** Files removed per storage call during cleanup. */
+const REMOVE_BATCH = 100;
 
 /**
  * Makes room for `count` new photos: in the caller's set `setId`, or in a new
  * set. Pending rows count toward the 6, so two uploads at once can't go over
  * it; the set's row is locked while counting. A customer who started 5 open
  * sets in the last 24 hours gets "too-many-sets", so one account can't fill
- * the storage. Old photos are cleaned up first (deleteOldPhotos).
+ * the storage. Old photos are cleaned up first (deleteOldPhotos). If storage
+ * fails before any link is handed out, the new rows are taken back.
  */
 export async function startPhotoUpload(
   request: { setId?: string; count: number },
@@ -93,26 +96,43 @@ export async function startPhotoUpload(
       return { id, setId: setId!, storageKey: photoKey(setId!, id), createdAt: now };
     });
     await tx.insert(photos).values(rows);
-    return { ok: true as const, setId: setId!, rows };
+    return { ok: true as const, setId: setId!, created: request.setId === undefined, rows };
   });
   if (!planned.ok) return planned;
 
-  const uploads = await Promise.all(
-    planned.rows.map(async (row) => ({
-      photoId: row.id,
-      target: await storage.uploadTarget(row.storageKey, PHOTO_CONTENT_TYPE, PHOTO_RULES.maxBytes),
-    })),
-  );
-  return { ok: true, setId: planned.setId, uploads };
+  try {
+    const uploads = await Promise.all(
+      planned.rows.map(async (row) => ({
+        photoId: row.id,
+        target: await storage.uploadTarget(row.storageKey, PHOTO_CONTENT_TYPE),
+      })),
+    );
+    return { ok: true, setId: planned.setId, uploads };
+  } catch (error) {
+    // No link reached the browser, so no file can arrive: take the places
+    // back (and the new set, which would count toward the daily limit).
+    if (planned.created) await db.delete(photoSets).where(eq(photoSets.id, planned.setId));
+    else await db.delete(photos).where(inArray(photos.id, planned.rows.map((row) => row.id)));
+    throw error;
+  }
 }
 
-/** One photo after finishPhotoUpload: stored, or deleted (its upload failed or wasn't a JPEG). */
+/** One photo after finishPhotoUpload: stored, or still pending (it can be sent again). */
 export type FinishedPhoto = { photoId: string; stored: boolean };
 
 /**
  * Checks each of the caller's pending photos in storage: there, a JPEG (by
- * its first bytes), at most 2 MB. A good one becomes "stored"; anything
- * else is deleted, file and row, so a failed upload frees its place at once.
+ * its first bytes), at most 2 MB. A good one becomes "stored".
+ *
+ * Anything else stays "pending", holding its place: a file that wasn't a
+ * good JPEG is removed, and a missing one may still be on its way. Its
+ * upload link keeps working for a while (10 minutes on the fake, 2 hours
+ * on Supabase), so deleting the row now would let a late upload leave a
+ * file that no row points to and no cleanup ever finds. The browser can
+ * send it again through the same link and finish again; otherwise
+ * deleteOldPhotos removes the row and any file after 24 hours.
+ *
+ * A storage error on one photo leaves it pending and goes on with the rest.
  * Ids that aren't the caller's pending photos come back as not stored.
  */
 export async function finishPhotoUpload(
@@ -132,22 +152,26 @@ export async function finishPhotoUpload(
 
   const stored = new Set<string>();
   for (const photo of mine) {
-    const file = await storage.inspect(photo.storageKey);
-    const good =
-      file !== null &&
-      file.bytes > 0 &&
-      file.bytes <= PHOTO_RULES.maxBytes &&
-      file.contentType === PHOTO_CONTENT_TYPE &&
-      looksLikeJpeg(file.firstBytes);
-    if (good) {
+    try {
+      const file = await storage.inspect(photo.storageKey);
+      if (file === null) continue;
+      const good =
+        file.bytes > 0 &&
+        file.bytes <= PHOTO_RULES.maxBytes &&
+        file.contentType === PHOTO_CONTENT_TYPE &&
+        looksLikeJpeg(file.firstBytes);
+      if (!good) {
+        await storage.remove([photo.storageKey]);
+        continue;
+      }
       await db
         .update(photos)
         .set({ status: "stored", bytes: file.bytes, storedAt: clock.now() })
-        .where(eq(photos.id, photo.id));
+        .where(and(eq(photos.id, photo.id), eq(photos.status, "pending")));
       stored.add(photo.id);
-    } else {
-      if (file !== null) await storage.remove([photo.storageKey]);
-      await db.delete(photos).where(eq(photos.id, photo.id));
+    } catch (error) {
+      // No key, no URL: only what failed. The photo stays pending.
+      console.error(`Photo check skipped: ${error instanceof Error ? error.name : "error"}`);
     }
   }
   return photoIds.map((photoId) => ({ photoId, stored: stored.has(photoId) }));
@@ -192,6 +216,9 @@ export async function photoViewUrls(
  * again; the customer's upload goes on.
  */
 export async function deleteOldPhotos({ storage = photoStorage(), clock = systemClock }: PhotoDependencies = {}): Promise<void> {
+  // Any logged-in customer's upload runs this cleanup for everyone; nobody
+  // logged out can.
+  await authorizeUser();
   const now = clock.now().getTime();
   const db = await getDatabase();
   const oldSets = await db
@@ -213,7 +240,10 @@ export async function deleteOldPhotos({ storage = photoStorage(), clock = system
   const keys = [...inOldSets.map((row) => row.key), ...stale.map((row) => row.key)];
   if (keys.length === 0 && setIds.length === 0) return;
   try {
-    await storage.remove(keys);
+    // In batches, so one huge request never stalls every cleanup.
+    for (let start = 0; start < keys.length; start += REMOVE_BATCH) {
+      await storage.remove(keys.slice(start, start + REMOVE_BATCH));
+    }
   } catch (error) {
     // No key, no URL: only what failed.
     console.error(`Photo cleanup skipped: ${error instanceof Error ? error.name : "error"}`);

@@ -29,7 +29,7 @@ const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
 
 /** A PUT of `body` to the upload link for `key`. */
 async function upload(body: Uint8Array<ArrayBuffer>, contentType = "image/jpeg", url?: string) {
-  const target = await storage.uploadTarget(key, "image/jpeg", PHOTO_RULES.maxBytes);
+  const target = await storage.uploadTarget(key, "image/jpeg");
   return handleFakeUpload(
     new Request(`http://localhost${url ?? target.url}`, { method: "PUT", body, headers: { "Content-Type": contentType } }),
     options,
@@ -62,7 +62,7 @@ describe("the fake photo storage", () => {
   });
 
   test("refuses an altered, expired or wrong-action token (403)", async () => {
-    const target = await storage.uploadTarget(key, "image/jpeg", PHOTO_RULES.maxBytes);
+    const target = await storage.uploadTarget(key, "image/jpeg");
     const token = new URL(`http://localhost${target.url}`).searchParams.get("t")!;
     const altered = `${token.slice(0, -2)}${token.endsWith("A") ? "B" : "A"}x`;
     expect((await upload(jpeg, "image/jpeg", `/api/photos/upload?t=${altered}`)).status).toBe(403);
@@ -92,7 +92,7 @@ describe("the fake photo storage", () => {
   });
 
   test("refuses a key that isn't a photo key", async () => {
-    await expect(storage.uploadTarget("../outside.jpg", "image/jpeg", 10)).rejects.toThrow();
+    await expect(storage.uploadTarget("../outside.jpg", "image/jpeg")).rejects.toThrow();
     await expect(storage.inspect(`sets/${setId}/../../x.jpg`)).rejects.toThrow();
   });
 });

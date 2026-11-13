@@ -25,12 +25,14 @@ export type StoredFile = {
 
 export type PhotoStorage = {
   /**
-   * A signed link that lets one browser upload one file to `key`, once, for a
-   * few minutes. The fake enforces `maxBytes` and the type in its Route
-   * Handler; Supabase enforces them through the bucket's settings (task 20).
-   * Either way, finishPhotoUpload checks the stored file again.
+   * A signed link that lets one browser upload one file to `key`, once. It
+   * works for 10 minutes on the fake and 2 hours on Supabase (its fixed
+   * lifetime), both well inside the 24 hours after which deleteOldPhotos
+   * removes an unfinished upload, file included. PHOTO_RULES.maxBytes and
+   * the JPEG type are enforced by the fake's Route Handler and by the
+   * Supabase bucket's settings (task 20); finishPhotoUpload checks again.
    */
-  uploadTarget(key: string, contentType: string, maxBytes: number): Promise<UploadTarget>;
+  uploadTarget(key: string, contentType: string): Promise<UploadTarget>;
   /** A signed link to view the file at `key`, working for `seconds`. */
   viewUrl(key: string, seconds: number): Promise<string>;
   /** The file at `key`, or null when there's none. */

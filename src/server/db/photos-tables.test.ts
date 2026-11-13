@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { PHOTO_STATUSES } from "@/domain/photos";
+import { PHOTO_RULES, PHOTO_STATUSES } from "@/domain/photos";
 
 import { closeDatabase, createDatabase, type Database } from "./index";
 import { photoSets, photos, photoStatus, users } from "./schema";
@@ -63,10 +63,12 @@ describe("the photo tables", () => {
       code: "23514",
       constraint: "photos_stored_complete",
     });
-    expect(await violation(db.insert(photos).values({ setId: set.id, storageKey: "k3", bytes: 2_097_153 }))).toEqual({
+    // The CHECK repeats PHOTO_RULES.maxBytes: these two lines keep them in step.
+    expect(await violation(db.insert(photos).values({ setId: set.id, storageKey: "k3", bytes: PHOTO_RULES.maxBytes + 1 }))).toEqual({
       code: "23514",
       constraint: "photos_bytes_limit",
     });
+    await db.insert(photos).values({ setId: set.id, storageKey: "k4", bytes: PHOTO_RULES.maxBytes });
   });
 
   test("refuse two photos with one storage key", async () => {

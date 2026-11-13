@@ -127,16 +127,34 @@ describe("startPhotoUpload", () => {
     expect((await startPhotoUpload({ setId: first.setId, count: 2 }, deps)).ok).toBe(true);
   });
 
-  test("a failed upload frees its place: a retry into the same set is accepted", async () => {
+  test("a photo that hasn't arrived keeps its place: it is sent again through its own link, not a new one", async () => {
     const first = await startPhotoUpload({ count: 6 }, deps);
     if (!first.ok) throw new Error(first.problem);
     // Only five PUTs arrived.
     for (const upload of first.uploads.slice(0, 5)) await putFile(upload.photoId);
-    await finishPhotoUpload(
-      first.uploads.map((upload) => upload.photoId),
-      deps,
-    );
-    expect((await startPhotoUpload({ setId: first.setId, count: 1 }, deps)).ok).toBe(true);
+    const ids = first.uploads.map((upload) => upload.photoId);
+    expect((await finishPhotoUpload(ids, deps)).filter((photo) => photo.stored)).toHaveLength(5);
+    // Finishing early frees nothing, so nobody can go past 6.
+    expect(await startPhotoUpload({ setId: first.setId, count: 1 }, deps)).toEqual({ ok: false, problem: "too-many-photos" });
+    // The sixth arrives late, through the same link, and is tracked.
+    await putFile(ids[5]!);
+    expect(await finishPhotoUpload([ids[5]!], deps)).toEqual([{ photoId: ids[5], stored: true }]);
+  });
+
+  test("a storage failure before any link is handed out takes the new set back", async () => {
+    const failing: PhotoStorage = { ...storage, uploadTarget: () => Promise.reject(new Error("storage down")) };
+    await expect(startPhotoUpload({ count: 2 }, { storage: failing, clock })).rejects.toThrow("storage down");
+    expect(await db.select().from(photoSets)).toHaveLength(0);
+
+    const setId = await storedSet();
+    await expect(startPhotoUpload({ setId, count: 2 }, { storage: failing, clock })).rejects.toThrow("storage down");
+    expect(await db.select().from(photos).where(eq(photos.setId, setId))).toHaveLength(1);
+  });
+
+  test("logged out with a bad count: AccessDeniedError, not bad-count, and no database", async () => {
+    logIn(null);
+    await expect(startPhotoUpload({ count: 0 }, deps)).rejects.toThrow(AccessDeniedError);
+    expect(getDatabase).not.toHaveBeenCalled();
   });
 
   test("a 6th open set within 24 hours is too-many-sets", async () => {
@@ -177,6 +195,12 @@ describe("startPhotoUpload", () => {
 });
 
 describe("finishPhotoUpload", () => {
+  test("logged out: AccessDeniedError before the database is touched, even for ids that aren't uuids", async () => {
+    logIn(null);
+    await expect(finishPhotoUpload(["nope"], deps)).rejects.toThrow(AccessDeniedError);
+    expect(getDatabase).not.toHaveBeenCalled();
+  });
+
   test("marks a photo stored only after storage shows a JPEG", async () => {
     const started = await startPhotoUpload({ count: 2 }, deps);
     if (!started.ok) throw new Error(started.problem);
@@ -189,15 +213,51 @@ describe("finishPhotoUpload", () => {
     ]);
     const [row] = await db.select().from(photos).where(eq(photos.id, good));
     expect(row).toMatchObject({ status: "stored", bytes: jpeg.byteLength, storedAt: now });
-    expect(await db.select().from(photos).where(eq(photos.id, fake))).toHaveLength(0);
+    // The bad file is removed; its row stays pending, so a second try is tracked too.
+    const [left] = await db.select().from(photos).where(eq(photos.id, fake));
+    expect(left!.status).toBe("pending");
     expect(await storage.inspect(photoKeyOf(started.setId, fake))).toBeNull();
   });
 
-  test("a photo that never arrived is deleted", async () => {
+  test("a photo that never arrived stays pending", async () => {
     const started = await startPhotoUpload({ count: 1 }, deps);
     if (!started.ok) throw new Error(started.problem);
     expect(await finishPhotoUpload([started.uploads[0]!.photoId], deps)).toEqual([{ photoId: started.uploads[0]!.photoId, stored: false }]);
-    expect(await db.select().from(photos)).toHaveLength(0);
+    expect((await db.select().from(photos)).map((row) => row.status)).toEqual(["pending"]);
+  });
+
+  test("refuses a file over 2 MB, an empty one, or one that isn't a JPEG", async () => {
+    const started = await startPhotoUpload({ count: 3 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    const answers = [
+      { bytes: PHOTO_RULES.maxBytes + 1, contentType: "image/jpeg", firstBytes: new Uint8Array([0xff, 0xd8, 0xff]) },
+      { bytes: 0, contentType: "image/jpeg", firstBytes: new Uint8Array([0xff, 0xd8, 0xff]) },
+      { bytes: 100, contentType: "image/png", firstBytes: new Uint8Array([0xff, 0xd8, 0xff]) },
+    ];
+    let n = 0;
+    const remove = vi.fn<PhotoStorage["remove"]>().mockResolvedValue();
+    const stub: PhotoStorage = { ...storage, inspect: async () => answers[n++]!, remove };
+    const ids = started.uploads.map((upload) => upload.photoId);
+    expect((await finishPhotoUpload(ids, { storage: stub, clock })).map((photo) => photo.stored)).toEqual([false, false, false]);
+    expect(remove).toHaveBeenCalledTimes(3);
+  });
+
+  test("a storage error on one photo leaves it pending and still stores the others", async () => {
+    const started = await startPhotoUpload({ count: 2 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    const [first, second] = started.uploads.map((upload) => upload.photoId) as [string, string];
+    await putFile(first);
+    await putFile(second);
+    let calls = 0;
+    const flaky: PhotoStorage = {
+      ...storage,
+      inspect: (key) => (calls++ === 0 ? Promise.reject(new Error("storage down")) : storage.inspect(key)),
+    };
+    const quiet = vi.spyOn(console, "error").mockImplementation(() => {});
+    const result = await finishPhotoUpload([first, second], { storage: flaky, clock });
+    quiet.mockRestore();
+    expect(result.filter((photo) => photo.stored)).toHaveLength(1);
+    expect((await db.select().from(photos)).map((row) => row.status).sort()).toEqual(["pending", "stored"]);
   });
 
   test("another customer can't finish (or delete) Asha's photo", async () => {
@@ -219,6 +279,12 @@ function photoKeyOf(setId: string, photoId: string) {
 }
 
 describe("photoViewUrls", () => {
+  test("logged out: AccessDeniedError before the database is touched", async () => {
+    logIn(null);
+    await expect(photoViewUrls("nope", deps)).rejects.toThrow(AccessDeniedError);
+    expect(getDatabase).not.toHaveBeenCalled();
+  });
+
   test("the customer and a manager or the owner get links; a mechanic and another customer don't", async () => {
     const setId = await storedSet(2);
     for (const user of [asha, manager, owner]) {
@@ -263,6 +329,34 @@ describe("deleteOldPhotos", () => {
     expect(await exists(kept)).toBe(true);
     expect(await exists(gone)).toBe(false);
     expect(await storage.inspect(goneKey!.key)).toBeNull();
+  });
+
+  test("logged out: AccessDeniedError before the database is touched", async () => {
+    logIn(null);
+    await expect(deleteOldPhotos(deps)).rejects.toThrow(AccessDeniedError);
+    expect(getDatabase).not.toHaveBeenCalled();
+  });
+
+  test("a stored photo older than 24 hours is kept: only unfinished uploads go after a day", async () => {
+    const setId = await storedSet();
+    await db.update(photos).set({ createdAt: new Date(now.getTime() - 25 * 60 * 60 * 1000) }).where(eq(photos.setId, setId));
+    const [row] = await db.select({ key: photos.storageKey }).from(photos).where(eq(photos.setId, setId));
+    await deleteOldPhotos(deps);
+    expect(await db.select().from(photos).where(eq(photos.setId, setId))).toHaveLength(1);
+    expect(await storage.inspect(row!.key)).not.toBeNull();
+  });
+
+  test("a late upload to a photo finished early is still deleted with its row after 24 hours", async () => {
+    const started = await startPhotoUpload({ count: 1 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    const photoId = started.uploads[0]!.photoId;
+    await finishPhotoUpload([photoId], deps);
+    await putFile(photoId);
+    const key = photoKeyOf(started.setId, photoId);
+    await db.update(photos).set({ createdAt: new Date(now.getTime() - 25 * 60 * 60 * 1000) }).where(eq(photos.id, photoId));
+    await deleteOldPhotos(deps);
+    expect(await db.select().from(photos)).toHaveLength(0);
+    expect(await storage.inspect(key)).toBeNull();
   });
 
   test("keeps an open set started 29 days ago, deletes one started 31 days ago", async () => {

@@ -23,6 +23,9 @@ export type SupabasePhotoStorageOptions = {
   fetch?: typeof fetch;
 };
 
+/** How long one request to Supabase may take, so a stuck one never holds up an upload. */
+const REQUEST_TIMEOUT_MS = 10_000;
+
 /** Thrown when Supabase answers with an error. Says what failed and the status, never a key or URL. */
 export class PhotoStorageError extends Error {
   constructor(step: string, status: number) {
@@ -42,8 +45,17 @@ export function createSupabasePhotoStorage(options: SupabasePhotoStorageOptions)
   const auth = { Authorization: `Bearer ${options.serviceRoleKey}`, apikey: options.serviceRoleKey };
   const object = (key: string) => `${options.bucket}/${encodedKey(key)}`;
 
+  /** A request that gives up after REQUEST_TIMEOUT_MS, as a PhotoStorageError (status 0). */
+  async function send(step: string, url: string, init: RequestInit): Promise<Response> {
+    try {
+      return await doFetch(url, { ...init, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+    } catch {
+      throw new PhotoStorageError(step, 0);
+    }
+  }
+
   async function json(step: string, url: string, body: unknown): Promise<Record<string, unknown>> {
-    const response = await doFetch(url, {
+    const response = await send(step, url, {
       method: "POST",
       headers: { ...auth, "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -70,7 +82,7 @@ export function createSupabasePhotoStorage(options: SupabasePhotoStorageOptions)
     async inspect(key): Promise<StoredFile | null> {
       // The first 3 bytes only: the answer's Content-Range has the full size,
       // its Content-Type the type, and the bytes say whether it's a JPEG.
-      const response = await doFetch(`${api}/object/authenticated/${object(key)}`, {
+      const response = await send("inspect", `${api}/object/authenticated/${object(key)}`, {
         headers: { ...auth, Range: "bytes=0-2" },
       });
       if (response.status === 404 || response.status === 400) return null;
@@ -83,7 +95,7 @@ export function createSupabasePhotoStorage(options: SupabasePhotoStorageOptions)
     },
     async remove(keys) {
       if (keys.length === 0) return;
-      const response = await doFetch(`${api}/object/${options.bucket}`, {
+      const response = await send("remove", `${api}/object/${options.bucket}`, {
         method: "DELETE",
         headers: { ...auth, "Content-Type": "application/json" },
         body: JSON.stringify({ prefixes: keys }),

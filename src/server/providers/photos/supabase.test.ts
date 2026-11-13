@@ -23,7 +23,7 @@ const call = (fetchMock: ReturnType<typeof vi.fn<typeof fetch>>) => {
 describe("the Supabase photo storage", () => {
   test("an upload link: POST to upload/sign, answered with a path made absolute", async () => {
     const { storage, fetchMock } = storageWith(Response.json({ url: "/object/upload/sign/photos/x?token=abc" }));
-    expect(await storage.uploadTarget(key, "image/jpeg", 10)).toEqual({
+    expect(await storage.uploadTarget(key, "image/jpeg")).toEqual({
       url: "https://ref.supabase.co/storage/v1/object/upload/sign/photos/x?token=abc",
       method: "PUT",
       headers: { "Content-Type": "image/jpeg" },
@@ -52,6 +52,20 @@ describe("the Supabase photo storage", () => {
     expect(info).toMatchObject({ bytes: 123456, contentType: "image/jpeg" });
     expect([...info!.firstBytes]).toEqual([0xff, 0xd8, 0xff]);
     expect(call(fetchMock).headers.get("range")).toBe("bytes=0-2");
+  });
+
+  test("every request carries a time limit; a failed or stuck one is a PhotoStorageError without the key", async () => {
+    const { storage, fetchMock } = storageWith(Response.json({ url: "/object/upload/sign/photos/x?token=abc" }));
+    await storage.uploadTarget(key, "image/jpeg");
+    expect(call(fetchMock).init.signal).toBeInstanceOf(AbortSignal);
+
+    fetchMock.mockRejectedValueOnce(new DOMException("The operation timed out.", "TimeoutError"));
+    const error = await storage.inspect(key).then(
+      () => null,
+      (thrown: unknown) => thrown,
+    );
+    expect(error).toBeInstanceOf(PhotoStorageError);
+    expect(String((error as Error).message)).not.toContain(key);
   });
 
   test("inspect: a missing file is null", async () => {
