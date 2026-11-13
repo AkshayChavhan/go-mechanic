@@ -39,7 +39,8 @@ export type StartPhotoUploadResult =
 
 export type PhotoDependencies = { storage?: PhotoStorage; clock?: Clock };
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 /** Files removed per storage call during cleanup. */
 const REMOVE_BATCH = 100;
 
@@ -81,10 +82,20 @@ export async function startPhotoUpload(
       const [created] = await tx.insert(photoSets).values({ userId: user.id, createdAt: now }).returning({ id: photoSets.id });
       setId = created!.id;
     } else {
+      // A set in its last day before cleanup takes no more photos: an upload
+      // link handed out now (up to 2 hours) must never outlive the set, or
+      // its file would land after the cleanup and never be deleted.
       const [own] = await tx
         .select({ id: photoSets.id })
         .from(photoSets)
-        .where(and(eq(photoSets.id, setId), eq(photoSets.userId, user.id), isNull(photoSets.closedAt)))
+        .where(
+          and(
+            eq(photoSets.id, setId),
+            eq(photoSets.userId, user.id),
+            isNull(photoSets.closedAt),
+            gt(photoSets.createdAt, new Date(now.getTime() - PHOTO_RULES.keepOpenDays * DAY_MS + PHOTO_RULES.keepPendingHours * HOUR_MS)),
+          ),
+        )
         .for("update");
       if (!own) return { ok: false as const, problem: "not-found" as const };
       const [held] = await tx.select({ value: count() }).from(photos).where(eq(photos.setId, setId));
@@ -235,7 +246,7 @@ export async function deleteOldPhotos({ storage = photoStorage(), clock = system
   const stale = await db
     .select({ id: photos.id, key: photos.storageKey })
     .from(photos)
-    .where(and(eq(photos.status, "pending"), lt(photos.createdAt, new Date(now - PHOTO_RULES.keepPendingHours * 60 * 60 * 1000))));
+    .where(and(eq(photos.status, "pending"), lt(photos.createdAt, new Date(now - PHOTO_RULES.keepPendingHours * HOUR_MS))));
 
   const keys = [...inOldSets.map((row) => row.key), ...stale.map((row) => row.key)];
   if (keys.length === 0 && setIds.length === 0) return;

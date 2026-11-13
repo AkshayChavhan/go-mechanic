@@ -172,6 +172,14 @@ describe("startPhotoUpload", () => {
     expect(await startPhotoUpload({ setId: "1 or 1=1", count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
   });
 
+  test("a set in its last day before cleanup takes no more photos; a day earlier it does", async () => {
+    const setId = await storedSet();
+    await db.update(photoSets).set({ createdAt: new Date(now.getTime() - 28.5 * DAY) }).where(eq(photoSets.id, setId));
+    expect((await startPhotoUpload({ setId, count: 1 }, deps)).ok).toBe(true);
+    await db.update(photoSets).set({ createdAt: new Date(now.getTime() - 29.5 * DAY) }).where(eq(photoSets.id, setId));
+    expect(await startPhotoUpload({ setId, count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
+  });
+
   test("a closed set takes no more photos", async () => {
     const setId = await storedSet();
     await db.update(photoSets).set({ closedAt: now }).where(eq(photoSets.id, setId));

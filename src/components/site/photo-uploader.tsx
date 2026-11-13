@@ -9,8 +9,9 @@
 //    a new JPEG with no location data). Only the resized copy is kept.
 // 2. Upload: `start` (the startPhotos Server Action, its locale bound by
 //    the page) makes room and returns one signed link per photo; each photo
-//    is PUT straight to storage; `finish` (finishPhotos) gets every photo id,
-//    failed ones too, so a failed photo's place is freed at once.
+//    is PUT straight to storage; `finish` (finishPhotos) checks every photo
+//    sent. One that didn't arrive stays pending on the server, keeping its
+//    place.
 // 3. A photo that failed can be sent again with the same button, through
 //    the place and link it already has.
 //

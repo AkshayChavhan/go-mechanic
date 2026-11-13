@@ -5,8 +5,8 @@
 //
 // It signs its own links (token.ts) and serves them from two Route Handlers,
 // /api/photos/upload and /api/photos/view, which call the handlers below.
-// They behave like Supabase Storage: a link works once, for one file, for a
-// few minutes, and a stored file is never replaced.
+// They behave like Supabase Storage: a link writes one file, at one key, for
+// a few minutes, and a stored file is never replaced.
 
 import "server-only";
 
@@ -84,8 +84,10 @@ export async function handleFakeUpload(request: Request, options: FakePhotoStora
   const token = readPhotoToken(tokenOf(request), "upload", options.signingKey, options.clock.now().getTime());
   if (!token || !isPhotoKey(token.key)) return plain(403);
   if (request.headers.get("content-type") !== PHOTO_CONTENT_TYPE) return plain(415);
-  const declared = Number(request.headers.get("content-length") ?? "0");
-  if (declared > PHOTO_RULES.maxBytes) return plain(413);
+  // A size up front, so a huge body is refused before it is read.
+  const length = request.headers.get("content-length");
+  if (length === null) return plain(411);
+  if (Number(length) > PHOTO_RULES.maxBytes) return plain(413);
   const body = new Uint8Array(await request.arrayBuffer());
   if (body.byteLength === 0) return plain(400);
   if (body.byteLength > PHOTO_RULES.maxBytes) return plain(413);

@@ -31,7 +31,12 @@ const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
 async function upload(body: Uint8Array<ArrayBuffer>, contentType = "image/jpeg", url?: string) {
   const target = await storage.uploadTarget(key, "image/jpeg");
   return handleFakeUpload(
-    new Request(`http://localhost${url ?? target.url}`, { method: "PUT", body, headers: { "Content-Type": contentType } }),
+    // A browser sends the length of a Blob body; a Request built here doesn't, so set it.
+    new Request(`http://localhost${url ?? target.url}`, {
+      method: "PUT",
+      body,
+      headers: { "Content-Type": contentType, "Content-Length": String(body.byteLength) },
+    }),
     options,
   );
 }
@@ -59,6 +64,17 @@ describe("the fake photo storage", () => {
     expect((await upload(jpeg, "image/png")).status).toBe(415);
     expect((await upload(new Uint8Array())).status).toBe(400);
     expect((await upload(new Uint8Array(PHOTO_RULES.maxBytes + 1))).status).toBe(413);
+  });
+
+  test("refuses a body with no stated length (411), before reading it", async () => {
+    const target = await storage.uploadTarget(key, "image/jpeg");
+    const request = new Request(`http://localhost${target.url}`, {
+      method: "PUT",
+      body: jpeg,
+      headers: { "Content-Type": "image/jpeg" },
+    });
+    expect((await handleFakeUpload(request, options)).status).toBe(411);
+    expect(await storage.inspect(key)).toBeNull();
   });
 
   test("refuses an altered, expired or wrong-action token (403)", async () => {
