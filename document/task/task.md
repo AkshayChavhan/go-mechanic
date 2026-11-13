@@ -56,6 +56,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 44 | `44_real_sms_otp` | Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid) | To do |  |
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
+| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | To do |  |
 
 ## Task steps
 
@@ -377,13 +378,14 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 23_booking_flow
 
 - [x] Create branch `23_booking_flow`
-- [x] Plan with `ce-plan`: [2026-11-11-2016-feat-booking-flow-plan.md](../plans/2026-11-11-2016-feat-booking-flow-plan.md) (split: task 23 is the booking engine, the new task 47 the `/book` page; task 23's code waits for task 18 to merge)
-- [ ] `/book` wizard with OTP, server-side prices, e2e test
-- [ ] e2e tests run on a production server whose database is PGlite in memory: every run starts from the seed, and whatever a test creates is gone after a restart. Write booking tests that don't depend on an earlier run (task 14)
-- [ ] Set `bookPage.live` to true in `src/components/site/navigation.ts`: "Book a service" and the phone bar's Book then go to `/book` instead of WhatsApp. Decide the phone bar on `/book`, where its Book repeats the page and can cover the wizard's own buttons (task 12)
-- [ ] The inline OTP reuses the login service (`requestLoginCode`, `verifyLoginCode`), its consent snapshot and the e2e outbox file. Decide whether the phone bar hides while a form field has focus. If a different number verifies on a phone that is already logged in, end the old session (task 15)
+- [x] Plan with `ce-plan`: [2026-11-11-2016-feat-booking-flow-plan.md](../plans/2026-11-11-2016-feat-booking-flow-plan.md) (split: task 23 is the booking engine, task 47 the `/book` page; task 23's code waited for task 18 to merge)
+- [x] U1: merge `main` with task 18 and check its price API
+- [x] U2: booking rules in `src/domain/bookings.ts` (what a booking may hold, its lines and total, the booking code, 3 future bookings per customer)
+- [x] U3: the `bookings`, `booking_items` and `booking_events` tables (migration `0006_bookings`), and "Your bookings" in the privacy notice
+- [x] U4: `createMyBooking` (one transaction with the slot's place), the vehicle insert split, and the old login ended when another number verifies on the same phone (task 15)
+- [x] U5: the privacy notice's wording about vehicles and taking back agreement, `CLAUDE.md`, `readme.md`, this file
 - [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
@@ -632,6 +634,21 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Production plans, domain, monitoring, backups, final audit (paid)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
+
+### 47_book_wizard
+
+The `/book` page on top of task 23's booking engine: units U6–U10 of [the booking flow plan](../plans/2026-11-11-2016-feat-booking-flow-plan.md). Start it only after task 23 is merged.
+
+- [ ] Create branch `47_book_wizard`
+- [ ] U6: the `(book)` route group and the shell without the phone action bar (no gap where it was)
+- [ ] U7: the booking actions (`bookingLoginStep`, `confirmBooking`, `notMe`) and their state; the inline OTP reuses the login service, its consent snapshot and the e2e outbox file (task 15)
+- [ ] U8: the wizard island (four steps, confirm, done)
+- [ ] U9: the `/book` page; set `bookPage.live` to true in `src/components/site/navigation.ts`, so "Book a service" and the phone bar's Book go to `/book` (task 12); update the FAQ's "How do I book?" and the terms' booking text (task 19)
+- [ ] U10: browser tests on a production build, whose database is PGlite in memory: every run starts from the seed, so booking tests must not depend on an earlier run (task 14); docs
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
