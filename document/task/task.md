@@ -453,7 +453,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `30_photo_uploads`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-13-1200-feat-photo-uploads-plan.md)
-- [ ] Photo storage with signed URLs, resizing, access checks
+- [x] Photo storage with signed URLs, resizing, access checks
+- [x] Notes for tasks 20, 31, 32 and 43 at the end of the backlog
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -697,6 +698,10 @@ Not in version 1. See [features.md](../website/features.md).
 - Owner, from task 18: check the drafted service details and package checklists (`src/server/db/service-seed-data.ts`) and the sample price levels (`src/content/sample-prices.ts`); say what periodic service and the packages include for electric vehicles (today they leave electric out); say whether the real price list follows the six draft price groups
 - If the scroll effects change, guard every setup run: GSAP re-runs `media.add` on a breakpoint change from its own listener, so move the `try`/`catch` in `scroll-scene-effects.tsx` inside the callback, undo what was set up, and test it (code-reviewer in task 13; moved from task 18, which didn't change the effects)
 - The phone menu's plain fallback panel (`PlainPanel` in `src/components/site/mobile-menu.tsx`, shown only on a slow or failed download of the real panel): move focus into it when it opens, close it on Escape, add `aria-modal="true"`, with tests (task 18 code-reviewer)
+- Task 20: create the Supabase Storage bucket `photos` as private, with `file_size_limit` 2 MB and `allowed_mime_types` `['image/jpeg']` (a signed upload link can't carry those limits). Staging must set `PHOTO_STORAGE=supabase`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (secret, never `NEXT_PUBLIC_`), or `serverEnv()` refuses to start. Then run one real upload, view and delete: the Supabase provider's request shapes are tested only against a mocked `fetch` (task 30)
+- Task 31: mechanic uploads (a set owned by the job, not the customer) and viewing for the mechanic assigned to the job (`photos.view` covers managers and the owner only); close a job update's set (`photo_sets.closed_at`) when the job closes, which starts its one-year clock (task 30)
+- Task 32: put `PhotoUploader` on the estimate request form (`name` posts the set id), check that set belongs to the customer when the request is saved, and close it when the estimate closes (task 30)
+- Task 43: call `deletePhotosOfUser(userId)` before deleting a user: the rows go with the user, the files don't. The privacy notice already says deleting a login deletes its photos (task 30)
 
 ## How to add a task
 
