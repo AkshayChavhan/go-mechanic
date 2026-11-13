@@ -97,17 +97,22 @@ export async function insertVehicleRow(
   return row?.id ?? null;
 }
 
+/** A customer vehicle with its model and brand. Each caller adds its own `where`, always with a user id. */
+function myVehiclesQuery(db: VehicleRowDatabase) {
+  return db
+    .select(myVehicleColumns)
+    .from(customerVehicles)
+    .innerJoin(vehicleModels, eq(customerVehicles.modelId, vehicleModels.id))
+    .innerJoin(vehicleMakes, eq(vehicleModels.makeId, vehicleMakes.id));
+}
+
 /** `userId`'s vehicle with this registration number (the compact form), or null. */
 export async function findVehicleByRegistration(
   db: VehicleRowDatabase,
   userId: string,
   registrationNumber: string,
 ): Promise<MyVehicle | null> {
-  const [row] = await db
-    .select(myVehicleColumns)
-    .from(customerVehicles)
-    .innerJoin(vehicleModels, eq(customerVehicles.modelId, vehicleModels.id))
-    .innerJoin(vehicleMakes, eq(vehicleModels.makeId, vehicleMakes.id))
+  const [row] = await myVehiclesQuery(db)
     .where(and(eq(customerVehicles.userId, userId), eq(customerVehicles.registrationNumber, registrationNumber)));
   return row ?? null;
 }
@@ -118,11 +123,7 @@ export async function findVehicleByRegistration(
 export async function listMyVehicles(): Promise<MyVehicle[]> {
   const user = await authorizeUser();
   const db = await getDatabase();
-  return db
-    .select(myVehicleColumns)
-    .from(customerVehicles)
-    .innerJoin(vehicleModels, eq(customerVehicles.modelId, vehicleModels.id))
-    .innerJoin(vehicleMakes, eq(vehicleModels.makeId, vehicleMakes.id))
+  return myVehiclesQuery(db)
     .where(eq(customerVehicles.userId, user.id))
     .orderBy(asc(customerVehicles.createdAt), asc(customerVehicles.id));
 }
@@ -132,24 +133,15 @@ export async function readMyVehicle(id: string): Promise<MyVehicle | null> {
   const user = await authorizeUser();
   if (!isUuid(id)) return null;
   const db = await getDatabase();
-  const [row] = await db
-    .select(myVehicleColumns)
-    .from(customerVehicles)
-    .innerJoin(vehicleModels, eq(customerVehicles.modelId, vehicleModels.id))
-    .innerJoin(vehicleMakes, eq(vehicleModels.makeId, vehicleMakes.id))
+  const [row] = await myVehiclesQuery(db)
     .where(and(eq(customerVehicles.id, id), eq(customerVehicles.userId, user.id)));
   return row ?? null;
 }
 
 /** A saved vehicle as the booking save prices it: with its model's price group. */
-export type MyVehicleForBooking = {
-  id: string;
-  kind: VehicleKind;
-  modelId: string;
+export type MyVehicleForBooking = Pick<MyVehicle, "id" | "kind" | "modelId" | "fuel" | "registrationNumber"> & {
   /** The model's price group ("sedan"), even if the garage hid the model since. */
   categoryId: string;
-  fuel: Fuel;
-  registrationNumber: string;
 };
 
 /**

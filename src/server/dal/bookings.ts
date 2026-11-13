@@ -109,14 +109,15 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
   if (booking.vehicle.saved && !isUuid(booking.vehicle.vehicleId)) return { status: "not-found" };
 
   // Before the transaction: these open their own queries.
-  const [catalogue, services, prices] = [await readVehicleCatalogue(), await readServices(), await readServicePrices()];
+  const services = await readServices();
+  const prices = await readServicePrices();
   let vehicle: TypedVehicle | SavedVehicle;
   if (booking.vehicle.saved) {
     const saved = await readMyVehicleForBooking(booking.vehicle.vehicleId);
     if (!saved) return { status: "not-found" };
     vehicle = { saved: true, ...saved };
   } else {
-    const resolved = resolveVehicle(catalogue, booking.vehicle.modelId, booking.vehicle.fuel);
+    const resolved = resolveVehicle(await readVehicleCatalogue(), booking.vehicle.modelId, booking.vehicle.fuel);
     if (!resolved.ok) {
       const problem = resolved.problem === "unknown-model" ? "vehicle-unknown-model" : "vehicle-fuel-not-offered";
       return { status: "problems", problems: [{ field: "vehicle", problem }] };

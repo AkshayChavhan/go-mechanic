@@ -81,8 +81,11 @@ function checkVehicle(
 ): CheckedBookingVehicle | null {
   if ("savedVehicleId" in vehicle) {
     const id = vehicle.savedVehicleId.trim();
-    if (id === "") problems.push({ field: "vehicle", problem: "vehicle-missing" });
-    return id === "" ? null : { saved: true, vehicleId: id };
+    if (id === "") {
+      problems.push({ field: "vehicle", problem: "vehicle-missing" });
+      return null;
+    }
+    return { saved: true, vehicleId: id };
   }
 
   let fuel: Fuel | null = null;
