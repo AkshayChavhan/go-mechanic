@@ -27,8 +27,18 @@
 //                 the server): serverEnv() reads the settings once per
 //                 process. From then on the old number is a customer, even
 //                 inside a login that is already open.
+//   PHOTO_STORAGE where customers' photos are kept (task 30): "fake" (the
+//                 default) writes them to the .photos/ folder, for local runs
+//                 only; "supabase" uses a private Supabase Storage bucket and
+//                 needs the next three. Staging and production refuse the
+//                 fake: a deployment's disk doesn't keep files.
+//   SUPABASE_URL  the Supabase project's address (https://...supabase.co).
+//   SUPABASE_SERVICE_ROLE_KEY
+//                 the key the server uses for Storage. A secret: server only,
+//                 never NEXT_PUBLIC_.
+//   PHOTO_BUCKET  the private bucket's name, "photos" by default.
 //
-// DATABASE_URL and BETTER_AUTH_SECRET are secrets, so error messages name a
+// DATABASE_URL, BETTER_AUTH_SECRET and SUPABASE_SERVICE_ROLE_KEY are secrets, so error messages name a
 // variable but never print its value: errors end up in logs that more people
 // can read.
 //
@@ -46,6 +56,15 @@ export type AppEnv = (typeof APP_ENVS)[number];
 export const SMS_PROVIDERS = ["fake"] as const;
 
 export type SmsProviderName = (typeof SMS_PROVIDERS)[number];
+
+export const PHOTO_STORAGES = ["fake", "supabase"] as const;
+
+export type PhotoStorageName = (typeof PHOTO_STORAGES)[number];
+
+/** Where photos are kept, and what the Supabase provider needs. */
+export type PhotoSettings =
+  | { storage: "fake" }
+  | { storage: "supabase"; supabaseUrl: string; serviceRoleKey: string; bucket: string };
 
 /**
  * The local login secret. Clearly fake, and never used on a deployment:
@@ -73,6 +92,8 @@ export type ServerEnv = {
   e2eOutboxFile: string | undefined;
   /** Whoever logs in with this number (E.164) is the owner. */
   ownerPhoneNumber: string;
+  /** Where customers' photos are kept (task 30). */
+  photos: PhotoSettings;
 };
 
 /** What's wrong with one variable. Codes, not sentences, like HoursProblem. */
@@ -82,7 +103,11 @@ export type ServerEnvProblem =
   | { variable: "BETTER_AUTH_SECRET"; problem: "missing" | "too-short" }
   | { variable: "SMS_PROVIDER"; problem: "unknown-provider" | "fake-in-production" }
   | { variable: "E2E_OUTBOX_FILE"; problem: "local-only" }
-  | { variable: "OWNER_PHONE_NUMBER"; problem: "missing" | "not-mobile" };
+  | { variable: "OWNER_PHONE_NUMBER"; problem: "missing" | "not-mobile" }
+  | { variable: "PHOTO_STORAGE"; problem: "unknown-storage" | "fake-deployed" }
+  | { variable: "SUPABASE_URL"; problem: "missing" | "not-https" }
+  | { variable: "SUPABASE_SERVICE_ROLE_KEY"; problem: "missing" }
+  | { variable: "PHOTO_BUCKET"; problem: "bad-bucket" };
 
 // One readable line per problem. None of them includes a value.
 const explanations: Record<ServerEnvProblem["problem"], string> = {
@@ -95,6 +120,10 @@ const explanations: Record<ServerEnvProblem["problem"], string> = {
   "fake-in-production": "can't be fake (the default) when APP_ENV is production: production sends real SMS (task 44)",
   "local-only": "is only for local test runs (APP_ENV local, not on Vercel)",
   "not-mobile": "must be an Indian mobile number written as +91 and 10 digits, with no spaces",
+  "unknown-storage": `must be ${PHOTO_STORAGES.join(" or ")}`,
+  "fake-deployed": "can't be fake (the default) outside local runs: a deployment's disk doesn't keep files (use supabase)",
+  "not-https": "must start with https://",
+  "bad-bucket": "must be lowercase letters, digits and hyphens",
 };
 
 /** Thrown by parseServerEnv, with every problem it found. */
@@ -178,9 +207,11 @@ export function parseServerEnv(vars: Record<string, string | undefined>): Server
     problems.push({ variable: "OWNER_PHONE_NUMBER", problem: "not-mobile" });
   }
 
+  const photos = parsePhotoSettings(vars, appEnv, problems);
+
   // A missing appEnv or smsProvider always comes with a problem; checking
   // them too tells TypeScript that they're set below.
-  if (problems.length > 0 || !appEnv || !smsProvider) throw new ServerEnvError(problems);
+  if (problems.length > 0 || !appEnv || !smsProvider || !photos) throw new ServerEnvError(problems);
   return {
     appEnv,
     databaseUrl,
@@ -188,7 +219,40 @@ export function parseServerEnv(vars: Record<string, string | undefined>): Server
     smsProvider,
     e2eOutboxFile,
     ownerPhoneNumber: setOwnerNumber ?? LOCAL_OWNER_PHONE_NUMBER,
+    photos,
   };
+}
+
+/** PHOTO_STORAGE and the Supabase settings; undefined when a problem was added. */
+function parsePhotoSettings(
+  vars: Record<string, string | undefined>,
+  appEnv: AppEnv | undefined,
+  problems: ServerEnvProblem[],
+): PhotoSettings | undefined {
+  const raw = valueOf(vars, "PHOTO_STORAGE") ?? "fake";
+  if (!(PHOTO_STORAGES as readonly string[]).includes(raw)) {
+    problems.push({ variable: "PHOTO_STORAGE", problem: "unknown-storage" });
+    return undefined;
+  }
+  if (raw === "fake") {
+    // Staging and production only: a deployment that says APP_ENV=local, or an
+    // unknown APP_ENV, already fails on APP_ENV itself.
+    if (appEnv === "staging" || appEnv === "production") {
+      problems.push({ variable: "PHOTO_STORAGE", problem: "fake-deployed" });
+      return undefined;
+    }
+    return { storage: "fake" };
+  }
+  const supabaseUrl = valueOf(vars, "SUPABASE_URL");
+  const serviceRoleKey = valueOf(vars, "SUPABASE_SERVICE_ROLE_KEY");
+  const bucket = valueOf(vars, "PHOTO_BUCKET") ?? "photos";
+  const before = problems.length;
+  if (supabaseUrl === undefined) problems.push({ variable: "SUPABASE_URL", problem: "missing" });
+  else if (!supabaseUrl.startsWith("https://")) problems.push({ variable: "SUPABASE_URL", problem: "not-https" });
+  if (serviceRoleKey === undefined) problems.push({ variable: "SUPABASE_SERVICE_ROLE_KEY", problem: "missing" });
+  if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(bucket)) problems.push({ variable: "PHOTO_BUCKET", problem: "bad-bucket" });
+  if (problems.length > before || !supabaseUrl || !serviceRoleKey) return undefined;
+  return { storage: "supabase", supabaseUrl: supabaseUrl.replace(/\/+$/, ""), serviceRoleKey, bucket };
 }
 
 let remembered: ServerEnv | undefined;

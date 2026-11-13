@@ -18,6 +18,20 @@ const localDefaults = {
   smsProvider: "fake",
   e2eOutboxFile: undefined,
   ownerPhoneNumber: LOCAL_OWNER_PHONE_NUMBER,
+  photos: { storage: "fake" },
+} as const;
+
+/** Photo storage settings a deployment needs (the fake is refused there). */
+const photoVars = {
+  PHOTO_STORAGE: "supabase",
+  SUPABASE_URL: "https://fake-ref.supabase.co",
+  SUPABASE_SERVICE_ROLE_KEY: "fake-service-role-key",
+} as const;
+const photoSettings = {
+  storage: "supabase",
+  supabaseUrl: "https://fake-ref.supabase.co",
+  serviceRoleKey: "fake-service-role-key",
+  bucket: "photos",
 } as const;
 
 /** The error parseServerEnv throws for `vars` (fails the test if it doesn't throw). */
@@ -60,6 +74,7 @@ describe("parseServerEnv (checks the server's settings)", () => {
         BETTER_AUTH_SECRET: secret,
         OWNER_PHONE_NUMBER: ownerNumber,
         VERCEL: "1",
+        ...photoVars,
       }),
     ).toEqual({
       appEnv: "staging",
@@ -68,6 +83,7 @@ describe("parseServerEnv (checks the server's settings)", () => {
       smsProvider: "fake",
       e2eOutboxFile: undefined,
       ownerPhoneNumber: ownerNumber,
+      photos: photoSettings,
     });
   });
 
@@ -78,6 +94,7 @@ describe("parseServerEnv (checks the server's settings)", () => {
       BETTER_AUTH_SECRET: secret,
       OWNER_PHONE_NUMBER: ownerNumber,
       VERCEL: "1",
+      ...photoVars,
     };
     for (const vars of [complete, { ...complete, SMS_PROVIDER: "fake" }]) {
       const error = errorFor(vars);
@@ -224,6 +241,7 @@ describe("serverEnv (reads process.env once)", () => {
     vi.stubEnv("DATABASE_URL", supabaseUrl);
     vi.stubEnv("BETTER_AUTH_SECRET", secret);
     vi.stubEnv("OWNER_PHONE_NUMBER", ownerNumber);
+    for (const [name, value] of Object.entries(photoVars)) vi.stubEnv(name, value);
     vi.resetModules();
     const { serverEnv } = await import("./env");
 
@@ -234,6 +252,7 @@ describe("serverEnv (reads process.env once)", () => {
       smsProvider: "fake",
       e2eOutboxFile: undefined,
       ownerPhoneNumber: ownerNumber,
+      photos: photoSettings,
     });
 
     vi.stubEnv("APP_ENV", "production");
@@ -248,5 +267,41 @@ describe("serverEnv (reads process.env once)", () => {
 
     expect(() => serverEnv()).toThrow(FreshServerEnvError);
     expect(() => serverEnv()).toThrow(FreshServerEnvError);
+  });
+});
+
+describe("photo storage settings (task 30)", () => {
+  const deployed = {
+    DATABASE_URL: supabaseUrl,
+    BETTER_AUTH_SECRET: secret,
+    OWNER_PHONE_NUMBER: ownerNumber,
+    VERCEL: "1",
+  };
+
+  test.each(["staging", "production"])("%s refuses the fake photo storage, set or by default", (appEnv) => {
+    for (const vars of [{ ...deployed, APP_ENV: appEnv }, { ...deployed, APP_ENV: appEnv, PHOTO_STORAGE: "fake" }]) {
+      expect(errorFor(vars).problems).toContainEqual({ variable: "PHOTO_STORAGE", problem: "fake-deployed" });
+    }
+  });
+
+  test("supabase needs an https URL and the service role key, and names them without their values", () => {
+    const error = errorFor({ PHOTO_STORAGE: "supabase", SUPABASE_URL: "http://fake-ref.supabase.co" });
+    expect(error.problems).toEqual([
+      { variable: "SUPABASE_URL", problem: "not-https" },
+      { variable: "SUPABASE_SERVICE_ROLE_KEY", problem: "missing" },
+    ]);
+    expect(error.message).not.toContain("fake-ref");
+  });
+
+  test("an unknown storage and a bad bucket name are refused", () => {
+    expect(errorFor({ PHOTO_STORAGE: "s3" }).problems).toEqual([{ variable: "PHOTO_STORAGE", problem: "unknown-storage" }]);
+    expect(errorFor({ ...photoVars, PHOTO_BUCKET: "My Photos" }).problems).toEqual([
+      { variable: "PHOTO_BUCKET", problem: "bad-bucket" },
+    ]);
+  });
+
+  test("supabase settings come back with the trailing slash removed and the default bucket", () => {
+    expect(parseServerEnv({ ...photoVars, SUPABASE_URL: "https://fake-ref.supabase.co/" }).photos).toEqual(photoSettings);
+    expect(parseServerEnv({ ...photoVars, PHOTO_BUCKET: "garage-photos" }).photos).toMatchObject({ bucket: "garage-photos" });
   });
 });
