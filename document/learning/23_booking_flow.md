@@ -93,8 +93,11 @@ npx vitest run src/domain/bookings.test.ts src/server/dal/bookings.test.ts src/s
 - **`ce-code-review`** (full, 8 reviewers): "Ready with fixes". Two confirmed P2 findings, both fixed:
   - The withdraw text promised to delete the login, but the database refuses to delete a user who has bookings. Fixed in `2cf2756`.
   - A reload plus a second confirm made a new request token, so one vehicle could be booked twice in one slot. Fixed in `7c1e19e` (the same-vehicle-same-slot check).
-- **`code-reviewer`:** pending.
-- **Compound step:** pending.
+- **`code-reviewer`:** "Ready to merge", no must-fix items. Its five suggestions:
+  - Two tracker fixes (task 23's row described the old scope; a backlog note pointed at task 23 instead of task 47): done.
+  - Task 47 must show a `duplicate` answer as "you already booked this vehicle for this time", since it also comes back when the second confirm picked other services: added to task 47's U7 step.
+  - Left as known risks, both rare and both rolling back cleanly: a saved vehicle removed in another tab during the booking makes the insert throw (an error, not "not found"), and if deleting the old login fails after a correct code, the person sees an error although the new login worked.
+- **Compound step:** one lesson saved, [server-action-login-invisible-until-next-request.md](../solutions/conventions/server-action-login-invisible-until-next-request.md): a login made inside a Server Action can't be read until the next request, and Better Auth keeps the old login alive. Task 47 depends on both, and the code alone doesn't show either.
 - **Tests:** `npm run check` passed with 1,792 tests after the fixes. `npm run test:e2e` passed with 118 tests after the fixes (2026-11-13).
 
 ## Common mistakes
