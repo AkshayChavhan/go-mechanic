@@ -32,7 +32,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | Done | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
-| 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | In progress |  |
+| 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | In progress | [23_booking_flow.md](../learning/23_booking_flow.md) |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | Admin navigation by role, bookings board, phone and walk-in bookings | To do |  |
@@ -384,7 +384,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] U3: the `bookings`, `booking_items` and `booking_events` tables (migration `0006_bookings`), and "Your bookings" in the privacy notice
 - [x] U4: `createMyBooking` (one transaction with the slot's place), the vehicle insert split, and the old login ended when another number verifies on the same phone (task 15)
 - [x] U5: the privacy notice's wording about vehicles and taking back agreement, `CLAUDE.md` and this file (`readme.md` needed no change: nothing a person runs or opens is new)
-- [ ] Write the learning doc
+- [x] Write the learning doc: [23_booking_flow.md](../learning/23_booking_flow.md)
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
