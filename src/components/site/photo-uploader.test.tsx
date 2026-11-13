@@ -1,4 +1,5 @@
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { Activity } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import { renderWithIntl } from "@/i18n/test-utils";
@@ -48,14 +49,22 @@ beforeEach(() => {
   URL.revokeObjectURL = vi.fn();
 });
 
-function setup(props: Partial<PhotoUploaderProps> = {}) {
-  const start = vi.fn<PhotoUploaderProps["start"]>().mockResolvedValue({
+/** The two actions and the PUT, answering as a working server would. */
+function mocks() {
+  const start = vi.fn<PhotoUploaderProps["start"]>().mockImplementation(async ({ count }) => ({
     ok: true,
     setId,
-    uploads: ids.map((photoId, n) => ({ photoId, target: target(n) })),
-  });
-  const finish = vi.fn<PhotoUploaderProps["finish"]>().mockResolvedValue(ids.map((photoId) => ({ photoId, stored: true })));
+    uploads: ids.slice(0, count).map((photoId, n) => ({ photoId, target: target(n) })),
+  }));
+  const finish = vi.fn<PhotoUploaderProps["finish"]>().mockImplementation(async (photoIds) =>
+    photoIds.map((photoId) => ({ photoId, stored: true })),
+  );
   const put = vi.fn<NonNullable<PhotoUploaderProps["put"]>>().mockResolvedValue(true);
+  return { start, finish, put };
+}
+
+function setup(props: Partial<PhotoUploaderProps> = {}) {
+  const { start, finish, put } = mocks();
   const view = renderWithIntl(<PhotoUploader labels={labels} start={start} finish={finish} put={put} {...props} />);
   return { start, finish, put, view };
 }
@@ -111,7 +120,7 @@ describe("PhotoUploader", () => {
     expect(screen.getByText("T-Failed")).toBeTruthy();
   });
 
-  test("a failed photo is sent again into the same set", async () => {
+  test("a failed photo is sent again through the link it already has, with no new place", async () => {
     const { start, finish, put } = setup();
     finishWith(finish, [true, false]);
     put.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
@@ -119,14 +128,53 @@ describe("PhotoUploader", () => {
     await screen.findAllByRole("img");
     fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
     await screen.findByText("T-Failed");
+    // A photo with a place on the server can't be removed, only sent again.
+    expect(screen.queryByRole("button", { name: "T-Remove 2" })).toBeNull();
 
-    start.mockResolvedValueOnce({ ok: true, setId, uploads: [{ photoId: ids[1]!, target: target(1) }] });
     finishWith(finish, [true], [ids[1]!]);
     fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
     await waitFor(() => expect(screen.getByRole("status").textContent).toBe("T-2 uploaded"));
-    expect(start).toHaveBeenLastCalledWith({ setId, count: 1 });
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(put.mock.calls.at(-1)![0].url).toBe("/upload/1");
+    expect(finish).toHaveBeenLastCalledWith([ids[1]]);
   });
 
+  test("a finish that fails says so, and the photos can be sent again", async () => {
+    const { start, finish } = setup();
+    finish.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    pick("1.jpg", "2.jpg");
+    await screen.findAllByRole("img");
+    fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("T-offline"));
+    expect(screen.getAllByText("T-Failed")).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
+    await waitFor(() => expect(screen.getByRole("status").textContent).toBe("T-2 uploaded"));
+    expect(start).toHaveBeenCalledTimes(1);
+    expect(finish).toHaveBeenLastCalledWith(ids);
+  });
+
+  test("hidden and shown again (as Next.js does with a page you leave), the thumbnails get fresh links", async () => {
+    const { start, finish, put } = mocks();
+    // Plain render: renderWithIntl's rerender would drop its provider and
+    // remount the whole tree. The uploader reads no messages itself.
+    const view = (mode: "visible" | "hidden") => (
+      <Activity mode={mode}>
+        <PhotoUploader labels={labels} start={start} finish={finish} put={put} />
+      </Activity>
+    );
+    const { rerender, unmount } = render(view("visible"));
+    pick("1.jpg");
+    await screen.findByRole("img");
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    rerender(view("hidden"));
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1);
+    rerender(view("visible"));
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(2);
+    expect(document.querySelector("img")!.getAttribute("src")).toBe("blob:preview");
+    unmount();
+    expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2);
+  });
   test("a refusal from the server shows its message, and nothing is uploaded", async () => {
     const { start, put } = setup();
     start.mockResolvedValueOnce({ ok: false, problem: "too-many-sets" });

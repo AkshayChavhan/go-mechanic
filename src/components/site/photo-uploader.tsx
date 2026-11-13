@@ -11,7 +11,12 @@
 //    the page) makes room and returns one signed link per photo; each photo
 //    is PUT straight to storage; `finish` (finishPhotos) gets every photo id,
 //    failed ones too, so a failed photo's place is freed at once.
-// 3. A photo that failed can be sent again with the same button.
+// 3. A photo that failed can be sent again with the same button, through
+//    the place and link it already has.
+//
+// It needs JavaScript. Pages that show it to customers (tasks 31 and 32)
+// wrap it in FreshOnEachVisit, keyed by the user's id, so the next customer
+// on a shared phone never sees the last one's photos.
 //
 // When `name` is set, a hidden field of that name carries the set's id, so
 // the form around the uploader posts it. Every word comes from `labels`.
@@ -64,7 +69,12 @@ export type PhotoUploaderProps = {
 };
 
 type Status = "resizing" | "ready" | "unreadable" | "uploading" | "stored" | "failed";
-type Item = { key: number; status: Status; photo?: ResizedPhoto; preview?: string };
+/**
+ * One picked photo. `upload` is its place on the server once `start` gave
+ * one: a failed photo is sent again through the same link, since its place
+ * stays taken until it arrives (or the server's 24-hour cleanup).
+ */
+type Item = { key: number; status: Status; photo?: ResizedPhoto; upload?: { photoId: string; target: UploadTarget } };
 
 /** The default upload: one PUT of the JPEG to its signed link. */
 async function putPhoto(target: UploadTarget, blob: Blob): Promise<boolean> {
@@ -93,17 +103,10 @@ export function PhotoUploader({
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const nextKey = useRef(0);
-  const previews = useRef(new Set<string>());
   const [items, setItems] = useState<Item[]>([]);
   const [setId, setSetId] = useState(initialSetId);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-
-  // The previews are object URLs: free them when the uploader goes away.
-  useEffect(() => {
-    const urls = previews.current;
-    return () => urls.forEach((url) => URL.revokeObjectURL(url));
-  }, []);
 
   const max = PHOTO_RULES.maxPerSet - alreadyInSet;
   const room = max - items.filter((item) => HOLDS_A_PLACE.includes(item.status)).length;
@@ -121,21 +124,13 @@ export function PhotoUploader({
       const key = nextKey.current++;
       setItems((current) => [...current, { key, status: "resizing" }]);
       resizePhoto(file).then(
-        (photo) => {
-          const preview = URL.createObjectURL(photo.blob);
-          previews.current.add(preview);
-          update(key, { status: "ready", photo, preview });
-        },
+        (photo) => update(key, { status: "ready", photo }),
         () => update(key, { status: "unreadable" }),
       );
     }
   }
 
   function remove(item: Item) {
-    if (item.preview) {
-      URL.revokeObjectURL(item.preview);
-      previews.current.delete(item.preview);
-    }
     setItems((current) => current.filter((other) => other.key !== item.key));
   }
 
@@ -144,34 +139,50 @@ export function PhotoUploader({
     if (sending.length === 0) return;
     setBusy(true);
     setMessage("");
+    // Each photo with its place: new photos get one from `start`, failed
+    // ones keep theirs.
+    const placed = new Map(sending.filter((item) => item.upload).map((item) => [item.key, item.upload!]));
     try {
-      let started: StartPhotoUploadResult;
+      const fresh = sending.filter((item) => !item.upload);
+      if (fresh.length > 0) {
+        let started: StartPhotoUploadResult;
+        try {
+          started = await start(setId ? { setId, count: fresh.length } : { count: fresh.length });
+        } catch (error) {
+          unstable_rethrow(error);
+          setMessage(labels.problems.offline);
+          return;
+        }
+        if (!started.ok) {
+          setMessage(labels.problems[started.problem]);
+          return;
+        }
+        setSetId(started.setId);
+        fresh.forEach((item, index) => placed.set(item.key, started.uploads[index]!));
+      }
+      for (const item of sending) update(item.key, { status: "uploading", upload: placed.get(item.key) });
+
+      await Promise.all(
+        sending.map((item) => put(placed.get(item.key)!.target, item.photo!.blob).catch(() => false)),
+      );
+      let finished: FinishedPhoto[];
       try {
-        started = await start(setId ? { setId, count: sending.length } : { count: sending.length });
+        finished = await finish(sending.map((item) => placed.get(item.key)!.photoId));
       } catch (error) {
         unstable_rethrow(error);
+        for (const item of sending) update(item.key, { status: "failed" });
         setMessage(labels.problems.offline);
         return;
       }
-      if (!started.ok) {
-        setMessage(labels.problems[started.problem]);
-        return;
-      }
-      const { uploads } = started;
-      setSetId(started.setId);
-      for (const item of sending) update(item.key, { status: "uploading" });
-
-      await Promise.all(sending.map((item, index) => put(uploads[index]!.target, item.photo!.blob).catch(() => false)));
-      let finished: FinishedPhoto[] = [];
-      try {
-        finished = await finish(uploads.map((upload) => upload.photoId));
-      } catch (error) {
-        unstable_rethrow(error);
-      }
       const stored = new Set(finished.filter((photo) => photo.stored).map((photo) => photo.photoId));
-      sending.forEach((item, index) => update(item.key, { status: stored.has(uploads[index]!.photoId) ? "stored" : "failed" }));
+      for (const item of sending) update(item.key, { status: stored.has(placed.get(item.key)!.photoId) ? "stored" : "failed" });
       const storedNow = items.filter((item) => item.status === "stored").length + stored.size;
       setMessage(fill(labels.done, { count: storedNow }));
+    } catch (error) {
+      // Anything unexpected: no photo is left stuck on "uploading".
+      unstable_rethrow(error);
+      for (const item of sending) update(item.key, { status: "failed" });
+      setMessage(labels.problems.offline);
     } finally {
       setBusy(false);
     }
@@ -216,18 +227,9 @@ export function PhotoUploader({
           {items.map((item, index) => (
             <li key={item.key} className="flex flex-col gap-1">
               <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-muted">
-                {item.preview && (
-                  // A local object URL: next/image can't optimise it, and needn't.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={item.preview}
-                    alt={fill(labels.photoAlt, { n: index + 1 })}
-                    width={item.photo?.width}
-                    height={item.photo?.height}
-                    className="size-full object-cover"
-                  />
-                )}
-                {(item.status === "ready" || item.status === "failed" || item.status === "unreadable") && !busy && (
+                {item.photo && <PhotoPreview photo={item.photo} alt={fill(labels.photoAlt, { n: index + 1 })} />}
+                {/* A photo that already has its place on the server can only be sent again. */}
+                {(item.status === "ready" || item.status === "unreadable") && !busy && (
                   <Button
                     type="button"
                     variant="secondary"
@@ -261,6 +263,27 @@ export function PhotoUploader({
         </Button>
       )}
     </div>
+  );
+}
+
+/**
+ * A thumbnail of the resized photo. Its object URL lives exactly as long as
+ * the effect: made when it runs, freed in its cleanup. Next.js hides a page
+ * you leave with <Activity>, which runs the cleanup, and runs the effect
+ * again when the page comes back, so a re-shown thumbnail gets a fresh URL
+ * and a removed photo frees its own.
+ */
+function PhotoPreview({ photo, alt }: { photo: ResizedPhoto; alt: string }) {
+  const img = useRef<HTMLImageElement>(null);
+  useEffect(() => {
+    const url = URL.createObjectURL(photo.blob);
+    if (img.current) img.current.src = url;
+    return () => URL.revokeObjectURL(url);
+  }, [photo.blob]);
+  return (
+    // A local object URL: next/image can't optimise it, and needn't.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img ref={img} alt={alt} width={photo.width} height={photo.height} className="size-full object-cover" />
   );
 }
 
