@@ -12,7 +12,9 @@
 // 2. One transaction, which first takes a lock on the customer, so two
 //    confirms from them run one after the other. Then, reads only: the
 //    request token (a double tap answers "duplicate"), the typed plate, the
-//    future-bookings limit. Then reserveSlot. Last, the writes.
+//    same vehicle already booked in the same slot (a reload, also
+//    "duplicate"), the future-bookings limit. Then reserveSlot. Last, the
+//    writes.
 // Every answer that refuses comes before reserveSlot, so after it the only
 // answer is "booked". A write that fails after it throws, and the whole
 // transaction rolls back, the slot's place included. Nothing here catches.
@@ -162,6 +164,21 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
       }
       vehicleId = existing?.id ?? null;
     }
+
+    // The same vehicle in the same slot again, under a new token (a reload
+    // makes a new one): the first booking stands, so its code comes back.
+    const [sameSlot] = await tx
+      .select({ code: bookings.code })
+      .from(bookings)
+      .where(
+        and(
+          eq(bookings.userId, user.id),
+          eq(bookings.status, "booked"),
+          eq(bookings.registrationNumber, vehicle.registrationNumber),
+          eq(bookings.startsAt, booking.startsAt),
+        ),
+      );
+    if (sameSlot) return { status: "duplicate", code: sameSlot.code };
 
     const now = clock.now();
     const future = await tx.$count(

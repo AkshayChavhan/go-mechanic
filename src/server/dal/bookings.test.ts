@@ -376,10 +376,54 @@ describe("the same confirm twice (the request token)", () => {
     expect(await createMyBooking(input({ requestToken }), clock)).toEqual({ status: "duplicate", code: first.booking.code });
   });
 
+  test("a retried third booking answers duplicate, not too-many-bookings", async () => {
+    const slots = [10, 11, 12].map((hour) => indiaInstantOn("2026-10-31", hour * 60));
+    const requestToken = randomUUID();
+    await createMyBooking(input({ startsAt: slots[0].toISOString() }), clock);
+    await createMyBooking(input({ startsAt: slots[1].toISOString() }), clock);
+    const third = await createMyBooking(input({ startsAt: slots[2].toISOString(), requestToken }), clock);
+    if (third.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(third)}`);
+    expect(await createMyBooking(input({ startsAt: slots[2].toISOString(), requestToken }), clock)).toEqual({
+      status: "duplicate",
+      code: third.booking.code,
+    });
+    expect(await db.$count(bookings)).toBe(3);
+  });
+
   test("the same token from another customer is a different booking", async () => {
     const requestToken = randomUUID();
     expect(await bookAs(asha, { requestToken })).toMatchObject({ status: "booked" });
     expect(await bookAs(ravi, { requestToken })).toMatchObject({ status: "booked" });
+    expect(await counterAt(friday10)).toBe(2);
+  });
+});
+
+describe("the same vehicle in the same slot again (a new token, after a reload)", () => {
+  test("answers duplicate with the first booking's code; one booking, one place", async () => {
+    const first = await createMyBooking(input(), clock);
+    if (first.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(first)}`);
+    expect(await createMyBooking(input({ requestToken: randomUUID() }), clock)).toEqual({
+      status: "duplicate",
+      code: first.booking.code,
+    });
+    expect(await db.$count(bookings)).toBe(1);
+    expect(await counterAt(friday10)).toBe(1);
+  });
+
+  test("the same vehicle in another slot, or another vehicle in the same slot, is a new booking", async () => {
+    expect(await createMyBooking(input(), clock)).toMatchObject({ status: "booked" });
+    expect(
+      await createMyBooking(input({ requestToken: randomUUID(), startsAt: friday11.toISOString() }), clock),
+    ).toMatchObject({ status: "booked" });
+    expect(
+      await createMyBooking(
+        input({
+          requestToken: randomUUID(),
+          vehicle: { modelId: "car-honda-city", fuel: "petrol", registration: "KA01AB0009" },
+        }),
+        clock,
+      ),
+    ).toMatchObject({ status: "booked" });
     expect(await counterAt(friday10)).toBe(2);
   });
 });
