@@ -66,7 +66,7 @@ The owner decided on 2026-11-13:
    ```
    `--name` sets the part of the file name after the number.
 6. **Data access (U5).** Every function checks who is asking on its first line. A customer can only touch their own sets. Anyone else, and an id that isn't a uuid, gets `not-found`. The 6-photo limit counts pending photos too. It's checked inside a transaction that locks the set's row, so two uploads at once can't both squeeze in.
-7. **The handshake (U6).** `startPhotos` saves "pending" rows and returns one signed upload link per photo. The browser PUTs each JPEG straight to storage. Then `finishPhotos` gets back *every* photo id, failed ones too. For each photo, `inspect` checks that the file exists, is at most 2 MB and starts with `FF D8 FF`. If so, the photo is marked `stored`. If not, its file and row are deleted, which frees the place for a retry.
+7. **The handshake (U6).** `startPhotos` saves "pending" rows and returns one signed upload link per photo. The browser PUTs each JPEG straight to storage. Then `finishPhotos` gets back every photo id that was sent. For each photo, `inspect` checks that the file exists, is at most 2 MB and starts with `FF D8 FF`. If so, the photo is marked `stored`. If not, a bad file is removed but the row stays `pending` and keeps its place: the uploader sends that photo again through the same link, and the 24-hour cleanup removes anything that never arrives, file included. (The first version deleted the row here; the code review showed why that was wrong. See Review.)
 8. **Resize and uploader (U7).** `resizePhoto` calls `createImageBitmap(file, { imageOrientation: "from-image" })`, draws the bitmap on a canvas and calls `canvas.toBlob(..., "image/jpeg", 0.85)`. If the result is still over 2 MB, it tries quality 0.7, then 0.5.
 9. **Privacy notice (U8).** It got a "Photos you send us" item. `consent.test.ts` failed until `LOGIN_NOTICE_VERSION` moved, which is exactly its job.
 10. **`/dev/design` and the browser check (U9).** The dev specs ran through a scratch Playwright config on port 3001, not `npm run test:design`, because port 3000 belonged to Session 1.
@@ -144,8 +144,15 @@ Left as known risks (in the review report and the backlog): the Supabase request
 
 After the fixes: `npm run check` passed (128 files, 1808 tests), `npm run test:e2e -- --workers=2` passed (118), and the photo and design dev specs passed on port 3001 (the motion demo failed once and passed on a re-run; this task doesn't touch it).
 
-**`code-reviewer`:** to be filled in after it runs.
+**`code-reviewer`: "Needs changes", then fixed.** It re-ran `npm run check` (1808 tests, passing) and found:
+
+- **Fixed (must fix):** the same orphan-file gap one level up. A photo added to an open set just before its 30-day cleanup got a link that outlived the set. A set in its last 24 hours now answers `not-found` (new test beside the 29- and 31-day cases).
+- **Fixed (must fix):** step 7 above still described the old "delete the row" behaviour.
+- **Fixed (suggestions):** a stale comment in the uploader; the fake now refuses an upload with no stated length (411) before reading it; the task 31 backlog note now says the notice's "who sees them" must change; the tracker link text.
+- **Not fixable on this branch alone (must fix, coordination):** Session 1's unmerged `23_booking_flow` also adds a migration numbered `0006` and also sets `LOGIN_NOTICE_VERSION` to `2026-11-13`. Whichever branch merges second must merge `main`, regenerate its migration as `0007` (never rename), move the notice version (for example to `2026-11-13.2`) with its own fingerprint, and re-run the checks. The owner decides the order; this is what happens to task 30 if it goes second.
+
+After these fixes `npm run check` passed again (128 files, 1810 tests).
 
 ## Compound
 
-To be filled in.
+Yes, a lesson was saved: `document/solutions/conventions/signed-upload-links-keep-pending-rows-until-links-expire.md`. Without it, the next upload feature (task 31's mechanic photos) could repeat the mistake two reviews caught: deleting a pending row, or a whole set, while its upload link still works, which leaves files no cleanup can find.

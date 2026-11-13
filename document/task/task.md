@@ -39,7 +39,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | To do |  |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
-| 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | In progress | [30_photo_uploads](../learning/30_photo_uploads.md) |
+| 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | In progress | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Mechanic job updates; customer tracking timeline | To do |  |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; admin inbox | To do |  |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
@@ -456,8 +456,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Photo storage with signed URLs, resizing, access checks
 - [x] Notes for tasks 20, 31, 32 and 43 at the end of the backlog
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
 ### 31_job_timeline
@@ -699,7 +699,7 @@ Not in version 1. See [features.md](../website/features.md).
 - If the scroll effects change, guard every setup run: GSAP re-runs `media.add` on a breakpoint change from its own listener, so move the `try`/`catch` in `scroll-scene-effects.tsx` inside the callback, undo what was set up, and test it (code-reviewer in task 13; moved from task 18, which didn't change the effects)
 - The phone menu's plain fallback panel (`PlainPanel` in `src/components/site/mobile-menu.tsx`, shown only on a slow or failed download of the real panel): move focus into it when it opens, close it on Escape, add `aria-modal="true"`, with tests (task 18 code-reviewer)
 - Task 20: create the Supabase Storage bucket `photos` as private, with `file_size_limit` 2 MB and `allowed_mime_types` `['image/jpeg']` (a signed upload link can't carry those limits). Staging must set `PHOTO_STORAGE=supabase`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (secret, never `NEXT_PUBLIC_`), or `serverEnv()` refuses to start. Then run one real upload, view and delete: the Supabase provider's request shapes are tested only against a mocked `fetch` (task 30)
-- Task 31: mechanic uploads (a set owned by the job, not the customer) and viewing for the mechanic assigned to the job (`photos.view` covers managers and the owner only); close a job update's set (`photo_sets.closed_at`) when the job closes, which starts its one-year clock (task 30)
+- Task 31: mechanic uploads (a set owned by the job, not the customer) and viewing for the mechanic assigned to the job (`photos.view` covers managers and the owner only), and update the privacy notice's `PrivacyPage.items.photos.who` and move `LOGIN_NOTICE_VERSION`; close a job update's set (`photo_sets.closed_at`) when the job closes, which starts its one-year clock (task 30)
 - Task 32: put `PhotoUploader` on the estimate request form (`name` posts the set id), check that set belongs to the customer when the request is saved, and close it when the estimate closes (task 30)
 - Tasks 31 and 32: wrap `PhotoUploader` in `FreshOnEachVisit`, keyed by the user's id, so the next customer on a shared phone never sees the last one's photos; and don't let the form be sent while photos are still uploading or waiting to be sent (the hidden set-id field appears as soon as `start` answers) (task 30 review)
 - Task 43: call `deletePhotosOfUser(userId)` before deleting a user: the rows go with the user, the files don't. The privacy notice already says deleting a login deletes its photos (task 30)
