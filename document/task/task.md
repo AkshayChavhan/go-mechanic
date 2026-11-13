@@ -383,7 +383,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] U2: booking rules in `src/domain/bookings.ts` (what a booking may hold, its lines and total, the booking code, 3 future bookings per customer)
 - [x] U3: the `bookings`, `booking_items` and `booking_events` tables (migration `0006_bookings`), and "Your bookings" in the privacy notice
 - [x] U4: `createMyBooking` (one transaction with the slot's place), the vehicle insert split, and the old login ended when another number verifies on the same phone (task 15)
-- [x] U5: the privacy notice's wording about vehicles and taking back agreement, `CLAUDE.md`, `readme.md`, this file
+- [x] U5: the privacy notice's wording about vehicles and taking back agreement, `CLAUDE.md` and this file (`readme.md` needed no change: nothing a person runs or opens is new)
 - [ ] Write the learning doc
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
