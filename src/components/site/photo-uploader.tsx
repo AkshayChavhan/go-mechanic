@@ -186,9 +186,8 @@ export function PhotoUploader({
         type="file"
         accept="image/*"
         multiple
-        className="sr-only"
-        tabIndex={-1}
-        aria-hidden
+        // Out of sight and out of the tab order: the Add photos button opens it.
+        hidden
         onChange={(event) => {
           pick(Array.from(event.currentTarget.files ?? []));
           // Lets the same photo be picked again after it was removed.
