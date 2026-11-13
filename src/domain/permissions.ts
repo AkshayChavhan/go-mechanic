@@ -30,6 +30,10 @@ const TABLE = {
   "team.manage": ["owner"],
   /** See the reports (task 41). */
   "reports.view": ["manager", "owner"],
+  /** See any customer's photos, for estimates and jobs (task 30). The assigned mechanic's own access comes with task 31. */
+  "photos.view": ["manager", "owner"],
+  /** Delete a customer's data, their photos' files included (task 43). The owner's alone. */
+  "customers.delete": ["owner"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof TABLE;
