@@ -593,3 +593,54 @@ export const customerVehicles = pgTable(
     check("customer_vehicles_registration_compact", sql`${table.registrationNumber} ~ '^[A-Z0-9]{8,11}$'`),
   ],
 );
+
+// --- Photos (task 30) ---------------------------------------------------------
+//
+// A customer's photos come in sets: one set per estimate request (task 32) or
+// job update (task 31), at most 6 photos (PHOTO_RULES in src/domain/photos.ts,
+// checked in src/server/dal/photos.ts). The files live in photo storage
+// (src/server/providers/photos/); a row says where (storage_key) and whether
+// the upload finished.
+//
+// Deleting a user deletes their sets and photos here ("cascade"), but not the
+// files in storage: deletePhotosOfUser removes those first (task 43).
+
+/** Every status, as in PHOTO_STATUSES (src/domain/photos.ts; photos-tables.test.ts checks they match). */
+export const photoStatus = pgEnum("photo_status", ["pending", "stored"]);
+
+export const photoSets = pgTable(
+  "photo_sets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** The customer the photos belong to. */
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Set when the set's estimate or job is closed (tasks 31, 32); a year later it's deleted. */
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (table) => [index("photo_sets_user_created_index").on(table.userId, table.createdAt)],
+);
+
+export const photos = pgTable(
+  "photos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    setId: uuid("set_id")
+      .notNull()
+      .references(() => photoSets.id, { onDelete: "cascade" }),
+    /** "sets/<set id>/<photo id>.jpg" (photoKey in src/domain/photos.ts). */
+    storageKey: text("storage_key").notNull().unique(),
+    status: photoStatus("status").notNull().default("pending"),
+    /** The stored file's size, filled in when the upload is finished. */
+    bytes: integer("bytes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    storedAt: timestamp("stored_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("photos_set_index").on(table.setId),
+    check("photos_bytes_limit", sql`${table.bytes} is null or (${table.bytes} > 0 and ${table.bytes} <= 2097152)`),
+    check("photos_stored_complete", sql`${table.status} <> 'stored' or (${table.bytes} is not null and ${table.storedAt} is not null)`),
+  ],
+);

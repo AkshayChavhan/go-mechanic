@@ -51,3 +51,8 @@ export function isPhotoKey(key: string): boolean {
 export function looksLikeJpeg(firstBytes: Uint8Array): boolean {
   return firstBytes.length >= 3 && firstBytes[0] === 0xff && firstBytes[1] === 0xd8 && firstBytes[2] === 0xff;
 }
+
+/** A photo's row is "pending" until its upload is checked, then "stored". */
+export const PHOTO_STATUSES = ["pending", "stored"] as const;
+
+export type PhotoStatus = (typeof PHOTO_STATUSES)[number];
