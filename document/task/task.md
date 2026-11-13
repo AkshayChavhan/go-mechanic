@@ -701,6 +701,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 20: create the Supabase Storage bucket `photos` as private, with `file_size_limit` 2 MB and `allowed_mime_types` `['image/jpeg']` (a signed upload link can't carry those limits). Staging must set `PHOTO_STORAGE=supabase`, `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` (secret, never `NEXT_PUBLIC_`), or `serverEnv()` refuses to start. Then run one real upload, view and delete: the Supabase provider's request shapes are tested only against a mocked `fetch` (task 30)
 - Task 31: mechanic uploads (a set owned by the job, not the customer) and viewing for the mechanic assigned to the job (`photos.view` covers managers and the owner only); close a job update's set (`photo_sets.closed_at`) when the job closes, which starts its one-year clock (task 30)
 - Task 32: put `PhotoUploader` on the estimate request form (`name` posts the set id), check that set belongs to the customer when the request is saved, and close it when the estimate closes (task 30)
+- Tasks 31 and 32: wrap `PhotoUploader` in `FreshOnEachVisit`, keyed by the user's id, so the next customer on a shared phone never sees the last one's photos; and don't let the form be sent while photos are still uploading or waiting to be sent (the hidden set-id field appears as soon as `start` answers) (task 30 review)
 - Task 43: call `deletePhotosOfUser(userId)` before deleting a user: the rows go with the user, the files don't. The privacy notice already says deleting a login deletes its photos (task 30)
 
 ## How to add a task
