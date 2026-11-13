@@ -8,6 +8,7 @@
 
 import type { LocalizedText } from "@/i18n/localized-text";
 
+import { isUuid } from "./ids";
 import { parseRegistration, type RegistrationProblem } from "./registration";
 import { priceFor, type PricedVehicle, type Service, type ServiceKind, type ServicePrice } from "./services";
 import { type Fuel, isFuel } from "./vehicles";
@@ -74,8 +75,6 @@ export type CheckedBooking = {
   requestToken: string;
 };
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 function checkVehicle(
   vehicle: BookingVehicleInput,
   problems: BookingInputProblem[],
@@ -122,7 +121,7 @@ export function checkBookingInput(
     problems.push({ field: "slot", problem: "slot-invalid" });
   }
 
-  if (!UUID.test(input.requestToken)) problems.push({ field: "token", problem: "bad-token" });
+  if (!isUuid(input.requestToken)) problems.push({ field: "token", problem: "bad-token" });
 
   if (problems.length > 0 || !vehicle) return { ok: false, problems };
   return { ok: true, booking: { vehicle, serviceIds, startsAt, requestToken: input.requestToken.toLowerCase() } };

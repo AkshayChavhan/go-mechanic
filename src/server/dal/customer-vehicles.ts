@@ -2,9 +2,10 @@
 //
 // The rules of this folder are in garage.ts. Rule 3 here, the one that
 // keeps one customer out of another's vehicles:
-// - no function takes a user id: each calls authorizeUser() on its first
-//   line, before it checks its input, reads the catalogue or calls
-//   getDatabase(), and uses the user it returns;
+// - no function a page or action calls takes a user id: each calls
+//   authorizeUser() on its first line, before it checks its input, reads
+//   the catalogue or calls getDatabase(), and uses the user it returns (the
+//   two row helpers for other data-access files take the id that check gave);
 // - every query filters by that user's id, plus the vehicle's id where
 //   there is one. A change that touches no row means "not found", so
 //   another customer's vehicle and one that doesn't exist get the same
@@ -18,13 +19,19 @@ import "server-only";
 
 import { and, asc, eq, ne } from "drizzle-orm";
 
-import { checkVehicleInput, type VehicleInput, type VehicleInputProblem } from "@/domain/customer-vehicles";
+import {
+  type CheckedVehicle,
+  checkVehicleInput,
+  type VehicleInput,
+  type VehicleInputProblem,
+} from "@/domain/customer-vehicles";
+import { isUuid } from "@/domain/ids";
 import { type IndiaDate, indiaDateOf } from "@/domain/india-time";
 import type { Fuel, VehicleKind } from "@/domain/vehicles";
 import type { LocalizedText } from "@/i18n/localized-text";
 import { type Clock, systemClock } from "@/lib/clock";
 import { authorizeUser } from "@/server/auth/access";
-import { getDatabase } from "@/server/db";
+import { type Database, getDatabase } from "@/server/db";
 import { customerVehicles, vehicleMakes, vehicleModels } from "@/server/db/schema";
 
 import { readVehicleCatalogue } from "./vehicles";
@@ -48,15 +55,6 @@ export type VehicleSaveProblem = VehicleInputProblem | { field: "registration"; 
 
 const duplicate: VehicleSaveProblem = { field: "registration", problem: "registration-duplicate" };
 
-/**
- * Whether `id` is a uuid. Postgres refuses to compare a uuid column with
- * anything else (error 22P02), so a made-up id ("1; drop", "abc") would
- * crash the query instead of being "not found".
- */
-function isUuid(id: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-}
-
 /** The columns of a MyVehicle. The names come through a join that ignores `listed`, so a model the garage hid still shows. */
 const myVehicleColumns = {
   id: customerVehicles.id,
@@ -69,6 +67,52 @@ const myVehicleColumns = {
   pucExpiresOn: customerVehicles.pucExpiresOn,
   insuranceExpiresOn: customerVehicles.insuranceExpiresOn,
 };
+
+/** What the helpers below run their queries through: the database, or a transaction on it. */
+export type VehicleRowDatabase = Pick<Database, "select" | "insert">;
+
+// --- For other data-access files only ----------------------------------------
+//
+// The two helpers below take a user id, so they never face a page or an
+// action: only a data-access function calls them, with the id its own
+// authorizeUser() returned. They take a transaction (or the database), so
+// the booking save (bookings.ts) can use them inside its transaction.
+
+/**
+ * Stores a checked vehicle for `userId` and returns its id, or null when
+ * that user already saved the number ("on conflict do nothing"): two tabs
+ * saving the same number at once give one row.
+ */
+export async function insertVehicleRow(
+  db: VehicleRowDatabase,
+  userId: string,
+  vehicle: CheckedVehicle,
+  now: Date,
+): Promise<string | null> {
+  const [row] = await db
+    .insert(customerVehicles)
+    .values({ userId, ...vehicle, createdAt: now, updatedAt: now })
+    .onConflictDoNothing({ target: [customerVehicles.userId, customerVehicles.registrationNumber] })
+    .returning({ id: customerVehicles.id });
+  return row?.id ?? null;
+}
+
+/** `userId`'s vehicle with this registration number (the compact form), or null. */
+export async function findVehicleByRegistration(
+  db: VehicleRowDatabase,
+  userId: string,
+  registrationNumber: string,
+): Promise<MyVehicle | null> {
+  const [row] = await db
+    .select(myVehicleColumns)
+    .from(customerVehicles)
+    .innerJoin(vehicleModels, eq(customerVehicles.modelId, vehicleModels.id))
+    .innerJoin(vehicleMakes, eq(vehicleModels.makeId, vehicleMakes.id))
+    .where(and(eq(customerVehicles.userId, userId), eq(customerVehicles.registrationNumber, registrationNumber)));
+  return row ?? null;
+}
+
+// --- The logged-in customer's vehicles ----------------------------------------
 
 /** The logged-in customer's vehicles, oldest first. */
 export async function listMyVehicles(): Promise<MyVehicle[]> {
@@ -97,6 +141,42 @@ export async function readMyVehicle(id: string): Promise<MyVehicle | null> {
   return row ?? null;
 }
 
+/** A saved vehicle as the booking save prices it: with its model's price group. */
+export type MyVehicleForBooking = {
+  id: string;
+  kind: VehicleKind;
+  modelId: string;
+  /** The model's price group ("sedan"), even if the garage hid the model since. */
+  categoryId: string;
+  fuel: Fuel;
+  registrationNumber: string;
+};
+
+/**
+ * One of the logged-in customer's vehicles with its price group, or null
+ * (another customer's id and an unknown one look the same). The join
+ * ignores `listed`, so a vehicle whose model was hidden still books and
+ * prices.
+ */
+export async function readMyVehicleForBooking(id: string): Promise<MyVehicleForBooking | null> {
+  const user = await authorizeUser();
+  if (!isUuid(id)) return null;
+  const db = await getDatabase();
+  const [row] = await db
+    .select({
+      id: customerVehicles.id,
+      kind: vehicleModels.kind,
+      modelId: customerVehicles.modelId,
+      categoryId: vehicleModels.categoryId,
+      fuel: customerVehicles.fuel,
+      registrationNumber: customerVehicles.registrationNumber,
+    })
+    .from(customerVehicles)
+    .innerJoin(vehicleModels, eq(customerVehicles.modelId, vehicleModels.id))
+    .where(and(eq(customerVehicles.id, id), eq(customerVehicles.userId, user.id)));
+  return row ?? null;
+}
+
 /**
  * Adds a vehicle for the logged-in customer. A number they already saved
  * comes back as "registration-duplicate": the insert skips the clash
@@ -111,15 +191,9 @@ export async function addMyVehicle(
   const checked = checkVehicleInput(input, await readVehicleCatalogue(), indiaDateOf(clock.now()));
   if (!checked.ok) return { status: "problems", problems: checked.problems };
 
-  const db = await getDatabase();
-  const now = clock.now();
-  const [row] = await db
-    .insert(customerVehicles)
-    .values({ userId: user.id, ...checked.vehicle, createdAt: now, updatedAt: now })
-    .onConflictDoNothing({ target: [customerVehicles.userId, customerVehicles.registrationNumber] })
-    .returning({ id: customerVehicles.id });
-  if (!row) return { status: "problems", problems: [duplicate] };
-  return { status: "saved", id: row.id };
+  const id = await insertVehicleRow(await getDatabase(), user.id, checked.vehicle, clock.now());
+  if (!id) return { status: "problems", problems: [duplicate] };
+  return { status: "saved", id };
 }
 
 /**
