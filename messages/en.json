@@ -192,7 +192,7 @@
         "what": "Photos of your vehicle that you add on the website, up to {max} at a time. Before a photo is sent, the website makes it smaller (at most {longSide} pixels on its long side) and saves a new copy, which leaves out the location, time and camera details a phone keeps inside a photo.",
         "why": "So the garage can see the problem and tell you what the work will involve.",
         "who": "You, the garage's owner and managers, and the company that stores the photos and hosts the database.",
-        "howLong": "Photos that belong to an estimate or a job are deleted {closedDays} days after it is closed. Other photos are deleted {openDays} days after you sent them, and a photo whose upload didn't finish after {pendingHours} hours. These deletions happen the next time anyone sends a photo, not on a timer. Deleting your login deletes your photos too."
+        "howLong": "Photos that belong to an estimate or a job are deleted {closedDays} days after it is closed. Other photos are deleted {openDays} days after the first photo of that group was sent, and a photo whose upload didn't finish after {pendingHours} hours. These deletions happen the next time anyone sends a photo, not on a timer. Deleting your login deletes your photos too."
       },
       "consent": {
         "title": "Your agreement",
