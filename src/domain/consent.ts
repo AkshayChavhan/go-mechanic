@@ -3,6 +3,7 @@
 // version of the notice, and when.
 
 import { LOGIN_RULES } from "./login";
+import { PHOTO_RULES } from "./photos";
 
 /**
  * The two boxes on the login page, one consent record each:
@@ -23,7 +24,7 @@ export type ConsentPurpose = (typeof CONSENT_PURPOSES)[number];
  * version's date as its "last updated" date. So it's a "YYYY-MM-DD" date,
  * with ".2", ".3" ... added when the words change again on the same day.
  */
-export const LOGIN_NOTICE_VERSION = "2026-11-03";
+export const LOGIN_NOTICE_VERSION = "2026-11-13";
 
 /** The date part of a notice version ("2026-10-29.2" -> "2026-10-29"): what /privacy shows. */
 export function noticeDate(version: string = LOGIN_NOTICE_VERSION): string {
@@ -32,12 +33,20 @@ export function noticeDate(version: string = LOGIN_NOTICE_VERSION): string {
 
 /**
  * The numbers the privacy notice states (how long things are kept), taken
- * from the rules the login runs on. They're part of what people agree to,
- * so consent.test.ts pins them with the notice's wording: change a login
- * rule the notice mentions and the test fails until the version moves.
+ * from the rules the login and the photos (task 30) run on. They're part of
+ * what people agree to, so consent.test.ts pins them with the notice's
+ * wording: change a rule the notice mentions and the test fails until the
+ * version moves.
  */
 export const PRIVACY_NOTICE_VALUES = {
   attempts: { hours: LOGIN_RULES.keepRecordsHours },
   codes: { digits: LOGIN_RULES.codeLength, minutes: LOGIN_RULES.codeLifetimeSeconds / 60 },
   session: { days: LOGIN_RULES.sessionDays },
+  photos: {
+    max: PHOTO_RULES.maxPerSet,
+    longSide: PHOTO_RULES.longSide,
+    closedDays: PHOTO_RULES.keepClosedDays,
+    openDays: PHOTO_RULES.keepOpenDays,
+    pendingHours: PHOTO_RULES.keepPendingHours,
+  },
 } as const;
