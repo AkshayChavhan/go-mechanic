@@ -21,6 +21,8 @@ coverage/
 # deletes both)
 .pglite/
 .pglite.lock
+# The fake photo storage's files (task 30): customers' photos under npm run dev.
+.photos/
 
 # Secrets and local environment values
 # Commit a `.env.example` with fake values instead.

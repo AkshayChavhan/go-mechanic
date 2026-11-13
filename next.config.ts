@@ -15,7 +15,9 @@ const nextConfig: NextConfig = {
   // can copy them. It follows `path.join(process.cwd(), ".pglite")` in
   // src/server/db/index.ts into your local database: leave that out, for
   // every route ("/*"). A deployment uses its own Postgres (task 20).
-  outputFileTracingExcludes: { "/*": ["./.pglite/**"] },
+  // The same goes for .photos/, the fake photo storage's folder (task 30):
+  // customers' photos taken under `npm run dev` must never be copied.
+  outputFileTracingExcludes: { "/*": ["./.pglite/**", "./.photos/**"] },
   experimental: {
     // Needed because the root layout lives inside [locale]: URLs that match
     // no route at all get src/app/global-not-found.tsx.
