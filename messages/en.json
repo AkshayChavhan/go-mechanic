@@ -483,5 +483,28 @@
       "notOffered": "Not for this vehicle",
       "callForPrice": "Call or WhatsApp us for a price"
     }
+  },
+  "Photos": {
+    "uploader": {
+      "choose": "Add photos",
+      "hint": "Up to {max} photos. We make them smaller and remove their location before they're sent.",
+      "tooMany": "You can add {max} photos here, so we kept the first {kept}.",
+      "photoAlt": "Photo {n}",
+      "remove": "Remove photo {n}",
+      "resizing": "Getting it ready…",
+      "unreadable": "We couldn't open this file as a photo.",
+      "upload": "Upload photos",
+      "uploading": "Uploading…",
+      "stored": "Uploaded",
+      "failed": "Not uploaded. Press Upload photos to try again.",
+      "done": "Photos uploaded: {count}.",
+      "problems": {
+        "bad-count": "Choose at least one photo.",
+        "too-many-photos": "This already has as many photos as it can take.",
+        "too-many-sets": "You've sent a lot of photos today. Please try again tomorrow, or send them on WhatsApp.",
+        "not-found": "These photos can't be added to any more. Please start again.",
+        "offline": "We couldn't reach our server. Check your connection and try again."
+      }
+    }
   }
 }
