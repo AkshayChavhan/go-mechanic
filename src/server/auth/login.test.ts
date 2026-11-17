@@ -1,6 +1,7 @@
 import { inspect } from "node:util";
 
 import { desc, eq } from "drizzle-orm";
+import { makeSignature } from "better-auth/crypto";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { LOGIN_NOTICE_VERSION } from "@/domain/consent";
@@ -451,6 +452,72 @@ describe("checking a code", () => {
       return [strip(first), strip(again), wrong];
     };
     expect(await answers("90000 00002")).toEqual(await answers("90000 00003"));
+  });
+});
+
+describe("a phone that is already logged in (plan KTD8)", () => {
+  const other = "+919123456789";
+
+  /** Request headers carrying `token` in a session cookie, signed with `secret` (the test's own by default). */
+  async function cookieFor(token: string, secret = "test-secret-that-is-at-least-32-characters-long"): Promise<Headers> {
+    const { name } = (await auth.$context).authCookies.sessionToken;
+    return new Headers({ cookie: `${name}=${encodeURIComponent(`${token}.${await makeSignature(token, secret)}`)}` });
+  }
+
+  /** Logs `phoneNumber` in from a phone with no cookie and returns its session token. */
+  async function logInFresh(phoneNumber: string): Promise<string> {
+    const typedNumber = phoneNumber.slice(3);
+    expect(await check(await askForCode({ phoneTyped: typedNumber }), await latestCode(phoneNumber))).toEqual({ ok: true });
+    const [user] = await db.select().from(users).where(eq(users.phoneNumber, phoneNumber));
+    const [session] = await db.select().from(sessions).where(eq(sessions.userId, user.id));
+    return session.token;
+  }
+
+  function checkFrom(requestHeaders: Headers, attemptId: string, codeTyped: string) {
+    return verifyLoginCode(auth, { locale: "en", attemptId, codeTyped }, requestHeaders);
+  }
+
+  async function sessionOf(requestHeaders: Headers) {
+    return auth.api.getSession({ headers: requestHeaders, query: { disableRefresh: true } });
+  }
+
+  test("another number logs in: the old login stops working and the new one is the other user's", async () => {
+    const oldToken = await logInFresh(number);
+    const attemptId = await askForCode({ phoneTyped: other.slice(3) });
+    expect(await checkFrom(await cookieFor(oldToken), attemptId, await latestCode(other))).toEqual({ ok: true });
+
+    expect(await sessionOf(await cookieFor(oldToken))).toBeNull();
+    const rows = await db.select().from(sessions);
+    expect(rows).toHaveLength(1);
+    const [newUser] = await db.select().from(users).where(eq(users.phoneNumber, other));
+    expect(rows[0].userId).toBe(newUser.id);
+  });
+
+  test("a wrong code keeps the old login", async () => {
+    const oldToken = await logInFresh(number);
+    const attemptId = await askForCode({ phoneTyped: other.slice(3) });
+    const code = await latestCode(other);
+    expect(await checkFrom(await cookieFor(oldToken), attemptId, wrongFor(code))).toEqual({ ok: false, problem: "wrongCode" });
+    expect((await sessionOf(await cookieFor(oldToken)))?.user.phoneNumber).toBe(number);
+  });
+
+  test("the same number again leaves one working session", async () => {
+    const oldToken = await logInFresh(number);
+    moveTo(10 * 60);
+    expect(await checkFrom(await cookieFor(oldToken), await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await sessionOf(await cookieFor(oldToken))).toBeNull();
+    const rows = await db.select().from(sessions);
+    expect(rows).toHaveLength(1);
+    expect((await sessionOf(await cookieFor(rows[0].token)))?.user.phoneNumber).toBe(number);
+  });
+
+  test("a cookie whose signature doesn't check out ends nothing", async () => {
+    const oldToken = await logInFresh(number);
+    const forged = await cookieFor(oldToken, "another-secret-that-is-at-least-32-characters");
+    const attemptId = await askForCode({ phoneTyped: other.slice(3) });
+    expect(await checkFrom(forged, attemptId, await latestCode(other))).toEqual({ ok: true });
+    expect((await sessionOf(await cookieFor(oldToken)))?.user.phoneNumber).toBe(number);
+    expect(await db.$count(sessions)).toBe(2);
   });
 });
 

@@ -9,6 +9,7 @@
 //   verifyLoginCode   the code step: let Better Auth check the code; just
 //                     before it creates the session, the attempt's consent is
 //                     copied into the consents table, or the login fails.
+//                     A login the phone already had is then ended.
 //
 // Better Auth calls back into two functions here (sendLoginCodeSms and
 // onVerifiedLogin, wired up in instance.ts; onVerifiedLogin runs
@@ -42,6 +43,7 @@ import {
   type LoginAttempt,
   readLiveCode,
 } from "@/server/dal/login-codes";
+import { deleteSessionByToken } from "@/server/dal/sessions";
 import { syncOwnerRole } from "@/server/dal/users";
 import { type AppEnv, serverEnv } from "@/server/env";
 import { smsProvider } from "@/server/providers/sms";
@@ -205,11 +207,19 @@ export async function verifyLoginCode(
     const attempt = await findLoginAttempt(input.attemptId);
     if (!attempt) return { ok: false, problem: "startOver" };
 
+    // The login this phone already has, if any. Read before the code check:
+    // afterwards, a stale cookie would make Better Auth clear the cookie it
+    // just set. getSession only trusts a cookie whose signature checks out.
+    const previous = await auth.api.getSession({ headers: requestHeaders, query: { disableRefresh: true } });
+
+    let newToken: string | null;
     try {
-      await loginRequest.run({ locale: input.locale, attempt }, () =>
+      // Never updatePhoneNumber: that would move this number onto the user
+      // already logged in here, instead of logging in the number's own user.
+      const verified = await loginRequest.run({ locale: input.locale, attempt }, () =>
         auth.api.verifyPhoneNumber({ body: { phoneNumber: attempt.phoneNumber, code }, headers: requestHeaders }),
       );
-      return { ok: true };
+      newToken = verified.token;
     } catch (error) {
       switch (betterAuthCode(error)) {
         case "INVALID_OTP":
@@ -227,6 +237,11 @@ export async function verifyLoginCode(
           throw error;
       }
     }
+
+    // Only after a correct code: one phone, one login. Another number taking
+    // over (or the same number again) ends the old session for good.
+    if (previous && previous.session.token !== newToken) await deleteSessionByToken(previous.session.token);
+    return { ok: true };
   });
 }
 

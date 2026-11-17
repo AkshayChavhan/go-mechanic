@@ -30,9 +30,9 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 18 | `18_services_pricing` | Services, packages, prices by vehicle; `/services`, `/packages` | In progress | [18_services_pricing.md](../learning/18_services_pricing.md) |
 | 19 | `19_info_pages` | Contact, about, FAQ, privacy and terms pages | In progress | [19_info_pages.md](../learning/19_info_pages.md) |
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
-| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | In progress | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
+| 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | Done | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
-| 23 | `23_booking_flow` | `/book` wizard with OTP, server-side prices, e2e test | To do |  |
+| 23 | `23_booking_flow` | Booking engine: rules, tables, `createMyBooking`, one login per phone (the page is task 47) | In progress | [23_booking_flow.md](../learning/23_booking_flow.md) |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | Admin navigation by role, bookings board, phone and walk-in bookings | To do |  |
@@ -56,6 +56,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 44 | `44_real_sms_otp` | Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid) | To do |  |
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
+| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | To do |  |
 
 ## Task steps
 
@@ -358,7 +359,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc: [21_customer_vehicles.md](../learning/21_customer_vehicles.md)
 - [x] Review with `ce-code-review` (8 findings, all fixed) and `code-reviewer` (1 must-fix, fixed)
 - [x] Compound: [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #21 on GitHub
 
 ### 22_slot_engine
 
@@ -376,15 +377,16 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 23_booking_flow
 
-- [ ] Create branch `23_booking_flow`
-- [ ] Plan with `ce-plan`
-- [ ] `/book` wizard with OTP, server-side prices, e2e test
-- [ ] e2e tests run on a production server whose database is PGlite in memory: every run starts from the seed, and whatever a test creates is gone after a restart. Write booking tests that don't depend on an earlier run (task 14)
-- [ ] Set `bookPage.live` to true in `src/components/site/navigation.ts`: "Book a service" and the phone bar's Book then go to `/book` instead of WhatsApp. Decide the phone bar on `/book`, where its Book repeats the page and can cover the wizard's own buttons (task 12)
-- [ ] The inline OTP reuses the login service (`requestLoginCode`, `verifyLoginCode`), its consent snapshot and the e2e outbox file. Decide whether the phone bar hides while a form field has focus. If a different number verifies on a phone that is already logged in, end the old session (task 15)
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `23_booking_flow`
+- [x] Plan with `ce-plan`: [2026-11-11-2016-feat-booking-flow-plan.md](../plans/2026-11-11-2016-feat-booking-flow-plan.md) (split: task 23 is the booking engine, task 47 the `/book` page; task 23's code waited for task 18 to merge)
+- [x] U1: merge `main` with task 18 and check its price API
+- [x] U2: booking rules in `src/domain/bookings.ts` (what a booking may hold, its lines and total, the booking code, 3 future bookings per customer)
+- [x] U3: the `bookings`, `booking_items` and `booking_events` tables (migration `0006_bookings`), and "Your bookings" in the privacy notice
+- [x] U4: `createMyBooking` (one transaction with the slot's place), the vehicle insert split, and the old login ended when another number verifies on the same phone (task 15)
+- [x] U5: the privacy notice's wording about vehicles and taking back agreement, `CLAUDE.md` and this file (`readme.md` needed no change: nothing a person runs or opens is new)
+- [x] Write the learning doc: [23_booking_flow.md](../learning/23_booking_flow.md)
+- [x] Review with `ce-code-review` ("Ready with fixes": 2 findings, both fixed) and `code-reviewer` ("Ready to merge", suggestions applied or recorded)
+- [x] Compound: [server-action-login-invisible-until-next-request.md](../solutions/conventions/server-action-login-invisible-until-next-request.md)
 - [ ] Merge into `main`
 
 ### 24_pickup_drop
@@ -635,6 +637,21 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
+### 47_book_wizard
+
+The `/book` page on top of task 23's booking engine: units U6–U10 of [the booking flow plan](../plans/2026-11-11-2016-feat-booking-flow-plan.md). Start it only after task 23 is merged.
+
+- [ ] Create branch `47_book_wizard`
+- [ ] U6: the `(book)` route group and the shell without the phone action bar (no gap where it was)
+- [ ] U7: the booking actions (`bookingLoginStep`, `confirmBooking`, `notMe`) and their state; the inline OTP reuses the login service, its consent snapshot and the e2e outbox file (task 15). Show a `duplicate` answer as "You already booked this vehicle for this time (code K7Q-4MX)", not as a plain success: it also comes back when the same vehicle and slot are confirmed again with other services; changing services belongs to task 25 (code-reviewer in task 23)
+- [ ] U8: the wizard island (four steps, confirm, done)
+- [ ] U9: the `/book` page; set `bookPage.live` to true in `src/components/site/navigation.ts`, so "Book a service" and the phone bar's Book go to `/book` (task 12); update the FAQ's "How do I book?" and the terms' booking text (task 19)
+- [ ] U10: browser tests on a production build, whose database is PGlite in memory: every run starts from the seed, so booking tests must not depend on an earlier run (task 14); docs
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
+
 ## Backlog (later)
 
 Not in version 1. See [features.md](../website/features.md).
@@ -670,7 +687,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 20: seed the vehicle catalogue on staging together with the garage, before the first build reads it: an empty catalogue raises no error, and the cached empty read stays for up to 30 days. Never change a catalogue id (task 17)
 - Tasks 21 and 23: the vehicle picker inside a real form. React 19 resets a form after its action, so the picker should return to its default on the form's `reset` event; a choice made before the page hydrates must not be lost; check a posted model and fuel with `resolveVehicle`; decide how to edit a saved vehicle whose model was later hidden; give `ChoiceGroup` and `NativeSelect` an error state like `CheckboxField`'s. Ask the owner first whether customers may say "my model isn't listed", and whether the garage also takes other brands such as Ford or Chevrolet (task 17)
 - Task 39: hide brands and models (`listed = false`) instead of deleting them, so saved vehicles keep their model; ids never change; saves call `updateTag("vehicle-catalogue")`; moving a model to another price group changes the price only for later bookings. Owner decision: today `readVehicleCatalogue()` leaves out a listed brand whose models are all hidden, which also takes it off the home page's brands row; keep that, or list every listed brand on the home row and drop empty brands only in the picker (task 17 code review)
-- For task 23: once `/book` is live, the FAQ's "How do I book a visit?" (`FaqPage.items.howToBook`) and the about page's "Visiting us" still say WhatsApp or call; add the booking page to both, and confirm the sample answer about booking from tomorrow up to 7 days ahead (`src/content/faq.ts`) as a real one (task 19)
+- For task 47: once `/book` is live, the FAQ's "How do I book a visit?" (`FaqPage.items.howToBook`) and the about page's "Visiting us" still say WhatsApp or call; add the booking page to both, and confirm the sample answer about booking from tomorrow up to 7 days ahead (`src/content/faq.ts`) as a real one (task 19)
 - For task 40: the about topics (`src/content/about.ts`) and FAQ answers (`src/content/faq.ts`, plus the confirmed ones in `FaqPage`) move to the database for the owner to edit; keep the "real, else samples under npm run dev, else nothing" rule (task 19)
 - For task 42: `/contact`, `/about` and `/faq` need titles of 50–60 characters, canonical URLs and Open Graph tags; `/faq` gets `FAQPage` JSON-LD built from the same confirmed list and `selectFaqItems()` the page uses. The five info pages' `metaTitle`s already end in `| {brand}`: a site-wide title template would double the brand, so drop it from them or use `title.absolute`. Keep `/privacy` and `/terms` out of the sitemap until task 43 (task 19)
 - For task 43: finalise `/privacy` and `/terms` with a lawyer: name the person who answers privacy questions (DPDP Rule 9) and a reply time (Rule 14: at most 90 days), name the SMS company and its retention, delete expired sessions and old login attempts on a schedule (or stop storing the session IP and user agent: Better Auth's `advanced.ipAddress.disableIpTracking` stops only the IP; the user agent is always written, `internal-adapter.mjs` in 1.7.14, so blanking it needs something else, perhaps a `databaseHooks.session.create.before` hook, not yet checked), settle the one-year log rule (Rule 8(3)) against deletion, decide whether the 18+ box is enough, offer the notice in Marathi or Hindi (Act s.5(3)), add a verified Data Protection Board link, and remove the draft line and `noindex` (task 19)

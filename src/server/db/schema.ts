@@ -36,6 +36,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+import type { BookingEventKind, BookingStatus, LinePriceStatus } from "@/domain/bookings";
 import type { ConsentPurpose } from "@/domain/consent";
 import type { Weekday } from "@/domain/opening-hours";
 import type { Role } from "@/domain/roles";
@@ -592,4 +593,144 @@ export const customerVehicles = pgTable(
     // A backstop: the data-access layer only ever writes parseRegistration's compact form.
     check("customer_vehicles_registration_compact", sql`${table.registrationNumber} ~ '^[A-Z0-9]{8,11}$'`),
   ],
+);
+
+// --- Bookings (task 23) ------------------------------------------------------
+//
+// A customer's booking: one vehicle, one slot, and the services chosen.
+// Only src/server/dal/bookings.ts writes them, always for the logged-in user,
+// in the same transaction that takes the slot's place (reserveSlot). A
+// booking keeps its own copy of the vehicle and of each service's name and
+// price, so a later change to the vehicle, the catalogue or the price list
+// never changes a booking that's already made.
+
+/** Every status, as in BOOKING_STATUSES (src/domain/bookings.ts; bookings-tables.test.ts checks they match). */
+export const bookingStatus = pgEnum("booking_status", ["booked"] as const satisfies readonly BookingStatus[]);
+
+/** Every history entry kind, as in BOOKING_EVENT_KINDS (bookings-tables.test.ts checks they match). */
+export const bookingEventKind = pgEnum("booking_event_kind", ["booked"] as const satisfies readonly BookingEventKind[]);
+
+/** How a line is priced, as in LINE_PRICE_STATUSES (bookings-tables.test.ts checks they match). */
+export const bookingLinePriceStatus = pgEnum("booking_line_price_status", [
+  "price",
+  "on-inspection",
+  "no-price",
+] as const satisfies readonly LinePriceStatus[]);
+
+/**
+ * One booking.
+ * - A user with bookings can't be deleted ("restrict"): task 43 decides what
+ *   deleting someone's data does to their bookings.
+ * - Removing the saved vehicle keeps the booking: vehicle_id becomes null
+ *   ("set null") and the copy below still says which vehicle it was.
+ * - A model or price group a booking points to can't be deleted ("restrict"):
+ *   the garage hides them instead (listed = false).
+ * - The same request token twice for one user is refused: a double tap on
+ *   "Confirm" makes one booking (the save looks the token up first; this is
+ *   the backstop).
+ */
+export const bookings = pgTable(
+  "bookings",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Six characters from BOOKING_CODE_ALPHABET, stored without the dash: "K7Q4MX" (shown "K7Q-4MX"). */
+    code: text("code").notNull().unique(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    /** The saved vehicle it was made for; null once the customer removes that vehicle. */
+    vehicleId: uuid("vehicle_id").references(() => customerVehicles.id, { onDelete: "set null" }),
+    // The vehicle, copied at booking time.
+    vehicleKind: vehicleKind("vehicle_kind").notNull(),
+    modelId: text("model_id")
+      .notNull()
+      .references(() => vehicleModels.id, { onDelete: "restrict" }),
+    fuel: fuel("fuel").notNull(),
+    /** The price group the lines were priced for. */
+    categoryId: text("category_id")
+      .notNull()
+      .references(() => vehicleCategories.id, { onDelete: "restrict" }),
+    /** The compact form from parseRegistration: "MH12AB1234". */
+    registrationNumber: text("registration_number").notNull(),
+    /** The slot: the moment the vehicle reaches the garage (UTC). */
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    status: bookingStatus("status").notNull().default("booked"),
+    /** True when any line has no amount (after inspection, or no price set yet). */
+    isEstimate: boolean("is_estimate").notNull(),
+    /** The sum of the priced lines, in paise; null when no line has a price. */
+    totalPaise: integer("total_paise"),
+    /** A random uuid per run of the booking page (see above). */
+    requestToken: uuid("request_token").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("bookings_user_request_token").on(table.userId, table.requestToken),
+    // Backstops: the save only ever writes makeBookingCode's and parseRegistration's forms.
+    check("bookings_code_format", sql`${table.code} ~ '^[A-HJKMNP-Z2-9]{6}$'`),
+    check("bookings_registration_compact", sql`${table.registrationNumber} ~ '^[A-Z0-9]{8,11}$'`),
+    check("bookings_total_positive", sql`${table.totalPaise} > 0`),
+    // How full a slot is, and how many future bookings one customer holds.
+    index("bookings_starts_at_index").on(table.startsAt),
+    index("bookings_user_id_starts_at_index").on(table.userId, table.startsAt),
+  ],
+);
+
+/**
+ * The lines of a booking: one package, or one or more services, each with a
+ * copy of its name and its price at booking time. Deleting a booking deletes
+ * its lines ("cascade"); a service a line points to can't be deleted
+ * ("restrict"): the garage hides it instead.
+ */
+export const bookingItems = pgTable(
+  "booking_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    serviceId: text("service_id")
+      .notNull()
+      .references(() => services.id, { onDelete: "restrict" }),
+    serviceKind: serviceKind("service_kind").notNull(),
+    /** The service's name when it was booked. */
+    name: jsonb("name").$type<LocalizedText>().notNull(),
+    priceStatus: bookingLinePriceStatus("price_status").notNull(),
+    /** In paise, only for "price"; null for the other two. */
+    pricePaise: integer("price_paise"),
+    /** 0, 1, 2...: the order the customer chose them in. */
+    position: integer("position").notNull(),
+  },
+  (table) => [
+    // NULL passes a CHECK, so a line without an amount is allowed here; the
+    // next CHECK ties the amount to the status.
+    check("booking_items_price_positive", sql`${table.pricePaise} > 0`),
+    check(
+      "booking_items_price_matches_status",
+      sql`(${table.priceStatus} = 'price') = (${table.pricePaise} is not null)`,
+    ),
+    index("booking_items_booking_id_index").on(table.bookingId),
+  ],
+);
+
+/**
+ * A booking's history: who did what, and when. Each booking starts with one
+ * "booked" entry; tasks 25–27 add cancelling, confirming and moving. Deleting
+ * a booking deletes its history ("cascade"); a user named in one can't be
+ * deleted ("restrict"), like the booking itself.
+ */
+export const bookingEvents = pgTable(
+  "booking_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    kind: bookingEventKind("kind").notNull(),
+    /** Who did it: the customer for "booked"; staff from task 26 on. */
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index("booking_events_booking_id_index").on(table.bookingId)],
 );

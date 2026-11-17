@@ -1,6 +1,6 @@
 # 21_customer_vehicles: a customer's name and vehicles, kept to their owner
 
-> **Branch:** `21_customer_vehicles` · **Date:** 2026-10-29 · **Status:** In progress
+> **Branch:** `21_customer_vehicles` · **Date:** 2026-10-29 · **Status:** Done (merged through PR #21 on 2026-11-11)
 
 ## In one minute
 
