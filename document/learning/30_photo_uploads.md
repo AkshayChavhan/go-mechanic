@@ -8,7 +8,7 @@ A logged-in customer can now attach up to 6 photos to a request. The phone shrin
 
 Full details: [the plan](../plans/2026-11-13-1200-feat-photo-uploads-plan.md) (R1–R7, KTD1–KTD9, units U1–U10) and the "Photos" block in `CLAUDE.md`.
 
-**Built in parallel.** Three Claude sessions worked at once, each in its own folder (git worktree). This was Session 2, in `go-mechanic-s2`. There has been no merge conflict so far: `origin/main` hadn't moved when it was checked before the privacy-notice change. The migration is `0006_photo_uploads`.
+**Built in parallel.** Three Claude sessions worked at once, each in its own folder (git worktree). This was Session 2, in `go-mechanic-s2`. Task 23 (Session 1) merged first, on 2026-11-17, with its own migration `0006_bookings`. So this branch merged `main` afterwards, dropped its first migration and generated it again as `0007_photo_uploads` (same SQL, never renamed), and moved the privacy notice's version to `2026-11-18` (both branches had used `2026-11-13`).
 
 ## Why: the problem we solved
 
@@ -39,7 +39,7 @@ The owner decided on 2026-11-13:
 | `src/server/providers/photos/supabase.ts` (+ test) | Added | Supabase Storage through its REST API with plain `fetch` (no new npm package) |
 | `src/server/providers/photos/index.ts` | Added | `photoStorage()` picks the provider from the settings |
 | `src/app/api/photos/upload/route.ts`, `view/route.ts` | Added | The fake's two addresses (PUT and GET). They answer 404 when the fake isn't in use |
-| `src/server/db/schema.ts`, `migrations/0006_photo_uploads.sql`, `meta/` | Changed / Added | Tables `photo_sets` and `photos` |
+| `src/server/db/schema.ts`, `migrations/0007_photo_uploads.sql`, `meta/` | Changed / Added | Tables `photo_sets` and `photos` |
 | `src/server/db/photos-tables.test.ts` | Added | Tests the CHECKs, the unique key and the cascades |
 | `src/server/dal/photos.ts` (+ test) | Added | `startPhotoUpload`, `finishPhotoUpload`, `photoViewUrls`, `deleteOldPhotos`, `deletePhotosOfUser`, each with its access check |
 | `src/server/actions/photos.ts` (+ test) | Added | Server Actions `startPhotos` and `finishPhotos`: the upload handshake |
@@ -62,7 +62,7 @@ The owner decided on 2026-11-13:
 5. **Tables (U4).** First bring in anything new from `main`, then generate the migration:
    ```bash
    git fetch origin && git merge origin/main
-   npm run db:generate -- --name=photo_uploads   # writes 0006_photo_uploads.sql + meta/
+   npm run db:generate -- --name=photo_uploads   # first wrote 0006_photo_uploads.sql; after task 23 merged, regenerated as 0007_photo_uploads.sql + meta/
    ```
    `--name` sets the part of the file name after the number.
 6. **Data access (U5).** Every function checks who is asking on its first line. A customer can only touch their own sets. Anyone else, and an id that isn't a uuid, gets `not-found`. The 6-photo limit counts pending photos too. It's checked inside a transaction that locks the set's row, so two uploads at once can't both squeeze in.
@@ -149,7 +149,7 @@ After the fixes: `npm run check` passed (128 files, 1808 tests), `npm run test:e
 - **Fixed (must fix):** the same orphan-file gap one level up. A photo added to an open set just before its 30-day cleanup got a link that outlived the set. A set in its last 24 hours now answers `not-found` (new test beside the 29- and 31-day cases).
 - **Fixed (must fix):** step 7 above still described the old "delete the row" behaviour.
 - **Fixed (suggestions):** a stale comment in the uploader; the fake now refuses an upload with no stated length (411) before reading it; the task 31 backlog note now says the notice's "who sees them" must change; the tracker link text.
-- **Not fixable on this branch alone (must fix, coordination):** Session 1's unmerged `23_booking_flow` also adds a migration numbered `0006` and also sets `LOGIN_NOTICE_VERSION` to `2026-11-13`. Whichever branch merges second must merge `main`, regenerate its migration as `0007` (never rename), move the notice version (for example to `2026-11-13.2`) with its own fingerprint, and re-run the checks. The owner decides the order; this is what happens to task 30 if it goes second.
+- **Not fixable on this branch alone (must fix, coordination):** Session 1's unmerged `23_booking_flow` also adds a migration numbered `0006` and also sets `LOGIN_NOTICE_VERSION` to `2026-11-13`. Whichever branch merges second must merge `main`, regenerate its migration as `0007` (never rename), move the notice version (for example to `2026-11-13.2`) with its own fingerprint, and re-run the checks. The owner decides the order; this is what happens to task 30 if it goes second. **Done on 2026-11-18:** task 23 merged first, so this branch merged `main`, regenerated its migration as `0007_photo_uploads` (the SQL is byte-for-byte the old `0006`), and moved the notice to `2026-11-18` (a new day, so no `.2`) with its own pinned fingerprint; `main`'s `2026-11-13` pin is kept.
 
 After these fixes `npm run check` passed again (128 files, 1810 tests).
 

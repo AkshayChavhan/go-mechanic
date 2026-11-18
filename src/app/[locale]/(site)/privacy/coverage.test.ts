@@ -54,6 +54,32 @@ const TABLES: Record<string, Personal | null> = {
       "updated_at",
     ],
   },
+  // A customer's bookings (task 23): the booking with its vehicle copy, its lines, and its history.
+  bookings: {
+    item: "bookings",
+    columns: [
+      "id",
+      "code",
+      "user_id",
+      "vehicle_id",
+      "vehicle_kind",
+      "model_id",
+      "fuel",
+      "category_id",
+      "registration_number",
+      "starts_at",
+      "status",
+      "is_estimate",
+      "total_paise",
+      "request_token",
+      "created_at",
+    ],
+  },
+  booking_items: {
+    item: "bookings",
+    columns: ["id", "booking_id", "service_id", "service_kind", "name", "price_status", "price_paise", "position"],
+  },
+  booking_events: { item: "bookings", columns: ["id", "booking_id", "kind", "actor_user_id", "created_at"] },
   // Photos a customer sends (task 30): the set they belong to, and each file's record.
   photo_sets: { item: "photos", columns: ["id", "user_id", "created_at", "closed_at"] },
   photos: {

@@ -47,8 +47,15 @@
     {
       "idx": 6,
       "version": "7",
-      "when": 1794546106023,
-      "tag": "0006_photo_uploads",
+      "when": 1794412454008,
+      "tag": "0006_bookings",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795008099289,
+      "tag": "0007_photo_uploads",
       "breakpoints": true
     }
   ]
