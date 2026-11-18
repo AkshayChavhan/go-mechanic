@@ -26,6 +26,7 @@ import { MobileMenuContent, SiteHeader } from "@/components/site/site-header";
 import { StatTile } from "@/components/site/stat-tile";
 import { VehicleIllustration } from "@/components/site/vehicle-illustration";
 import { VehiclePicker } from "@/components/site/vehicle-picker";
+import { photoUploaderLabels } from "@/components/site/photo-uploader-labels";
 import { vehiclePickerLabels } from "@/components/site/vehicle-picker-labels";
 import { VisualSlot } from "@/components/site/visual-slot";
 import { Wordmark } from "@/components/site/wordmark";
@@ -59,6 +60,7 @@ import { readVehicleCatalogue } from "@/server/dal/vehicles";
 import { ColorPair } from "./_components/color-pair";
 import { FontPreview, FontToggle } from "./_components/font-switch";
 import { MotionDemo } from "./_components/motion-demo";
+import { PhotoUploaderSample } from "./_components/photo-uploader-sample";
 
 // /dev/design: the whole design system on one page, so the owner can judge it
 // and later tasks can copy from it. Development only: devOnly() makes it a
@@ -283,6 +285,7 @@ export default async function DesignPage() {
   // The real catalogue (the draft models, task 17), for the picker sample.
   const catalogue = await readVehicleCatalogue();
   const pickerLabels = await vehiclePickerLabels();
+  const photoLabels = await photoUploaderLabels();
   const tMyVehicles = await getTranslations("MyVehicles");
   // The seeded services and packages, for the tile, package and price samples.
   const allServices = await readServices();
@@ -792,6 +795,15 @@ export default async function DesignPage() {
                     error={tMyVehicles("errors.vehicle-missing")}
                   />
                 )}
+              </div>
+            </Block>
+
+            <Block
+              title="Photo uploader"
+              description="Up to 6 photos (task 30). Each is resized in the browser to 1600px on its long side and saved as a new JPEG, which drops its location and camera data; only that copy is sent. Here the upload is a stand-in: nothing leaves the browser. Tasks 31 and 32 put it on real pages."
+            >
+              <div data-sample="photo-uploader" className="max-w-xl">
+                <PhotoUploaderSample labels={photoLabels} />
               </div>
             </Block>
 

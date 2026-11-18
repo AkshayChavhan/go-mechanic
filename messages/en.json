@@ -194,6 +194,13 @@
         "who": "The garage, and the company that hosts the database.",
         "howLong": "For now we keep every booking, even after you remove the vehicle it was for. Nothing deletes bookings yet; we'll say here how long we keep them."
       },
+      "photos": {
+        "title": "Photos you send us",
+        "what": "Photos of your vehicle that you add on the website, up to {max} at a time. Before a photo is sent, the website makes it smaller (at most {longSide} pixels on its long side) and saves a new copy, which leaves out the location, time and camera details a phone keeps inside a photo.",
+        "why": "So the garage can see the problem and tell you what the work will involve.",
+        "who": "You, the garage's owner and managers, and the company that stores the photos and hosts the database.",
+        "howLong": "Photos that belong to an estimate or a job are deleted {closedDays} days after it is closed. Other photos are deleted {openDays} days after the first photo of that group was sent, and a photo whose upload didn't finish after {pendingHours} hours. These deletions happen the next time anyone sends a photo, not on a timer. Deleting your login deletes your photos too."
+      },
       "consent": {
         "title": "Your agreement",
         "what": "That you said you're 18 or older and agreed to how we use your number, with the time, the language of the page and the version of this notice you were shown.",
@@ -489,6 +496,29 @@
       "resultsTitle": "Prices for {brand} {model}, {fuel}",
       "notOffered": "Not for this vehicle",
       "callForPrice": "Call or WhatsApp us for a price"
+    }
+  },
+  "Photos": {
+    "uploader": {
+      "choose": "Add photos",
+      "hint": "Up to {max} photos. We make them smaller and remove their location before they're sent.",
+      "tooMany": "You can add {max} photos here, so we kept the first {kept}.",
+      "photoAlt": "Photo {n}",
+      "remove": "Remove photo {n}",
+      "resizing": "Getting it ready…",
+      "unreadable": "We couldn't open this file as a photo.",
+      "upload": "Upload photos",
+      "uploading": "Uploading…",
+      "stored": "Uploaded",
+      "failed": "Not uploaded. Press Upload photos to try again.",
+      "done": "Photos uploaded: {count}.",
+      "problems": {
+        "bad-count": "Choose at least one photo.",
+        "too-many-photos": "This already has as many photos as it can take.",
+        "too-many-sets": "You've sent a lot of photos today. Please try again tomorrow, or send them on WhatsApp.",
+        "not-found": "These photos can't be added to any more. Please start again.",
+        "offline": "We couldn't reach our server. Check your connection and try again."
+      }
     }
   }
 }

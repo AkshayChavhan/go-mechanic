@@ -16,6 +16,8 @@ const EXPECTED: Record<Permission, readonly Role[]> = {
   "content.edit": ["manager", "owner"],
   "team.manage": ["owner"],
   "reports.view": ["manager", "owner"],
+  "photos.view": ["manager", "owner"],
+  "customers.delete": ["owner"],
 };
 
 describe("can (who may do what)", () => {

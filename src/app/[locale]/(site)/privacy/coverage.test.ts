@@ -80,6 +80,12 @@ const TABLES: Record<string, Personal | null> = {
     columns: ["id", "booking_id", "service_id", "service_kind", "name", "price_status", "price_paise", "position"],
   },
   booking_events: { item: "bookings", columns: ["id", "booking_id", "kind", "actor_user_id", "created_at"] },
+  // Photos a customer sends (task 30): the set they belong to, and each file's record.
+  photo_sets: { item: "photos", columns: ["id", "user_id", "created_at", "closed_at"] },
+  photos: {
+    item: "photos",
+    columns: ["id", "set_id", "storage_key", "status", "bytes", "created_at", "stored_at"],
+  },
   // No personal data in production.
   accounts: null, // Better Auth's sign-in methods: phone login never writes here
   dev_messages: null, // the fake SMS provider's outbox. Production refuses that provider; staging uses it, with testers' numbers (task 20)

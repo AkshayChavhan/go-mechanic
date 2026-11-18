@@ -1,6 +1,6 @@
 # 18_services_pricing: service pages, packages, and prices that stay off the live site
 
-> **Branch:** `18_services_pricing` · **Date:** 2026-10-29 · **Status:** In progress
+> **Branch:** `18_services_pricing` · **Date:** 2026-10-29 · **Status:** Done
 
 ## In one minute
 

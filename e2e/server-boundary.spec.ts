@@ -38,6 +38,7 @@ const MARKERS = [
   "sendPhoneNumberOTP",
   "vehicle_models",
   "service_prices",
+  "photo_sets",
   "customer_vehicles",
 ];
 

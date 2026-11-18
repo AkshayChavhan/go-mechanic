@@ -51,6 +51,7 @@ vi.mock("@/server/env", async (importOriginal) => ({
     smsProvider: "fake",
     e2eOutboxFile: undefined,
     ownerPhoneNumber: settings.ownerPhoneNumber,
+    photos: { storage: "fake" },
   }),
 }));
 vi.mock("next-intl/server", async () => {
