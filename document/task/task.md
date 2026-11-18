@@ -39,7 +39,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | To do |  |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
-| 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | In progress | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
+| 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Mechanic job updates; customer tracking timeline | To do |  |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; admin inbox | To do |  |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
@@ -460,7 +460,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds
 - [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 31_job_timeline
 
