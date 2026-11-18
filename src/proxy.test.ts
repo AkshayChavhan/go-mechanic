@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 // Next.js's own check of a proxy matcher, the same code the build uses.
-// The bundled docs call it unstable_doesProxyMatch; in Next.js 16.4.3 it is
+// The bundled docs call it unstable_doesProxyMatch; in Next.js 16.4.6 it is
 // still exported under its old name, unstable_doesMiddlewareMatch.
 import { unstable_doesMiddlewareMatch } from "next/experimental/testing/server";
 import { describe, expect, test } from "vitest";

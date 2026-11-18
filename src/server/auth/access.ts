@@ -69,7 +69,7 @@ export async function requireUser(locale: Locale): Promise<CurrentUser> {
  * The logged-in user, who must have `permission`. Logged out: the redirect
  * to /login. Logged in without the permission: the site's 404 page, so a
  * staff page doesn't even admit it exists. (Next.js's forbidden() would say
- * 403, but it's still experimental in Next.js 16.4.3; task 26 revisits it.)
+ * 403, but it's still experimental in Next.js 16.4.6; task 26 revisits it.)
  */
 export async function requirePermission(locale: Locale, permission: Permission): Promise<CurrentUser> {
   const user = await requireUser(locale);
