@@ -62,13 +62,13 @@ Results on 2026-11-18:
 
 ## Not done here
 
-`npm audit` still lists high findings, all one `picomatch` advisory (GHSA-fc5q-39xc-vjpf) that reaches us only through dev tools: vitest, vite, `@parcel/watcher` and the shadcn CLI. Nothing a visitor downloads is affected, and the fixes need major versions. It's in the backlog of `document/task/task.md`. Don't run `npm audit fix --force`.
+`npm audit` still lists 29 findings (2026-11-18), all in tools that never ship to visitors. The high ones are picomatch (GHSA-fc5q-39xc-vjpf), through vitest, ESLint, the shadcn CLI and next-intl's file watcher. The moderate ones are hono and `@hono/node-server` (through the shadcn CLI's MCP library), minimatch (through ESLint and the shadcn CLI) and esbuild (through drizzle-kit). The fixes need major versions. It's in the backlog of `document/task/task.md`. Don't run `npm audit fix --force`.
 
 ## Reviews
 
 - `ce-code-review`: skipped (mechanical diff). The change is a dependency version bump plus comment and doc edits.
-- `code-reviewer`: pending.
-- Compound step: pending.
+- `code-reviewer`: "Ready to merge", no must-fix items. Its two suggestions are applied: a lesson still said the repo pins 16.4.3, and the docs' `npm audit` summary had gone stale (now described by advisory and path, in `CLAUDE.md` too).
+- Compound step: skipped, no new lesson. What to check after a Next.js upgrade is already in `CLAUDE.md` (the helper-process guard, the bundled docs, `AGENTS.md`), and this task's steps in `document/task/task.md` show how it went. The one-off finding, that JPEGs aren't re-compressed, belongs to this version's notes, not to a reusable rule.
 
 ## Exercise
 

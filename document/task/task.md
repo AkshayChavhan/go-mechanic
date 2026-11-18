@@ -666,8 +666,8 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [x] `npm run check`, `npm run build` (`○ /en` still prerendered), `npm run test:e2e` and `npm run test:design`; `npm audit` no longer lists `next`
 - [x] Update `CLAUDE.md` and `readme.md` where they name 16.4.3 (`readme.md` names no version), and the bundled-docs lesson if a path moved
 - [x] Write the learning doc: [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md)
-- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review: `ce-code-review` skipped (mechanical diff: a pinned patch bump plus comment and doc edits); `code-reviewer` "Ready to merge", its two suggestions applied
+- [x] Compound: no new lesson (the learning doc says why)
 - [ ] Merge into `main`
 
 ## Backlog (later)
@@ -737,7 +737,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 32: put `PhotoUploader` on the estimate request form (`name` posts the set id), check that set belongs to the customer when the request is saved, and close it when the estimate closes (task 30)
 - Tasks 31 and 32: wrap `PhotoUploader` in `FreshOnEachVisit`, keyed by the user's id, so the next customer on a shared phone never sees the last one's photos; and don't let the form be sent while photos are still uploading or waiting to be sent (the hidden set-id field appears as soon as `start` answers) (task 30 review)
 - Task 43: call `deletePhotosOfUser(userId)` before deleting a user: the rows go with the user, the files don't. The privacy notice already says deleting a login deletes its photos (task 30)
-- Dev tools only: `npm audit` lists 12 high findings, all one `picomatch` ReDoS advisory (GHSA-fc5q-39xc-vjpf) reached through vitest/vite, `@parcel/watcher` and the shadcn CLI. The fixes need major versions (vitest, shadcn), and none of it ships to visitors. Plan a dev-tooling update task; don't run `npm audit fix --force` (found in task 48)
+- Dev tools only: `npm audit` lists picomatch (GHSA-fc5q-39xc-vjpf, high) through vitest, ESLint, the shadcn CLI and next-intl's file watcher, plus moderate hono and `@hono/node-server` (the shadcn CLI's MCP library), minimatch (ESLint, the shadcn CLI) and esbuild (drizzle-kit). None of it ships to visitors, and the fixes need major versions (vitest, shadcn). Plan a dev-tooling update task; don't run `npm audit fix --force` (found in task 48)
 
 ## How to add a task
 
