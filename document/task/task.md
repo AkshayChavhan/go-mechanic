@@ -56,8 +56,8 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 44 | `44_real_sms_otp` | Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid) | To do |  |
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
-| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | To do |  |
-| 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | In progress | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
+| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | In progress |  |
+| 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | Done | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
 
 ## Task steps
 
@@ -643,7 +643,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 The `/book` page on top of task 23's booking engine: units U6–U10 of [the booking flow plan](../plans/2026-11-11-2016-feat-booking-flow-plan.md). Start it only after task 23 is merged.
 
-- [ ] Create branch `47_book_wizard`
+- [x] Create branch `47_book_wizard`
 - [ ] U6: the `(book)` route group and the shell without the phone action bar (no gap where it was)
 - [ ] U7: the booking actions (`bookingLoginStep`, `confirmBooking`, `notMe`) and their state; the inline OTP reuses the login service, its consent snapshot and the e2e outbox file (task 15). Show a `duplicate` answer as "You already booked this vehicle for this time (code K7Q-4MX)", not as a plain success: it also comes back when the same vehicle and slot are confirmed again with other services; changing services belongs to task 25 (code-reviewer in task 23)
 - [ ] U8: the wizard island (four steps, confirm, done)
@@ -668,7 +668,7 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [x] Write the learning doc: [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md)
 - [x] Review: `ce-code-review` skipped (mechanical diff: a pinned patch bump plus comment and doc edits); `code-reviewer` "Ready to merge", its two suggestions applied
 - [x] Compound: no new lesson (the learning doc says why)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #25 on GitHub
 
 ## Backlog (later)
 
