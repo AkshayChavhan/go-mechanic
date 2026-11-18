@@ -1,6 +1,6 @@
 # 23_booking_flow: the booking engine, one save that can't overbook
 
-> **Branch:** `23_booking_flow` · **Date:** 2026-11-13 · **Status:** In progress (ready for review)
+> **Branch:** `23_booking_flow` · **Date:** 2026-11-13 · **Status:** Done (merged through PR #24 on 2026-11-17)
 
 ## In one minute
 
