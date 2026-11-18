@@ -57,7 +57,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
 | 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | To do |  |
-| 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | In progress |  |
+| 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | In progress | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
 
 ## Task steps
 
@@ -659,13 +659,13 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 `npm audit` and `next build` flag Next.js 16.4.3. 16.4.5 fixes seven advisories (all moderate), among them two cache leaks that match this app: `'use cache'` reads with a root param (`[locale]`) (GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8). 16.4.6 is the latest 16.4 patch.
 
 - [x] Create branch `48_nextjs_security_upgrade`
-- [ ] Read the release notes for 16.4.4, 16.4.5 and 16.4.6 and each advisory, and note which ones touch this app (`'use cache'` with `[locale]`, Cache Components fallback shells, Edge routes: none, image optimization, the photo route handler)
-- [ ] Bump `next` and `eslint-config-next` to 16.4.6 in `package.json` (exact versions, as today) with `npm install`; commit `package.json` and `package-lock.json` together. No other package changes
-- [ ] Check 16.4.6's "compress route handler responses" against `src/app/api/photos/` (the fake storage's photo route): JPEG responses must not be re-compressed or lose their headers; extend `e2e/photos*.spec.ts` if a check is missing
-- [ ] Check the things `CLAUDE.md` says to re-check after a Next.js upgrade: the use-cache helper-process guard (`isNextHelperProcess()`, it reads Next.js's `jest-worker/processChild.js`), the bundled docs a lesson cites, the `AGENTS.md` block `next dev` writes
-- [ ] `npm run check`, `npm run build` (`○ /en` still prerendered), `npm run test:e2e` and `npm run test:design`; `npm audit` no longer lists `next`
-- [ ] Update `CLAUDE.md` and `readme.md` where they name 16.4.3, and the bundled-docs lesson if a path moved
-- [ ] Write the learning doc
+- [x] Read the release notes for 16.4.4, 16.4.5 and 16.4.6 and each advisory, and note which ones touch this app (`'use cache'` with `[locale]`, Cache Components fallback shells, Edge routes: none, image optimization, the photo route handler)
+- [x] Bump `next` and `eslint-config-next` to 16.4.6 in `package.json` (exact versions, as today) with `npm install`; commit `package.json` and `package-lock.json` together. No other package changes
+- [x] Check 16.4.6's "compress route handler responses" against `src/app/api/photos/` (the fake storage's photo route): JPEG responses must not be re-compressed or lose their headers; extend the photo tests if a check is missing. Checked: Next.js compresses through its bundled `compression` package, which marks `image/jpeg` as not compressible, so photos are sent as before; no new test
+- [x] Check the things `CLAUDE.md` says to re-check after a Next.js upgrade: the use-cache helper-process guard (`isNextHelperProcess()`, it reads Next.js's `jest-worker/processChild.js`), the bundled docs a lesson cites, the `AGENTS.md` block `next dev` writes
+- [x] `npm run check`, `npm run build` (`○ /en` still prerendered), `npm run test:e2e` and `npm run test:design`; `npm audit` no longer lists `next`
+- [x] Update `CLAUDE.md` and `readme.md` where they name 16.4.3 (`readme.md` names no version), and the bundled-docs lesson if a path moved
+- [x] Write the learning doc: [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md)
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
