@@ -32,7 +32,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 20 | `20_staging_deploy` | Staging on Vercel + Supabase (Mumbai) with fake providers | To do |  |
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | Done | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
-| 23 | `23_booking_flow` | Booking engine: rules, tables, `createMyBooking`, one login per phone (the page is task 47) | In progress | [23_booking_flow.md](../learning/23_booking_flow.md) |
+| 23 | `23_booking_flow` | Booking engine: rules, tables, `createMyBooking`, one login per phone (the page is task 47) | Done | [23_booking_flow.md](../learning/23_booking_flow.md) |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | Admin navigation by role, bookings board, phone and walk-in bookings | To do |  |
@@ -57,6 +57,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
 | 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | To do |  |
+| 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | In progress | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
 
 ## Task steps
 
@@ -387,7 +388,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc: [23_booking_flow.md](../learning/23_booking_flow.md)
 - [x] Review with `ce-code-review` ("Ready with fixes": 2 findings, both fixed) and `code-reviewer` ("Ready to merge", suggestions applied or recorded)
 - [x] Compound: [server-action-login-invisible-until-next-request.md](../solutions/conventions/server-action-login-invisible-until-next-request.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #24 on GitHub
 
 ### 24_pickup_drop
 
@@ -653,6 +654,22 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
+### 48_nextjs_security_upgrade
+
+`npm audit` and `next build` flag Next.js 16.4.3. 16.4.5 fixes seven advisories (all moderate), among them two cache leaks that match this app: `'use cache'` reads with a root param (`[locale]`) (GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8). 16.4.6 is the latest 16.4 patch.
+
+- [x] Create branch `48_nextjs_security_upgrade`
+- [x] Read the release notes for 16.4.4, 16.4.5 and 16.4.6 and each advisory, and note which ones touch this app (`'use cache'` with `[locale]`, Cache Components fallback shells, Edge routes: none, image optimization, the photo route handler)
+- [x] Bump `next` and `eslint-config-next` to 16.4.6 in `package.json` (exact versions, as today) with `npm install`; commit `package.json` and `package-lock.json` together. No other package changes
+- [x] Check 16.4.6's "compress route handler responses" against `src/app/api/photos/` (the fake storage's photo route): JPEG responses must not be re-compressed or lose their headers; extend the photo tests if a check is missing. Checked: Next.js compresses through its bundled `compression` package, which marks `image/jpeg` as not compressible, so photos are sent as before; no new test
+- [x] Check the things `CLAUDE.md` says to re-check after a Next.js upgrade: the use-cache helper-process guard (`isNextHelperProcess()`, it reads Next.js's `jest-worker/processChild.js`), the bundled docs a lesson cites, the `AGENTS.md` block `next dev` writes
+- [x] `npm run check`, `npm run build` (`○ /en` still prerendered), `npm run test:e2e` and `npm run test:design`; `npm audit` no longer lists `next`
+- [x] Update `CLAUDE.md` and `readme.md` where they name 16.4.3 (`readme.md` names no version), and the bundled-docs lesson if a path moved
+- [x] Write the learning doc: [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md)
+- [x] Review: `ce-code-review` skipped (mechanical diff: a pinned patch bump plus comment and doc edits); `code-reviewer` "Ready to merge", its two suggestions applied
+- [x] Compound: no new lesson (the learning doc says why)
+- [ ] Merge into `main`
+
 ## Backlog (later)
 
 Not in version 1. See [features.md](../website/features.md).
@@ -720,6 +737,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 32: put `PhotoUploader` on the estimate request form (`name` posts the set id), check that set belongs to the customer when the request is saved, and close it when the estimate closes (task 30)
 - Tasks 31 and 32: wrap `PhotoUploader` in `FreshOnEachVisit`, keyed by the user's id, so the next customer on a shared phone never sees the last one's photos; and don't let the form be sent while photos are still uploading or waiting to be sent (the hidden set-id field appears as soon as `start` answers) (task 30 review)
 - Task 43: call `deletePhotosOfUser(userId)` before deleting a user: the rows go with the user, the files don't. The privacy notice already says deleting a login deletes its photos (task 30)
+- Dev tools only: `npm audit` lists picomatch (GHSA-fc5q-39xc-vjpf, high) through vitest, ESLint, the shadcn CLI and next-intl's file watcher, plus moderate hono and `@hono/node-server` (the shadcn CLI's MCP library), minimatch (ESLint, the shadcn CLI) and esbuild (drizzle-kit). None of it ships to visitors, and the fixes need major versions (vitest, shadcn). Plan a dev-tooling update task; don't run `npm audit fix --force` (found in task 48)
 
 ## How to add a task
 
