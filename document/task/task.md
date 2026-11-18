@@ -33,7 +33,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | Done | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | Booking engine: rules, tables, `createMyBooking`, one login per phone (the page is task 47) | In progress | [23_booking_flow.md](../learning/23_booking_flow.md) |
-| 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
+| 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | In progress |  |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | Admin navigation by role, bookings board, phone and walk-in bookings | To do |  |
 | 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | To do |  |
@@ -391,7 +391,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 24_pickup_drop
 
-- [ ] Create branch `24_pickup_drop`
+- [x] Create branch `24_pickup_drop`
 - [ ] Plan with `ce-plan`
 - [ ] Pickup and drop by pincode, with fee
 - [ ] Write the learning doc
