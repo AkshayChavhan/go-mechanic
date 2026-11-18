@@ -57,6 +57,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
 | 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | To do |  |
+| 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | In progress |  |
 
 ## Task steps
 
@@ -653,6 +654,22 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
+### 48_nextjs_security_upgrade
+
+`npm audit` and `next build` flag Next.js 16.4.3. 16.4.5 fixes seven advisories (all moderate), among them two cache leaks that match this app: `'use cache'` reads with a root param (`[locale]`) (GHSA-mfr8-8qww-v76h, GHSA-vc7v-qv4w-wrv8). 16.4.6 is the latest 16.4 patch.
+
+- [x] Create branch `48_nextjs_security_upgrade`
+- [ ] Read the release notes for 16.4.4, 16.4.5 and 16.4.6 and each advisory, and note which ones touch this app (`'use cache'` with `[locale]`, Cache Components fallback shells, Edge routes: none, image optimization, the photo route handler)
+- [ ] Bump `next` and `eslint-config-next` to 16.4.6 in `package.json` (exact versions, as today) with `npm install`; commit `package.json` and `package-lock.json` together. No other package changes
+- [ ] Check 16.4.6's "compress route handler responses" against `src/app/api/photos/` (the fake storage's photo route): JPEG responses must not be re-compressed or lose their headers; extend `e2e/photos*.spec.ts` if a check is missing
+- [ ] Check the things `CLAUDE.md` says to re-check after a Next.js upgrade: the use-cache helper-process guard (`isNextHelperProcess()`, it reads Next.js's `jest-worker/processChild.js`), the bundled docs a lesson cites, the `AGENTS.md` block `next dev` writes
+- [ ] `npm run check`, `npm run build` (`○ /en` still prerendered), `npm run test:e2e` and `npm run test:design`; `npm audit` no longer lists `next`
+- [ ] Update `CLAUDE.md` and `readme.md` where they name 16.4.3, and the bundled-docs lesson if a path moved
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
+
 ## Backlog (later)
 
 Not in version 1. See [features.md](../website/features.md).
@@ -720,6 +737,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 32: put `PhotoUploader` on the estimate request form (`name` posts the set id), check that set belongs to the customer when the request is saved, and close it when the estimate closes (task 30)
 - Tasks 31 and 32: wrap `PhotoUploader` in `FreshOnEachVisit`, keyed by the user's id, so the next customer on a shared phone never sees the last one's photos; and don't let the form be sent while photos are still uploading or waiting to be sent (the hidden set-id field appears as soon as `start` answers) (task 30 review)
 - Task 43: call `deletePhotosOfUser(userId)` before deleting a user: the rows go with the user, the files don't. The privacy notice already says deleting a login deletes its photos (task 30)
+- Dev tools only: `npm audit` lists 12 high findings, all one `picomatch` ReDoS advisory (GHSA-fc5q-39xc-vjpf) reached through vitest/vite, `@parcel/watcher` and the shadcn CLI. The fixes need major versions (vitest, shadcn), and none of it ships to visitors. Plan a dev-tooling update task; don't run `npm audit fix --force` (found in task 48)
 
 ## How to add a task
 
