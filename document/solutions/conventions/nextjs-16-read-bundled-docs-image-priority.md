@@ -20,7 +20,7 @@ tags: [nextjs-16, next-image, lcp, deprecated-api, fetchpriority, bundled-docs, 
 
 ## Context
 
-This repo pins Next.js 16.4.3, which is newer than the model's training data. Code or advice written from memory can use an API that has changed.
+This repo pins Next.js 16.4.6 (16.4.3 until task 48), which is newer than the model's training data. Code or advice written from memory can use an API that has changed.
 
 It happened in task 08 (branch `08_seo_reviewer`). The `seo-reviewer` agent's checklist was written from memory and said the hero image should load "with priority". In its first end-to-end run, the agent told the owner to use `next/image` "with `width`, `height`, `sizes` and `priority`". The `code-reviewer` agent read the docs bundled with Next.js and flagged it: Next.js 16 deprecated `priority`. Commit `f50fe8b` on the task branch (not yet merged into `main` when this was written; the `--no-ff` merge keeps the SHA) fixed `.claude/agents/seo-reviewer.md` and the master plan. A re-run then recommended `loading="eager"` and `fetchPriority="high"`. See `document/learning/08_seo_reviewer.md`, steps 8 and 11.
 
@@ -76,5 +76,5 @@ The `seo-reviewer` checklist rule, fixed in commit `f50fe8b`:
 - `.claude/agents/seo-reviewer.md`: the "read the Next.js docs" rule and the image rule (updated after this lesson: `loading="eager"`, since `fetchPriority` alone still lazy-loads)
 - `document/plans/2026-10-24-gomechanic-master-plan.md`: line 84 (Core Web Vitals rule)
 - `document/solutions/conventions/run-commands-before-documenting-output.md`: the same idea for command output; write from the real source, not memory
-- Next.js Image reference (online, may be newer than 16.4.3): https://nextjs.org/docs/app/api-reference/components/image
+- Next.js Image reference (online, may be newer than 16.4.6): https://nextjs.org/docs/app/api-reference/components/image
 - MDN `fetchPriority`: https://developer.mozilla.org/docs/Web/API/HTMLImageElement/fetchPriority
