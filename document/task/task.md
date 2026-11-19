@@ -35,7 +35,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 23 | `23_booking_flow` | Booking engine: rules, tables, `createMyBooking`, one login per phone (the page is task 47) | Done | [23_booking_flow.md](../learning/23_booking_flow.md) |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | Done | [24_pickup_drop.md](../learning/24_pickup_drop.md) |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
-| 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | In progress |  |
+| 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | In progress | [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md) |
 | 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | To do |  |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
@@ -422,7 +422,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] The estimate-request inbox moved to task 51 (owner, 2026-11-19, at the plan's size checkpoint)
 - [x] Staff can add `/admin` to their phone's home screen (`/admin.webmanifest` and PNG icons, linked only from the admin layout)
 - [x] Phone and walk-in bookings moved to task 50 (owner, 2026-11-19, to keep this pull request reviewable)
-- [ ] Write the learning doc
+- [x] Write the learning doc: [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md)
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
