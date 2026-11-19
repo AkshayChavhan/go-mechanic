@@ -189,24 +189,24 @@
       },
       "bookings": {
         "title": "Your bookings",
-        "what": "Each booking you make: a copy of the vehicle's details (its type, model, fuel and registration number), the time slot, the services you chose and their prices, and the booking's history (when it was made and by whom). If you ask for pickup and drop, also the address and PIN code you give and the fee.",
+        "what": "Each booking you make: a copy of the vehicle's details (its type, model, fuel and registration number), the time slot, the services you chose and their prices, and the booking's history (when it was made and by whom). If you ask for pickup and drop, also the address and PIN code you give and the fee. Once your vehicle reaches the garage, also the progress of the work (each step), the notes the garage writes for you, the photos it takes of your vehicle, and which of the garage's mechanics is doing the job.",
         "why": "To run your booking, to collect your vehicle and bring it back when you ask for pickup and drop, and to keep the garage's records of the work it was booked for.",
-        "who": "The garage, and the company that hosts the database.",
-        "howLong": "For now we keep every booking, even after you remove the vehicle it was for. Nothing deletes bookings yet; we'll say here how long we keep them."
+        "who": "The garage, and the company that hosts the database. The mechanic doing your job sees its booking, progress and photos until the job is completed, but never your mobile number.",
+        "howLong": "For now we keep every booking, with its progress and notes, even after you remove the vehicle it was for. Nothing deletes bookings yet; we'll say here how long we keep them. The garage's photos of your vehicle are kept as \"Photos of your vehicle\" says."
       },
       "estimates": {
         "title": "Your estimate requests",
-        "what": "Each request for a free estimate: a copy of the vehicle's details (its type, model and fuel, and its registration number when you pick a saved vehicle), what you wrote about the problem, and when you sent it. Photos you add are described under \"Photos you send us\".",
+        "what": "Each request for a free estimate: a copy of the vehicle's details (its type, model and fuel, and its registration number when you pick a saved vehicle), what you wrote about the problem, and when you sent it. Photos you add are described under \"Photos of your vehicle\".",
         "why": "So the garage can look at the problem and tell you what the work will involve and cost.",
         "who": "The garage's owner and managers, and the company that hosts the database.",
         "howLong": "For now we keep every request, even after you remove the vehicle it was for. Nothing deletes requests yet; we'll say here how long we keep them. Photos you add to a request are deleted {photoDays} days after the first one was sent, even if the garage hasn't answered yet; the request itself stays."
       },
       "photos": {
-        "title": "Photos you send us",
-        "what": "Photos of your vehicle that you add on the website, up to {max} at a time. Before a photo is sent, the website makes it smaller (at most {longSide} pixels on its long side) and saves a new copy, which leaves out the location, time and camera details a phone keeps inside a photo.",
+        "title": "Photos of your vehicle",
+        "what": "Photos of your vehicle that you add on the website, up to {max} at a time, and photos the garage takes of it while working on it. Before a photo is sent, the website makes it smaller (at most {longSide} pixels on its long side) and saves a new copy, which leaves out the location, time and camera details a phone keeps inside a photo.",
         "why": "So the garage can see the problem and tell you what the work will involve.",
-        "who": "You, the garage's owner and managers, and the company that stores the photos and hosts the database.",
-        "howLong": "Photos that belong to an estimate or a job are deleted {closedDays} days after it is closed. Other photos are deleted {openDays} days after the first photo of that group was sent, and a photo whose upload didn't finish after {pendingHours} hours. These deletions happen the next time anyone sends a photo, not on a timer. Deleting your login deletes your photos too."
+        "who": "You, the garage's owner and managers, the mechanic doing your job (for that job's photos, until it is completed), and the company that stores the photos and hosts the database.",
+        "howLong": "Photos the garage adds to an update on your job are deleted {closedDays} days after that update. Photos that belong to an estimate are deleted {closedDays} days after it is closed. Other photos are deleted {openDays} days after the first photo of that group was sent, and a photo whose upload didn't finish after {pendingHours} hours. These deletions happen the next time anyone sends a photo, not on a timer. Deleting your login deletes your photos too."
       },
       "consent": {
         "title": "Your agreement",
