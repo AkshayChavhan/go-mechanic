@@ -41,7 +41,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Mechanic job updates; customer tracking timeline | To do |  |
-| 32 | `32_estimate_requests` | Free estimate requests with photos; admin inbox | In progress | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
+| 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | In progress | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
@@ -479,8 +479,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1334-feat-estimate-requests-plan.md)
 - [x] Free estimate requests with photos; the staff read for the admin inbox (the inbox page waits for task 26, owner 2026-11-19)
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `ce-code-review` ("Ready with fixes": 3 findings and 2 missing tests, all fixed) and `code-reviewer` (1 must-fix and 4 smaller points, all fixed)
+- [x] Compound: [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md) (updated: restore values, never structure, while hydrating)
 - [ ] Merge into `main`
 
 ### 33_estimate_builder
@@ -746,6 +746,8 @@ Not in version 1. See [features.md](../website/features.md).
 - Links to `/estimate` from the menu, the footer and the home page (`src/components/site/navigation.ts`, which another session is changing for `/book`), and a login that returns a guest to `/estimate` (today they land on `/account`, which links to it) (task 32)
 - Task 47: the booking action's error wrapper (no message, no cause) should cover `sendEstimateRequest` too: a failed insert's error carries the customer's description (task 32)
 - Task 43: deleting a customer's estimate requests (`user_id` restricts deletes, as for bookings), and the privacy notice's "Your estimate requests" retention then (task 32)
+- A shared helper for the `{placeholder}` text fill and the `aria-describedby` id joiner: `estimate-form.tsx` added a 4th copy of `fill()` and a 3rd of `ids()` (photo-uploader, vehicle-picker, price-finder, login-form and vehicle-form have the others, already drifting apart) (task 32 code review)
+- CLAUDE.md "Services and prices" says anything that shows a vehicle model renders only under `showSamples()`, but the add-vehicle form (task 21) and `/estimate` (task 32) show the draft catalogue to logged-in customers, inside their `<Suspense>` gates. Reconcile the rule with them when the owner approves the models (task 39) or before staging (task 20) (task 32 code review)
 
 ## How to add a task
 
