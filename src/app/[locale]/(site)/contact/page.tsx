@@ -7,17 +7,22 @@ import { OpeningHoursList } from "@/components/site/opening-hours-list";
 import { Section } from "@/components/site/section";
 import { WhatsAppLink } from "@/components/site/whatsapp-link";
 import { Button } from "@/components/ui/button";
+import { selectPickupAreas } from "@/content/sample-pickup-areas";
 import { formatAddress } from "@/i18n/format";
 import { formatPhoneNumber, telHref, whatsappHref } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
+import { readPickupAreas } from "@/server/dal/pickup";
 
 import { contactRichText } from "../_components/contact-rich-text";
 import { pageTones } from "../_components/page-tones";
+import { PickupAreas } from "./_components/pickup-areas";
 
 // /contact (task 19): how to reach the garage, where it is and when it's
 // open. Every detail comes from the database (readGarage(), cached), so the
 // page is built ahead of time; the open/closed badge is worked out in the
-// browser (OpenStatus).
+// browser (OpenStatus). Last comes where the garage picks up from (task 24,
+// readPickupAreas(), cached): only once there are real areas, or samples
+// under `npm run dev`, so production shows three sections until then.
 //
 // No map and no directions link: the owner hasn't sent the garage's exact
 // Google Maps link, and one built from the address lands at Mukai Chowk,
@@ -41,8 +46,9 @@ export default async function ContactPage() {
   const tContact = await getTranslations("Contact");
   const tHours = await getTranslations("Hours");
   const garage = await readGarage();
+  const pickup = selectPickupAreas(await readPickupAreas());
 
-  const [introTone, visitTone, breakdownTone] = pageTones(3);
+  const [introTone, visitTone, breakdownTone, pickupTone] = pageTones(pickup ? 4 : 3);
   const phone = formatPhoneNumber(garage.phone);
   const { call } = contactRichText(garage, tContact("whatsappMessage"));
 
@@ -94,6 +100,10 @@ export default async function ContactPage() {
           <p className="type-body text-pretty">{t.rich("breakdown", { phone, call })}</p>
         </div>
       </Section>
+
+      {pickup && pickupTone && (
+        <PickupAreas shown={pickup} tone={pickupTone} garage={garage} whatsappMessage={tContact("whatsappMessage")} />
+      )}
     </>
   );
 }

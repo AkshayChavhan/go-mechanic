@@ -1,9 +1,10 @@
-import { screen } from "@testing-library/react";
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { renderWithIntl } from "@/i18n/test-utils";
 import { formatPhoneNumber } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
+import { readPickupAreas } from "@/server/dal/pickup";
 import { ownerGarage } from "@/server/db/seed-data";
 import messages from "../../../../../messages/en.json";
 
@@ -13,6 +14,7 @@ import ContactPage, { ensureStatic, generateMetadata } from "./page";
 // An async Server Component: each test renders `await ContactPage()`, with
 // readGarage() and next-intl/server replaced as on the home page's test.
 vi.mock("@/server/dal/garage", () => ({ readGarage: vi.fn() }));
+vi.mock("@/server/dal/pickup", () => ({ readPickupAreas: vi.fn() }));
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
   const { default: allMessages } = await import("../../../../../messages/en.json");
@@ -26,6 +28,11 @@ const t = messages.ContactPage;
 
 beforeEach(() => {
   vi.mocked(readGarage).mockResolvedValue(ownerGarage);
+  // No real pickup areas: the table is empty in every build today.
+  vi.mocked(readPickupAreas).mockResolvedValue([]);
+});
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 /** Each <section>'s tone, top to bottom, then the footer's. */
@@ -96,11 +103,70 @@ describe("Contact page", () => {
     for (let i = 1; i < all.length; i++) expect(all[i], `section ${i}`).not.toBe(all[i - 1]);
   });
 
+  test("the breakdown section keeps its tone when there are no pickup areas", async () => {
+    const { container } = renderWithIntl(await ContactPage());
+    expect(tones(container)).toEqual(["white", "grey", "white", FOOTER_TONE]);
+  });
+
   test("must be built ahead of time, and has its own title and description", async () => {
     expect(ensureStatic).toBe("navigation");
     expect(await generateMetadata()).toEqual({
       title: t.metaTitle.replace("{brand}", messages.Brand.name),
       description: t.metaDescription.replace("{brand}", messages.Brand.name),
     });
+  });
+});
+
+describe("Contact page: pickup and drop (task 24)", () => {
+  const p = messages.PickupAreas;
+
+  test("no real areas, outside npm run dev: no pickup section at all", async () => {
+    renderWithIntl(await ContactPage());
+    expect(screen.queryByRole("heading", { name: p.title })).toBeNull();
+    expect(screen.queryByRole("table")).toBeNull();
+  });
+
+  test("real areas: each PIN code with its fee, Free for 0, ordered as read, no Sample mark", async () => {
+    vi.mocked(readPickupAreas).mockResolvedValue([
+      { postalCode: "412101", feePaise: 0 },
+      { postalCode: "412105", feePaise: 25_000 },
+    ]);
+    const { container } = renderWithIntl(await ContactPage());
+    const section = screen.getByRole("region", { name: p.title });
+    const rows = within(section)
+      .getAllByRole("row")
+      .slice(1)
+      .map((row) => [...row.querySelectorAll("th, td")].map((cell) => cell.textContent));
+    expect(rows).toEqual([
+      ["412101", p.free],
+      ["412105", "₹250"],
+    ]);
+    expect(within(section).getAllByRole("columnheader").map((cell) => cell.textContent)).toEqual([
+      p.postalCodeHeader,
+      p.feeHeader,
+    ]);
+    expect(container.querySelector("[data-sample]")).toBeNull();
+    expect(within(section).queryByText(messages.HomePage.sample)).toBeNull();
+    // The way out for a PIN code that isn't listed: the garage's own number and chat.
+    const links = within(section).getAllByRole("link").map((link) => link.getAttribute("href"));
+    expect(links[0]).toBe("tel:+919764750567");
+    expect(links[1]).toMatch(/^https:\/\/wa\.me\//);
+  });
+
+  test("the pickup section comes last, and no two neighbouring sections share a tone", async () => {
+    vi.mocked(readPickupAreas).mockResolvedValue([{ postalCode: "412101", feePaise: 0 }]);
+    const { container } = renderWithIntl(await ContactPage());
+    expect(screen.getAllByRole("heading", { level: 2 }).at(-1)?.textContent).toBe(p.title);
+    expect(tones(container)).toEqual(["white", "grey", "white", "dark", FOOTER_TONE]);
+  });
+
+  test("under npm run dev with no real areas: the samples, with one Sample badge", async () => {
+    vi.stubEnv("NODE_ENV", "development");
+    const { container } = renderWithIntl(await ContactPage());
+    const section = screen.getByRole("region", { name: new RegExp(p.title) });
+    expect(section.getAttribute("data-sample")).toBe("pickup-areas");
+    expect(within(section).getAllByText(messages.HomePage.sample)).toHaveLength(1);
+    expect(within(section).getAllByRole("row").length).toBeGreaterThan(1);
+    expect(container.querySelectorAll("[data-sample]")).toHaveLength(1);
   });
 });

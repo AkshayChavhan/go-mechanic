@@ -33,13 +33,13 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 21 | `21_customer_vehicles` | Customer vehicles with registration-number checks, profile | Done | [21_customer_vehicles.md](../learning/21_customer_vehicles.md) |
 | 22 | `22_slot_engine` | Time slots, capacity, holidays; atomic slot reservation | Done | [22_slot_engine.md](../learning/22_slot_engine.md) |
 | 23 | `23_booking_flow` | Booking engine: rules, tables, `createMyBooking`, one login per phone (the page is task 47) | Done | [23_booking_flow.md](../learning/23_booking_flow.md) |
-| 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | To do |  |
+| 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | In progress | [24_pickup_drop.md](../learning/24_pickup_drop.md) |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | Admin navigation by role, bookings board, phone and walk-in bookings | To do |  |
 | 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | To do |  |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
-| 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | In progress | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
+| 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Mechanic job updates; customer tracking timeline | To do |  |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; admin inbox | To do |  |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
@@ -392,12 +392,12 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 24_pickup_drop
 
-- [ ] Create branch `24_pickup_drop`
-- [ ] Plan with `ce-plan`
-- [ ] Pickup and drop by pincode, with fee
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `24_pickup_drop`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1145-feat-pickup-drop-plan.md)
+- [x] Pickup and drop by pincode, with fee
+- [x] Write the learning doc
+- [x] Review with `ce-code-review` ("Ready with fixes": 1 finding, fixed) and `code-reviewer` (code ready; its doc fix applied)
+- [x] Compound: [idempotent-save-answer-duplicate-before-refusals-that-can-change.md](../solutions/conventions/idempotent-save-answer-duplicate-before-refusals-that-can-change.md)
 - [ ] Merge into `main`
 
 ### 25_my_bookings
@@ -461,7 +461,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `code-reviewer` and fix what it finds
 - [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 31_job_timeline
 
@@ -738,6 +738,9 @@ Not in version 1. See [features.md](../website/features.md).
 - Tasks 31 and 32: wrap `PhotoUploader` in `FreshOnEachVisit`, keyed by the user's id, so the next customer on a shared phone never sees the last one's photos; and don't let the form be sent while photos are still uploading or waiting to be sent (the hidden set-id field appears as soon as `start` answers) (task 30 review)
 - Task 43: call `deletePhotosOfUser(userId)` before deleting a user: the rows go with the user, the files don't. The privacy notice already says deleting a login deletes its photos (task 30)
 - Dev tools only: `npm audit` lists picomatch (GHSA-fc5q-39xc-vjpf, high) through vitest, ESLint, the shadcn CLI and next-intl's file watcher, plus moderate hono and `@hono/node-server` (the shadcn CLI's MCP library), minimatch (ESLint, the shadcn CLI) and esbuild (drizzle-kit). None of it ships to visitors, and the fixes need major versions (vitest, shadcn). Plan a dev-tooling update task; don't run `npm audit fix --force` (found in task 48)
+- Task 28: add, change and pause pickup areas (`pickup_areas`, PIN code and fee in paise, 0 for free), with `authorize()` first, and call `updateTag("pickup-areas")` after each save. Until then the table is empty, so a pickup booking can be tried end to end only after this (task 24)
+- Task 47: show the pickup step only from `readPickupAreas()` (real areas), never `selectPickupAreas()` (the samples can't be booked), so it stays hidden until real areas exist; show the pickup fee next to the services' total, and say "Free" for 0. Wrap the booking action's unexpected errors like `LoginServiceError` (step, error name, Postgres code; no message, no cause): a failed insert's error carries the query's values, the pickup address included. A "duplicate" answer for the same vehicle and slot under a new token returns the first booking's code even if this confirm asked for pickup and the first didn't: say on that screen whether the booked one includes pickup (task 24)
+- Task 43: deleting a customer's bookings deletes their pickup addresses with them (they're columns on `bookings`); the privacy notice's "Your bookings" then says so (task 24)
 
 ## How to add a task
 
