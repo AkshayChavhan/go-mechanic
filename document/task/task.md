@@ -35,7 +35,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 23 | `23_booking_flow` | Booking engine: rules, tables, `createMyBooking`, one login per phone (the page is task 47) | Done | [23_booking_flow.md](../learning/23_booking_flow.md) |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | Done | [24_pickup_drop.md](../learning/24_pickup_drop.md) |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
-| 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | In progress | [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md) |
+| 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | Done | [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md) |
 | 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | To do |  |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
@@ -425,7 +425,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc: [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md)
 - [x] Review: `ce-code-review` "Ready with fixes" (fixed); `code-reviewer` "Ready to merge" (its accessibility suggestion fixed, the skip link in the backlog)
 - [x] Compound: [nextjs-16-icons-export-drops-root-icon-file.md](../solutions/conventions/nextjs-16-icons-export-drops-root-icon-file.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #30 on GitHub
 
 ### 27_booking_management
 

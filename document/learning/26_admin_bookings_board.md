@@ -1,6 +1,6 @@
 # 26_admin_bookings_board: the staff area and the bookings board
 
-> **Branch:** `26_admin_bookings_board` · **Date:** 2026-11-19 · **Status:** In progress (ready for review)
+> **Branch:** `26_admin_bookings_board` · **Date:** 2026-11-19 · **Status:** Done
 
 ## In one minute
 
