@@ -143,7 +143,7 @@ These are backlog lines in `task.md`.
      - close the update's set (`closed_at = now`), which starts its one-year clock;
      - mark the task 35 spot with a comment.
   - The lookup matches the booking as well as the actor, so a token first used on another booking never returns that booking's update. The unique constraint stays per actor, so reusing a token on a second booking throws instead.
-  - A retry after reassignment answers `not-found`, because the lock filter goes first. That is chosen on purpose: the mechanic no longer sees the job, so they must not see its update either. The test says so.
+  - ~~A retry after reassignment answers `not-found`~~ Changed in the code review (task 31): when the lock finds no row, the caller's own earlier update with this token answers `duplicate`. A mechanic's update to "completed" ends their access, and its retry must not say the job is gone. It shows them only what they wrote, so the same holds after a reassignment.
 - **KTD6. Job photo sets are customer sets that also carry `photo_sets.booking_id` (fk `restrict`, indexed).**
   - `user_id` is the booking's customer, so viewing, `deletePhotosOfUser` and the cascade keep working.
   - `booking_id` makes the set the job's.
