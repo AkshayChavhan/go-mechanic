@@ -32,7 +32,7 @@ export type LinePriceStatus = (typeof LINE_PRICE_STATUSES)[number];
 export const MAX_FUTURE_BOOKINGS = 3;
 
 /** The most services one booking may hold. */
-const MAX_SERVICES = 10;
+export const MAX_SERVICES = 10;
 
 // --- What the form posts -----------------------------------------------------
 
