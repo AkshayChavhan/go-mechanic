@@ -128,8 +128,9 @@ describe("PhotoUploader", () => {
     await screen.findAllByRole("img");
     fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
     await screen.findByText("T-Failed");
-    // A photo with a place on the server can't be removed, only sent again.
-    expect(screen.queryByRole("button", { name: "T-Remove 2" })).toBeNull();
+    // A stored photo can't be removed; a failed one can be sent again (or removed).
+    expect(screen.queryByRole("button", { name: "T-Remove 1" })).toBeNull();
+    expect(screen.getByRole("button", { name: "T-Remove 2" })).toBeTruthy();
 
     finishWith(finish, [true], [ids[1]!]);
     fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
@@ -203,6 +204,66 @@ describe("PhotoUploader", () => {
     fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
     await screen.findByText("T-Uploaded");
     expect(document.querySelector<HTMLInputElement>('input[name="photoSet"]')!.value).toBe(setId);
+  });
+
+  test("the hidden set id keeps its value when the form around it is reset (as React does after an action)", async () => {
+    const { start, finish, put } = mocks();
+    finishWith(finish, [true]);
+    renderWithIntl(
+      <form data-testid="form">
+        <PhotoUploader labels={labels} start={start} finish={finish} put={put} name="photoSet" />
+      </form>,
+    );
+    pick("1.jpg");
+    await screen.findByRole("img");
+    fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
+    await screen.findByText("T-Uploaded");
+    screen.getByTestId<HTMLFormElement>("form").reset();
+    expect(document.querySelector<HTMLInputElement>('input[name="photoSet"]')!.value).toBe(setId);
+  });
+
+  test("onBusyChange: busy while photos are on their way, free once all are stored", async () => {
+    const onBusyChange = vi.fn();
+    const { finish } = setup({ onBusyChange });
+    finishWith(finish, [true]);
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
+    pick("1.jpg");
+    await screen.findByRole("img");
+    expect(onBusyChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
+    await screen.findByText("T-Uploaded");
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
+  });
+
+  test("a failed photo keeps the form waiting until it's removed", async () => {
+    const onBusyChange = vi.fn();
+    const { finish } = setup({ onBusyChange });
+    finishWith(finish, [false]);
+    pick("1.jpg");
+    await screen.findByRole("img");
+    fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
+    await screen.findByText("T-Failed");
+    expect(onBusyChange).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getByRole("button", { name: "T-Remove 1" }));
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
+  });
+
+  test("a removed failed photo still counts against the 6: its place on the server stays", async () => {
+    const { finish } = setup({ alreadyInSet: 5, setId });
+    finishWith(finish, [false]);
+    pick("1.jpg");
+    await screen.findByRole("img");
+    fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
+    await screen.findByText("T-Failed");
+    fireEvent.click(screen.getByRole("button", { name: "T-Remove 1" }));
+    expect((screen.getByRole("button", { name: "T-Add photos" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  test("uploadVariant changes the Upload button's look", async () => {
+    setup({ uploadVariant: "secondary" });
+    pick("1.jpg");
+    await screen.findByRole("img");
+    expect(screen.getByRole("button", { name: "T-Upload" }).dataset.variant).toBe("secondary");
   });
 
   test("a photo can be removed before it's uploaded", async () => {

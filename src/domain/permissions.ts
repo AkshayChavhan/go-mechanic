@@ -20,7 +20,7 @@ const TABLE = {
   "jobs.update": ["mechanic", "manager", "owner"],
   /** See customers' phone numbers and contact them. Never mechanics (master plan) (tasks 26, 29, 31). */
   "customers.contact": ["manager", "owner"],
-  /** Build and send estimates (task 33). */
+  /** Read customers' estimate requests (task 32), build and send estimates (task 33). */
   "estimates.manage": ["manager", "owner"],
   /** Change the garage's details, hours and schedule (saveGarage now; tasks 28, 40). */
   "garage.edit": ["manager", "owner"],
