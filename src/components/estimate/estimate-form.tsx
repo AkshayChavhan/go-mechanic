@@ -23,7 +23,7 @@
 // next customer on a shared phone never sees the last one's draft or photos.
 
 import { LoaderCircleIcon } from "lucide-react";
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { useFormStatus } from "react-dom";
 
 import { type FormAction, FreshOnEachVisit, submitterWithFallback } from "@/components/account/form-parts";
@@ -192,6 +192,24 @@ function SendButton({
   );
 }
 
+/**
+ * The vehicle choice the page shows right now, or null when the radios
+ * aren't in the page. Like the vehicle picker's fieldsInPage: it runs during
+ * the first render in the browser, while React hydrates the server's HTML,
+ * the only moment a choice tapped before the page's JavaScript loaded can
+ * still be read. React then sets the radios to what this render says.
+ */
+function choiceInPage(groupId: string): string | null {
+  if (typeof document === "undefined") return null;
+  const checked = document
+    .getElementById(groupId)
+    ?.querySelector<HTMLInputElement>(`input[name="${ESTIMATE_FIELD_NAMES.vehicleChoice}"]:checked`);
+  return checked?.value || null;
+}
+
+// Never changes: the fields only need to know whether they have hydrated.
+const subscribeToNothing = () => () => {};
+
 function EstimateFields({
   state,
   savedVehicles,
@@ -202,24 +220,38 @@ function EstimateFields({
   const id = useId();
   const { values, errors } = state;
   const hasSaved = savedVehicles.length > 0;
-  const [choice, setChoice] = useState<string | null>(values.vehicleChoice || null);
-  const usePicker = !hasSaved || choice === OTHER_VEHICLE;
+  // A choice tapped before hydration wins over the posted one (only there on a first render).
+  const [choice, setChoice] = useState<string | null>(
+    () => choiceInPage(`${id}-vehicle-choice`) ?? (values.vehicleChoice || null),
+  );
+  // While hydrating, the picker shows only where the server showed it (any
+  // other structure is a hydration mismatch); a choice tapped before then
+  // brings it in on the next render.
+  const hydrated = useSyncExternalStore(
+    subscribeToNothing,
+    () => true,
+    () => false,
+  );
+  const shownChoice = hydrated ? choice : values.vehicleChoice || null;
+  const usePicker = !hasSaved || shownChoice === OTHER_VEHICLE;
   const [length, setLength] = useState([...values.description.trim()].length);
 
   return (
     <>
       <div className="flex flex-col gap-6">
         {hasSaved && (
-          <ChoiceGroup
-            legend={labels.vehicleLegend}
-            name={ESTIMATE_FIELD_NAMES.vehicleChoice}
-            options={[
-              ...savedVehicles.map((vehicle) => ({ value: vehicle.id, label: vehicle.label })),
-              { value: OTHER_VEHICLE, label: labels.otherVehicle },
-            ]}
-            value={choice}
-            onChange={setChoice}
-          />
+          <div id={`${id}-vehicle-choice`}>
+            <ChoiceGroup
+              legend={labels.vehicleLegend}
+              name={ESTIMATE_FIELD_NAMES.vehicleChoice}
+              options={[
+                ...savedVehicles.map((vehicle) => ({ value: vehicle.id, label: vehicle.label })),
+                { value: OTHER_VEHICLE, label: labels.otherVehicle },
+              ]}
+              value={choice}
+              onChange={setChoice}
+            />
+          </div>
         )}
         {usePicker && (
           <VehiclePicker

@@ -1,6 +1,8 @@
-import { act, fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, within } from "@testing-library/react";
 import { NextIntlClientProvider } from "next-intl";
 import { Activity, type ReactElement } from "react";
+import { hydrateRoot, type Root } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 
 import type { PhotoUploaderLabels, PhotoUploaderProps } from "@/components/site/photo-uploader";
@@ -75,9 +77,22 @@ const SAVED = "11111111-2222-4333-8444-555555555555";
 const saved: SavedVehicleChoice[] = [{ id: SAVED, label: "Honda City · MH 12 AB 1234" }];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+const SET = "0b6f1a52-2b8e-4c7a-9a5e-1f2d3c4b5a69";
+const PHOTO = "11111111-1111-4111-8111-111111111111";
+
+/** The photo actions and the PUT, answering as a working server would. */
+function photoMocks() {
+  const start = vi.fn<PhotoUploaderProps["start"]>().mockResolvedValue({
+    ok: true,
+    setId: SET,
+    uploads: [{ photoId: PHOTO, target: { url: "/upload/0", method: "PUT", headers: {} } }],
+  });
+  const finish = vi.fn<PhotoUploaderProps["finish"]>().mockResolvedValue([{ photoId: PHOTO, stored: true }]);
+  return { start, finish };
+}
+
 function form(action: EstimateAction, savedVehicles: readonly SavedVehicleChoice[] = saved) {
-  const start = vi.fn<PhotoUploaderProps["start"]>();
-  const finish = vi.fn<PhotoUploaderProps["finish"]>();
+  const { start, finish } = photoMocks();
   return (
     <EstimateForm
       action={action}
@@ -201,6 +216,57 @@ describe("EstimateForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Remove photo 1" }));
     expect(send().disabled).toBe(false);
     expect(screen.queryByText(t.waitingForPhotos)).toBeNull();
+  });
+
+  test("an error answer keeps the uploaded photos, and the retry posts the same photo set", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 })) as typeof fetch;
+    const action = vi.fn<EstimateAction>().mockResolvedValue(withErrors);
+    renderWithIntl(form(action));
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    await act(async () => {
+      fireEvent.change(input, { target: { files: [new File(["x"], "1.jpg", { type: "image/jpeg" })] } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: p.upload }));
+    });
+    await screen.findByText(p.stored);
+    fireEvent.change(description(), { target: { value: "Noise" } });
+    await submit();
+    expect(posted(action).photoSetId).toBe(SET);
+    // The fields remounted with the error; the photo is still there, stored.
+    expect(screen.getByText(t.errors["description-too-short"])).toBeTruthy();
+    expect(screen.getByText(p.stored)).toBeTruthy();
+    await submit();
+    expect(posted(action, 1).photoSetId).toBe(SET);
+  });
+
+  test("keeps a saved vehicle tapped before the page's JavaScript loaded", async () => {
+    // The server's HTML is in the page, the customer taps a choice, and only
+    // then does React hydrate it: the choice must survive, in what's shown
+    // and in what the form posts.
+    const tree: ReactElement = withIntl(form(vi.fn<EstimateAction>()));
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(tree);
+    document.body.append(container);
+    const other = within(container).getByRole("radio", { name: t.otherVehicle }) as HTMLInputElement;
+    other.checked = true;
+
+    // React reports a hydration mismatch with console.error.
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    let root: Root | undefined;
+    await act(async () => {
+      root = hydrateRoot(container, tree);
+    });
+    try {
+      expect(consoleError).not.toHaveBeenCalled();
+      expect((within(container).getByRole("radio", { name: t.otherVehicle }) as HTMLInputElement).checked).toBe(true);
+      // "Another vehicle" shows the picker.
+      expect(within(container).queryByRole("combobox", { name: v.picker.modelLabel })).not.toBeNull();
+    } finally {
+      consoleError.mockRestore();
+      act(() => root?.unmount());
+      container.remove();
+    }
   });
 
   test("leaving the page and coming back starts it empty, with a new token", async () => {
