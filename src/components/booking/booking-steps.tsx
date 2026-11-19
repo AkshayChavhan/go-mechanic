@@ -1,12 +1,9 @@
 "use client";
 
-// The booking wizard's first three steps: the vehicle, what it needs, and
-// when to come in. Each is drawn from the wizard's state and reports every
-// change up (booking-wizard.tsx keeps the state, so a step can unmount
-// while the customer is on another one and lose nothing).
+// The wizard's first three steps. Each reports every change up; booking-wizard.tsx keeps the state, so a step can unmount without losing anything.
 
 import { useLocale } from "next-intl";
-import type { ReactNode } from "react";
+import { type ReactNode, useId, useMemo } from "react";
 
 import { type BookingWizardLabels, fill, linePriceText } from "@/components/booking/booking-labels";
 import type { OfferedService } from "@/components/booking/booking-prices";
@@ -31,17 +28,14 @@ export type VehicleChoice =
 
 export const BLANK_TYPED_VEHICLE: VehicleChoice = { kind: "typed", selection: EMPTY_SELECTION, registration: "" };
 
-/** "Honda City, MH 12 AB 0042": a saved vehicle as one line. */
 export function savedVehicleText(vehicle: MyVehicle, locale: string): string {
   return `${localize(vehicle.makeName, locale)} ${localize(vehicle.modelName, locale)}, ${formatRegistration(vehicle.registrationNumber)}`;
 }
 
 /** "a b" from the ids that are set: the value of an aria-describedby. */
-function ids(...list: (string | false | undefined)[]): string | undefined {
+export function ids(...list: (string | false | undefined)[]): string | undefined {
   return list.filter(Boolean).join(" ") || undefined;
 }
-
-// --- Step 1: the vehicle -----------------------------------------------------
 
 export function VehicleStep({
   id,
@@ -94,8 +88,7 @@ export function VehicleStep({
           />
           <Field data-invalid={errors.registration ? true : undefined}>
             <FieldLabel htmlFor={`${id}-registration`}>{labels.registrationLabel}</FieldLabel>
-            {/* Plain text, capitals on phones, no autocorrect: the same field as
-                the add-vehicle form's. The server reads every shape of plate. */}
+            {/* Plain text, capitals on phones, no autocorrect: same field as the add-vehicle form. */}
             <Input
               id={`${id}-registration`}
               autoCapitalize="characters"
@@ -117,8 +110,6 @@ export function VehicleStep({
     </div>
   );
 }
-
-// --- Step 2: what it needs ---------------------------------------------------
 
 export function ServicesStep({
   offered,
@@ -186,8 +177,6 @@ export function ServicesStep({
   );
 }
 
-// --- Step 3: when to come in -------------------------------------------------
-
 /** An open day with at least one place left. */
 export function hasFreeSlot(day: SerializedSlotDay): day is Extract<SerializedSlotDay, { status: "open" }> {
   return day.status === "open" && day.slots.some((slot) => slot.remaining > 0);
@@ -215,6 +204,16 @@ export function SlotStep({
 }) {
   const locale = useLocale();
   const shown = days.find((each) => each.date === day);
+  const text = useMemo(() => {
+    const dayText = new Map<string, string>();
+    const timeText = new Map<string, string>();
+    for (const each of days) {
+      dayText.set(each.date, formatIndiaDay(each.date, locale));
+      if (each.status !== "open") continue;
+      for (const slot of each.slots) timeText.set(slot.startsAt, formatTime(new Date(slot.startsAt), locale));
+    }
+    return { dayText, timeText };
+  }, [days, locale]);
 
   if (!shown || !hasFreeSlot(shown)) {
     return (
@@ -242,7 +241,7 @@ export function SlotStep({
             disabled: !free,
             label: (
               <span className="flex flex-col items-center py-1">
-                <span>{formatIndiaDay(each.date, locale)}</span>
+                <span>{text.dayText.get(each.date)}</span>
                 {!free && (
                   <span className="type-caption">{open ? labels.full : labels.closed}</span>
                 )}
@@ -257,10 +256,9 @@ export function SlotStep({
           name="slotTime"
           value={startsAt}
           onChange={onTime}
-          // A full slot isn't offered at all.
           options={shown.slots
             .filter((slot) => slot.remaining > 0)
-            .map((slot) => ({ value: slot.startsAt, label: formatTime(new Date(slot.startsAt), locale) }))}
+            .map((slot) => ({ value: slot.startsAt, label: text.timeText.get(slot.startsAt) }))}
         />
         <p className="type-callout text-muted-foreground">{labels.timesNote}</p>
       </div>
@@ -268,27 +266,20 @@ export function SlotStep({
   );
 }
 
-// --- The footer every step shares --------------------------------------------
-
-/**
- * Back (when there's a step before), then the step's main button. When the
- * step isn't ready, the reason sits beside the disabled button, in words.
- * On phones the main button comes first, under the thumb.
- */
+/** Back (if there's a step before), then the main button, first on phones (under the thumb). When the step isn't ready, the reason sits beside the disabled button. */
 export function StepActions({
   labels,
   onBack,
-  reason,
-  reasonId,
+  next,
   children,
 }: {
   labels: BookingWizardLabels;
   onBack?: () => void;
-  /** Why the main button is disabled; nothing when it isn't. */
-  reason?: string;
-  reasonId: string;
-  children: ReactNode;
+  /** The step's Continue button: disabled, with its reason in words, until the step is ready. */
+  next?: { ready: boolean; reason: string; onContinue: () => void };
+  children?: ReactNode;
 }) {
+  const reasonId = useId();
   return (
     <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-end">
       {onBack && (
@@ -296,37 +287,23 @@ export function StepActions({
           {labels.back}
         </Button>
       )}
-      {reason && (
+      {next && !next.ready && (
         <p id={reasonId} className="type-callout text-muted-foreground">
-          {reason}
+          {next.reason}
         </p>
+      )}
+      {next && (
+        <Button
+          type="button"
+          className="w-full sm:w-fit"
+          disabled={!next.ready}
+          aria-describedby={next.ready ? undefined : reasonId}
+          onClick={next.onContinue}
+        >
+          {labels.continue}
+        </Button>
       )}
       {children}
     </div>
-  );
-}
-
-/** The step's Continue button, disabled with its reason until the step is ready. */
-export function ContinueButton({
-  labels,
-  ready,
-  reasonId,
-  onContinue,
-}: {
-  labels: BookingWizardLabels;
-  ready: boolean;
-  reasonId: string;
-  onContinue: () => void;
-}) {
-  return (
-    <Button
-      type="button"
-      className="w-full sm:w-fit"
-      disabled={!ready}
-      aria-describedby={ready ? undefined : reasonId}
-      onClick={onContinue}
-    >
-      {labels.continue}
-    </Button>
   );
 }

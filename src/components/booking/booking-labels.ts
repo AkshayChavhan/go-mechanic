@@ -1,7 +1,4 @@
-// The booking wizard's words, and the small functions that turn prices and
-// templates into text. The wizard is a client island and reads no messages
-// itself: the page passes Booking.wizard from messages/en.json as one prop
-// (t.raw("wizard")), with its {placeholders} kept, and these fill them in.
+// The booking wizard's words and the small functions that fill their {placeholders}. The page passes Booking.wizard from messages/en.json as one prop (t.raw("wizard")); the wizard reads no messages itself.
 
 import type { LinePrice } from "@/components/booking/booking-prices";
 import type { BookingStep } from "@/lib/booking-form";
@@ -20,7 +17,6 @@ export type BookingWizardLabels = {
   registrationLabel: string;
   registrationHint: string;
   vehicleReason: string;
-  /** After "Not you?" and a new login: the number was cleared, so step 1 asks for it again. */
   registrationAgain: string;
   packagesLegend: string;
   packagesHint: string;

@@ -1,35 +1,22 @@
-// What the booking page's Server Actions (src/server/actions/booking.ts)
-// answer, and what the wizard (task 47) keeps and sends back. It lives here
-// because a "use server" file may only export async functions, and the
-// browser needs the starting states and the field names too.
-//
-// Everything here crosses from the server to the browser, so it holds plain
-// values only: times as ISO strings, never Date objects.
+// What the booking Server Actions answer and the wizard sends back. Here
+// because a "use server" file may only export async functions. Plain values
+// only: it crosses to the browser, so times are ISO strings, not Dates.
 
 import type { BookingInput, BookingLine } from "@/domain/bookings";
 import type { SlotDay } from "@/domain/slots";
 import type { Fuel, VehicleKind } from "@/domain/vehicles";
+import { formText } from "@/lib/form-text";
 import { initialLoginState, type LoginState } from "@/lib/login-state";
 import type { MyVehicle } from "@/server/dal/customer-vehicles";
 
-// --- The login step ------------------------------------------------------------
-
-/**
- * The booking page's login step: the same phone and code steps as /login
- * (LoginState), plus "verified" once the code was right. The page stays
- * where it is then: the next request (Confirm) carries the new login.
- */
+/** /login's steps, plus "verified" once the code was right (the page stays where it is). */
 export type BookingLoginState = LoginState | { step: "verified"; phoneDisplay?: string };
 
 export const initialBookingLoginState: BookingLoginState = initialLoginState;
 
-// --- The wizard's steps --------------------------------------------------------
-
 /** The wizard's steps, in order. A refused confirm names the one to go back to. */
 export const BOOKING_STEPS = ["vehicle", "services", "slot", "login", "confirm"] as const;
 export type BookingStep = (typeof BOOKING_STEPS)[number];
-
-// --- The slot list, as it crosses to the browser -------------------------------
 
 export type SerializedSlot = { startsAt: string; endsAt: string; remaining: number };
 
@@ -55,15 +42,7 @@ export function serializeSlotDays(days: readonly SlotDay[]): SerializedSlotDay[]
   );
 }
 
-// --- The confirm step ----------------------------------------------------------
-
-/**
- * The names the confirm form posts its fields under. The vehicle is either
- * a saved one (savedVehicleId) or a typed one: the picker (name="vehicle")
- * posts vehicleModel and vehicleFuel, plus the registration. Each chosen
- * service posts one "service" field. "name" is there only when the customer
- * still has to give it.
- */
+/** The names the confirm form posts its fields under. "name" is there only when the customer still has to give it. */
 export const CONFIRM_FIELD_NAMES = {
   savedVehicleId: "savedVehicleId",
   modelId: "vehicleModel",
@@ -84,24 +63,20 @@ export type ConfirmFormValues = BookingInput & { name: string };
  * vehicle; otherwise the typed one counts.
  */
 export function readConfirmForm(formData: FormData): ConfirmFormValues {
-  const text = (name: string) => {
-    const value = formData.get(name);
-    return typeof value === "string" ? value : "";
-  };
-  const savedVehicleId = text(CONFIRM_FIELD_NAMES.savedVehicleId).trim();
+  const savedVehicleId = formText(formData, CONFIRM_FIELD_NAMES.savedVehicleId).trim();
   return {
     vehicle:
       savedVehicleId !== ""
         ? { savedVehicleId }
         : {
-            modelId: text(CONFIRM_FIELD_NAMES.modelId),
-            fuel: text(CONFIRM_FIELD_NAMES.fuel),
-            registration: text(CONFIRM_FIELD_NAMES.registration),
+            modelId: formText(formData, CONFIRM_FIELD_NAMES.modelId),
+            fuel: formText(formData, CONFIRM_FIELD_NAMES.fuel),
+            registration: formText(formData, CONFIRM_FIELD_NAMES.registration),
           },
     serviceIds: formData.getAll(CONFIRM_FIELD_NAMES.service).filter((value) => typeof value === "string"),
-    startsAt: text(CONFIRM_FIELD_NAMES.startsAt),
-    requestToken: text(CONFIRM_FIELD_NAMES.requestToken),
-    name: text(CONFIRM_FIELD_NAMES.name),
+    startsAt: formText(formData, CONFIRM_FIELD_NAMES.startsAt),
+    requestToken: formText(formData, CONFIRM_FIELD_NAMES.requestToken),
+    name: formText(formData, CONFIRM_FIELD_NAMES.name),
   };
 }
 
@@ -158,7 +133,7 @@ export type ConfirmAnswer =
       slots: SerializedSlotDay[];
     };
 
-/** The logged-in customer, as the latest server answer saw them (plan KTD10). */
+/** The logged-in customer, as the latest server answer saw them. */
 export type BookingAccount = {
   vehicles: MyVehicle[];
   needsName: boolean;
@@ -168,11 +143,7 @@ export type ConfirmState = {
   /** Goes up by one with every answer. */
   submission: number;
   answer: ConfirmAnswer;
-  /**
-   * Set on every answer made while logged in, except "booked": the
-   * customer's saved vehicles and whether a name is missing. Never trust
-   * the page's first props for these after an inline login.
-   */
+  /** Set on every answer made while logged in, except "booked". */
   account?: BookingAccount;
   /** The name typed on the confirm step, kept when it comes back with an error. */
   nameTyped: string;

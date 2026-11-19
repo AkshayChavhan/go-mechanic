@@ -1,7 +1,4 @@
-// What the booking wizard shows about prices, worked out in the browser
-// with priceFor(), the same pure rule the server prices the booking with
-// (src/domain/services.ts). The server never trusts these numbers: it
-// prices the booking again when it saves it.
+// Prices as the wizard shows them, worked out with priceFor() (src/domain/services.ts). The server prices the booking again on save and trusts none of this.
 
 import type { LinePriceStatus } from "@/domain/bookings";
 import { type PricedVehicle, priceFor, type Service, type ServicePrice } from "@/domain/services";
@@ -13,11 +10,7 @@ export type LinePrice = { priceStatus: LinePriceStatus; pricePaise: number | nul
 /** A service offered for the vehicle, with what it costs. */
 export type OfferedService = { service: Service } & LinePrice;
 
-/**
- * The vehicle a price is for. A model the catalogue no longer lists (hidden
- * since it was saved) has no price group: its lines then read "price
- * confirmed at the garage", which is what the server saves for them too.
- */
+/** The vehicle a price is for. A model no longer listed has no price group, so its lines read "price confirmed at the garage", as the server saves them. */
 export function pricedVehicleOf(
   catalogue: VehicleCatalogue,
   vehicle: { kind: VehicleKind; modelId: string; fuel: Fuel },

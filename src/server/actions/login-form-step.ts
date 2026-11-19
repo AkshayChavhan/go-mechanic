@@ -1,11 +1,5 @@
-// One step of the login form, shared by the two places it shows: /login
-// (loginStep in login.ts) and the booking page's login step (bookingLoginStep
-// in booking.ts, task 47). Each of them decides what a correct code leads to:
-// /login redirects to /account, the booking page answers "verified" and
-// stays where it is.
-//
-// Not a "use server" file: those may export only Server Actions, and this is
-// a plain helper they call.
+// One step of the login form, shared by /login (loginStep) and the booking page
+// (bookingLoginStep, task 47). The caller decides what a correct code leads to.
 
 import "server-only";
 
@@ -26,7 +20,6 @@ import { formText } from "./form-input";
 
 type LoginTranslator = Awaited<ReturnType<typeof getTranslations<"Login">>>;
 
-/** What a step of the login form led to: a correct code, or the form's next state. */
 export type LoginFormStepResult = { verified: true; phoneDisplay?: string } | { verified: false; state: LoginState };
 
 /**
@@ -42,10 +35,8 @@ function rateLimitedText(t: LoginTranslator, retryAt: Date, locale: Locale): str
 }
 
 /**
- * Runs one step of the login form, told apart by the button pressed
- * (formData "intent"): "send" (the phone step), "resend" ("Send a new
- * code") or "verify" (the code step). The locale must already be checked.
- * Never redirects: the caller decides what a correct code leads to.
+ * Runs one step, told apart by formData "intent": "send", "resend" or "verify".
+ * The locale must already be checked. Never redirects.
  */
 export async function runLoginFormStep(
   locale: Locale,
@@ -74,10 +65,7 @@ export async function runLoginFormStep(
         step: "code",
         status: undefined,
         retryAt: undefined,
-        // Unchanged, also after too many tries: the code is dead then, and
-        // "Send a new code" works as soon as the 30 seconds since the last SMS
-        // are over (usually long ago), never earlier, which the server would
-        // only refuse with "please wait".
+        // Unchanged, even after too many tries: "Send a new code" works once 30 s have passed since the last SMS.
         resendAt: previous.resendAt,
         error: { field: "code", text: t(`errors.${result.problem}`) },
       },
@@ -87,7 +75,6 @@ export async function runLoginFormStep(
   return { verified: false, state: await sendCodeStep(locale, previous, formData, { t, auth, requestHeaders }) };
 }
 
-/** The phone step and "Send a new code": asks the login service for a code. */
 async function sendCodeStep(
   locale: Locale,
   previous: LoginState,

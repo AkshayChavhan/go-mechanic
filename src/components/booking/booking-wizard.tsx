@@ -1,36 +1,23 @@
 "use client";
 
-// The booking wizard on /book (task 47): the vehicle, what it needs, a time,
-// then logging in (if needed) and confirming, and the booking code at the end.
+// The booking wizard on /book (task 47): vehicle, services, time, then login
+// and confirm. One client island keeps every choice in state, so going back
+// loses nothing. It reads no messages: the page passes every word as props.
 //
-// One client island that keeps every choice in its own state, so going back
-// and forth between steps loses nothing. It reads no messages: the page
-// passes every word as props (labels, loginLabels, pickerLabels) and the
-// Call and WhatsApp buttons as server-rendered children (contactLinks).
-//
-// Things that aren't obvious (plan KTD10,
-// document/plans/2026-11-11-2016-feat-booking-flow-plan.md):
-// - A login made here can't be read by the page until the next request
+// Rules to keep:
+// - A login made here isn't visible to the page until the next request
 //   (document/solutions/conventions/server-action-login-invisible-until-next-request.md).
-//   So the wizard trusts its own "verified" answer, and takes the customer's
-//   saved vehicles and whether a name is missing from Confirm's answers,
-//   never from its first props after an inline login. For the same reason it
-//   is NOT keyed by the user's id: a key that flips would remount it and
-//   lose every choice. "Not you?" clears the first customer's details on
-//   purpose instead.
-// - It needs JavaScript: both forms pass a browser-side wrapper to
-//   useActionState (for the "no connection" message and the "verified"
-//   hand-over), so the server's HTML has no address to post to. The page
-//   says so in a <noscript>.
-// - FreshOnEachVisit starts it empty on each visit (Next.js hides a page you
-//   leave instead of unmounting it).
+//   So trust the "verified" answer, and take saved vehicles and needsName from
+//   Confirm's answers, never from the first props.
+// - Don't key the wizard by user id: a flipping key remounts it and loses every
+//   choice. "Not you?" clears the first customer's details instead.
+// - Needs JavaScript (browser-side wrappers around the actions); the page has a <noscript>.
 
 import { LoaderCircleIcon } from "lucide-react";
 import { useLocale } from "next-intl";
 import { type ReactNode, useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
-import { useFormStatus } from "react-dom";
 
-import { type FormAction, FreshOnEachVisit, submitterWithFallback } from "@/components/account/form-parts";
+import { type FormAction, FreshOnEachVisit, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
 import {
   loginSubmitter,
   LoginSteps,
@@ -41,8 +28,8 @@ import { type BookingWizardLabels, fill, linePriceText, totalText } from "@/comp
 import { offeredServices, pricedVehicleOf, totalOf } from "@/components/booking/booking-prices";
 import {
   BLANK_TYPED_VEHICLE,
-  ContinueButton,
   hasFreeSlot,
+  ids,
   savedVehicleText,
   ServicesStep,
   SlotStep,
@@ -65,7 +52,6 @@ import { localize } from "@/i18n/localized-text";
 import {
   type BookingLoginState,
   type BookingStep,
-  type BookingSummary,
   CONFIRM_FIELD_NAMES,
   type ConfirmAnswer,
   type ConfirmErrors,
@@ -73,12 +59,11 @@ import {
   initialConfirmState,
   type SerializedSlotDay,
 } from "@/lib/booking-form";
+import { formText } from "@/lib/form-text";
 import { initialLoginState } from "@/lib/login-state";
 import type { MyVehicle } from "@/server/dal/customer-vehicles";
 
-/** bookingLoginStep with the locale bound. */
 export type BookingLoginAction = (previous: BookingLoginState, formData: FormData) => Promise<BookingLoginState>;
-/** confirmBooking with the locale bound. */
 export type ConfirmAction = FormAction<ConfirmState>;
 
 /** Who is logged in when the page renders, or null. */
@@ -87,7 +72,6 @@ export type BookingWizardAccount = { phoneDisplay: string; vehicles: MyVehicle[]
 export type BookingWizardProps = {
   loginAction: BookingLoginAction;
   confirmAction: ConfirmAction;
-  /** notMe with the locale bound. */
   notMeAction: () => Promise<BookingLoginState>;
   /** The listed catalogue (readVehicleCatalogue()). */
   catalogue: VehicleCatalogue;
@@ -108,9 +92,9 @@ export type BookingWizardProps = {
 const STEP_NUMBER: Record<BookingStep, number> = { vehicle: 1, services: 2, slot: 3, login: 4, confirm: 4 };
 const STEP_COUNT = 4;
 
-type Done = { kind: "booked"; booking: BookingSummary } | { kind: "duplicate"; code: string; message: string };
+type Done = Extract<ConfirmAnswer, { kind: "booked" | "duplicate" }>;
 
-/** The wizard. It starts empty on every visit (see the top of this file). */
+/** The wizard. Starts empty on each visit: Next.js hides a page instead of unmounting it. */
 export function BookingWizard(props: BookingWizardProps) {
   return (
     <FreshOnEachVisit>
@@ -119,11 +103,7 @@ export function BookingWizard(props: BookingWizardProps) {
   );
 }
 
-/**
- * The registration typed before the page's JavaScript loaded, if any. React
- * sets a controlled field back to its first render's value when it hydrates
- * it, so the first render reads it from the page (as VehiclePicker does).
- */
+/** What was typed before JavaScript loaded: React resets a controlled field to its first render's value on hydration (as VehiclePicker does). */
 function registrationInPage(id: string): string {
   if (typeof document === "undefined") return "";
   return document.querySelector<HTMLInputElement>(`[id="${id}-registration"]`)?.value ?? "";
@@ -167,7 +147,6 @@ function Wizard({
   const [requestToken] = useState(newRequestToken);
   const [leaving, startLeaving] = useTransition();
 
-  // --- What the choices add up to ---
   const savedVehicles = session?.vehicles ?? [];
   const pricedVehicle = pricedVehicleFor(choice, savedVehicles, catalogue);
   const offered = offeredServices(services, prices, pricedVehicle);
@@ -196,11 +175,7 @@ function Wizard({
     setStep(next);
   }
 
-  /**
-   * A new vehicle drops the chosen services it isn't offered for, and says
-   * so. Only once the vehicle is complete: half-way through a change (a type
-   * but no model yet) nothing is dropped.
-   */
+  /** A new vehicle drops the chosen services it isn't offered for, and says so. Only once the vehicle is complete. */
   function chooseVehicle(next: VehicleChoice) {
     setChoice(next);
     const vehicle = pricedVehicleFor(next, savedVehicles, catalogue);
@@ -225,19 +200,11 @@ function Wizard({
       return;
     }
     const chosenPackage = chosen.find((item) => item.service.kind === "package");
-    if (service.kind === "package") {
-      if (serviceIds.length > 0 && !chosenPackage) setNote(labels.servicesReplaced);
-      else if (chosenPackage) setNote(fill(labels.packageReplaced, { name: nameOf(chosenPackage.service.id) }));
-      setServiceIds([service.id]);
-    } else if (chosenPackage) {
-      setNote(fill(labels.packageReplaced, { name: nameOf(chosenPackage.service.id) }));
-      setServiceIds([service.id]);
-    } else {
-      setServiceIds([...serviceIds, service.id]);
-    }
+    if (chosenPackage) setNote(fill(labels.packageReplaced, { name: nameOf(chosenPackage.service.id) }));
+    else if (service.kind === "package" && serviceIds.length > 0) setNote(labels.servicesReplaced);
+    setServiceIds(service.kind === "package" || chosenPackage ? [service.id] : [...serviceIds, service.id]);
   }
 
-  /** Continue: drop the errors this step had, then go on. */
   function continueFrom(next: BookingStep, fields: (keyof ConfirmErrors)[]) {
     setErrors((current) => {
       const rest = { ...current };
@@ -247,7 +214,6 @@ function Wizard({
     go(next);
   }
 
-  // --- The login step's "verified": the wizard's own word for "logged in" ---
   function verified(phoneDisplay: string) {
     setSession({ phoneDisplay, vehicles: [], needsName: false });
     setErrors({});
@@ -260,26 +226,23 @@ function Wizard({
     go("confirm");
   }
 
-  // --- Confirm, and what its answers change ---
   function applyAnswer(next: ConfirmState) {
     const { answer } = next;
     if (next.account) {
       const { vehicles, needsName } = next.account;
       setSession((current) => (current ? { ...current, vehicles, needsName } : current));
-      // The picked saved vehicle is gone: pick again from the fresh list.
       if (choice.kind === "saved" && !vehicles.some((vehicle) => vehicle.id === choice.vehicleId)) {
         setChoice(vehicles[0] ? { kind: "saved", vehicleId: vehicles[0].id } : BLANK_TYPED_VEHICLE);
       }
     }
     setNameDraft(next.nameTyped);
+    if ("slots" in answer && answer.slots) setSlots(answer.slots);
     switch (answer.kind) {
       case "idle":
         return;
       case "booked":
-        setDone({ kind: "booked", booking: answer.booking });
-        return;
       case "duplicate":
-        setDone({ kind: "duplicate", code: answer.code, message: answer.message });
+        setDone(answer);
         return;
       case "needs-login":
         setSession(null);
@@ -287,12 +250,6 @@ function Wizard({
         break;
       case "needs-name":
         setSession((current) => current && { ...current, needsName: true });
-        break;
-      case "slot-problem":
-        setSlots(answer.slots);
-        break;
-      case "problems":
-        if (answer.slots) setSlots(answer.slots);
         break;
     }
     setErrors(answer.errors);
@@ -305,7 +262,7 @@ function Wizard({
     ...previous,
     submission: previous.submission + 1,
     answer: connectionAnswer,
-    nameTyped: String(formData.get(CONFIRM_FIELD_NAMES.name) ?? ""),
+    nameTyped: formText(formData, CONFIRM_FIELD_NAMES.name),
   }));
   const [, confirmFormAction] = useActionState<ConfirmState, FormData>(async (previous, formData) => {
     const next = await confirmSubmit(previous, formData);
@@ -345,8 +302,6 @@ function Wizard({
     });
   }
 
-  // --- Drawing it ---
-  const reasonId = `${id}-reason`;
   const totalLine = chosen.length > 0 && (
     <p className="type-callout font-semibold">{totalText(total, labels, locale)}</p>
   );
@@ -367,14 +322,14 @@ function Wizard({
           pickerLabels={pickerLabels}
           errors={errors}
         />
-        <StepActions labels={labels} reason={vehicleReady ? undefined : labels.vehicleReason} reasonId={reasonId}>
-          <ContinueButton
-            labels={labels}
-            ready={vehicleReady}
-            reasonId={reasonId}
-            onContinue={() => continueFrom("services", ["vehicle", "registration"])}
-          />
-        </StepActions>
+        <StepActions
+          labels={labels}
+          next={{
+            ready: vehicleReady,
+            reason: labels.vehicleReason,
+            onContinue: () => continueFrom("services", ["vehicle", "registration"]),
+          }}
+        />
       </>
     );
   } else if (step === "services") {
@@ -394,18 +349,12 @@ function Wizard({
         <StepActions
           labels={labels}
           onBack={() => go("vehicle")}
-          reason={ready || offered.length === 0 ? undefined : labels.servicesReason}
-          reasonId={reasonId}
-        >
-          {offered.length > 0 && (
-            <ContinueButton
-              labels={labels}
-              ready={ready}
-              reasonId={reasonId}
-              onContinue={() => continueFrom("slot", ["services"])}
-            />
-          )}
-        </StepActions>
+          next={
+            offered.length > 0
+              ? { ready, reason: labels.servicesReason, onContinue: () => continueFrom("slot", ["services"]) }
+              : undefined
+          }
+        />
       </>
     );
   } else if (step === "slot") {
@@ -428,19 +377,16 @@ function Wizard({
         <StepActions
           labels={labels}
           onBack={() => go("services")}
-          reason={slot || !day ? undefined : labels.slotReason}
-          reasonId={reasonId}
-        >
-          {/* No free time at all: Call and WhatsApp above, and no Continue. */}
-          {day && (
-            <ContinueButton
-              labels={labels}
-              ready={slot !== null}
-              reasonId={reasonId}
-              onContinue={() => continueFrom(session ? "confirm" : "login", ["slot"])}
-            />
-          )}
-        </StepActions>
+          next={
+            day
+              ? {
+                  ready: slot !== null,
+                  reason: labels.slotReason,
+                  onContinue: () => continueFrom(session ? "confirm" : "login", ["slot"]),
+                }
+              : undefined
+          }
+        />
       </>
     );
   } else if (step === "login" || !session) {
@@ -448,15 +394,12 @@ function Wizard({
       <>
         {errors.form && <FieldError>{errors.form}</FieldError>}
         <LoginPart key={loginRun} action={loginAction} labels={loginLabels} onVerified={verified} />
-        <StepActions labels={labels} onBack={() => go("slot")} reasonId={reasonId}>
-          {null}
-        </StepActions>
+        <StepActions labels={labels} onBack={() => go("slot")} />
       </>
     );
   } else {
     body = (
       <form action={confirmFormAction} className="flex flex-col gap-8">
-        {/* What Confirm posts (CONFIRM_FIELD_NAMES); the server reads nothing else. */}
         {choice.kind === "saved" ? (
           <input type="hidden" name={CONFIRM_FIELD_NAMES.savedVehicleId} value={choice.vehicleId} />
         ) : (
@@ -485,22 +428,18 @@ function Wizard({
             {vehicleText(choice, savedVehicles, catalogue, locale)}
           </SummaryRow>
           <SummaryRow term={labels.servicesTerm} labels={labels} onChange={() => go("services")}>
-            <ul className="flex flex-col gap-1">
-              {chosen.map((item) => (
-                <li key={item.service.id} className="flex flex-wrap justify-between gap-x-4">
-                  <span>{localize(item.service.name, locale)}</span>
-                  <span className="text-muted-foreground">{linePriceText(item, labels, locale)}</span>
-                </li>
-              ))}
-            </ul>
+            <ServiceLines
+              rows={chosen.map((item) => ({
+                key: item.service.id,
+                name: localize(item.service.name, locale),
+                price: linePriceText(item, labels, locale),
+              }))}
+            />
           </SummaryRow>
           <SummaryRow term={labels.timeTerm} labels={labels} onChange={() => go("slot")}>
             {slot && slotText(slot.startsAt, labels, locale)}
           </SummaryRow>
-          <SummaryRow term={labels.totalTerm} labels={labels}>
-            <span className="font-semibold">{totalText(total, labels, locale)}</span>
-            <span className="block type-callout text-muted-foreground">{labels.payAtGarage}</span>
-          </SummaryRow>
+          <TotalRow total={total} labels={labels} />
         </dl>
 
         {session.needsName && (
@@ -513,7 +452,7 @@ function Wizard({
               required
               defaultValue={nameDraft}
               aria-invalid={errors.name ? true : undefined}
-              aria-describedby={`${id}-name-hint${errors.name ? ` ${id}-name-error` : ""}`}
+              aria-describedby={ids(`${id}-name-hint`, errors.name && `${id}-name-error`)}
             />
             <FieldDescription id={`${id}-name-hint`}>{labels.nameHint}</FieldDescription>
             {errors.name && <FieldError id={`${id}-name-error`}>{errors.name}</FieldError>}
@@ -527,8 +466,8 @@ function Wizard({
           </div>
         )}
 
-        <StepActions labels={labels} onBack={() => go("slot")} reasonId={reasonId}>
-          <ConfirmButton labels={labels} />
+        <StepActions labels={labels} onBack={() => go("slot")}>
+          <SubmitButton pendingLabel={labels.confirming}>{labels.confirm}</SubmitButton>
         </StepActions>
       </form>
     );
@@ -555,11 +494,7 @@ function Wizard({
   );
 }
 
-/**
- * A random version-4 uuid. Not crypto.randomUUID(): browsers offer it only
- * on HTTPS and localhost, so a phone trying `npm run dev` over the local
- * network would break. getRandomValues works everywhere.
- */
+/** A random v4 uuid. Not crypto.randomUUID(): it exists only on HTTPS and localhost, which breaks npm run dev on a phone over the local network. */
 function newRequestToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16));
   bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
@@ -568,7 +503,6 @@ function newRequestToken(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-/** The vehicle priced for the chosen services, or null until one is chosen. */
 function pricedVehicleFor(
   choice: VehicleChoice,
   savedVehicles: readonly MyVehicle[],
@@ -610,7 +544,6 @@ function slotText(startsAt: string, labels: BookingWizardLabels, locale: Locale)
   return fill(labels.slotAt, { day: formatIndiaDay(indiaDateOf(date), locale), time: formatTime(date, locale) });
 }
 
-/** One row of the summary, with a Change button that goes back to its step. */
 function SummaryRow({
   term,
   labels,
@@ -643,21 +576,38 @@ function SummaryRow({
   );
 }
 
-function ConfirmButton({ labels }: { labels: BookingWizardLabels }) {
-  const { pending } = useFormStatus();
+/** The summary's services, one row each, with their prices. */
+function ServiceLines({ rows }: { rows: { key: string; name: string; price: string }[] }) {
   return (
-    <Button type="submit" disabled={pending} className="w-full sm:w-fit">
-      {pending && <LoaderCircleIcon data-icon="inline-start" className="animate-spin" />}
-      {pending ? labels.confirming : labels.confirm}
-    </Button>
+    <ul className="flex flex-col gap-1">
+      {rows.map((row) => (
+        <li key={row.key} className="flex flex-wrap justify-between gap-x-4">
+          <span>{row.name}</span>
+          <span className="text-muted-foreground">{row.price}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
-/**
- * The login step: /login's own phone, code and consent steps (LoginSteps),
- * with an action that answers "verified" instead of redirecting. Keyed by
- * the wizard, so "Not you?" and an ended login start it over.
- */
+/** The summary's total row, with "pay at the garage" under it. */
+function TotalRow({
+  total,
+  labels,
+}: {
+  total: { totalPaise: number | null; isEstimate: boolean };
+  labels: BookingWizardLabels;
+}) {
+  const locale = useLocale();
+  return (
+    <SummaryRow term={labels.totalTerm} labels={labels}>
+      <span className="font-semibold">{totalText(total, labels, locale)}</span>
+      <span className="block type-callout text-muted-foreground">{labels.payAtGarage}</span>
+    </SummaryRow>
+  );
+}
+
+/** /login's steps, with an action that answers "verified" instead of redirecting. Keyed by the wizard, so "Not you?" restarts it. */
 function LoginPart({
   action,
   labels,
@@ -675,12 +625,11 @@ function LoginPart({
 }
 
 /**
- * /login's submitter (the "no connection" message, the "We sent a code"
- * line) around the booking's login action. "verified" isn't a step the
- * login steps know: it is handed to the wizard (onVerified), and the steps
- * keep their last state while the wizard moves on.
+ * Wraps /login's submitter around the booking login action. "verified" isn't
+ * a step LoginSteps knows: it goes to onVerified, and the steps keep their
+ * last state.
  */
-export function bookingLoginSubmitter(
+function bookingLoginSubmitter(
   action: BookingLoginAction,
   connectionText: string,
   onVerified: (phoneDisplay: string) => void,
@@ -717,7 +666,6 @@ function DoneScreen({
       {done.kind === "duplicate" && <p className="type-body">{done.message}</p>}
       <div className="flex flex-col gap-2 rounded-xl bg-card p-6">
         <p className="type-callout text-muted-foreground">{labels.codeLabel}</p>
-        {/* The one big thing on the screen: what the customer must keep. */}
         <p className="type-display font-semibold tabular-nums" translate="no">
           {code}
         </p>
@@ -737,19 +685,15 @@ function DoneScreen({
             {slotText(done.booking.startsAt, labels, locale)}
           </SummaryRow>
           <SummaryRow term={labels.servicesTerm} labels={labels}>
-            <ul className="flex flex-col gap-1">
-              {done.booking.lines.map((line) => (
-                <li key={line.serviceId} className="flex flex-wrap justify-between gap-x-4">
-                  <span>{localize(line.name, locale)}</span>
-                  <span className="text-muted-foreground">{linePriceText(line, labels, locale)}</span>
-                </li>
-              ))}
-            </ul>
+            <ServiceLines
+              rows={done.booking.lines.map((line) => ({
+                key: line.serviceId,
+                name: localize(line.name, locale),
+                price: linePriceText(line, labels, locale),
+              }))}
+            />
           </SummaryRow>
-          <SummaryRow term={labels.totalTerm} labels={labels}>
-            <span className="font-semibold">{totalText(done.booking, labels, locale)}</span>
-            <span className="block type-callout text-muted-foreground">{labels.payAtGarage}</span>
-          </SummaryRow>
+          <TotalRow total={done.booking} labels={labels} />
         </dl>
       )}
       <div className="flex flex-col gap-4">
