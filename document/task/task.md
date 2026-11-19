@@ -777,6 +777,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 42: `AggregateRating` and `Review` structured data for `/reviews` and the home page, from `readPublishedReviews()` (count and average) (task 37)
 - Task 43: deleting a customer's reviews (`reviews.user_id` restricts deletes, as for bookings; deleting a booking deletes its review), and the notice's "Your reviews" retention then (task 37)
 - Task 20: on Postgres, check `updateTag("reviews")` refreshes `/reviews` and the home page across Vercel's instances after a review is sent or hidden (task 37)
+- The review form's and the estimate form's character counters miss text typed before the page's JavaScript loads (the textarea is uncontrolled; React's lint rule refuses syncing state from an effect): count it once after hydration in a way the lint allows, with a `hydrateRoot` test, in both `review-form.tsx` and `estimate-form.tsx` (task 37 review)
 
 ## How to add a task
 

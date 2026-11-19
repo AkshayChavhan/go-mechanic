@@ -283,7 +283,7 @@ The home page (task 13) is built from Server Component sections and one client i
 
 Made-up trust stats and reviews let the owner judge the design before the real ones exist. They must never reach customers (owner, 2026-10-27):
 
-- `src/content/home.ts` holds the real data (`trustStats`, `reviews`: `null` until there is some) and the samples. Pages read it only through `selectTrustStats()` and `selectReviews()`: the real data in every build, else the samples when `showSamples()` (`src/lib/samples.ts`) says so, else `null`, and a section given `null` renders nothing.
+- `src/content/home.ts` holds the real stats (`trustStats`: `null` until there are some) and the samples; real reviews come from the database (task 37). Pages read it only through `selectTrustStats()` and `selectHomeReviews(await readPublishedReviews(), REVIEW_RULES.minForHome)`: the real data in every build (reviews from 3 published), else the samples when `showSamples()` (`src/lib/samples.ts`) says so, else `null`, and a section given `null` renders nothing.
 - `showSamples()` is true only when `NODE_ENV` is `development`. It's deliberately separate from `devOnly()`, whose comment invites showing dev pages on a staging server: staging must never show samples.
 - Each sample stat and review carries `data-sample` and a `SampleBadge`. `e2e/home.spec.ts` searches a production build's HTML, page data and every script the page loads for the sample text (a canary phrase in one sample review included).
 
