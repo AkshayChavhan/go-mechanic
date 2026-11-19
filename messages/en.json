@@ -450,6 +450,31 @@
       "date-out-of-range": "Enter a date from 2000 up to 10 years from today."
     }
   },
+  "Booking": {
+    "errors": {
+      "needsLogin": "Your login has ended. Log in again to book.",
+      "needsName": "Enter your name to finish booking.",
+      "vehicleNotFound": "We can't find that saved vehicle. Choose your vehicle again.",
+      "registrationDuplicate": "You've already saved {registration} as a {model}. Choose it from your vehicles, or check the number.",
+      "tooManyBookings": "You already have {limit} bookings coming up. To book another, call or WhatsApp us.",
+      "badToken": "Something went wrong. Reload the page and try again.",
+      "services": {
+        "nothing-chosen": "Choose a package or at least one service.",
+        "too-many": "Choose fewer services.",
+        "unknown-service": "One of your choices is no longer offered. Choose your services again.",
+        "package-with-services": "Choose a package or services, not both.",
+        "not-offered": "One of your choices isn't offered for this vehicle. Choose your services again."
+      },
+      "slot": {
+        "full": "That time just filled up. Choose another time.",
+        "not-a-slot": "That time can't be booked. Choose another time.",
+        "slot-invalid": "That time can't be booked. Choose another time.",
+        "closed-date": "We're closed that day. Choose another day.",
+        "outside-window": "That time can't be booked any more. Choose another time."
+      }
+    },
+    "duplicate": "You already booked this vehicle for this time (code {code})."
+  },
   "Services": {
     "metaTitle": "Car and two-wheeler services in Kiwale, Pune | {brand}",
     "metaDescription": "What each service at our garage on Mukai Chowk, Kiwale covers: periodic service, AC, brakes, tyres, batteries, denting and more, for cars and two-wheelers.",
