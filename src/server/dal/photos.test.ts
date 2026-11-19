@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,12 +11,20 @@ import { fixedClock } from "@/lib/clock";
 import { AccessDeniedError } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth/session";
 import { closeDatabase, createDatabase, type Database, getDatabase } from "@/server/db";
-import { photoSets, photos, users } from "@/server/db/schema";
+import { bookingEvents, bookings, photoSets, photos, users } from "@/server/db/schema";
 import { createFakePhotoStorage } from "@/server/providers/photos/fake";
 import { photoSigningKey } from "@/server/providers/photos/token";
 import type { PhotoStorage } from "@/server/providers/photos/types";
 
-import { deleteOldPhotos, deletePhotosOfUser, finishPhotoUpload, photoViewUrls, startPhotoUpload } from "./photos";
+import {
+  deleteOldPhotos,
+  deletePhotosOfUser,
+  finishJobPhotoUpload,
+  finishPhotoUpload,
+  photoViewUrls,
+  startJobPhotoUpload,
+  startPhotoUpload,
+} from "./photos";
 
 // Starting and migrating PGlite takes a few seconds, much longer in a full
 // run on a busy machine: database test files get the longer limits.
@@ -82,6 +91,7 @@ beforeEach(async () => {
   vi.mocked(getDatabase).mockResolvedValue(db);
   logIn(asha);
   await db.delete(photoSets);
+  await db.delete(bookings);
   await db.delete(users);
   await db.insert(users).values(
     [asha, ravi, mechanic, manager, owner].map(({ id, phoneNumber }) => ({
@@ -405,5 +415,211 @@ describe("deletePhotosOfUser", () => {
     expect(await db.select().from(photoSets).where(eq(photoSets.userId, "asha"))).toHaveLength(0);
     expect(await storage.inspect(ashaKey!.key)).toBeNull();
     expect(await db.select().from(photoSets).where(eq(photoSets.id, raviSet))).toHaveLength(1);
+  });
+});
+
+// --- Job photos (task 31) ----------------------------------------------------
+
+const mechanic2: TestUser = { id: "mech2", phoneNumber: "+919876500006", role: "mechanic" };
+
+/** A booking of Asha's, assigned to `assigned`, at step `jobStatus`; returns its id. */
+async function job({ assigned = "mech" as string | null, jobStatus = "inspection" as typeof bookings.$inferInsert.jobStatus, code = "K7Q4MX" } = {}) {
+  if (assigned === "mech2") {
+    await db.insert(users).values({ id: "mech2", name: "", email: "919876500006@phone.invalid", phoneNumber: mechanic2.phoneNumber }).onConflictDoNothing();
+  }
+  const [row] = await db
+    .insert(bookings)
+    .values({
+      code,
+      userId: "asha",
+      vehicleKind: "car",
+      modelId: "car-honda-city",
+      fuel: "petrol",
+      categoryId: "sedan",
+      registrationNumber: "MH12AB1234",
+      startsAt: new Date("2026-11-13T04:30:00.000Z"),
+      isEstimate: true,
+      requestToken: randomUUID(),
+      jobStatus,
+      assignedMechanicId: assigned,
+    })
+    .returning({ id: bookings.id });
+  return row!.id;
+}
+
+/** Starts and finishes `count` good photos of job `bookingId` as whoever is logged in; returns the set id. */
+async function storedJobSet(bookingId: string, count = 1): Promise<string> {
+  const started = await startJobPhotoUpload({ bookingId, count }, deps);
+  if (!started.ok) throw new Error(started.problem);
+  for (const upload of started.uploads) await putFile(upload.photoId);
+  const finished = await finishJobPhotoUpload(
+    started.uploads.map((upload) => upload.photoId),
+    deps,
+  );
+  if (!finished.every((photo) => photo.stored)) throw new Error("not stored");
+  return started.setId;
+}
+
+describe("startJobPhotoUpload", () => {
+  test.each([
+    ["logged out", null],
+    ["a customer", asha],
+  ])("%s: AccessDeniedError before the database is touched", async (_, user) => {
+    logIn(user);
+    await expect(startJobPhotoUpload({ bookingId: unknownId, count: 1 }, deps)).rejects.toThrow(AccessDeniedError);
+    expect(getDatabase).not.toHaveBeenCalled();
+  });
+
+  test("the assigned mechanic gets a set owned by the booking's customer and the job", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const started = await startJobPhotoUpload({ bookingId, count: 2 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    expect(started.uploads).toHaveLength(2);
+    const [set] = await db.select().from(photoSets).where(eq(photoSets.id, started.setId));
+    expect(set).toMatchObject({ userId: "asha", bookingId, closedAt: null });
+  });
+
+  test("another mechanic's job, a missing booking and a malformed id are all not-found", async () => {
+    const bookingId = await job({ assigned: "mech2" });
+    logIn(mechanic);
+    for (const id of [bookingId, unknownId, "1; drop"]) {
+      expect(await startJobPhotoUpload({ bookingId: id, count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
+    }
+  });
+
+  test("a manager adds photos to any job, assigned or not", async () => {
+    const bookingId = await job({ assigned: null });
+    logIn(manager);
+    expect((await startJobPhotoUpload({ bookingId, count: 1 }, deps)).ok).toBe(true);
+  });
+
+  test("a completed job: job-closed for a manager, not-found for the assigned mechanic", async () => {
+    const bookingId = await job({ jobStatus: "completed" });
+    logIn(manager);
+    expect(await startJobPhotoUpload({ bookingId, count: 1 }, deps)).toEqual({ ok: false, problem: "job-closed" });
+    logIn(mechanic);
+    expect(await startJobPhotoUpload({ bookingId, count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
+  });
+
+  test("adding to a set: only that job's open set, and never past 6", async () => {
+    const bookingId = await job();
+    const otherJob = await job({ code: "K7Q4MY" });
+    logIn(mechanic);
+    const first = await startJobPhotoUpload({ bookingId, count: 4 }, deps);
+    if (!first.ok) throw new Error(first.problem);
+    expect(await startJobPhotoUpload({ bookingId, setId: first.setId, count: 3 }, deps)).toEqual({ ok: false, problem: "too-many-photos" });
+    expect((await startJobPhotoUpload({ bookingId, setId: first.setId, count: 2 }, deps)).ok).toBe(true);
+    expect(await startJobPhotoUpload({ bookingId: otherJob, setId: first.setId, count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
+    await db.update(photoSets).set({ closedAt: now }).where(eq(photoSets.id, first.setId));
+    const second = await startJobPhotoUpload({ bookingId, count: 1 }, deps);
+    if (!second.ok) throw new Error(second.problem);
+    await db.update(photoSets).set({ closedAt: now }).where(eq(photoSets.id, second.setId));
+    expect(await startJobPhotoUpload({ bookingId, setId: second.setId, count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
+  });
+
+  test("job sets don't count toward the customer's 5 new sets a day", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    for (let i = 0; i < PHOTO_RULES.maxNewSetsPerDay; i += 1) expect((await startJobPhotoUpload({ bookingId, count: 1 }, deps)).ok).toBe(true);
+    logIn(asha);
+    expect((await startPhotoUpload({ count: 1 }, deps)).ok).toBe(true);
+  });
+});
+
+describe("the customer and job sets", () => {
+  test("a customer can't add to or finish photos in a job set of their own booking", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const started = await startJobPhotoUpload({ bookingId, count: 1 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    await putFile(started.uploads[0]!.photoId);
+    logIn(asha);
+    expect(await startPhotoUpload({ setId: started.setId, count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
+    expect(await finishPhotoUpload([started.uploads[0]!.photoId], deps)).toEqual([{ photoId: started.uploads[0]!.photoId, stored: false }]);
+  });
+});
+
+describe("finishJobPhotoUpload", () => {
+  test("a customer: AccessDeniedError before the database is touched", async () => {
+    logIn(asha);
+    await expect(finishJobPhotoUpload([unknownId], deps)).rejects.toThrow(AccessDeniedError);
+    expect(getDatabase).not.toHaveBeenCalled();
+  });
+
+  test("stores the assigned mechanic's photos; another mechanic's finish stores nothing", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const started = await startJobPhotoUpload({ bookingId, count: 1 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    const photoId = started.uploads[0]!.photoId;
+    await putFile(photoId);
+    logIn(mechanic2);
+    expect(await finishJobPhotoUpload([photoId], deps)).toEqual([{ photoId, stored: false }]);
+    logIn(mechanic);
+    expect(await finishJobPhotoUpload([photoId], deps)).toEqual([{ photoId, stored: true }]);
+  });
+
+  test("a customer's own set can't be finished through the job function", async () => {
+    const started = await startPhotoUpload({ count: 1 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    await putFile(started.uploads[0]!.photoId);
+    logIn(manager);
+    expect(await finishJobPhotoUpload([started.uploads[0]!.photoId], deps)).toEqual([{ photoId: started.uploads[0]!.photoId, stored: false }]);
+  });
+});
+
+describe("photoViewUrls for job sets", () => {
+  test("the customer, the assigned mechanic and a manager see them; another mechanic doesn't", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const setId = await storedJobSet(bookingId);
+    for (const user of [asha, mechanic, manager, owner]) {
+      logIn(user);
+      const view = await photoViewUrls(setId, deps);
+      expect(view.ok && view.photos).toHaveLength(1);
+    }
+    for (const user of [mechanic2, ravi]) {
+      logIn(user);
+      expect(await photoViewUrls(setId, deps)).toEqual({ ok: false, problem: "not-found" });
+    }
+  });
+
+  test("the mechanic loses access when the job is reassigned or completed", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const setId = await storedJobSet(bookingId);
+    await db.insert(users).values({ id: "mech2", name: "", email: "919876500006@phone.invalid", phoneNumber: mechanic2.phoneNumber });
+    await db.update(bookings).set({ assignedMechanicId: "mech2" }).where(eq(bookings.id, bookingId));
+    expect(await photoViewUrls(setId, deps)).toEqual({ ok: false, problem: "not-found" });
+    logIn(mechanic2);
+    expect((await photoViewUrls(setId, deps)).ok).toBe(true);
+    await db.update(bookings).set({ jobStatus: "completed" }).where(eq(bookings.id, bookingId));
+    expect(await photoViewUrls(setId, deps)).toEqual({ ok: false, problem: "not-found" });
+    logIn(asha);
+    expect((await photoViewUrls(setId, deps)).ok).toBe(true);
+  });
+});
+
+describe("cleanup and deletion of job sets", () => {
+  test("deleteOldPhotos removes an expired job set that an update points to; the update stays", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const setId = await storedJobSet(bookingId);
+    await db.update(photoSets).set({ closedAt: new Date(now.getTime() - (PHOTO_RULES.keepClosedDays + 1) * DAY) }).where(eq(photoSets.id, setId));
+    await db.insert(bookingEvents).values({ bookingId, kind: "job-update", actorUserId: "mech", photoSetId: setId, hadPhotos: true, requestToken: randomUUID() });
+    await deleteOldPhotos(deps);
+    expect(await db.$count(photoSets, eq(photoSets.id, setId))).toBe(0);
+    const [event] = await db.select().from(bookingEvents).where(eq(bookingEvents.bookingId, bookingId));
+    expect(event).toMatchObject({ photoSetId: null, hadPhotos: true });
+  });
+
+  test("deletePhotosOfUser removes the customer's job photos too", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const setId = await storedJobSet(bookingId);
+    logIn(owner);
+    await deletePhotosOfUser("asha", deps);
+    expect(await db.$count(photoSets, eq(photoSets.id, setId))).toBe(0);
   });
 });
