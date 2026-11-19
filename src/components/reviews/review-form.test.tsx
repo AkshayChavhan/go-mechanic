@@ -111,6 +111,16 @@ describe("ReviewForm", () => {
     expect(document.activeElement).toBe(star(1));
   });
 
+  test("a comment problem: the error under the field and the cursor there", async () => {
+    const answer: ReviewFormState = { submission: 1, values: { rating: "4", comment: "x" }, errors: { comment: t.errors["comment-too-long"] }, sent: false };
+    renderWithIntl(form(vi.fn<ReviewAction>().mockResolvedValue(answer)));
+    fireEvent.click(star(4));
+    await submit();
+    expect(screen.getByText(t.errors["comment-too-long"])).toBeTruthy();
+    expect(comment().getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(comment());
+  });
+
   test("sent: the thank-you panel with links to the reviews and the account, and no form", async () => {
     renderWithIntl(form(vi.fn<ReviewAction>().mockResolvedValue({ ...withErrors, errors: {}, sent: true })));
     fireEvent.click(star(5));
@@ -120,6 +130,8 @@ describe("ReviewForm", () => {
     expect(within(panel).getByRole("link", { name: t.seeReviews }).getAttribute("href")).toBe("/reviews");
     expect(within(panel).getByRole("link", { name: t.back }).getAttribute("href")).toBe("/account");
     expect(screen.queryByRole("button", { name: t.submit })).toBeNull();
+    // The Send button is gone: the cursor moves to the thank-you heading.
+    expect(document.activeElement).toBe(within(panel).getByRole("heading", { name: t.thanksHeading }));
   });
 
   test("a failed call keeps everything and says so", async () => {

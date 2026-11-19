@@ -22,7 +22,7 @@ test("/reviews: its title and, with no reviews yet, the empty state and how to l
   const errors = watchErrors(page);
   await page.goto("/reviews");
   await expectNoErrors(page, errors);
-  await expect(page).toHaveTitle("Customer reviews | GoMechanic");
+  await expect(page).toHaveTitle(reviewsPage.metaTitle.replace("{brand}", messages.Brand.name));
   await expect(page.getByRole("heading", { level: 1, name: reviewsPage.heading })).toBeVisible();
   await expect(page.getByText(reviewsPage.empty)).toBeVisible();
   await expect(page.getByText(reviewsPage.howTo)).toBeVisible();

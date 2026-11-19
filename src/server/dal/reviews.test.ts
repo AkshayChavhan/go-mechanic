@@ -160,6 +160,16 @@ describe("createMyReview", () => {
     expect(await createMyReview(send, clock)).toEqual({ status: "duplicate", id: first.id });
   });
 
+  test("another customer's token is not a duplicate for this one: the lookup is the caller's own", async () => {
+    const ashas = await job();
+    const token = randomUUID();
+    expect((await createMyReview(input(ashas, { requestToken: token }), clock)).status).toBe("sent");
+    logIn(ravi);
+    const ravis = await job({ userId: "ravi" });
+    expect((await createMyReview(input(ravis, { requestToken: token }), clock)).status).toBe("sent");
+    expect(await db.$count(reviews)).toBe(2);
+  });
+
   test("a new visit of the form on a reviewed booking is already-reviewed", async () => {
     const bookingId = await job();
     const first = await createMyReview(input(bookingId), clock);

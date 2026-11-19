@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { averageRating, checkReviewInput, firstName, REVIEW_RULES, type ReviewInput } from "./reviews";
+import { averageRating, checkReviewInput, firstName, REVIEW_RULES, type ReviewInput, toRating } from "./reviews";
 
 const BOOKING = "11111111-2222-4333-8444-555555555555";
 const TOKEN = "3f2b8c4e-1d2a-4b6c-9e8f-0a1b2c3d4e5f";
@@ -74,9 +74,16 @@ describe("firstName", () => {
 
 describe("averageRating", () => {
   test("rounds to one decimal; none is null", () => {
-    expect(averageRating([5, 4, 4])).toBe(4.3);
-    expect(averageRating([5, 5, 4, 4])).toBe(4.5);
-    expect(averageRating([3])).toBe(3);
-    expect(averageRating([])).toBeNull();
+    expect(averageRating(13, 3)).toBe(4.3);
+    expect(averageRating(18, 4)).toBe(4.5);
+    expect(averageRating(3, 1)).toBe(3);
+    expect(averageRating(0, 0)).toBeNull();
+  });
+
+  test("toRating: 1 to 5 from a string or a number, else null", () => {
+    expect(toRating("4")).toBe(4);
+    expect(toRating(5)).toBe(5);
+    expect(toRating(" 2 ")).toBe(2);
+    for (const value of ["0", "6", "4.5", "", null, undefined]) expect(toRating(value)).toBeNull();
   });
 });

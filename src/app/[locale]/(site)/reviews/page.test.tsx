@@ -42,8 +42,8 @@ describe("/reviews", () => {
   test("is built ahead of time, with its own title and description", async () => {
     expect(ensureStatic).toBe("navigation");
     const metadata = await generateMetadata();
-    expect(metadata.title).toBe("Customer reviews | GoMechanic");
-    expect(String(metadata.description)).toContain("GoMechanic");
+    expect(metadata.title).toBe(t.metaTitle.replace("{brand}", messages.Brand.name));
+    expect(String(metadata.description)).toContain(messages.Brand.name);
   });
 
   test("none yet: one heading, the empty state and how to leave one, no average", async () => {

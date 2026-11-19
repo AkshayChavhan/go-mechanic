@@ -177,8 +177,10 @@ describe("reviews the page can show", () => {
     expect(review.credit).toBeNull();
   });
 
-  test("the samples' summary is made up and says so through the sample mark", () => {
+  test("the samples' summary counts the samples, and is only given with them, marked as samples", () => {
     expect(sampleReviewsSummary.count).toBe(sampleReviews.length);
+    vi.stubEnv("NODE_ENV", "development");
+    expect(selectHomeReviews(published([]), 3)).toMatchObject({ sample: true, summary: sampleReviewsSummary });
   });
 
   test("ids are unique", () => {
@@ -210,12 +212,14 @@ describe("the samples are reached only through the selectors", () => {
   // shows dev pages. So outside this file, only the selectors may be used.
   const src = fileURLToPath(new URL("..", import.meta.url));
 
-  test("no file under src/ but home.ts uses sampleTrustStats or sampleReviews (tests aside)", () => {
+  test("no file under src/ but home.ts uses sampleTrustStats, sampleReviews or sampleReviewsSummary (tests aside)", () => {
     const files = readdirSync(src, { recursive: true, encoding: "utf8" })
       .map((file) => file.split(path.sep).join("/"))
       .filter((file) => /\.(?:ts|tsx)$/.test(file) && !/\.test\.tsx?$/.test(file) && file !== "content/home.ts");
     expect(files.length).toBeGreaterThan(10);
-    const users = files.filter((file) => /\bsample(?:TrustStats|Reviews)\b/.test(readFileSync(path.join(src, file), "utf8")));
+    const users = files.filter((file) =>
+      /\bsample(?:TrustStats|Reviews|ReviewsSummary)\b/.test(readFileSync(path.join(src, file), "utf8")),
+    );
     expect(users, "read samples through selectTrustStats() and selectHomeReviews()").toEqual([]);
   });
 });

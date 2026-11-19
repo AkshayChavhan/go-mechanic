@@ -78,7 +78,8 @@ describe("ReviewGate", () => {
   test("no name yet: a link to /account", async () => {
     vi.mocked(readMyProfile).mockResolvedValue({ name: "", phoneNumber: asha.phoneNumber });
     renderWithIntl(await ReviewGate(props));
-    expect(screen.getByRole("link", { name: messages.EstimatePage.nameLink }).getAttribute("href")).toBe("/account");
+    expect(screen.getByText(t.nameNote)).toBeTruthy();
+    expect(screen.getByRole("link", { name: t.nameLink }).getAttribute("href")).toBe("/account");
     expect(screen.queryByRole("radio")).toBeNull();
   });
 
