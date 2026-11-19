@@ -54,10 +54,6 @@
         "label": "Vehicles serviced",
         "value": "<number>{value}</number>+"
       },
-      "rating": {
-        "label": "Google rating",
-        "value": "<number>{value}</number>/5"
-      },
       "warranty": {
         "label": "Warranty on our work",
         "value": "<number>{value}</number> months"
@@ -65,9 +61,7 @@
     },
     "reviews": {
       "title": "What customers say",
-      "rating": "Rated {rating} out of 5",
-      "credit": "Customer with {vehicle, select, car {a car} other {a two-wheeler}}",
-      "sampleCredit": "Sample customer with {vehicle, select, car {a car} other {a two-wheeler}}"
+      "allLink": "Read all reviews"
     },
     "cta": {
       "title": "Book your next service",
@@ -711,5 +705,60 @@
     "at": "{date}, {time}",
     "photoAlt": "Photo {n} from this update",
     "photosGone": "The photos from this update are no longer kept."
+  },
+  "Reviews": {
+    "rating": "Rated {rating} out of 5",
+    "credit": "{name}, {make} {kind, select, car {car} other {two-wheeler}}",
+    "sampleCredit": "Sample customer, {kind, select, car {car} other {two-wheeler}}",
+    "reply": "Reply from the garage",
+    "summary": "{average} out of 5 · {count, plural, one {# review} other {# reviews}}"
+  },
+  "ReviewsPage": {
+    "metaTitle": "Customer reviews | {brand}",
+    "metaDescription": "Reviews from {brand} customers whose cars and two-wheelers we've serviced, with their star ratings.",
+    "heading": "Customer reviews",
+    "intro": "Every review here comes from a customer whose vehicle we've serviced. We don't edit them.",
+    "empty": "No reviews yet.",
+    "howTo": "After we finish a job, you can review it from your account."
+  },
+  "ReviewPage": {
+    "metaTitle": "Review your job | {brand}",
+    "heading": "Review your job",
+    "intro": "Tell other customers how it went.",
+    "loading": "Loading…",
+    "back": "Back to your account",
+    "vehicle": "Your {make} {kind, select, car {car} other {two-wheeler}}",
+    "creditPreview": "Shown as: {credit}",
+    "publicNote": "Your review is shown publicly as soon as you send it, with your first name and your vehicle's brand. You can't edit it here; call the garage if you want it hidden. See the <privacy>privacy notice</privacy>.",
+    "ratingLegend": "Your rating",
+    "starLabel": "{n} out of 5 stars",
+    "commentLabel": "Your comment (optional)",
+    "commentHint": "What did the garage do well, or what could be better?",
+    "commentCount": "{count} of {max} characters",
+    "submit": "Send review",
+    "sending": "Sending…",
+    "connection": "We couldn't send your review. Check your connection and try again.",
+    "loginNote": "Log in to review your job.",
+    "loginLink": "Log in",
+    "notFound": "We couldn't find this completed job in your account.",
+    "alreadyReviewed": "You've already reviewed this job: {rating} out of 5.",
+    "errors": {
+      "rating-missing": "Choose a rating from 1 to 5 stars.",
+      "rating-invalid": "Choose a rating from 1 to 5 stars.",
+      "comment-too-long": "Use 1,000 characters or fewer.",
+      "bad-request": "Something went wrong. Reload the page and try again.",
+      "not-found": "We couldn't find this completed job in your account.",
+      "already-reviewed": "You've already reviewed this job."
+    },
+    "thanksHeading": "Thank you for your review",
+    "thanksBody": "It's on our reviews page now.",
+    "seeReviews": "See the reviews"
+  },
+  "MyReviews": {
+    "heading": "Your completed jobs",
+    "completedOn": "Completed on {date}",
+    "code": "Booking {code}",
+    "write": "Write a review",
+    "yourRating": "You rated it {rating} out of 5"
   }
 }
