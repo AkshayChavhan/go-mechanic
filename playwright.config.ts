@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 
-import { OUTBOX_FILE } from "./e2e/helpers";
+import { OUTBOX_FILE, TEST_OWNER_NUMBER } from "./e2e/helpers";
 
 // End-to-end tests: a real browser loads the real, built site.
 // - Uses the Google Chrome already installed on the machine (channel "chrome"),
@@ -34,6 +34,9 @@ export default defineConfig({
     // The fake SMS provider also writes each message here, so the login
     // tests can read their codes (e2e/helpers.ts, latestCodeFor). Added to
     // this process's own environment, not instead of it.
-    env: { E2E_OUTBOX_FILE: OUTBOX_FILE },
+    // OWNER_PHONE_NUMBER: a test number, so e2e/admin.spec.ts can log in as
+    // the owner (task 26). Only this server gets it: npm run dev keeps the
+    // garage's own number.
+    env: { E2E_OUTBOX_FILE: OUTBOX_FILE, OWNER_PHONE_NUMBER: TEST_OWNER_NUMBER.e164 },
   },
 });

@@ -24,6 +24,14 @@ test("logged out: /account answers 307 to /login, before any page renders", asyn
   expect(new URL(response.headers().location, "http://localhost").pathname).toBe("/login");
 });
 
+test("logged out: /admin and /admin/bookings answer 307 to /login (task 26)", async ({ page }) => {
+  for (const path of ["/admin", "/admin/bookings", "/admin/bookings?date=2026-11-20"]) {
+    const response = await page.request.get(path, { maxRedirects: 0 });
+    expect(response.status(), path).toBe(307);
+    expect(new URL(response.headers().location, "http://localhost").pathname, path).toBe("/login");
+  }
+});
+
 test("logged in: /login answers 307 to /account, and /account answers 200", async ({ page }) => {
   const errors = watchErrors(page);
   await logInThroughTheForm(page);

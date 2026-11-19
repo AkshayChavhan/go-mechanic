@@ -57,7 +57,21 @@ describe("accessRedirect (the proxy's shortcut, by the session cookie alone)", (
     expect(decide("GET", "/%E0%A4%A", false)).toBeNull();
   });
 
-  test.each(["/accounting", "/account-help", "/services", "/", "/hi", "/login/extra"])(
+  // The staff area (task 26): the same shortcut, so a logged-out visitor
+  // gets a real 307 instead of a page that redirects in the browser.
+  test.each(["/admin", "/admin/bookings", "/en/admin/estimates/abc", "/%61dmin"])(
+    "GET %s, logged out: to /login",
+    (path) => {
+      expect(decide("GET", path, false)).toBe("/login");
+    },
+  );
+
+  test("GET /hi/admin, logged out: to /hi/login; with a session cookie: through", () => {
+    expect(decide("GET", "/hi/admin", false)).toBe("/hi/login");
+    expect(decide("GET", "/hi/admin", true)).toBeNull();
+  });
+
+  test.each(["/accounting", "/account-help", "/administrator", "/admins", "/services", "/", "/hi", "/login/extra"])(
     "GET %s: through, logged in or out",
     (path) => {
       expect(decide("GET", path, false)).toBeNull();

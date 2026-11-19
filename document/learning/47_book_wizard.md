@@ -1,6 +1,6 @@
 # 47_book_wizard: the /book page, booking in four steps
 
-> **Branch:** `47_book_wizard` · **Date:** 2026-11-19 · **Status:** In progress (ready for review)
+> **Branch:** `47_book_wizard` · **Date:** 2026-11-19 · **Status:** Done
 
 ## In one minute
 

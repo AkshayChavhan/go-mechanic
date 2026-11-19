@@ -166,12 +166,26 @@ export function freshNumber(): { typed: string; e164: string } {
 }
 
 /**
- * Logs a fresh number in through the real /login form (codes from the fake
- * SMS provider's file) and waits for /account. Returns the number.
+ * The owner's number in the browser tests (task 26): playwright.config.ts
+ * gives it to the server as OWNER_PHONE_NUMBER, so whoever logs in with it
+ * is the owner. "80000" is outside freshNumber()'s range, so no other test
+ * logs in as the owner by chance.
  */
-export async function logInThroughTheForm(page: Page): Promise<{ typed: string; e164: string }> {
+export const TEST_OWNER_NUMBER = { typed: "80000 00001", e164: "+918000000001" } as const;
+
+/**
+ * Logs a number in through the real /login form (codes from the fake SMS
+ * provider's file) and waits for /account. A fresh number unless one is
+ * given (the owner's, TEST_OWNER_NUMBER). Returns the number.
+ *
+ * A given number can get at most 5 codes an hour (LOGIN_RULES), so a spec
+ * that logs one in logs it in once.
+ */
+export async function logInThroughTheForm(
+  page: Page,
+  number: { typed: string; e164: string } = freshNumber(),
+): Promise<{ typed: string; e164: string }> {
   const t = messages.Login;
-  const number = freshNumber();
   const since = new Date();
   await page.goto("/login");
   await page.getByLabel(t.phoneLabel, { exact: true }).fill(number.typed);

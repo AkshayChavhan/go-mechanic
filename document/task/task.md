@@ -35,7 +35,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 23 | `23_booking_flow` | Booking engine: rules, tables, `createMyBooking`, one login per phone (the page is task 47) | Done | [23_booking_flow.md](../learning/23_booking_flow.md) |
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | Done | [24_pickup_drop.md](../learning/24_pickup_drop.md) |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
-| 26 | `26_admin_bookings_board` | Admin navigation by role, bookings board, phone and walk-in bookings | To do |  |
+| 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | In progress | [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md) |
 | 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | To do |  |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
@@ -56,9 +56,11 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 44 | `44_real_sms_otp` | Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid) | To do |  |
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
-| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | In progress | [47_book_wizard.md](../learning/47_book_wizard.md) |
+| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | Done | [47_book_wizard.md](../learning/47_book_wizard.md) |
 | 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | Done | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
 | 49 | `49_book_pickup_step` | The pickup and drop step in the `/book` wizard (task 24's areas) | To do |  |
+| 50 | `50_staff_phone_bookings` | Phone and walk-in bookings made by staff (split from task 26) | To do |  |
+| 51 | `51_admin_estimate_inbox` | The estimate-request inbox and its photo page in `/admin` (split from task 26) | To do |  |
 
 ## Task steps
 
@@ -413,12 +415,16 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 26_admin_bookings_board
 
-- [ ] Create branch `26_admin_bookings_board`
-- [ ] Plan with `ce-plan`
-- [ ] Admin navigation by role, bookings board, phone and walk-in bookings
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `26_admin_bookings_board`
+- [x] Plan with `ce-plan`: [the plan](../plans/2026-11-19-1840-feat-admin-bookings-board-plan.md) (document review: 5 fixes applied, 6 more approved by the owner)
+- [x] The `/admin` area: add `/admin` to `PROTECTED_PREFIXES`; every page calls `requirePermission(locale, ...)` itself, not only its layout; navigation shows only what the role may do (`can()`); browser tests that a customer gets the 404 page and a logged-out visitor a 307; `forbidden()` is still experimental in Next.js 16.4.6, so a wrong role gets the 404 page (task 16)
+- [x] The bookings board: bookings by date, read-only (confirm, cancel, reschedule and assign are task 27; every booking is `booked` until then, so no status filter yet); phone numbers and pickup addresses only with `customers.contact`
+- [x] The estimate-request inbox moved to task 51 (owner, 2026-11-19, at the plan's size checkpoint)
+- [x] Staff can add `/admin` to their phone's home screen (`/admin.webmanifest` and PNG icons, linked only from the admin layout)
+- [x] Phone and walk-in bookings moved to task 50 (owner, 2026-11-19, to keep this pull request reviewable)
+- [x] Write the learning doc: [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md)
+- [x] Review: `ce-code-review` "Ready with fixes" (fixed); `code-reviewer` "Ready to merge" (its accessibility suggestion fixed, the skip link in the backlog)
+- [x] Compound: [nextjs-16-icons-export-drops-root-icon-file.md](../solutions/conventions/nextjs-16-icons-export-drops-root-icon-file.md)
 - [ ] Merge into `main`
 
 ### 27_booking_management
@@ -653,7 +659,7 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [x] Write the learning doc: [47_book_wizard.md](../learning/47_book_wizard.md)
 - [x] Review: `ce-code-review` "Ready with fixes" (2 confirmed findings, fixed); `code-reviewer` 1 must-fix (CLAUDE.md, fixed), and its browser-check suggestion found a shared-phone leak (fixed)
 - [x] Compound: section 3b added to [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #28 on GitHub
 
 ### 48_nextjs_security_upgrade
 
@@ -681,6 +687,35 @@ Task 24 built pickup and drop in the booking engine; task 47 built `/book` and c
 - [ ] Ask for the address and the PIN code; show the pickup fee next to the services' total, "Free" for 0 (task 24); post them with Confirm, and handle the "pickup not offered" answer by going back to the pickup step
 - [ ] A browser test with a seeded pickup area (the e2e build has none by default)
 - [ ] `Booking.errors.pickup.address-too-long` types "200 characters": use `{max}` and pass `PICKUP_RULES.addressMaxLength` from `problemsAnswer`, so the message follows the rule (code-reviewer in task 47)
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
+
+### 50_staff_phone_bookings
+
+Split from task 26 (owner, 2026-11-19). Staff book a visit for someone who phones or walks in.
+
+- [ ] Create branch `50_staff_phone_bookings`
+- [ ] Plan with `ce-plan`
+- [ ] Who it's for: the booking keeps a copy of the name and phone number; no login is created, so nobody gets an account without agreeing to the notice. Linking it to a customer who logs in later with that number is a later task (owner, 2026-11-19)
+- [ ] Dates: staff may book from today onward, past the customer's 7-day window, but never over a full slot (owner, 2026-11-19). Add it as an option to `reserveSlot`; the customer window stays the default (task 22)
+- [ ] `bookings.manage` (`authorize()`) first; prices from `priceFor()` over real prices only (task 18); the booking engine's fixed order (CLAUDE.md "Bookings")
+- [ ] Update the privacy notice: the name and number of someone booked by staff, why and how long they're kept; move `LOGIN_NOTICE_VERSION`
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
+
+### 51_admin_estimate_inbox
+
+Split from task 26 at its size checkpoint (owner, 2026-11-19). Build it from U4 and the inbox parts of U6 in [task 26's plan](../plans/2026-11-19-1840-feat-admin-bookings-board-plan.md) (R8, R9, KTD6).
+
+- [ ] Create branch `51_admin_estimate_inbox`
+- [ ] Add the inbox back to the staff menu and overview (`adminNavItems` in `src/components/admin/admin-navigation.ts`; its words are already in `Admin.nav` and `Admin.overview`)
+- [ ] `/admin/estimates`: `listEstimateRequests()` (newest 50), an empty state, and "Showing the newest 50 requests" when the page is full; each row links to its detail page (task 32)
+- [ ] `/admin/estimates/<id>`: a new `readEstimateRequestForStaff(id)` (`estimates.manage` first, then `isUuid`); photos through `photoViewUrls(photoSetId)`, loaded at once, with the 5-minute expiry line; "the photos were removed" when the set is gone; a back link
+- [ ] Browser tests: the owner opens a customer's request and its photo loads; a customer gets the 404 page with no staff words in its HTML
 - [ ] Write the learning doc
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -760,8 +795,14 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 26: the `/admin` inbox for estimate requests: call `listEstimateRequests()` (it checks `estimates.manage` itself, and gives the phone number only with `customers.contact`), open the photos with `photoViewUrls(photoSetId)`, and decide paging and filters (it returns the newest 50 today) (task 32)
 - Task 33: answer estimate requests. Close the request's photo set (`photo_sets.closed_at`) when the garage answers, or an open set (and the request's photos) is deleted 30 days after it started; also refuse uploads to a set a request already uses (a direct `startPhotos` call could add to it). The request has no status column: work its state out from its estimates (task 32)
 - Links to `/estimate` from the menu, the footer and the home page (`src/components/site/navigation.ts`, which another session is changing for `/book`), and a login that returns a guest to `/estimate` (today they land on `/account`, which links to it) (task 32)
+- Task 42: `/estimate` in the sitemap, and a title and description that name the place and the vehicles (for example "Free car and bike repair estimate in Kiwale, Pune | GoMechanic"); today no public page links to it, so search engines may never find it until the links above exist (SEO check after task 32)
 - Task 47: the booking action's error wrapper (no message, no cause) should cover `sendEstimateRequest` too: a failed insert's error carries the customer's description (task 32)
 - Task 43: deleting a customer's estimate requests (`user_id` restricts deletes, as for bookings), and the privacy notice's "Your estimate requests" retention then (task 32)
+- Tasks 25 and 27: once a booking can be cancelled, the staff board (`listBookingsOn`, `BookingsBoard`) must show each booking's status or leave cancelled ones out: today it shows every row the same, because every booking is `booked` (task 26 code review)
+- The staff bar has no "Skip to content" link: reuse the site shell's (`site-chrome.tsx`) in `AdminBar` and give the admin `<main id="main">` `tabIndex={-1}`, before tasks 28, 29 and 51 make the bar longer (task 26 code-reviewer)
+- A login that returns staff to `/admin` (and a guest to `/estimate`): `/login?next=` accepting only known paths. Today login always lands on `/account`, which shows staff a "Staff area" link (task 26)
+- Browser tests: `e2e/admin.spec.ts`, `booking.spec.ts`, `account.spec.ts` and `estimate.spec.ts` each copy the same small helpers (`field`, `button`, `pill`, `withoutFaviconProbe`); move them into `e2e/helpers.ts` (task 26 simplify pass)
+- The privacy notice's "Your bookings" says "The garage" sees them, while "Your estimate requests" and "Your photos" name "the garage's owner and managers". Both are true today; make them consistent the next time the notice changes, and move `LOGIN_NOTICE_VERSION` then (task 26)
 - A shared helper for the `{placeholder}` text fill and the `aria-describedby` id joiner: `estimate-form.tsx` added a 4th copy of `fill()` and a 3rd of `ids()` (photo-uploader, vehicle-picker, price-finder, login-form and vehicle-form have the others, already drifting apart) (task 32 code review)
 - CLAUDE.md "Services and prices" says anything that shows a vehicle model renders only under `showSamples()`, but the add-vehicle form (task 21) and `/estimate` (task 32) show the draft catalogue to logged-in customers, inside their `<Suspense>` gates. Reconcile the rule with them when the owner approves the models (task 39) or before staging (task 20) (task 32 code review)
 - Task 26: the mechanic's pages on `/admin`: their jobs (`listMyAssignedJobs()`), a job (`readJob()`, which leaves out the phone number for mechanics) with `JobTimeline`, and the update form (step, note, `PhotoUploader` wired to `startJobPhotoUpload`/`finishJobPhotoUpload` through new Server Actions that call `requireUser` first, a request token per visit) calling `updateJob()`. Its form says notes are shown to the customer (task 31)

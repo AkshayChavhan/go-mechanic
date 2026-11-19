@@ -15,8 +15,11 @@
 // visitor to /login?session=ended. The marker tells this shortcut not to
 // send them back to /account, which would loop.
 
-/** Pages that need a login: these paths and everything under them. */
-export const PROTECTED_PREFIXES = ["/account"] as const;
+/**
+ * Pages that need a login: these paths and everything under them. The staff
+ * area (/admin, task 26) also needs a permission, which its pages check.
+ */
+export const PROTECTED_PREFIXES = ["/account", "/admin"] as const;
 
 export const LOGIN_PATH = "/login";
 export const ACCOUNT_PATH = "/account";
