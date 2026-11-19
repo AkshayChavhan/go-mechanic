@@ -528,7 +528,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 37_reviews
 
 - [x] Create branch `37_reviews`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-2019-feat-customer-reviews-plan.md)
 - [ ] Customer reviews, `/reviews`, admin reply or hide
 - [ ] Switch the home page reviews preview and rating from sample content to real reviews: `selectReviews()` in `src/content/home.ts` reads the real ones; delete `sampleReviews`, and move the production no-samples scan in `e2e/home.spec.ts` off `sampleCanary`, which goes with them (task 13)
 - [ ] Decide the rating stat's one source, the owner's Google rating or the site's own average: two ratings that disagree would confuse visitors (task 13)
