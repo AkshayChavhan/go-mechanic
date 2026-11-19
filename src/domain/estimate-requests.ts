@@ -8,6 +8,7 @@
 // listed, and that the photo set is theirs and unused.
 
 import { isUuid } from "./ids";
+import { normalizeTypedText, typedLength } from "./typed-text";
 import { type Fuel, isFuel } from "./vehicles";
 
 /** The limits on a request. The per-day number is a placeholder the owner may change. */
@@ -51,22 +52,6 @@ export type CheckedEstimateRequest = {
   requestToken: string;
 };
 
-/**
- * The description as stored: trimmed, NUL characters dropped, Windows line
- * breaks made plain, and spaces at the end of each line removed. Line breaks inside are kept: a
- * customer may list symptoms one per line.
- */
-export function normalizeDescription(typed: string): string {
-  return typed
-    // NUL can't be stored in Postgres text (error 22021); only a hand-made post sends one.
-    .replace(/\u0000/g, "")
-    .replace(/\r\n?/g, "\n")
-    .split("\n")
-    .map((line) => line.trimEnd())
-    .join("\n")
-    .trim();
-}
-
 function checkVehicle(
   vehicle: EstimateVehicleInput,
   problems: EstimateRequestInputProblem[],
@@ -102,8 +87,8 @@ export function checkEstimateRequestInput(
   const problems: EstimateRequestInputProblem[] = [];
   const vehicle = checkVehicle(input.vehicle, problems);
 
-  const description = normalizeDescription(input.description);
-  const length = [...description].length;
+  const description = normalizeTypedText(input.description);
+  const length = typedLength(description);
   if (length === 0) problems.push({ field: "description", problem: "description-missing" });
   else if (length < ESTIMATE_REQUEST_RULES.descriptionMinLength) problems.push({ field: "description", problem: "description-too-short" });
   else if (length > ESTIMATE_REQUEST_RULES.descriptionMaxLength) problems.push({ field: "description", problem: "description-too-long" });
