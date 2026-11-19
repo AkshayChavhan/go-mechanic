@@ -76,6 +76,9 @@ const TABLES: Record<string, Personal | null> = {
       "pickup_address",
       "pickup_postal_code",
       "pickup_fee_paise",
+      // The job (task 31): its step and the mechanic doing it.
+      "job_status",
+      "assigned_mechanic_id",
       "created_at",
     ],
   },
@@ -83,7 +86,11 @@ const TABLES: Record<string, Personal | null> = {
     item: "bookings",
     columns: ["id", "booking_id", "service_id", "service_kind", "name", "price_status", "price_paise", "position"],
   },
-  booking_events: { item: "bookings", columns: ["id", "booking_id", "kind", "actor_user_id", "created_at"] },
+  // The booking's history, and from task 31 the job's updates: a step, a note, photos.
+  booking_events: {
+    item: "bookings",
+    columns: ["id", "booking_id", "kind", "actor_user_id", "job_status", "note", "photo_set_id", "had_photos", "request_token", "created_at"],
+  },
   // Requests for a free estimate (task 32): the vehicle copy, the description and the photo set it points to.
   estimate_requests: {
     item: "estimates",
@@ -101,8 +108,9 @@ const TABLES: Record<string, Personal | null> = {
       "created_at",
     ],
   },
-  // Photos a customer sends (task 30): the set they belong to, and each file's record.
-  photo_sets: { item: "photos", columns: ["id", "user_id", "created_at", "closed_at"] },
+  // Photos of a customer's vehicle (task 30), sent by them or taken by the garage for a job (task 31,
+  // booking_id): the set they belong to, and each file's record.
+  photo_sets: { item: "photos", columns: ["id", "user_id", "created_at", "closed_at", "booking_id"] },
   photos: {
     item: "photos",
     columns: ["id", "set_id", "storage_key", "status", "bytes", "created_at", "stored_at"],
