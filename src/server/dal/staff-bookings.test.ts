@@ -56,6 +56,10 @@ afterAll(async () => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  // clearAllMocks keeps a stubbed implementation, so put the real rule back:
+  // a test that stubs can() must not change the next test's permissions.
+  const permissions = await vi.importActual<typeof import("@/domain/permissions")>("@/domain/permissions");
+  vi.mocked(can).mockImplementation(permissions.can);
   vi.mocked(getDatabase).mockResolvedValue(db);
   logIn(manager);
   await db.delete(bookings);
@@ -222,6 +226,18 @@ describe("listBookingsOn", () => {
       phoneNumber: null,
       pickup: { included: true, address: null, postalCode: null, feePaise: 0 },
     });
+  });
+
+  test("two bookings in the same slot both show, each with its own lines", async () => {
+    const first = await book({ startsAt: "2026-11-24T04:30:00Z", lines: [brakes] });
+    const second = await book({ userId: "ravi", startsAt: "2026-11-24T04:30:00Z", lines: [battery] });
+
+    const result = await listBookingsOn(DAY);
+    if (!result.ok) throw new Error("expected bookings");
+    expect(new Set(result.bookings.map((row) => row.id))).toEqual(new Set([first, second]));
+    const linesOf = (id: string) => result.bookings.find((row) => row.id === id)!.lines.map((line) => line.serviceId);
+    expect(linesOf(first)).toEqual([brakes.serviceId]);
+    expect(linesOf(second)).toEqual([battery.serviceId]);
   });
 
   test("a day with no bookings gives an empty list", async () => {
