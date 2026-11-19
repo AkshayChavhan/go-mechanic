@@ -23,6 +23,7 @@ import { ServicePrices } from "@/components/site/service-prices";
 import { ServiceTile } from "@/components/site/service-tile";
 import { SiteFooter } from "@/components/site/site-footer";
 import { MobileMenuContent, SiteHeader } from "@/components/site/site-header";
+import { StarRatingInput } from "@/components/site/star-rating-input";
 import { StatTile } from "@/components/site/stat-tile";
 import { VehicleIllustration } from "@/components/site/vehicle-illustration";
 import { VehiclePicker } from "@/components/site/vehicle-picker";
@@ -205,6 +206,9 @@ const statusSamples = [
     { isOpen: false, nextOpening: { at: new Date("2026-11-03T04:30:00Z"), when: "later", weekday: "tuesday" } },
   ],
 ] as const;
+
+/** The star rating sample's names for screen readers. */
+const sampleStarLabels = { 1: "1 out of 5 stars", 2: "2 out of 5 stars", 3: "3 out of 5 stars", 4: "4 out of 5 stars", 5: "5 out of 5 stars" };
 
 /** A made-up real-looking review for the Review card samples: a long comment and a reply. */
 const sampleRealReview: Review = {
@@ -837,6 +841,24 @@ export default async function DesignPage() {
                     { value: "tue", label: "Tue, 24 Nov" },
                     { value: "wed", label: "Wed, 25 Nov" },
                   ]}
+                />
+              </div>
+            </Block>
+
+            <Separator />
+
+            <Block
+              title="Star rating"
+              description="1 to 5 stars for a review (task 37): five native radios in a fieldset, each a 44px square, so a star can be chosen before JavaScript loads. Stars fill up to the chosen one by CSS alone, and differ in shape (filled or outlined), not only colour. Each radio has a name for screen readers; an error sits under the stars."
+            >
+              <div data-sample="star-rating" className="grid gap-6 md:grid-cols-2">
+                <StarRatingInput legend="Your rating" name="sample-rating" starLabels={sampleStarLabels} defaultValue={4} />
+                <StarRatingInput
+                  legend="Your rating"
+                  name="sample-rating-error"
+                  starLabels={sampleStarLabels}
+                  error="Choose a rating from 1 to 5 stars."
+                  errorId="sample-rating-error"
                 />
               </div>
             </Block>

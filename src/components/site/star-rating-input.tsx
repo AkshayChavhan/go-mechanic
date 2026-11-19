@@ -14,6 +14,8 @@ type StarRatingInputProps = {
   starLabels: Record<Rating, string>;
   /** The chosen rating, for a parent that keeps the state (null: none yet). */
   value?: Rating | null;
+  /** The rating checked at first, when `value` isn't given (a server-rendered sample). */
+  defaultValue?: Rating;
   onChange?: (value: Rating) => void;
   /** A message under the stars, and the group marked invalid. */
   error?: string;
@@ -34,7 +36,7 @@ type StarRatingInputProps = {
  *   too. Filled and outlined stars differ in shape, not only in colour.
  * - Each radio has a name ("3 out of 5 stars"); the stars are decorative.
  */
-export function StarRatingInput({ legend, name, starLabels, value, onChange, error, errorId }: StarRatingInputProps) {
+export function StarRatingInput({ legend, name, starLabels, value, defaultValue, onChange, error, errorId }: StarRatingInputProps) {
   const controlled = value !== undefined;
 
   return (
@@ -59,7 +61,7 @@ export function StarRatingInput({ legend, name, starLabels, value, onChange, err
               name={name}
               value={String(rating)}
               aria-label={starLabels[rating]}
-              {...(controlled ? { checked: rating === value } : {})}
+              {...(controlled ? { checked: rating === value } : { defaultChecked: rating === defaultValue })}
               {...(onChange ? { onChange: () => onChange(rating) } : { readOnly: controlled })}
             />
             <StarIcon aria-hidden="true" className="size-8" />
