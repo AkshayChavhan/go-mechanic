@@ -1,8 +1,9 @@
 ---
 title: "React 19 form islands under Next.js 16: hydration resets, browser-only actions, hidden pages"
 date: 2026-11-03
+last_updated: 2026-11-19
 category: conventions
-module: "src/components/site/vehicle-picker.tsx, src/components/account/"
+module: "src/components/site/vehicle-picker.tsx, src/components/account/, src/components/estimate/estimate-form.tsx"
 problem_type: convention
 component: frontend
 severity: medium
@@ -45,6 +46,18 @@ const [selection, setSelection] = useState(() => {
 
 `fieldsInPage` returns `null` on the server (`typeof document === "undefined"`). React logs no hydration warning for a value or `checked` that differs from the server's HTML, so this needs no suppression. The regression test is `vehicle-picker.test.tsx`: it renders the server HTML, changes a field, then calls `hydrateRoot`.
 
+**Restore values, never structure, while hydrating (task 32).** The estimate form read a pre-hydration "Another vehicle" radio the same way, and showed the vehicle picker at once because of it. `hydrateRoot` then failed: "Hydration failed because the server rendered HTML didn't match the client". A different value is fine; a different element tree is not. Keep the read choice in state, but render what the server rendered until hydration is done, and let the next render add the extra part:
+
+```tsx
+const subscribeToNothing = () => () => {};
+const hydrated = useSyncExternalStore(subscribeToNothing, () => true, () => false);
+const [choice, setChoice] = useState(() => choiceInPage(groupId) ?? (values.vehicleChoice || null));
+const shownChoice = hydrated ? choice : values.vehicleChoice || null; // the server's view while hydrating
+const usePicker = !hasSaved || shownChoice === OTHER_VEHICLE;
+```
+
+The tapped radio stays checked (it reads `choice`), and the picker appears one render later. The test is "keeps a saved vehicle tapped before the page's JavaScript loaded" in `src/components/estimate/estimate-form.test.tsx`: it fails with the hydration error if the picker is shown during hydration, and loses the tap if `choiceInPage` is dropped.
+
 ### 2. Pass the Server Action itself when posting without JavaScript matters
 
 `useActionState(wrapper, initial)` makes the form post to a browser-side function. The server then renders `action="javascript:throw..."` in place of a real URL. If a page must work without JavaScript, pass the Server Action directly:
@@ -83,6 +96,7 @@ Two more rules come with this:
 ## When to Apply
 
 - Any client form that uses a controlled field and can be used before hydration finishes.
+- Any island where that field decides what else renders (a "show more fields" choice): render the server's tree until hydrated.
 - Any `useActionState` call: decide first whether the form must post without JavaScript.
 - Any form on a page with `<Activity>` (every Next.js page you can leave and come back to).
 
