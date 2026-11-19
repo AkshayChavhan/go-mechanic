@@ -56,7 +56,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 44 | `44_real_sms_otp` | Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid) | To do |  |
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
-| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | In progress | [47_book_wizard.md](../learning/47_book_wizard.md) |
+| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | Done | [47_book_wizard.md](../learning/47_book_wizard.md) |
 | 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | Done | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
 | 49 | `49_book_pickup_step` | The pickup and drop step in the `/book` wizard (task 24's areas) | To do |  |
 
@@ -653,7 +653,7 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [x] Write the learning doc: [47_book_wizard.md](../learning/47_book_wizard.md)
 - [x] Review: `ce-code-review` "Ready with fixes" (2 confirmed findings, fixed); `code-reviewer` 1 must-fix (CLAUDE.md, fixed), and its browser-check suggestion found a shared-phone leak (fixed)
 - [x] Compound: section 3b added to [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`: PR #28 on GitHub
 
 ### 48_nextjs_security_upgrade
 
