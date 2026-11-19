@@ -7,6 +7,7 @@ import { defaultLocale, GARAGE_TIME_ZONE } from "@/i18n/config";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { getCurrentUser } from "@/server/auth/session";
 import { listMyVehicles, type MyVehicle } from "@/server/dal/customer-vehicles";
+import { listMyEstimateRequests } from "@/server/dal/estimate-requests";
 import { readMyProfile } from "@/server/dal/profile";
 import messages from "../../../messages/en.json";
 
@@ -14,15 +15,21 @@ import { AccountContent } from "./account-content";
 
 // AccountContent is an async Server Component: each test calls it and renders
 // what it returns. The session, the data-access functions and the Server
-// Action are stand-ins. VehicleList (an async Server Component, tested on
-// its own) is a marker that shows the props it got.
+// Action are stand-ins. VehicleList and EstimateRequests (async Server
+// Components, tested on their own) are markers that show the props they got.
 vi.mock("@/server/auth/session", () => ({ getCurrentUser: vi.fn() }));
 vi.mock("@/server/dal/profile", () => ({ readMyProfile: vi.fn() }));
 vi.mock("@/server/dal/customer-vehicles", () => ({ listMyVehicles: vi.fn() }));
+vi.mock("@/server/dal/estimate-requests", () => ({ listMyEstimateRequests: vi.fn() }));
 vi.mock("@/server/actions/account", () => ({ saveName: vi.fn() }));
 vi.mock("@/components/account/vehicle-list", () => ({
   VehicleList: ({ vehicles, today }: { vehicles: MyVehicle[]; today: string }) => (
     <p data-testid="vehicle-list">{`${vehicles.length} vehicles, today ${today}`}</p>
+  ),
+}));
+vi.mock("@/components/account/estimate-requests", () => ({
+  EstimateRequests: ({ requests }: { requests: unknown[] }) => (
+    <p data-testid="estimate-requests">{`${requests.length} requests`}</p>
   ),
 }));
 vi.mock("next-intl/server", async () => {
@@ -50,6 +57,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getCurrentUser).mockResolvedValue(asha);
   vi.mocked(listMyVehicles).mockResolvedValue([]);
+  vi.mocked(listMyEstimateRequests).mockResolvedValue([]);
   // 29 Oct 2026, 00:10 in India (18:40 UTC the day before). Only Date is faked.
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-28T18:40:00Z"));
@@ -74,6 +82,7 @@ describe("AccountContent", () => {
     expect(screen.getByLabelText(messages.Account.nameLabel)).toBeTruthy();
     expect(screen.queryByTestId("vehicle-list")).toBeNull();
     expect(listMyVehicles).not.toHaveBeenCalled();
+    expect(listMyEstimateRequests).not.toHaveBeenCalled();
   });
 
   test("on a shared phone, the next customer's name form starts empty, not with the last one's draft", async () => {
@@ -96,6 +105,23 @@ describe("AccountContent", () => {
     const add = screen.getByRole("link", { name: messages.MyVehicles.addLink });
     expect(add.getAttribute("href")).toBe("/account/vehicles/new");
     expect(screen.queryByLabelText(messages.Account.nameLabel)).toBeNull();
+  });
+
+  test("estimate requests: below the vehicles with none, right under the greeting with one", async () => {
+    vi.mocked(readMyProfile).mockResolvedValue({ name: "Asha Patil", phoneNumber: asha.phoneNumber });
+    const order = () =>
+      Array.from(document.querySelectorAll('[data-testid="vehicle-list"], [data-testid="estimate-requests"]')).map(
+        (element) => element.getAttribute("data-testid"),
+      );
+
+    const { unmount } = renderWithIntl(await AccountContent({ locale: "en" }));
+    expect(screen.getByTestId("estimate-requests").textContent).toBe("0 requests");
+    expect(order()).toEqual(["vehicle-list", "estimate-requests"]);
+    unmount();
+
+    vi.mocked(listMyEstimateRequests).mockResolvedValue([{ id: "r1" } as never]);
+    renderWithIntl(await AccountContent({ locale: "en" }));
+    expect(order()).toEqual(["estimate-requests", "vehicle-list"]);
   });
 
   test("logged out (a leftover cookie): sent to /login?session=ended, before any data is read", async () => {
