@@ -468,7 +468,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `31_job_timeline`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1833-feat-job-timeline-engine-plan.md)
-- [ ] Job statuses, mechanic job updates and the customer's timeline: the engine only (owner, 2026-11-19: the pages wait for tasks 25 and 26)
+- [x] Job statuses, mechanic job updates and the customer's timeline: the engine only (owner, 2026-11-19: the pages wait for tasks 25 and 26)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -764,6 +764,13 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 43: deleting a customer's estimate requests (`user_id` restricts deletes, as for bookings), and the privacy notice's "Your estimate requests" retention then (task 32)
 - A shared helper for the `{placeholder}` text fill and the `aria-describedby` id joiner: `estimate-form.tsx` added a 4th copy of `fill()` and a 3rd of `ids()` (photo-uploader, vehicle-picker, price-finder, login-form and vehicle-form have the others, already drifting apart) (task 32 code review)
 - CLAUDE.md "Services and prices" says anything that shows a vehicle model renders only under `showSamples()`, but the add-vehicle form (task 21) and `/estimate` (task 32) show the draft catalogue to logged-in customers, inside their `<Suspense>` gates. Reconcile the rule with them when the owner approves the models (task 39) or before staging (task 20) (task 32 code review)
+- Task 26: the mechanic's pages on `/admin`: their jobs (`listMyAssignedJobs()`), a job (`readJob()`, which leaves out the phone number for mechanics) with `JobTimeline`, and the update form (step, note, `PhotoUploader` wired to `startJobPhotoUpload`/`finishJobPhotoUpload` through new Server Actions that call `requireUser` first, a request token per visit) calling `updateJob()`. Its form says notes are shown to the customer (task 31)
+- Task 25: the customer's booking page shows `JobTimeline` from `readMyJobTimeline(bookingId)` (task 31)
+- Task 27: assign a mechanic (`bookings.assigned_mechanic_id`; check the person assigned holds `jobs.update`), and make `updateJob` refuse a cancelled booking and cancelling refuse a job that has started (`job_status` not null) (task 31)
+- Task 33: sending an estimate moves the job to `awaiting-approval`: add the estimate's rows to `canMoveJob`'s table (inspection or in-service → awaiting-approval) with a "how" that keeps them off-limits by hand, and write a `job-update` event for the move (timelines carry the step forward from events). Task 34 adds the moves out of it, a rejected estimate included (task 31)
+- Task 35: queue the customer's notification for a job update where `updateJob` marks the spot, inside its transaction (task 31)
+- Task 43: deleting a booking with job photos needs its photos deleted first (`photo_sets.booking_id` restricts it), and the notice's "Your bookings" then says how long progress and notes are kept (task 31)
+- Task 20: on Postgres, check two `updateJob` calls on one booking at once (the `for update` lock); PGlite runs one transaction at a time and can't show the race (task 31)
 
 ## How to add a task
 
