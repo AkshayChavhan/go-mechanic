@@ -564,6 +564,7 @@ describe("BookingWizard: the end", () => {
     ],
     totalPaise: null,
     isEstimate: true,
+    pickup: null,
   };
 
   test("done shows the code with the note-it-down line, the slot, the lines, the total and Call and WhatsApp", async () => {
@@ -579,6 +580,30 @@ describe("BookingWizard: the end", () => {
     expect(screen.getAllByText(t.noTotal).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole("link", { name: "Call" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "WhatsApp" })).toBeTruthy();
+    // Brought in: no pickup row.
+    expect(screen.queryByText(t.pickupTerm)).toBeNull();
+  });
+
+  test("done with free pickup says where from, and Free", async () => {
+    const { confirmAction } = toConfirm();
+    const pickup = { address: "12, MG Road, Chakan", postalCode: "410501", feePaise: 0 };
+    confirmAction.mockResolvedValueOnce(answered({ kind: "booked", booking: { ...booking, pickup } }));
+    await submit(t.confirm);
+    expect(screen.getByText(t.pickupTerm)).toBeTruthy();
+    expect(screen.getByText(/We collect it from 12, MG Road, Chakan, 410501/)).toBeTruthy();
+    expect(screen.getByText(t.pickupFree)).toBeTruthy();
+  });
+
+  test("a duplicate of a booking with pickup says so, with its fee: the earlier booking's, not this confirm's", async () => {
+    const { confirmAction } = toConfirm();
+    const message = messages.Booking.duplicate.replace("{code}", "K7Q-4MX");
+    const pickup = { address: "12, MG Road, Chakan", postalCode: "410501", feePaise: 29_900 };
+    confirmAction.mockResolvedValueOnce(answered({ kind: "duplicate", booking: { ...booking, pickup }, message }));
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.duplicateHeading);
+    expect(screen.getByText(t.pickupTerm)).toBeTruthy();
+    expect(screen.getByText(/We collect it from 12, MG Road, Chakan, 410501/)).toBeTruthy();
+    expect(screen.getByText("Fee: ₹299, paid at the garage")).toBeTruthy();
   });
 
   test("a duplicate shows its own message and the earlier booking as saved (its time, not the one just chosen)", async () => {
@@ -596,6 +621,7 @@ describe("BookingWizard: the end", () => {
     expect(screen.getByText("Honda City, MH 12 AB 0042")).toBeTruthy();
     expect(screen.getByText("Periodic service")).toBeTruthy();
     expect(screen.queryByText(t.doneHeading)).toBeNull();
+    expect(screen.queryByText(t.pickupTerm)).toBeNull();
   });
 });
 

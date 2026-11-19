@@ -6,7 +6,7 @@ import type { SlotDay } from "@/domain/slots";
 import { type ConfirmState, initialBookingLoginState, initialConfirmState } from "@/lib/booking-form";
 import { initialLoginState, type LoginState } from "@/lib/login-state";
 import type { Auth } from "@/server/auth/auth";
-import { LoginServiceError } from "@/server/auth/errors";
+import { BookingServiceError, LoginServiceError } from "@/server/auth/errors";
 import { getAuth } from "@/server/auth/instance";
 import { requestLoginCode, verifyLoginCode } from "@/server/auth/login";
 import { getCurrentUser } from "@/server/auth/session";
@@ -105,6 +105,7 @@ const savedBooking: BookedBooking = {
   lines: [line],
   totalPaise: null,
   isEstimate: true,
+  pickup: null,
 };
 
 /** The same booking, as the done screen gets it: the code with its dash, the time as an ISO string. */
@@ -346,6 +347,16 @@ describe("confirmBooking: what it sends to the save", () => {
     expect(createMyBooking).toHaveBeenCalledWith(typedInput);
   });
 
+  test("no pickup: the wizard has no pickup step yet, so a posted address or PIN code is never sent", async () => {
+    await confirmBooking(
+      "en",
+      initialConfirmState,
+      form({ ...typedPost, pickupAddress: "12, MG Road, Chakan", pickupPostalCode: "410501", postalCode: "410501" }),
+    );
+    expect(createMyBooking).toHaveBeenCalledWith(typedInput);
+    expect(vi.mocked(createMyBooking).mock.calls[0][0]).not.toHaveProperty("pickup");
+  });
+
   test("a saved vehicle is sent by its id alone", async () => {
     await confirmBooking("en", initialConfirmState, form({ ...typedPost, savedVehicleId: hondaCity.id }));
     expect(createMyBooking).toHaveBeenCalledWith({ ...typedInput, vehicle: { savedVehicleId: hondaCity.id } });
@@ -371,6 +382,7 @@ describe("confirmBooking: each answer of the save", () => {
         lines: [line],
         totalPaise: null,
         isEstimate: true,
+        pickup: null,
       },
     });
     expect(await confirmBooking("en", previous, form(typedPost))).toEqual({
@@ -391,6 +403,7 @@ describe("confirmBooking: each answer of the save", () => {
           lines: [line],
           totalPaise: null,
           isEstimate: true,
+          pickup: null,
         },
       },
     });
@@ -408,6 +421,53 @@ describe("confirmBooking: each answer of the save", () => {
       },
       account: ashaAccount,
     });
+  });
+
+  test("duplicate of a booking with pickup: the summary carries its pickup copy, fee included", async () => {
+    const pickup = { address: "12, MG Road, Chakan", postalCode: "410501", feePaise: 29_900 };
+    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", booking: { ...savedBooking, pickup } });
+    const state = await confirmBooking("en", previous, form(typedPost));
+    expect(state.answer).toMatchObject({ kind: "duplicate", booking: { ...savedSummary, pickup } });
+  });
+
+  test("a pickup problem goes to the confirm step with its message", async () => {
+    vi.mocked(createMyBooking).mockResolvedValue({
+      status: "problems",
+      problems: [{ field: "pickup", problem: "pickup-not-offered" }],
+    });
+    const state = await confirmBooking("en", previous, form(typedPost));
+    expect(state.answer).toEqual({
+      kind: "problems",
+      step: "confirm",
+      errors: { form: t.errors.pickup["pickup-not-offered"] },
+    });
+  });
+
+  test("an unexpected database error from the save comes out without its message or cause", async () => {
+    const cause = Object.assign(new Error("new row violates check constraint"), { code: "23514" });
+    const failure = Object.assign(
+      new Error("Failed query: insert into bookings ... params: Asha Patil, MH12AB1234, 12, MG Road, Chakan", { cause }),
+      { name: "DrizzleQueryError" },
+    );
+    vi.mocked(createMyBooking).mockRejectedValue(failure);
+    const error = await confirmBooking("en", previous, form(typedPost)).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(BookingServiceError);
+    expect((error as Error).message).toBe("createMyBooking failed (DrizzleQueryError 23514)");
+    expect((error as Error).cause).toBeUndefined();
+    expect(String((error as Error).stack)).not.toMatch(/MG Road|MH12AB1234|Asha|Failed query/);
+  });
+
+  test("an unexpected error saving the name comes out the same way", async () => {
+    vi.mocked(readMyProfile).mockResolvedValue({ name: "", phoneNumber: asha.phoneNumber });
+    vi.mocked(saveMyName).mockRejectedValue(
+      Object.assign(new Error("Failed query: update users ... params: Asha Patil"), { name: "DrizzleQueryError" }),
+    );
+    const error = await confirmBooking("en", previous, form({ ...typedPost, name: "Asha Patil" })).catch(
+      (caught: unknown) => caught,
+    );
+    expect(error).toBeInstanceOf(BookingServiceError);
+    expect((error as Error).message).toBe("saveMyName failed (DrizzleQueryError)");
+    expect(createMyBooking).not.toHaveBeenCalled();
   });
 
   test("full: back to the slot step with a fresh slot list (ISO strings), the account kept", async () => {

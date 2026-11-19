@@ -39,6 +39,7 @@ import {
 } from "@/lib/booking-form";
 import { initialLoginState } from "@/lib/login-state";
 import { AccessDeniedError, authorizeUser } from "@/server/auth/access";
+import { bookingWithoutDetails } from "@/server/auth/errors";
 import { getAuth } from "@/server/auth/instance";
 import { type BookedBooking, type BookingSaveProblem, createMyBooking } from "@/server/dal/bookings";
 import { listMyVehicles } from "@/server/dal/customer-vehicles";
@@ -81,6 +82,8 @@ function stepOf(field: BookingSaveProblem["field"]): BookingStep {
     case "slot":
       return "slot";
     case "token":
+    // No pickup step yet (a later task): the confirm step shows it.
+    case "pickup":
       return "confirm";
   }
 }
@@ -105,7 +108,7 @@ export async function confirmBooking(
     nameTyped,
   });
   const accountFor = async (needsName: boolean): Promise<BookingAccount> => ({
-    vehicles: await listMyVehicles(),
+    vehicles: await bookingWithoutDetails("listMyVehicles", listMyVehicles),
     needsName,
   });
 
@@ -120,14 +123,14 @@ export async function confirmBooking(
     throw error;
   }
 
-  if (needsName(await readMyProfile())) {
+  if (needsName(await bookingWithoutDetails("readMyProfile", readMyProfile))) {
     if (nameTyped.trim() === "") {
       return reply(
         { kind: "needs-name", step: "confirm", errors: { name: t("errors.needsName") } },
         await accountFor(true),
       );
     }
-    const saved = await saveMyName(nameTyped);
+    const saved = await bookingWithoutDetails("saveMyName", () => saveMyName(nameTyped));
     if (!saved.ok) {
       const accountText = await getTranslations({ locale: checked, namespace: "Account" });
       return reply(
@@ -137,7 +140,9 @@ export async function confirmBooking(
     }
   }
 
-  const result = await createMyBooking(input);
+  // A failed write's error carries the query's values (the name, the plate,
+  // a pickup address): only the step and the kind of error get through.
+  const result = await bookingWithoutDetails("createMyBooking", () => createMyBooking(input));
   if (result.status === "booked") return reply({ kind: "booked", booking: summaryOf(result.booking) });
 
   // Read after the save: whatever it answered, this is the customer's list now.
@@ -176,7 +181,10 @@ export async function confirmBooking(
         await accountFor(false),
       );
     case "slot-problem": {
-      const [account, slots] = await Promise.all([accountFor(false), readAvailableSlots()]);
+      const [account, slots] = await Promise.all([
+        accountFor(false),
+        bookingWithoutDetails("readAvailableSlots", () => readAvailableSlots()),
+      ]);
       return reply(
         {
           kind: "slot-problem",
@@ -204,6 +212,7 @@ function summaryOf(booking: BookedBooking): BookingSummary {
     lines: booking.lines,
     totalPaise: booking.totalPaise,
     isEstimate: booking.isEstimate,
+    pickup: booking.pickup,
   };
 }
 
@@ -228,6 +237,8 @@ async function problemsAnswer(
         return ["slot", t(`errors.slot.${problem.problem}`)];
       case "token":
         return ["form", t("errors.badToken")];
+      case "pickup":
+        return ["form", t(`errors.pickup.${problem.problem}`)];
     }
   };
   for (const problem of problems) {
@@ -240,6 +251,8 @@ async function problemsAnswer(
     kind: "problems",
     step,
     errors,
-    ...(slotProblem ? { slots: serializeSlotDays(await readAvailableSlots()) } : {}),
+    ...(slotProblem
+      ? { slots: serializeSlotDays(await bookingWithoutDetails("readAvailableSlots", () => readAvailableSlots())) }
+      : {}),
   };
 }

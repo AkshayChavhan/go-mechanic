@@ -464,6 +464,13 @@
       "registrationDuplicate": "You've already saved {registration} as a {model}. Choose it from your vehicles, or check the number.",
       "tooManyBookings": "You already have {limit} bookings coming up. To book another, call or WhatsApp us.",
       "badToken": "Something went wrong. Reload the page and try again.",
+      "pickup": {
+        "address-missing": "Enter the address to collect your vehicle from.",
+        "address-too-short": "Enter the full address to collect your vehicle from.",
+        "address-too-long": "Shorten the address: 200 characters at most.",
+        "postal-code-invalid": "Enter a 6-digit PIN code.",
+        "pickup-not-offered": "We don't offer pickup and drop for that PIN code. You can bring your vehicle in instead."
+      },
       "services": {
         "nothing-chosen": "Choose a package or at least one service.",
         "too-many": "Choose fewer services.",
@@ -536,6 +543,10 @@
       "duplicateHeading": "Already booked",
       "codeLabel": "Your booking code",
       "codeNote": "Note it down or take a screenshot. You'll need it if you call us.",
+      "pickupTerm": "Pickup and drop",
+      "pickupFrom": "We collect it from {address}, {postalCode}, and bring it back.",
+      "pickupFee": "Fee: {amount}, paid at the garage",
+      "pickupFree": "Free",
       "reachUs": "To change or cancel, call or WhatsApp us.",
       "connection": "We couldn't reach the server. Check your connection and try again."
     }

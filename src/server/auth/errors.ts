@@ -1,11 +1,13 @@
-// Errors from the login code, without their details.
+// Errors from the login and booking code, without their details.
 //
 // A database error's message holds the query's values: phone numbers, login
-// codes, session tokens. Next.js logs every error a Server Action or a page
+// codes, session tokens, a booking's pickup address (task 24). Next.js logs every error a Server Action or a page
 // throws, so letting one through would write those values to the logs.
 // withoutDetails runs a step and turns any unexpected error into a
 // LoginServiceError that keeps only what helps debugging and names nobody:
 // the step, the error's name and, for a database error, its Postgres code.
+// bookingWithoutDetails does the same for the booking action (task 47),
+// throwing a BookingServiceError.
 
 import "server-only";
 
@@ -38,5 +40,29 @@ export async function withoutDetails<T>(step: string, run: () => Promise<T>): Pr
     unstable_rethrow(error);
     if (error instanceof LoginServiceError) throw error;
     throw new LoginServiceError(step, kindOf(error));
+  }
+}
+
+/** The booking action's sibling of LoginServiceError: the step and the kind of error, nothing else. */
+export class BookingServiceError extends Error {
+  constructor(step: string, kind: string) {
+    super(`${step} failed (${kind})`);
+    this.name = "BookingServiceError";
+  }
+}
+
+/**
+ * withoutDetails for the booking action: any unexpected error becomes a
+ * BookingServiceError. Next.js's signals pass through first; so does an error
+ * that already carries no details (a LoginServiceError from the session read,
+ * or a BookingServiceError from an inner step).
+ */
+export async function bookingWithoutDetails<T>(step: string, run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    unstable_rethrow(error);
+    if (error instanceof BookingServiceError || error instanceof LoginServiceError) throw error;
+    throw new BookingServiceError(step, kindOf(error));
   }
 }

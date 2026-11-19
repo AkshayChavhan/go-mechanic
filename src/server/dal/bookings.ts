@@ -314,6 +314,9 @@ async function readBookedBooking(tx: SlotTransaction, userId: string, bookingId:
       registrationNumber: bookings.registrationNumber,
       totalPaise: bookings.totalPaise,
       isEstimate: bookings.isEstimate,
+      pickupAddress: bookings.pickupAddress,
+      pickupPostalCode: bookings.pickupPostalCode,
+      pickupFeePaise: bookings.pickupFeePaise,
     })
     .from(bookings)
     .where(and(eq(bookings.userId, userId), eq(bookings.id, bookingId)));
@@ -330,6 +333,11 @@ async function readBookedBooking(tx: SlotTransaction, userId: string, bookingId:
     .from(bookingItems)
     .where(eq(bookingItems.bookingId, bookingId))
     .orderBy(asc(bookingItems.position));
-  const { code, startsAt, totalPaise, isEstimate, ...vehicle } = row;
-  return { code, startsAt, vehicle, lines, totalPaise, isEstimate };
+  const { code, startsAt, totalPaise, isEstimate, pickupAddress, pickupPostalCode, pickupFeePaise, ...vehicle } = row;
+  // All three or none (a CHECK on the table): the earlier booking's own copy.
+  const pickup =
+    pickupAddress !== null && pickupPostalCode !== null && pickupFeePaise !== null
+      ? { address: pickupAddress, postalCode: pickupPostalCode, feePaise: pickupFeePaise }
+      : null;
+  return { code, startsAt, vehicle, lines, totalPaise, isEstimate, pickup };
 }

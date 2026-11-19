@@ -62,7 +62,9 @@ export type ConfirmFormValues = BookingInput & { name: string };
 /**
  * The confirm form's values from what it posted, each as text ("" when
  * missing). Only these fields are read: a posted userId, price or
- * vehicleKind does nothing. A non-empty savedVehicleId picks a saved
+ * vehicleKind does nothing. No pickup either: the wizard has no pickup step
+ * yet (a later task), so a posted address or PIN code is ignored and every
+ * booking from /book is made without pickup. A non-empty savedVehicleId picks a saved
  * vehicle; otherwise the typed one counts.
  */
 export function readConfirmForm(formData: FormData): ConfirmFormValues {
@@ -104,6 +106,8 @@ export type BookingSummary = {
   /** The priced lines added up, in paise; null when no line has a price. */
   totalPaise: number | null;
   isEstimate: boolean;
+  /** The booking's own copy (task 24); null when the customer brings the vehicle in. */
+  pickup: { address: string; postalCode: string; feePaise: number } | null;
 };
 
 /** What the last confirm answered. Every refusal names the step to go back to. */

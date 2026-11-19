@@ -65,6 +65,14 @@ export type BookingWizardLabels = {
   duplicateHeading: string;
   codeLabel: string;
   codeNote: string;
+  /** The done and duplicate screens' pickup row, shown only when the booking includes pickup (task 24). */
+  pickupTerm: string;
+  /** "We collect it from {address}, {postalCode}, ..." */
+  pickupFrom: string;
+  /** "Fee: {amount}, ..." */
+  pickupFee: string;
+  /** What a 0 fee says. */
+  pickupFree: string;
   reachUs: string;
   /** What a failed call says: no network, or the server broke. */
   connection: string;
@@ -93,4 +101,10 @@ export function totalText(
   if (total.totalPaise === null) return labels.noTotal;
   const amount = formatRupees(total.totalPaise, locale);
   return fill(total.isEstimate ? labels.estimate : labels.total, { amount });
+}
+
+/** The pickup fee: "Fee: ₹299, paid at the garage", or "Free" for 0. */
+export function pickupFeeText(feePaise: number, labels: BookingWizardLabels, locale: Locale): string {
+  if (feePaise === 0) return labels.pickupFree;
+  return fill(labels.pickupFee, { amount: formatRupees(feePaise, locale) });
 }

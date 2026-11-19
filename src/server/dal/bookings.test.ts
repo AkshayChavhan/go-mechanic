@@ -530,9 +530,25 @@ describe("pickup and drop (task 24)", () => {
     await db.update(pickupAreas).set({ listed: false }).where(eq(pickupAreas.postalCode, "412101"));
     expect(await createMyBooking(input({ pickup, requestToken }), clock)).toEqual({
       status: "duplicate",
-      code: first.booking.code,
+      booking: first.booking,
     });
     expect(await counterAt(friday10)).toBe(1);
+  });
+
+  test("a duplicate carries the earlier booking's own pickup copy, whatever this confirm asked for", async () => {
+    // First with pickup; the same vehicle and slot again under a new token, without.
+    const first = await createMyBooking(input({ pickup }), clock);
+    if (first.status !== "booked") throw new Error(`expected a booking, got ${first.status}`);
+    expect(await createMyBooking(input(), clock)).toEqual({ status: "duplicate", booking: first.booking });
+    expect(first.booking.pickup).toEqual({ ...copy, feePaise: 25_000 });
+  });
+
+  test("a duplicate of a booking without pickup says so, even when this confirm asked for it", async () => {
+    const first = await createMyBooking(input(), clock);
+    if (first.status !== "booked") throw new Error(`expected a booking, got ${first.status}`);
+    const again = await createMyBooking(input({ pickup }), clock);
+    expect(again).toMatchObject({ status: "duplicate", booking: { code: first.booking.code, pickup: null } });
+    expect(await savedPickup()).toEqual({ address: null, postalCode: null, feePaise: null });
   });
 
   test("a saved vehicle can be booked with pickup too", async () => {

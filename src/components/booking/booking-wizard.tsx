@@ -34,7 +34,13 @@ import {
   type LoginFormLabels,
   type LoginFormState,
 } from "@/components/account/login-form";
-import { type BookingWizardLabels, fill, linePriceText, totalText } from "@/components/booking/booking-labels";
+import {
+  type BookingWizardLabels,
+  fill,
+  linePriceText,
+  pickupFeeText,
+  totalText,
+} from "@/components/booking/booking-labels";
 import { offeredServices, pricedVehicleOf, totalOf } from "@/components/booking/booking-prices";
 import {
   BLANK_TYPED_VEHICLE,
@@ -756,6 +762,15 @@ function DoneScreen({
           />
         </SummaryRow>
         <TotalRow total={booking} labels={labels} />
+        {/* Only when the booking includes it: a duplicate may be an earlier booking without pickup. */}
+        {booking.pickup && (
+          <SummaryRow term={labels.pickupTerm} labels={labels}>
+            {fill(labels.pickupFrom, { address: booking.pickup.address, postalCode: booking.pickup.postalCode })}
+            <span className="block type-callout text-muted-foreground">
+              {pickupFeeText(booking.pickup.feePaise, labels, locale)}
+            </span>
+          </SummaryRow>
+        )}
       </dl>
       <div className="flex flex-col gap-4">
         <p className="type-body">{labels.reachUs}</p>
