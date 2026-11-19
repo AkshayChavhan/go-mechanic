@@ -743,7 +743,7 @@ export default async function DesignPage() {
 
             <Block
               title="Choice pills"
-              description="One question, answered by native radios drawn as 44px pills: they work before JavaScript loads, and the arrow keys move between them. The chosen pill takes the text colour; blue stays for actions."
+              description="One question, answered by native radios drawn as 44px pills: they work before JavaScript loads, and the arrow keys move between them. The chosen pill takes the text colour; blue stays for actions. One option can be disabled on its own (a closed day on /book): greyed out and skipped by the arrow keys."
             >
               <div data-sample="choice-group" className="grid gap-6 md:grid-cols-2">
                 <ChoiceGroup
@@ -763,6 +763,16 @@ export default async function DesignPage() {
                     { value: "diesel", label: "Diesel" },
                     { value: "cng", label: "CNG" },
                     { value: "electric", label: "Electric" },
+                  ]}
+                />
+                <ChoiceGroup
+                  legend="Day"
+                  name="sample-day"
+                  defaultValue="tue"
+                  options={[
+                    { value: "mon", label: "Mon, 23 Nov (closed)", disabled: true },
+                    { value: "tue", label: "Tue, 24 Nov" },
+                    { value: "wed", label: "Wed, 25 Nov" },
                   ]}
                 />
               </div>

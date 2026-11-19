@@ -7,6 +7,8 @@ export type ChoiceOption<Value extends string> = {
   value: Value;
   /** What the pill says: "Car", "Petrol". */
   label: ReactNode;
+  /** This one option can't be chosen now (a closed day): greyed out, skipped by the arrow keys. */
+  disabled?: boolean;
 };
 
 type ChoiceGroupProps<Value extends string> = {
@@ -75,6 +77,7 @@ export function ChoiceGroup<Value extends string>({
               className="sr-only"
               name={name}
               value={option.value}
+              disabled={option.disabled}
               {...(controlled ? { checked: option.value === value } : { defaultChecked: option.value === defaultValue })}
               // Only when a parent listens: a server-rendered group (no
               // JavaScript of its own, like the /dev/design sample) can't
