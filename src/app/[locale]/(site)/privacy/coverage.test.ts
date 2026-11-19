@@ -84,6 +84,23 @@ const TABLES: Record<string, Personal | null> = {
     columns: ["id", "booking_id", "service_id", "service_kind", "name", "price_status", "price_paise", "position"],
   },
   booking_events: { item: "bookings", columns: ["id", "booking_id", "kind", "actor_user_id", "created_at"] },
+  // Requests for a free estimate (task 32): the vehicle copy, the description and the photo set it points to.
+  estimate_requests: {
+    item: "estimates",
+    columns: [
+      "id",
+      "user_id",
+      "vehicle_id",
+      "vehicle_kind",
+      "model_id",
+      "fuel",
+      "registration_number",
+      "description",
+      "photo_set_id",
+      "request_token",
+      "created_at",
+    ],
+  },
   // Photos a customer sends (task 30): the set they belong to, and each file's record.
   photo_sets: { item: "photos", columns: ["id", "user_id", "created_at", "closed_at"] },
   photos: {
