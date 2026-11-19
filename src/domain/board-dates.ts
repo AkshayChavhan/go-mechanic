@@ -9,12 +9,18 @@ import { addDays, type IndiaDate, parseIndiaDate } from "./india-time";
  */
 export const BOARD_RANGE_DAYS = 366;
 
+/** The first and last day the board shows, BOARD_RANGE_DAYS either side of `today`. */
+export function boardRange(today: IndiaDate): { first: IndiaDate; last: IndiaDate } {
+  return { first: addDays(today, -BOARD_RANGE_DAYS), last: addDays(today, BOARD_RANGE_DAYS) };
+}
+
 /**
- * Whether `date` is within BOARD_RANGE_DAYS of `today`, both ends included.
+ * Whether `date` is within the board's range, both ends included.
  * The dates are "YYYY-MM-DD", so comparing them as text compares them as days.
  */
 export function isOnBoard(date: IndiaDate, today: IndiaDate): boolean {
-  return date >= addDays(today, -BOARD_RANGE_DAYS) && date <= addDays(today, BOARD_RANGE_DAYS);
+  const { first, last } = boardRange(today);
+  return date >= first && date <= last;
 }
 
 /**

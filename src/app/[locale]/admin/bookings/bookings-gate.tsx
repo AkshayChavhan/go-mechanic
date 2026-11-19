@@ -33,7 +33,6 @@ export async function BookingsGate({ locale, searchParams }: BookingsGateProps) 
   const { date, note } = pickBoardDate((await searchParams).date, today);
 
   const result = await listBookingsOn(date);
-  // pickBoardDate only returns dates the read accepts, so this means a bug.
   if (!result.ok) throw new Error(`listBookingsOn refused a date pickBoardDate chose: ${result.problem}`);
 
   return <BookingsBoard locale={locale} date={date} today={today} note={note} bookings={result.bookings} />;

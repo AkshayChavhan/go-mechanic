@@ -4,8 +4,8 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { AdminBar } from "@/components/admin/admin-bar";
-import { ADMIN_MANIFEST_PATH, HOME_SCREEN_ICONS } from "@/components/admin/home-screen";
 import { AdminNavGate } from "@/components/admin/admin-nav-gate";
+import { ADMIN_MANIFEST_PATH, HOME_SCREEN_ICONS } from "@/components/admin/home-screen";
 
 // The staff area, /admin (task 26). Beside login/, outside (site) and (book),
 // so no public shell: a slim staff bar, then the page.

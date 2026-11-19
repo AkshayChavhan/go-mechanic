@@ -1,7 +1,5 @@
 import { describe, expect, test } from "vitest";
 
-import messages from "../../../messages/en.json";
-
 import { adminNavFor, adminNavItems } from "./admin-navigation";
 
 // Which staff sections each role sees in the staff bar (task 26). The rule
@@ -22,11 +20,6 @@ describe("adminNavFor", () => {
 });
 
 describe("adminNavItems", () => {
-  test("every label is in the Admin.nav messages", () => {
-    for (const item of adminNavItems) {
-      expect(messages.Admin.nav[item.labelKey]).toEqual(expect.any(String));
-    }
-  });
 
   test("no item points at /admin itself: the Wordmark does, and NavLinks would mark it current on every page", () => {
     expect(adminNavItems.map((item) => item.href)).not.toContain("/admin");

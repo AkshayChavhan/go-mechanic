@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { BOARD_RANGE_DAYS, isOnBoard } from "@/domain/board-dates";
+import { boardRange, isOnBoard } from "@/domain/board-dates";
 import { formatBookingCode } from "@/domain/bookings";
 import { addDays, type IndiaDate } from "@/domain/india-time";
 import { formatRegistration } from "@/domain/registration";
@@ -88,8 +88,8 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
               type="date"
               required
               defaultValue={date}
-              min={addDays(today, -BOARD_RANGE_DAYS)}
-              max={addDays(today, BOARD_RANGE_DAYS)}
+              min={boardRange(today).first}
+              max={boardRange(today).last}
             />
           </Field>
           {/* Grey: the board has no main action, so no blue button. */}
@@ -105,7 +105,6 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
         <ul className="flex flex-col gap-4">
           {bookings.map((booking) => (
             <li key={booking.id} className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 md:flex-row md:gap-8 md:p-6">
-              {/* The time leads: on a phone it sits above the details, from a tablet up in its own column. */}
               <h2 className="flex flex-wrap items-baseline gap-x-3 md:w-28 md:shrink-0 md:flex-col md:gap-1">
                 <span className="type-title tabular-nums">{formatTime(booking.startsAt, locale)}</span>{" "}
                 <span className="type-callout font-semibold tabular-nums text-muted-foreground">
@@ -145,7 +144,6 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
 
                 <div className="flex flex-col gap-1 border-t border-border pt-4">
                   <p className="type-body font-semibold">{booking.customerName}</p>
-                  {/* Present only for staff with "customers.contact": the read leaves them null otherwise. */}
                   {booking.phoneNumber && (
                     <a
                       href={telHref(booking.phoneNumber)}
@@ -179,18 +177,15 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
  * screen reader.
  */
 function DayLink({ date, today, children }: { date: IndiaDate; today: IndiaDate; children: ReactNode }) {
-  if (!isOnBoard(date, today)) {
-    return (
-      <Button asChild variant="outline">
+  return (
+    <Button asChild variant="outline">
+      {isOnBoard(date, today) ? (
+        <Link href={{ pathname: "/admin/bookings", query: { date } }}>{children}</Link>
+      ) : (
         <span aria-disabled="true" className="pointer-events-none opacity-50">
           {children}
         </span>
-      </Button>
-    );
-  }
-  return (
-    <Button asChild variant="outline">
-      <Link href={{ pathname: "/admin/bookings", query: { date } }}>{children}</Link>
+      )}
     </Button>
   );
 }
