@@ -1,6 +1,6 @@
 # 31_job_timeline: the engine behind a job's steps, notes and photos
 
-> **Branch:** `31_job_timeline` · **Date:** 2026-11-19 · **Status:** In progress
+> **Branch:** `31_job_timeline` · **Date:** 2026-11-19 · **Status:** Done
 
 ## In one minute
 

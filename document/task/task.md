@@ -40,7 +40,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
-| 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | In progress | [31_job_timeline.md](../learning/31_job_timeline.md) |
+| 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | Done | [31_job_timeline.md](../learning/31_job_timeline.md) |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | Done | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
@@ -472,7 +472,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `ce-code-review` ("Ready with fixes": 2 findings, both fixed) and `code-reviewer` (1 must-fix in the learning doc and 2 smaller points, fixed, plus 2 of its suggestions)
 - [x] Compound: [idempotent-save-answer-duplicate-before-refusals-that-can-change.md](../solutions/conventions/idempotent-save-answer-duplicate-before-refusals-that-can-change.md) (updated: a lock that hides the row) and [drizzle-migration-new-enum-value-compare-as-text.md](../solutions/conventions/drizzle-migration-new-enum-value-compare-as-text.md) (new)
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 32_estimate_requests
 
