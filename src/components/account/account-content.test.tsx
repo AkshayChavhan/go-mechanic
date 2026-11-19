@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/server/auth/session";
 import { listMyVehicles, type MyVehicle } from "@/server/dal/customer-vehicles";
 import { listMyEstimateRequests } from "@/server/dal/estimate-requests";
 import { readMyProfile } from "@/server/dal/profile";
+import { listMyCompletedJobs } from "@/server/dal/reviews";
 import messages from "../../../messages/en.json";
 
 import { AccountContent } from "./account-content";
@@ -21,6 +22,7 @@ vi.mock("@/server/auth/session", () => ({ getCurrentUser: vi.fn() }));
 vi.mock("@/server/dal/profile", () => ({ readMyProfile: vi.fn() }));
 vi.mock("@/server/dal/customer-vehicles", () => ({ listMyVehicles: vi.fn() }));
 vi.mock("@/server/dal/estimate-requests", () => ({ listMyEstimateRequests: vi.fn() }));
+vi.mock("@/server/dal/reviews", () => ({ listMyCompletedJobs: vi.fn() }));
 vi.mock("@/server/actions/account", () => ({ saveName: vi.fn() }));
 vi.mock("@/components/account/vehicle-list", () => ({
   VehicleList: ({ vehicles, today }: { vehicles: MyVehicle[]; today: string }) => (
@@ -31,6 +33,9 @@ vi.mock("@/components/account/estimate-requests", () => ({
   EstimateRequests: ({ requests }: { requests: unknown[] }) => (
     <p data-testid="estimate-requests">{`${requests.length} requests`}</p>
   ),
+}));
+vi.mock("@/components/account/completed-jobs", () => ({
+  CompletedJobs: ({ jobs }: { jobs: unknown[] }) => <p data-testid="completed-jobs">{`${jobs.length} completed jobs`}</p>,
 }));
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
@@ -58,6 +63,7 @@ beforeEach(() => {
   vi.mocked(getCurrentUser).mockResolvedValue(asha);
   vi.mocked(listMyVehicles).mockResolvedValue([]);
   vi.mocked(listMyEstimateRequests).mockResolvedValue([]);
+  vi.mocked(listMyCompletedJobs).mockResolvedValue([]);
   // 29 Oct 2026, 00:10 in India (18:40 UTC the day before). Only Date is faked.
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-10-28T18:40:00Z"));
@@ -122,6 +128,23 @@ describe("AccountContent", () => {
     vi.mocked(listMyEstimateRequests).mockResolvedValue([{ id: "r1" } as never]);
     renderWithIntl(await AccountContent({ locale: "en" }));
     expect(order()).toEqual(["estimate-requests", "vehicle-list"]);
+  });
+
+  test("completed jobs (task 37): none, no section; with one, after the requests and before the vehicles", async () => {
+    vi.mocked(readMyProfile).mockResolvedValue({ name: "Asha Patil", phoneNumber: asha.phoneNumber });
+    const order = () =>
+      Array.from(
+        document.querySelectorAll('[data-testid="vehicle-list"], [data-testid="estimate-requests"], [data-testid="completed-jobs"]'),
+      ).map((element) => element.getAttribute("data-testid"));
+
+    const { unmount } = renderWithIntl(await AccountContent({ locale: "en" }));
+    expect(screen.queryByTestId("completed-jobs")).toBeNull();
+    unmount();
+
+    vi.mocked(listMyCompletedJobs).mockResolvedValue([{ bookingId: "b1" } as never]);
+    vi.mocked(listMyEstimateRequests).mockResolvedValue([{ id: "r1" } as never]);
+    renderWithIntl(await AccountContent({ locale: "en" }));
+    expect(order()).toEqual(["estimate-requests", "completed-jobs", "vehicle-list"]);
   });
 
   test("logged out (a leftover cookie): sent to /login?session=ended, before any data is read", async () => {
