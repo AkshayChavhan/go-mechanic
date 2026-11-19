@@ -415,7 +415,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 26_admin_bookings_board
 
 - [x] Create branch `26_admin_bookings_board`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [the plan](../plans/2026-11-19-1840-feat-admin-bookings-board-plan.md) (document review: 5 fixes applied, 6 more approved by the owner)
 - [ ] The `/admin` area: add `/admin` to `PROTECTED_PREFIXES`; every page calls `requirePermission(locale, "admin.open")` itself, not only its layout; navigation shows only what the role may do (`can()`); browser tests that a customer gets the 404 page and a logged-out visitor a 307; revisit `forbidden()` (task 16)
 - [ ] The bookings board: bookings by date and status, read-only (confirm, cancel, reschedule and assign are task 27); phone numbers only with `customers.contact`
 - [ ] The estimate-request inbox: `listEstimateRequests()`, photos through `photoViewUrls(photoSetId)`; decide paging and filters (it returns the newest 50 today) (task 32)
