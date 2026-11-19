@@ -228,6 +228,16 @@ describe("createMyEstimateRequest", () => {
     });
   });
 
+  test("a retry of the 3rd request of the day is duplicate, not too-many-requests", async () => {
+    await createMyEstimateRequest(input(), clock);
+    await createMyEstimateRequest(input(), clock);
+    const third = input();
+    const sent = await createMyEstimateRequest(third, clock);
+    expect(sent.status).toBe("sent");
+    expect(await createMyEstimateRequest(third, clock)).toEqual({ status: "duplicate", id: sent.status === "sent" ? sent.id : "" });
+    expect(await createMyEstimateRequest(input(), clock)).toEqual({ status: "too-many-requests", limit: 3 });
+  });
+
   test("the 4th request in 24 hours is refused; one 25 hours old doesn't count", async () => {
     await createMyEstimateRequest(input(), fixedClock(new Date(clock.now().getTime() - 25 * HOUR_MS)));
     for (let sent = 0; sent < 3; sent++) {
