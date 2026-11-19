@@ -470,8 +470,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1833-feat-job-timeline-engine-plan.md)
 - [x] Job statuses, mechanic job updates and the customer's timeline: the engine only (owner, 2026-11-19: the pages wait for tasks 25 and 26)
 - [x] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review with `ce-code-review` ("Ready with fixes": 2 findings, both fixed) and `code-reviewer` (1 must-fix in the learning doc and 2 smaller points, fixed, plus 2 of its suggestions)
+- [x] Compound: [idempotent-save-answer-duplicate-before-refusals-that-can-change.md](../solutions/conventions/idempotent-save-answer-duplicate-before-refusals-that-can-change.md) (updated: a lock that hides the row) and [drizzle-migration-new-enum-value-compare-as-text.md](../solutions/conventions/drizzle-migration-new-enum-value-compare-as-text.md) (new)
 - [ ] Merge into `main`
 
 ### 32_estimate_requests
