@@ -119,13 +119,21 @@ export async function createMyEstimateRequest(
     if (refusal) return refusal;
     if (!vehicle) throw new Error("No vehicle and no refusal");
 
-    // The photo set: the customer's own, still open, and not part of another request.
+    // The photo set: the customer's own, not a job's (task 31), still open,
+    // and not part of another request.
     if (request.photoSetId !== null) {
       const [set] = await tx
         .select({ id: photoSets.id, usedBy: estimateRequests.id })
         .from(photoSets)
         .leftJoin(estimateRequests, eq(estimateRequests.photoSetId, photoSets.id))
-        .where(and(eq(photoSets.id, request.photoSetId), eq(photoSets.userId, user.id), isNull(photoSets.closedAt)));
+        .where(
+          and(
+            eq(photoSets.id, request.photoSetId),
+            eq(photoSets.userId, user.id),
+            isNull(photoSets.bookingId),
+            isNull(photoSets.closedAt),
+          ),
+        );
       if (!set || set.usedBy !== null) {
         return { status: "problems", problems: [{ field: "photos", problem: "photos-not-found" }] };
       }

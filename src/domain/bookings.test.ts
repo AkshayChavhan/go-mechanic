@@ -262,7 +262,7 @@ describe("booking codes", () => {
 describe("the lists the database enums are built from", () => {
   test("their values", () => {
     expect(BOOKING_STATUSES).toEqual(["booked"]);
-    expect(BOOKING_EVENT_KINDS).toEqual(["booked"]);
+    expect(BOOKING_EVENT_KINDS).toEqual(["booked", "job-update"]);
     expect(LINE_PRICE_STATUSES).toEqual(["price", "on-inspection", "no-price"]);
     expect(MAX_FUTURE_BOOKINGS).toBe(3);
   });

@@ -10,7 +10,7 @@ import { fixedClock } from "@/lib/clock";
 import { AccessDeniedError } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth/session";
 import { closeDatabase, createDatabase, type Database, getDatabase } from "@/server/db";
-import { customerVehicles, estimateRequests, photoSets, photos, users, vehicleModels } from "@/server/db/schema";
+import { bookings, customerVehicles, estimateRequests, photoSets, photos, users, vehicleModels } from "@/server/db/schema";
 
 import { addMyVehicle, removeMyVehicle } from "./customer-vehicles";
 import { createMyEstimateRequest, listEstimateRequests, listMyEstimateRequests } from "./estimate-requests";
@@ -63,6 +63,7 @@ beforeEach(async () => {
   logIn(asha);
   await db.delete(estimateRequests);
   await db.delete(photoSets);
+  await db.delete(bookings);
   await db.delete(customerVehicles);
   await db.delete(users);
   await db.update(vehicleModels).set({ listed: true });
@@ -97,11 +98,31 @@ async function saveVehicle(registration = "MH 12 AB 1234"): Promise<string> {
   return saved.id;
 }
 
+/** A booking of Asha's, written directly: only its id matters here. */
+async function ashasBooking(): Promise<string> {
+  const [row] = await db
+    .insert(bookings)
+    .values({
+      code: "K7Q4MX",
+      userId: "asha",
+      vehicleKind: "car",
+      modelId: "car-honda-city",
+      fuel: "petrol",
+      categoryId: "sedan",
+      registrationNumber: "MH12AB1234",
+      startsAt: new Date("2026-11-20T04:30:00.000Z"),
+      isEstimate: true,
+      requestToken: randomUUID(),
+    })
+    .returning({ id: bookings.id });
+  return row!.id;
+}
+
 /** A photo set for `userId` with `stored` stored photos and one pending one. */
-async function photoSet(userId: string, { stored = 1, closed = false } = {}): Promise<string> {
+async function photoSet(userId: string, { stored = 1, closed = false, bookingId = null as string | null } = {}): Promise<string> {
   const [set] = await db
     .insert(photoSets)
-    .values({ userId, closedAt: closed ? new Date() : null })
+    .values({ userId, closedAt: closed ? new Date() : null, bookingId })
     .returning({ id: photoSets.id });
   const rows = Array.from({ length: stored + 1 }, (_, index) => {
     const id = randomUUID();
@@ -208,6 +229,7 @@ describe("createMyEstimateRequest", () => {
   test.each([
     ["another customer's set", async () => photoSet("ravi")],
     ["a closed set", async () => photoSet("asha", { closed: true })],
+    ["a job's set of the customer's own booking (task 31)", async () => photoSet("asha", { bookingId: await ashasBooking() })],
     ["a set that doesn't exist", async () => randomUUID()],
   ])("%s is refused as photos-not-found", async (_, makeSet) => {
     const setId = await makeSet();

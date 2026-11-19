@@ -92,6 +92,19 @@ const WORDING_BY_VERSION: Record<string, Pinned> = {
       "We keep your mobile number, when you agreed, and your device's network address (IP address) and browser type. We use them only to log you in, to keep logins safe and to tell you about your bookings. The <privacy>privacy notice</privacy> has the details. To stop this or delete your data, call the garage.",
     privacyNotice: "5f22031bbdc3c228a13596607a7a92f76f6ec89402237366c1e013d2efcc6cd7",
   },
+  // Task 31: "Your bookings" adds the job's progress, the garage's notes and
+  // photos and the assigned mechanic; "Photos of your vehicle" (renamed from
+  // "Photos you send us") adds the garage's photos, the mechanic who sees
+  // them, and that an update's photos go a year after the update. The three
+  // login texts are unchanged.
+  "2026-11-19.3": {
+    ageLabel: "I am 18 or older.",
+    consentLabel:
+      "I agree that {brand} can use my mobile number to log me in and to contact me by SMS, WhatsApp or phone about my bookings.",
+    notice:
+      "We keep your mobile number, when you agreed, and your device's network address (IP address) and browser type. We use them only to log you in, to keep logins safe and to tell you about your bookings. The <privacy>privacy notice</privacy> has the details. To stop this or delete your data, call the garage.",
+    privacyNotice: "1109b5c0a44e95fc45fa2a611fa35cd2949c78397603dfcc94b0e40a3184eed8",
+  },
 };
 
 type Values = Record<string, Record<string, number>>;
