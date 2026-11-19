@@ -25,6 +25,10 @@ describe("normalizeDescription", () => {
   test("trims, keeps line breaks, drops spaces at line ends and Windows line breaks", () => {
     expect(normalizeDescription("  Squeal  \r\nOnly when cold \n\n")).toBe("Squeal\nOnly when cold");
   });
+
+  test("drops NUL characters, which Postgres text can't hold", () => {
+    expect(normalizeDescription("Squeal\u0000 when cold")).toBe("Squeal when cold");
+  });
 });
 
 describe("checkEstimateRequestInput", () => {

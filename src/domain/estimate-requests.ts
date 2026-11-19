@@ -52,12 +52,14 @@ export type CheckedEstimateRequest = {
 };
 
 /**
- * The description as stored: trimmed, Windows line breaks made plain, and
- * spaces at the end of each line removed. Line breaks inside are kept: a
+ * The description as stored: trimmed, NUL characters dropped, Windows line
+ * breaks made plain, and spaces at the end of each line removed. Line breaks inside are kept: a
  * customer may list symptoms one per line.
  */
 export function normalizeDescription(typed: string): string {
   return typed
+    // NUL can't be stored in Postgres text (error 22021); only a hand-made post sends one.
+    .replace(/\u0000/g, "")
     .replace(/\r\n?/g, "\n")
     .split("\n")
     .map((line) => line.trimEnd())
