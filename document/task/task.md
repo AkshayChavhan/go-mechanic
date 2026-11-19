@@ -56,7 +56,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 44 | `44_real_sms_otp` | Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid) | To do |  |
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
-| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | In progress |  |
+| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | In progress | [47_book_wizard.md](../learning/47_book_wizard.md) |
 | 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | Done | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
 
 ## Task steps
@@ -648,8 +648,8 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [x] U7: the booking actions (`bookingLoginStep`, `confirmBooking`, `notMe`) and their state; the inline OTP reuses the login service, its consent snapshot and the e2e outbox file (task 15). Show a `duplicate` answer as "You already have this booking (code K7Q-4MX)" with the earlier booking's time, vehicle and services, not as a plain success: it also comes back when the same vehicle and slot are confirmed again with other services; changing services belongs to task 25 (code-reviewer in task 23)
 - [x] U8: the wizard island (four steps, confirm, done); then a simplification pass (the owner chose "trim, then finish in one PR" when task 47 passed its 2,500-line stop line)
 - [x] U9: the `/book` page; set `bookPage.live` to true in `src/components/site/navigation.ts`, so "Book a service" and the phone bar's Book go to `/book` (task 12); update the FAQ's "How do I book?" and the terms' booking text (task 19)
-- [ ] U10: browser tests on a production build, whose database is PGlite in memory: every run starts from the seed, so booking tests must not depend on an earlier run (task 14); docs
-- [ ] Write the learning doc
+- [x] U10: browser tests on a production build, whose database is PGlite in memory: every run starts from the seed, so booking tests must not depend on an earlier run (task 14); docs
+- [x] Write the learning doc: [47_book_wizard.md](../learning/47_book_wizard.md)
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
