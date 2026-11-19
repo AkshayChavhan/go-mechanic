@@ -738,6 +738,9 @@ Not in version 1. See [features.md](../website/features.md).
 - Tasks 31 and 32: wrap `PhotoUploader` in `FreshOnEachVisit`, keyed by the user's id, so the next customer on a shared phone never sees the last one's photos; and don't let the form be sent while photos are still uploading or waiting to be sent (the hidden set-id field appears as soon as `start` answers) (task 30 review)
 - Task 43: call `deletePhotosOfUser(userId)` before deleting a user: the rows go with the user, the files don't. The privacy notice already says deleting a login deletes its photos (task 30)
 - Dev tools only: `npm audit` lists picomatch (GHSA-fc5q-39xc-vjpf, high) through vitest, ESLint, the shadcn CLI and next-intl's file watcher, plus moderate hono and `@hono/node-server` (the shadcn CLI's MCP library), minimatch (ESLint, the shadcn CLI) and esbuild (drizzle-kit). None of it ships to visitors, and the fixes need major versions (vitest, shadcn). Plan a dev-tooling update task; don't run `npm audit fix --force` (found in task 48)
+- Task 28: add, change and pause pickup areas (`pickup_areas`, PIN code and fee in paise, 0 for free), with `authorize()` first, and call `updateTag("pickup-areas")` after each save. Until then the table is empty, so a pickup booking can be tried end to end only after this (task 24)
+- Task 47: show the pickup step only from `readPickupAreas()` (real areas), never `selectPickupAreas()` (the samples can't be booked), so it stays hidden until real areas exist; show the pickup fee next to the services' total, and say "Free" for 0. Wrap the booking action's unexpected errors like `LoginServiceError` (step, error name, Postgres code; no message, no cause): a failed insert's error carries the query's values, the pickup address included (task 24)
+- Task 43: deleting a customer's bookings deletes their pickup addresses with them (they're columns on `bookings`); the privacy notice's "Your bookings" then says so (task 24)
 
 ## How to add a task
 
