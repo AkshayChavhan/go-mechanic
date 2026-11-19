@@ -8,7 +8,7 @@ A logged-in customer can now open `/estimate`, say which vehicle has the problem
 
 Full details: [the plan](../plans/2026-11-19-1334-feat-estimate-requests-plan.md) (R1–R8, KTD1–KTD9, units U1–U6) and the "Estimate requests" block in `CLAUDE.md`.
 
-**Built in parallel.** Three Claude sessions worked at once, each in its own folder (a git worktree). This was Session 2, in `go-mechanic-s2`. `origin/main` didn't move during the task, so there was no merge conflict, and the migration got the number `0009` without a clash. A few files that other tasks own got small additions, kept to a few lines each so a later merge conflict stays small: `account-content.tsx` (task 21), the item list in `privacy/page.tsx` (task 19) and the `/dev/design` page (a textarea sample).
+**Built in parallel.** Three Claude sessions worked at once, each in its own folder (a git worktree). This was Session 2, in `go-mechanic-s2`. `origin/main` didn't move during the task, so there was no merge conflict, and the migration got the number `0009` with no clash at the time of writing. If another session's `0009` migration or notice version reaches `main` first, this branch regenerates its migration and moves its version before merging. A few files that other tasks own got small additions, kept to a few lines each so a later merge conflict stays small: `account-content.tsx` (task 21), the item list in `privacy/page.tsx` (task 19) and the `/dev/design` page (a textarea sample).
 
 ## Why: the problem we solved
 
@@ -88,15 +88,18 @@ The owner decided on 2026-11-19:
 What was run in this session:
 
 ```bash
-npm run check                               # passed: 143 files, 2,022 tests
-npx playwright test e2e/estimate.spec.ts   # passed: 2 tests on a production build
+npm run check                               # passed: 143 files, 2,029 tests (final branch)
+npm run test:e2e                            # passed: 121 tests on a production build (final branch)
+npx playwright test -c <a copy of playwright.dev.config.ts on port 3001>   # passed: 50 tests
 ```
+
+The last line is `npm run test:design` on another port. That command is fixed to port 3000, which another session was using, so a temporary copy of its config pointed it at port 3001 (`npm run dev -- --port 3001`; `--` passes `--port` on to Next.js). The copy was deleted after the run and never committed.
 
 The second test logs in, picks a vehicle with the picker, uploads one real photo to the fake storage on the production build, sends, and finds the request at the top of `/account`, on a 375px-wide phone screen. `/estimate` is listed in `.next/prerender-manifest.json`, so it's built ahead of time.
 
 By hand: under `npm run dev -- --port 3001` (`--` passes `--port` on to Next.js), `/estimate` showed the guest view correctly at desktop width. The browser window couldn't be resized to phone width in this session, so the phone layout is covered only by the e2e test at 375px.
 
-**Not run yet:** the full `npm run test:e2e`, and `npm run test:design` (it needs port 3000, which another session was using). The textarea and uploader samples on `/dev/design` haven't been checked by that run.
+Nothing in the Definition of done was skipped.
 
 ## Common mistakes
 
@@ -125,8 +128,20 @@ By hand: under `npm run dev -- --port 3001` (`--` passes `--port` on to Next.js)
 
 ## Review
 
-_To be filled after the review._ `ce-code-review` and `code-reviewer` haven't run yet. Their verdicts and any fixes go here once they have.
+Two rounds, then fixes.
+
+**`ce-code-review`** (nine reviewers: correctness, project rules, testing, maintainability, past lessons, security, the migration, an adversarial read, front-end races). Verdict: **Ready with fixes**, no serious findings. An independent check confirmed three:
+
+1. **The privacy notice was wrong about photos.** It sent readers to "Photos you send us", which says estimate photos are kept a year after the estimate closes. Nothing closes a request's photo set yet, so they're really deleted after 30 days. "Your estimate requests" now says so, with the number read from `PHOTO_RULES` (commit `6b65cde`). The version stays `2026-11-19.2` with a new fingerprint: it hadn't been merged anywhere yet.
+2. **Removing a failed photo freed a place the server still counted.** Its row stays pending for 24 hours, so the next upload was refused. The uploader now counts it too (`48f656e`, with a test that fails without the fix).
+3. **A saved vehicle tapped before the page loaded was reset.** The fix taught us a new rule (see Compound) (`dd2edbd`, with a `hydrateRoot` test).
+
+It also found two missing tests, now added: an error answer keeps the uploaded photos and the photo set, and a retry of the third request of the day answers "duplicate", not "too many" (`ec4605f`).
+
+**`code-reviewer`** (repo rules). Verdict: **Needs changes**, one must-fix: the new in-form uploader sample sat in the same sample box as the old one, so the design-page browser test (`e2e/dev/photo-resize.spec.ts`) would find two uploaders and fail. It now has its own box (`d6ca840`), and all 50 design-page tests pass. Its other points, also done: the cursor goes to the vehicle choice when none was picked, the character count no longer reads itself out on every keystroke (`35de412`), a NUL character in a description no longer crashes the save (`ca64654`), and this doc's numbers and wording. Left as backlog notes: a shared helper for the copied `fill()` text function, and a CLAUDE.md sentence about draft models that disagrees with the account forms.
 
 ## Compound
 
-_To be filled after the review._ The compound question hasn't been asked yet: either a lesson goes in `document/solutions/`, or this section says why none was needed.
+One lesson passed the question "would a future session repeat this without it?": **restore values, never structure, while hydrating.** The estimate form kept a choice tapped before the page loaded (like the vehicle picker does), but showing the vehicle picker because of it during hydration made React throw "Hydration failed". The fix renders what the server rendered until hydration is done. It extends an existing lesson instead of starting a new one: `document/solutions/conventions/react-19-form-islands-hydration-action-activity.md` (commit `48239a6`).
+
+The privacy mistake (#1 above) needed no new lesson: `privacy-notice-retention-from-delete-code-not-expiry.md` already says it, and the review found it by reading that lesson.
