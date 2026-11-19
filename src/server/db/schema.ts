@@ -20,6 +20,7 @@
 
 import { sql } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   boolean,
   check,
   date,
@@ -38,6 +39,7 @@ import {
 
 import type { BookingEventKind, BookingStatus, LinePriceStatus } from "@/domain/bookings";
 import type { ConsentPurpose } from "@/domain/consent";
+import type { JobStatus } from "@/domain/jobs";
 import type { Weekday } from "@/domain/opening-hours";
 import type { Role } from "@/domain/roles";
 import type { ServiceKind } from "@/domain/services";
@@ -608,7 +610,20 @@ export const customerVehicles = pgTable(
 export const bookingStatus = pgEnum("booking_status", ["booked"] as const satisfies readonly BookingStatus[]);
 
 /** Every history entry kind, as in BOOKING_EVENT_KINDS (bookings-tables.test.ts checks they match). */
-export const bookingEventKind = pgEnum("booking_event_kind", ["booked"] as const satisfies readonly BookingEventKind[]);
+export const bookingEventKind = pgEnum("booking_event_kind", [
+  "booked",
+  "job-update",
+] as const satisfies readonly BookingEventKind[]);
+
+/** A job's step after Booked, as in JOB_STATUSES (src/domain/jobs.ts; job-timeline-tables.test.ts checks they match). */
+export const jobStatus = pgEnum("job_status", [
+  "vehicle-received",
+  "inspection",
+  "awaiting-approval",
+  "in-service",
+  "ready",
+  "completed",
+] as const satisfies readonly JobStatus[]);
 
 /** How a line is priced, as in LINE_PRICE_STATUSES (bookings-tables.test.ts checks they match). */
 export const bookingLinePriceStatus = pgEnum("booking_line_price_status", [
@@ -669,6 +684,15 @@ export const bookings = pgTable(
     pickupPostalCode: text("pickup_postal_code"),
     /** The fee for pickup and drop together, in paise; 0 when free. Not part of total_paise. */
     pickupFeePaise: integer("pickup_fee_paise"),
+    // The work (task 31). The step is apart from the booking's status above:
+    // null until the vehicle reaches the garage, which the timeline shows as
+    // "Booked". Only src/server/dal/jobs.ts moves it.
+    jobStatus: jobStatus("job_status"),
+    /**
+     * The mechanic doing the job; task 27 assigns one. Deleting that user
+     * unassigns the job ("set null"); their updates keep them as the actor.
+     */
+    assignedMechanicId: text("assigned_mechanic_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -687,6 +711,8 @@ export const bookings = pgTable(
     // How full a slot is, and how many future bookings one customer holds.
     index("bookings_starts_at_index").on(table.startsAt),
     index("bookings_user_id_starts_at_index").on(table.userId, table.startsAt),
+    // A mechanic's jobs.
+    index("bookings_assigned_mechanic_index").on(table.assignedMechanicId),
   ],
 );
 
@@ -729,9 +755,11 @@ export const bookingItems = pgTable(
 
 /**
  * A booking's history: who did what, and when. Each booking starts with one
- * "booked" entry; tasks 25–27 add cancelling, confirming and moving. Deleting
- * a booking deletes its history ("cascade"); a user named in one can't be
- * deleted ("restrict"), like the booking itself.
+ * "booked" entry; staff add "job-update" entries (task 31): a move to a new
+ * step, a note for the customer, photos, or a mix. Tasks 25–27 add
+ * cancelling, confirming and moving. Deleting a booking deletes its history
+ * ("cascade"); a user named in one can't be deleted ("restrict"), like the
+ * booking itself.
  */
 export const bookingEvents = pgTable(
   "booking_events",
@@ -745,9 +773,42 @@ export const bookingEvents = pgTable(
     actorUserId: text("actor_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "restrict" }),
+    // A job update's parts (task 31); all empty on a "booked" entry.
+    /** The step the job moved to; null when the update didn't move it. */
+    jobStatus: jobStatus("job_status"),
+    /** For the customer, as staff wrote it (trimmed; line breaks kept). */
+    note: text("note"),
+    /**
+     * The update's photos. One set belongs to one update. The photo cleanup
+     * deleting the set (a year after the update) makes this null ("set null")
+     * and keeps the update; had_photos still says it had some.
+     */
+    photoSetId: uuid("photo_set_id")
+      .unique()
+      .references((): AnyPgColumn => photoSets.id, { onDelete: "set null" }),
+    hadPhotos: boolean("had_photos").notNull().default(false),
+    /** A random uuid per visit of the update form: a second send makes no second update. */
+    requestToken: uuid("request_token"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (table) => [index("booking_events_booking_id_index").on(table.bookingId)],
+  (table) => [
+    index("booking_events_booking_id_index").on(table.bookingId),
+    unique("booking_events_actor_request_token").on(table.actorUserId, table.requestToken),
+    // These compare kind as text, never as the enum: the migration that adds
+    // "job-update" runs in one transaction with every other pending
+    // migration, and Postgres refuses a new enum value until it's committed.
+    check(
+      "booking_events_job_update_has_content",
+      sql`${table.kind}::text <> 'job-update' or ${table.jobStatus} is not null or ${table.note} is not null or ${table.hadPhotos}`,
+    ),
+    check(
+      "booking_events_booked_is_plain",
+      sql`${table.kind}::text <> 'booked' or (${table.jobStatus} is null and ${table.note} is null and ${table.photoSetId} is null and not ${table.hadPhotos} and ${table.requestToken} is null)`,
+    ),
+    check("booking_events_photos_flag", sql`${table.photoSetId} is null or ${table.hadPhotos}`),
+    // 1000 is JOB_UPDATE_RULES.noteMaxLength; job-timeline-tables.test.ts keeps them in step.
+    check("booking_events_note_length", sql`char_length(${table.note}) between 1 and 1000`),
+  ],
 );
 
 // --- Pickup and drop (task 24) ---------------------------------------------
@@ -804,10 +865,24 @@ export const photoSets = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    /** Set when the set's estimate or job is closed (tasks 31, 32); a year later it's deleted. */
+    /**
+     * Set when the set's job update is saved (task 31) or its estimate request
+     * is closed (tasks 33, 34); a year later it's deleted.
+     */
     closedAt: timestamp("closed_at", { withTimezone: true }),
+    /**
+     * Set for photos staff take of a job (task 31): the set is the job's, and
+     * only staff who may update that job add to it. user_id is still the
+     * booking's customer, so they see the photos and deleting their data
+     * deletes them. A booking with job photos can't be deleted ("restrict")
+     * until its photos are (task 43).
+     */
+    bookingId: uuid("booking_id").references((): AnyPgColumn => bookings.id, { onDelete: "restrict" }),
   },
-  (table) => [index("photo_sets_user_created_index").on(table.userId, table.createdAt)],
+  (table) => [
+    index("photo_sets_user_created_index").on(table.userId, table.createdAt),
+    index("photo_sets_booking_index").on(table.bookingId),
+  ],
 );
 
 export const photos = pgTable(

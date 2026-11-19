@@ -40,8 +40,8 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
-| 31 | `31_job_timeline` | Mechanic job updates; customer tracking timeline | To do |  |
-| 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | In progress | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
+| 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | In progress | [31_job_timeline.md](../learning/31_job_timeline.md) |
+| 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | Done | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
@@ -472,12 +472,12 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 31_job_timeline
 
-- [ ] Create branch `31_job_timeline`
-- [ ] Plan with `ce-plan`
-- [ ] Mechanic job updates; customer tracking timeline
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `31_job_timeline`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1833-feat-job-timeline-engine-plan.md)
+- [x] Job statuses, mechanic job updates and the customer's timeline: the engine only (owner, 2026-11-19: the pages wait for tasks 25 and 26)
+- [x] Write the learning doc
+- [x] Review with `ce-code-review` ("Ready with fixes": 2 findings, both fixed) and `code-reviewer` (1 must-fix in the learning doc and 2 smaller points, fixed, plus 2 of its suggestions)
+- [x] Compound: [idempotent-save-answer-duplicate-before-refusals-that-can-change.md](../solutions/conventions/idempotent-save-answer-duplicate-before-refusals-that-can-change.md) (updated: a lock that hides the row) and [drizzle-migration-new-enum-value-compare-as-text.md](../solutions/conventions/drizzle-migration-new-enum-value-compare-as-text.md) (new)
 - [ ] Merge into `main`
 
 ### 32_estimate_requests
@@ -488,7 +488,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `ce-code-review` ("Ready with fixes": 3 findings and 2 missing tests, all fixed) and `code-reviewer` (1 must-fix and 4 smaller points, all fixed)
 - [x] Compound: [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md) (updated: restore values, never structure, while hydrating)
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 33_estimate_builder
 
@@ -805,6 +805,13 @@ Not in version 1. See [features.md](../website/features.md).
 - The privacy notice's "Your bookings" says "The garage" sees them, while "Your estimate requests" and "Your photos" name "the garage's owner and managers". Both are true today; make them consistent the next time the notice changes, and move `LOGIN_NOTICE_VERSION` then (task 26)
 - A shared helper for the `{placeholder}` text fill and the `aria-describedby` id joiner: `estimate-form.tsx` added a 4th copy of `fill()` and a 3rd of `ids()` (photo-uploader, vehicle-picker, price-finder, login-form and vehicle-form have the others, already drifting apart) (task 32 code review)
 - CLAUDE.md "Services and prices" says anything that shows a vehicle model renders only under `showSamples()`, but the add-vehicle form (task 21) and `/estimate` (task 32) show the draft catalogue to logged-in customers, inside their `<Suspense>` gates. Reconcile the rule with them when the owner approves the models (task 39) or before staging (task 20) (task 32 code review)
+- Task 26: the mechanic's pages on `/admin`: their jobs (`listMyAssignedJobs()`), a job (`readJob()`, which leaves out the phone number for mechanics) with `JobTimeline`, and the update form (step, note, `PhotoUploader` wired to `startJobPhotoUpload`/`finishJobPhotoUpload` through new Server Actions that call `requireUser` first, a request token per visit) calling `updateJob()`. Its form says notes are shown to the customer (task 31)
+- Task 25: the customer's booking page shows `JobTimeline` from `readMyJobTimeline(bookingId)` (task 31)
+- Task 27: assign a mechanic (`bookings.assigned_mechanic_id`; check the person assigned holds `jobs.update`), and make `updateJob` refuse a cancelled booking and cancelling refuse a job that has started (`job_status` not null) (task 31)
+- Task 33: sending an estimate moves the job to `awaiting-approval`: add the estimate's rows to `canMoveJob`'s table (inspection or in-service → awaiting-approval) with a "how" that keeps them off-limits by hand, and write a `job-update` event for the move (timelines carry the step forward from events). Task 34 adds the moves out of it, a rejected estimate included (task 31)
+- Task 35: queue the customer's notification for a job update where `updateJob` marks the spot, inside its transaction (task 31)
+- Task 43: deleting a booking with job photos needs its photos deleted first (`photo_sets.booking_id` restricts it), and the notice's "Your bookings" then says how long progress and notes are kept (task 31)
+- Task 20: on Postgres, check two `updateJob` calls on one booking at once (the `for update` lock); PGlite runs one transaction at a time and can't show the race (task 31)
 
 ## How to add a task
 

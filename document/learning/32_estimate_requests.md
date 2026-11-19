@@ -1,6 +1,6 @@
 # 32_estimate_requests: ask the garage for a free estimate
 
-> **Branch:** `32_estimate_requests` · **Date:** 2026-11-19 · **Status:** In progress
+> **Branch:** `32_estimate_requests` · **Date:** 2026-11-19 · **Status:** Done
 
 ## In one minute
 

@@ -18,8 +18,8 @@ import { type Fuel, isFuel } from "./vehicles";
 export const BOOKING_STATUSES = ["booked"] as const;
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
-/** What a booking's history entry records. */
-export const BOOKING_EVENT_KINDS = ["booked"] as const;
+/** What a booking's history entry records: the booking, then job updates (task 31). */
+export const BOOKING_EVENT_KINDS = ["booked", "job-update"] as const;
 export type BookingEventKind = (typeof BOOKING_EVENT_KINDS)[number];
 
 /** How a line is priced: an amount, after inspection, or no price set yet. */

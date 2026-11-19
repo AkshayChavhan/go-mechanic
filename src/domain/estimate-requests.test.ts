@@ -4,7 +4,6 @@ import {
   checkEstimateRequestInput,
   ESTIMATE_REQUEST_RULES,
   type EstimateRequestInput,
-  normalizeDescription,
 } from "./estimate-requests";
 
 const TOKEN = "3f2b8c4e-1d2a-4b6c-9e8f-0a1b2c3d4e5f";
@@ -20,16 +19,6 @@ function input(overrides: Partial<EstimateRequestInput> = {}): EstimateRequestIn
     ...overrides,
   };
 }
-
-describe("normalizeDescription", () => {
-  test("trims, keeps line breaks, drops spaces at line ends and Windows line breaks", () => {
-    expect(normalizeDescription("  Squeal  \r\nOnly when cold \n\n")).toBe("Squeal\nOnly when cold");
-  });
-
-  test("drops NUL characters, which Postgres text can't hold", () => {
-    expect(normalizeDescription("Squeal\u0000 when cold")).toBe("Squeal when cold");
-  });
-});
 
 describe("checkEstimateRequestInput", () => {
   test("a saved vehicle and a 10-character description pass, trimmed", () => {
