@@ -56,7 +56,7 @@ The owner decided on 2026-11-18:
    ```
    Merging first means the migration gets the next free number. `--name` sets the part of the file name after the number.
 4. **The read and the samples (U3).** `readPickupAreas()` is a public cached read (`'use cache'`, `cacheTag("pickup-areas")`, `cacheLife("max")`). The page passes its result to `selectPickupAreas()`, built on `realOrSamples()`, like the home page's reviews.
-5. **Booking with pickup (U4).** In `createMyBooking`, *before* the transaction, the code reads the areas and looks up the PIN code. Not served: it returns `pickup-not-offered` and touches no slot. Served: the fee is copied into the booking row in the same insert.
+5. **Booking with pickup (U4).** In `createMyBooking`, *before* the transaction, the code reads the areas and looks up the PIN code. Not served: inside the transaction, after the two "duplicate" checks and before `reserveSlot`, it returns `pickup-not-offered`, so no slot is touched. Served: the fee is copied into the booking row in the same insert. (The first version refused before the transaction; the review changed that, see Review below.)
 6. **The `/contact` section (U5).** A Server Component with a `<table>` (PIN code, fee). The page asks for `pageTones(pickup ? 4 : 3)` so the colour bands still alternate.
 7. **Privacy notice and docs (U6).** The notice says what pickup keeps. `consent.test.ts` failed until `LOGIN_NOTICE_VERSION` moved, which is its job.
 
@@ -64,7 +64,7 @@ The owner decided on 2026-11-18:
 
 - **Why the booking keeps a copy of the fee.** If the owner raises a fee next month, a customer who booked at ₹300 must still see ₹300. So `pickup_fee_paise` is copied onto the booking, not looked up later. That's also why `pickup_postal_code` has no foreign key: it's a copy, like the vehicle copy from task 23. The fee isn't added to `total_paise`; it's shown beside it.
 - **Why the PIN code is the primary key.** Every build worker starts its own in-memory database. A random id would differ between them. A PIN code is the same everywhere, and one row per PIN code is exactly the rule.
-- **Why read the areas before the transaction.** PGlite has one connection. Inside a transaction, a cached read that needs the database would wait for a connection the transaction holds: forever. So all reads happen first, and the transaction only writes. The accepted risk: a fee changed in that moment books at the old fee.
+- **Why read the areas before the transaction.** PGlite has one connection. Inside a transaction, a cached read that needs the database would wait for a connection the transaction holds: forever. So the areas are read first, and the transaction reads nothing that needs a second connection (only its own queries: the token, the plate, the same-slot booking, the future-bookings count). The accepted risk: a fee changed in that moment books at the old fee.
 - **Why samples never sit in the database.** The booking save reads the table, never the samples file. So a sample can't be booked, and the first real area turns every sample off. Rows in the database would reach a production build.
 - **"Free", not "₹0".** A 0 fee shows the word "Free". It reads better, and it keeps `₹` out of `messages/en.json`, which the e2e scan relies on.
 
@@ -79,7 +79,7 @@ The owner decided on 2026-11-18:
 ## Check that it works
 
 ```bash
-npm run check   # passed: 135 files, 1,938 tests
+npm run check   # passed after the review fix: 135 files, 1,940 tests
 npm run test:e2e   # passed: 119 tests on a production build; /contact is still built ahead of time
 ```
 
@@ -115,8 +115,10 @@ By hand: `npm run dev`, open `/contact`. At the bottom you should see "Pickup an
 
 ## Review
 
-To be filled after the review.
+- **`ce-code-review`** (eight reviewers: correctness, project standards, testing, maintainability, learnings, security, data migration, adversarial; the other-model pass is off in this repo): **"Ready with fixes"**. One confirmed P2: a confirm retried after its area was paused answered `pickup-not-offered` instead of "duplicate", although the booking already existed. Fixed in `fix(24)` (commit 3a87521): the areas are still read before the transaction, but the refusal now comes after the duplicate checks. Two tests were added: that retry, and a saved vehicle booked with pickup. A second point (a reload with a new token answers "duplicate" even if only the new confirm asked for pickup) became a backlog note for task 47.
+- **`code-reviewer`**: code ready; one must-fix in this doc (step 5 still described the old order). Fixed here, along with the test count. It also suggested a note in the plan's KTD5 (done) and warned that `LOGIN_NOTICE_VERSION` `2026-11-19` may clash with another session's notice change today: whichever branch merges second moves to `2026-11-19.2` with its own fingerprint.
+- **SEO check** (`/contact`, `/privacy`): both Pass. Optional ideas for later: place names next to PIN codes once task 28 has real areas, and "pickup and drop" in `/contact`'s description once the section is live.
 
 ## Compound
 
-To be filled after the review.
+Yes, one lesson: [idempotent-save-answer-duplicate-before-refusals-that-can-change.md](../solutions/conventions/idempotent-save-answer-duplicate-before-refusals-that-can-change.md). A save with a request token must answer "duplicate" before any refusal that depends on data that can change, or a retry after a lost answer is refused for a booking that exists. Task 23's own refusals have the same shape and are listed there for tasks 25 and 47.
