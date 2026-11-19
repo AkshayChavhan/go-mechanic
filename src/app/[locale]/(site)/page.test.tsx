@@ -6,6 +6,7 @@ import { servicePath } from "@/domain/services";
 import { sceneSelector } from "@/components/site/scroll-scene-attributes";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { readGarage } from "@/server/dal/garage";
+import { readPublishedReviews } from "@/server/dal/reviews";
 import { readServices } from "@/server/dal/services";
 import { readVehicleCatalogue } from "@/server/dal/vehicles";
 import { ownerGarage } from "@/server/db/seed-data";
@@ -27,6 +28,8 @@ vi.mock("@/server/dal/garage", () => ({ readGarage: vi.fn() }));
 vi.mock("@/server/dal/vehicles", () => ({ readVehicleCatalogue: vi.fn() }));
 // The services (task 18): the draft services and packages here.
 vi.mock("@/server/dal/services", () => ({ readServices: vi.fn() }));
+// No reviews yet unless a test adds some (task 37).
+vi.mock("@/server/dal/reviews", () => ({ readPublishedReviews: vi.fn() }));
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
   const { default: allMessages } = await import("../../../../messages/en.json");
@@ -41,6 +44,7 @@ beforeEach(() => {
   vi.mocked(readGarage).mockResolvedValue(ownerGarage);
   vi.mocked(readVehicleCatalogue).mockResolvedValue(draftCatalogue);
   vi.mocked(readServices).mockResolvedValue([...draftServices]);
+  vi.mocked(readPublishedReviews).mockResolvedValue({ reviews: [], count: 0, average: null });
 });
 
 const services = draftServices.filter((service) => service.kind === "service");
@@ -104,14 +108,53 @@ describe("Home page", () => {
     ]);
     const stats = sectionOf(home.stats.title).querySelectorAll("dl > div");
     const reviews = sectionOf(home.reviews.title).querySelectorAll("li");
-    expect(stats).toHaveLength(4);
+    expect(stats).toHaveLength(3);
     expect(reviews).toHaveLength(3);
     for (const item of [...stats, ...reviews]) {
       // A stat's <div> is itself marked; a review's card sits inside its <li>.
       expect(item.matches("[data-sample]") || item.querySelector("[data-sample]") !== null).toBe(true);
       expect(within(item as HTMLElement).getByText(home.sample)).toBeTruthy();
     }
+    // 3 stats, 3 review cards, and the made-up summary line.
     expect(container.querySelectorAll("[data-sample]")).toHaveLength(7);
+  });
+
+  /** `n` published reviews, newest first, all 4 stars; every other one has a comment. */
+  function someReviews(n: number) {
+    return {
+      reviews: Array.from({ length: n }, (_, index) => ({
+        id: `r${index}`,
+        rating: 4 as const,
+        comment: index % 2 === 0 ? `Comment ${index}` : null,
+        shownName: "Asha",
+        kind: "car" as const,
+        makeName: { en: "Honda" },
+        modelName: { en: "City" },
+        reply: null,
+        createdAt: new Date("2026-11-19T10:00:00Z"),
+      })),
+      count: n,
+      average: 4.5,
+    };
+  }
+
+  test("2 real reviews: still no reviews section in a production build", async () => {
+    vi.mocked(readPublishedReviews).mockResolvedValue(someReviews(2));
+    renderWithIntl(await Home());
+    expect(sectionHeadings()).not.toContain(home.reviews.title);
+  });
+
+  test("3 real reviews: the section with 3 cards, the average and count, and a link to /reviews, not marked as samples", async () => {
+    vi.mocked(readPublishedReviews).mockResolvedValue(someReviews(3));
+    const { container } = renderWithIntl(await Home());
+    const section = sectionOf(home.reviews.title);
+    expect(section.querySelectorAll("li")).toHaveLength(3);
+    expect(section.textContent).toContain("4.5 out of 5 · 3 reviews");
+    expect(section.textContent).toContain("Asha, Honda car");
+    // The model is a draft until task 39: never on the page.
+    expect(section.textContent).not.toContain("City");
+    expect(within(section).getByRole("link", { name: home.reviews.allLink }).getAttribute("href")).toBe("/reviews");
+    expect(container.querySelectorAll("[data-sample]")).toHaveLength(0);
   });
 
   test.each(["test", "development"])("neighbouring sections never share a tone, the footer included (%s)", async (nodeEnv) => {

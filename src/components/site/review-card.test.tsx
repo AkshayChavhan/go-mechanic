@@ -7,21 +7,35 @@ import messages from "../../../messages/en.json";
 
 import { ReviewCard } from "./review-card";
 
-const review: Review = {
+const sample: Review = {
   id: "r1",
-  vehicle: "two-wheeler",
+  kind: "two-wheeler",
   rating: 4,
-  text: { en: "Quick periodic service for my scooter." },
+  comment: "Quick periodic service for my scooter.",
+  credit: null,
+  reply: null,
+};
+
+const real: Review = {
+  id: "r2",
+  kind: "car",
+  rating: 5,
+  comment: "Pads changed\nand the price was as quoted. <b>Great</b>",
+  credit: { name: "Asha", makeName: { en: "Honda" } },
+  reply: "Thank you, Asha!",
 };
 
 describe("ReviewCard", () => {
-  test("the review's text as a quotation", () => {
-    const { container } = renderWithIntl(<ReviewCard review={review} />);
-    expect(container.querySelector("blockquote")!.textContent).toBe("Quick periodic service for my scooter.");
+  test("the comment as a quotation, as plain text with its line breaks", () => {
+    const { container } = renderWithIntl(<ReviewCard review={real} />);
+    const quote = container.querySelector("blockquote")!;
+    expect(quote.textContent).toBe("Pads changed\nand the price was as quoted. <b>Great</b>");
+    expect(quote.className).toContain("whitespace-pre-line");
+    expect(container.querySelector("b")).toBeNull();
   });
 
   test("screen readers hear the rating in words; the five stars are hidden from them", () => {
-    const { container } = renderWithIntl(<ReviewCard review={review} />);
+    const { container } = renderWithIntl(<ReviewCard review={sample} />);
     expect(screen.getByText("Rated 4 out of 5")).toBeTruthy();
     const stars = container.querySelectorAll("svg");
     expect(stars).toHaveLength(5);
@@ -29,16 +43,32 @@ describe("ReviewCard", () => {
   });
 
   test("a sample: the Sample badge, data-sample, and credited to no real-looking person", () => {
-    const { container } = renderWithIntl(<ReviewCard review={review} sample />);
+    const { container } = renderWithIntl(<ReviewCard review={sample} sample />);
     expect(container.querySelector("[data-sample]")).not.toBeNull();
     expect(screen.getByText(messages.HomePage.sample)).toBeTruthy();
-    expect(screen.getByText("Sample customer with a two-wheeler")).toBeTruthy();
+    expect(screen.getByText("Sample customer, two-wheeler")).toBeTruthy();
   });
 
-  test("a real review: no badge, no data-sample", () => {
-    const { container } = renderWithIntl(<ReviewCard review={{ ...review, vehicle: "car" }} />);
+  test("a real review: credited to the first name and the vehicle's brand and type, no badge", () => {
+    const { container } = renderWithIntl(<ReviewCard review={real} />);
     expect(container.querySelector("[data-sample]")).toBeNull();
-    expect(screen.queryByText(messages.HomePage.sample)).toBeNull();
-    expect(screen.getByText("Customer with a car")).toBeTruthy();
+    expect(screen.getByText("Asha, Honda car")).toBeTruthy();
+  });
+
+  test("preview clamps the comment and leaves the reply out; full shows the reply", () => {
+    const { container, unmount } = renderWithIntl(<ReviewCard review={real} />);
+    expect(container.querySelector("blockquote")!.className).toContain("line-clamp-4");
+    expect(screen.queryByText(messages.Reviews.reply)).toBeNull();
+    unmount();
+    const full = renderWithIntl(<ReviewCard review={real} variant="full" />);
+    expect(full.container.querySelector("blockquote")!.className).not.toContain("line-clamp");
+    expect(screen.getByText(messages.Reviews.reply)).toBeTruthy();
+    expect(screen.getByText("Thank you, Asha!")).toBeTruthy();
+  });
+
+  test("stars only: no quotation, just the stars and the credit", () => {
+    const { container } = renderWithIntl(<ReviewCard review={{ ...real, comment: null }} />);
+    expect(container.querySelector("blockquote")).toBeNull();
+    expect(screen.getByText("Asha, Honda car")).toBeTruthy();
   });
 });
