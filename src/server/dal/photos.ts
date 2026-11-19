@@ -386,10 +386,11 @@ export async function viewLinksFor(
     .from(photos)
     .where(and(inArray(photos.setId, [...setIds]), eq(photos.status, "stored")))
     .orderBy(asc(photos.createdAt), asc(photos.id));
-  for (const row of rows) {
-    const url = await storage.viewUrl(row.storageKey, PHOTO_RULES.viewLinkSeconds);
-    links.set(row.setId, [...(links.get(row.setId) ?? []), { photoId: row.id, url }]);
-  }
+  // All at once: on Supabase each link is a network call.
+  const urls = await Promise.all(rows.map((row) => storage.viewUrl(row.storageKey, PHOTO_RULES.viewLinkSeconds)));
+  rows.forEach((row, index) => {
+    links.set(row.setId, [...(links.get(row.setId) ?? []), { photoId: row.id, url: urls[index]! }]);
+  });
   return links;
 }
 

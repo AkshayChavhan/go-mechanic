@@ -13,6 +13,9 @@ export type StepState = "done" | "current" | "upcoming";
  * The steps a job shows, each done, current or to come:
  * - "Awaiting your approval" only when the job is there now or an update
  *   moved it there (most jobs never need an estimate);
+ * - "In service" is left out once the job has passed it without going
+ *   through it (inspection → ready, no work needed), so the customer is
+ *   never told work was done that wasn't;
  * - a step before the current one is done, a later one is to come, so a job
  *   sent back from Ready to In service shows Ready as to come again;
  * - a completed job has every step done.
@@ -22,8 +25,14 @@ export function jobSteps(
   updates: readonly Pick<JobUpdateEntry, "movedTo">[],
 ): { step: JobStep; state: StepState }[] {
   const current = jobStep(jobStatus);
-  const wasAwaiting = updates.some((update) => update.movedTo === "awaiting-approval");
-  const steps = JOB_STEPS.filter((step) => step !== "awaiting-approval" || current === step || wasAwaiting);
+  const visited = new Set(updates.map((update) => update.movedTo));
+  const passed = (step: JobStep) => JOB_STEPS.indexOf(step) < JOB_STEPS.indexOf(current);
+  const steps = JOB_STEPS.filter((step) => {
+    if (step === current || visited.has(step as JobStatus)) return true;
+    if (step === "awaiting-approval") return false;
+    if (step === "in-service") return !passed(step);
+    return true;
+  });
   const at = steps.indexOf(current);
   return steps.map((step, index) => ({
     step,
