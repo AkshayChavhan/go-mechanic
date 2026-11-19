@@ -75,6 +75,17 @@ describe("jobSteps", () => {
     expect(steps.find((s) => s.step === "ready")?.state).toBe("upcoming");
   });
 
+  test("inspection straight to ready (no work needed): no In service step, so it never reads Done", () => {
+    const steps = jobSteps("ready", [update({ movedTo: "inspection" }), update({ movedTo: "ready" })]);
+    expect(steps.map((s) => s.step)).toEqual(["booked", "vehicle-received", "inspection", "ready", "completed"]);
+    const completed = jobSteps("completed", [update({ movedTo: "inspection" }), update({ movedTo: "ready" }), update({ movedTo: "completed" })]);
+    expect(completed.map((s) => s.step)).not.toContain("in-service");
+  });
+
+  test("a job still before In service shows it to come", () => {
+    expect(jobSteps("inspection", [update({ movedTo: "inspection" })]).find((s) => s.step === "in-service")?.state).toBe("upcoming");
+  });
+
   test("completed: every step done", () => {
     expect(jobSteps("completed", []).every((s) => s.state === "done")).toBe(true);
   });
