@@ -661,6 +661,14 @@ export const bookings = pgTable(
     totalPaise: integer("total_paise"),
     /** A random uuid per run of the booking page (see above). */
     requestToken: uuid("request_token").notNull(),
+    // Pickup and drop (task 24): copies, so a later fee change never reaches
+    // the booking. All three null when the customer brings the vehicle in.
+    /** The address the vehicle is collected from and brought back to, as typed (spaces collapsed). */
+    pickupAddress: text("pickup_address"),
+    /** Its six-digit PIN code: "412101". No foreign key: a copy, like the vehicle's. */
+    pickupPostalCode: text("pickup_postal_code"),
+    /** The fee for pickup and drop together, in paise; 0 when free. Not part of total_paise. */
+    pickupFeePaise: integer("pickup_fee_paise"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -669,6 +677,13 @@ export const bookings = pgTable(
     check("bookings_code_format", sql`${table.code} ~ '^[A-HJKMNP-Z2-9]{6}$'`),
     check("bookings_registration_compact", sql`${table.registrationNumber} ~ '^[A-Z0-9]{8,11}$'`),
     check("bookings_total_positive", sql`${table.totalPaise} > 0`),
+    // Pickup: all three or none, a real PIN code, and a fee that may be 0.
+    check(
+      "bookings_pickup_complete",
+      sql`(${table.pickupAddress} is null) = (${table.pickupPostalCode} is null) and (${table.pickupAddress} is null) = (${table.pickupFeePaise} is null)`,
+    ),
+    check("bookings_pickup_postal_code_format", sql`${table.pickupPostalCode} ~ '^[1-9][0-9]{5}$'`),
+    check("bookings_pickup_fee_not_negative", sql`${table.pickupFeePaise} >= 0`),
     // How full a slot is, and how many future bookings one customer holds.
     index("bookings_starts_at_index").on(table.startsAt),
     index("bookings_user_id_starts_at_index").on(table.userId, table.startsAt),
@@ -733,6 +748,37 @@ export const bookingEvents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("booking_events_booking_id_index").on(table.bookingId)],
+);
+
+// --- Pickup and drop (task 24) ---------------------------------------------
+//
+// The PIN codes the garage collects vehicles from and brings them back to,
+// each with one fee for pickup and drop together, the same for every vehicle
+// (owner, 2026-11-18). Real areas only: it starts empty in every build, and
+// the samples `npm run dev` shows live in src/content/sample-pickup-areas.ts.
+// Task 28 lets the owner add, change and pause areas.
+
+/**
+ * One area. Keyed by its PIN code, which every build worker and process
+ * agrees on. `listed = false` pauses pickup there without losing the fee; a
+ * paused area is neither shown nor bookable. Bookings keep their own copy,
+ * so deleting a row never changes one.
+ */
+export const pickupAreas = pgTable(
+  "pickup_areas",
+  {
+    /** Six digits, the first never 0 (isIndianPinCode in src/domain/garage.ts). */
+    postalCode: text("postal_code").primaryKey(),
+    /** In paise, for pickup and drop together; 0 means free. */
+    feePaise: integer("fee_paise").notNull(),
+    listed: boolean("listed").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check("pickup_areas_postal_code_format", sql`${table.postalCode} ~ '^[1-9][0-9]{5}$'`),
+    check("pickup_areas_fee_not_negative", sql`${table.feePaise} >= 0`),
+  ],
 );
 
 // --- Photos (task 30) ---------------------------------------------------------

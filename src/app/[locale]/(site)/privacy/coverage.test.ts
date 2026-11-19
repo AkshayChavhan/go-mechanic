@@ -72,6 +72,10 @@ const TABLES: Record<string, Personal | null> = {
       "is_estimate",
       "total_paise",
       "request_token",
+      // Pickup and drop (task 24): the address, its PIN code and the fee, copied onto the booking.
+      "pickup_address",
+      "pickup_postal_code",
+      "pickup_fee_paise",
       "created_at",
     ],
   },
@@ -101,6 +105,8 @@ const TABLES: Record<string, Personal | null> = {
   // Services, packages and their prices (task 18): the garage's own price list.
   services: null,
   service_prices: null,
+  // Pickup and drop (task 24): the PIN codes the garage serves and their fees.
+  pickup_areas: null,
 };
 
 /** Every table schema.ts defines, by its database name. */
