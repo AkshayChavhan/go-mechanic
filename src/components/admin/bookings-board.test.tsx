@@ -144,16 +144,16 @@ describe("BookingsBoard", () => {
     expect(screen.queryByRole("link", { name: t.today })).toBeNull();
   });
 
-  test("on the last day of the range, next is disabled (not a link); on the first, previous is", async () => {
+  test("on the last day of the range, next is a disabled button (not a link); on the first, previous is", async () => {
     const last = await renderBoard({ date: "2027-11-20" });
     expect(screen.queryByRole("link", { name: t.nextDay })).toBeNull();
-    expect(screen.getByText(t.nextDay).closest("[aria-disabled='true']")).toBeTruthy();
+    expect((screen.getByRole("button", { name: t.nextDay }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("link", { name: t.previousDay })).toBeTruthy();
     last.unmount();
 
     await renderBoard({ date: "2025-11-18" });
     expect(screen.queryByRole("link", { name: t.previousDay })).toBeNull();
-    expect(screen.getByText(t.previousDay).closest("[aria-disabled='true']")).toBeTruthy();
+    expect((screen.getByRole("button", { name: t.previousDay }) as HTMLButtonElement).disabled).toBe(true);
     expect(screen.getByRole("link", { name: t.nextDay })).toBeTruthy();
   });
 

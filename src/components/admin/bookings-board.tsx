@@ -172,20 +172,21 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
 
 /**
  * A previous or next day button. A day outside the board's range would be
- * refused by pickBoardDate, so it renders as a disabled button-shaped span
- * instead of a link: nothing to click, and aria-disabled says why to a
- * screen reader.
+ * refused by pickBoardDate, so it renders as a real disabled button
+ * instead of a link: nothing to click, and screen readers announce it as
+ * unavailable (aria-disabled on a plain span is ignored).
  */
 function DayLink({ date, today, children }: { date: IndiaDate; today: IndiaDate; children: ReactNode }) {
+  if (!isOnBoard(date, today)) {
+    return (
+      <Button variant="outline" disabled>
+        {children}
+      </Button>
+    );
+  }
   return (
     <Button asChild variant="outline">
-      {isOnBoard(date, today) ? (
-        <Link href={{ pathname: "/admin/bookings", query: { date } }}>{children}</Link>
-      ) : (
-        <span aria-disabled="true" className="pointer-events-none opacity-50">
-          {children}
-        </span>
-      )}
+      <Link href={{ pathname: "/admin/bookings", query: { date } }}>{children}</Link>
     </Button>
   );
 }
