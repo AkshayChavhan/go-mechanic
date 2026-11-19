@@ -423,8 +423,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Staff can add `/admin` to their phone's home screen (`/admin.webmanifest` and PNG icons, linked only from the admin layout)
 - [x] Phone and walk-in bookings moved to task 50 (owner, 2026-11-19, to keep this pull request reviewable)
 - [x] Write the learning doc: [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md)
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review: `ce-code-review` "Ready with fixes" (fixed); `code-reviewer` "Ready to merge" (its accessibility suggestion fixed, the skip link in the backlog)
+- [x] Compound: [nextjs-16-icons-export-drops-root-icon-file.md](../solutions/conventions/nextjs-16-icons-export-drops-root-icon-file.md)
 - [ ] Merge into `main`
 
 ### 27_booking_management

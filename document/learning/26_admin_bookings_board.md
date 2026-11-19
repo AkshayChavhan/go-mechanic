@@ -107,8 +107,11 @@ Find the test that fails ("a customer with an unreadable date is refused too: ac
 
 - `ce-code-review` (7 reviewers: correctness, security, adversarial (run in-process, since cross-model review is off), testing, maintainability, project standards, past lessons): **Ready with fixes**. No code defects. One P3 process finding: the steps weren't ticked and there was no learning doc (fixed by `c02dac2` and this doc). Two testing gaps, fixed in `a55be68`: reset the `can()` stub per test, and cover two bookings in one slot. Leftover notes went to the backlog in `task.md`: show each booking's status once cancelling exists (tasks 25 and 27), a `/login?next=` return path, shared e2e helpers, and consistent privacy wording.
 - SEO check: `/admin`, `/admin/bookings` and `/account` all Pass. Public pages have no manifest link. For task 42: keep `/admin` and `/account` out of the sitemap, but don't disallow them in `robots` (they're `noindex`, and search engines must be able to read that).
-- code-reviewer: pending.
-- Compound step: pending.
+- `code-reviewer`: **Ready to merge**, no must-fix items. Three suggestions:
+  - The out-of-range day button was a `span` with `aria-disabled`, which most screen readers ignore. It is now a real disabled button (`2cb0cdd`, test first).
+  - The staff bar has no "Skip to content" link. That went to the backlog, to add before tasks 28, 29 and 51 make the bar longer.
+  - Task 47's carried-over backlog commit sits before its "mark done" commit. Only the order is off; history is never rewritten.
+- Compound step: one lesson, [nextjs-16-icons-export-drops-root-icon-file.md](../solutions/conventions/nextjs-16-icons-export-drops-root-icon-file.md). Any `icons` metadata export drops Next.js's own link to `src/app/icon.svg`, so list it yourself. No test or warning shows it, and task 42 will touch icons. The other lessons from this task (staff words only inside gates, the test owner number) are already rules in `CLAUDE.md`'s "Staff area" block.
 
 ## Learn more
 
