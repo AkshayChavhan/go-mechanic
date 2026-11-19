@@ -33,6 +33,8 @@ describe("StarRatingInput", () => {
       <StarRatingInput legend="Your rating" name="rating" starLabels={starLabels} error="Choose a rating." errorId="e1" />,
     );
     expect(screen.getByText("Choose a rating.").id).toBe("e1");
+    // Every star is described by the error, so it's heard with whichever has focus.
+    for (const radio of screen.getAllByRole("radio")) expect(radio.getAttribute("aria-describedby")).toBe("e1");
     expect(container.querySelector('[data-slot="star-rating"]')!.getAttribute("data-invalid")).toBe("true");
   });
 });
