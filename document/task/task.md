@@ -41,7 +41,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Mechanic job updates; customer tracking timeline | To do |  |
-| 32 | `32_estimate_requests` | Free estimate requests with photos; admin inbox | In progress |  |
+| 32 | `32_estimate_requests` | Free estimate requests with photos; admin inbox | In progress | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
@@ -478,7 +478,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Create branch `32_estimate_requests`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1334-feat-estimate-requests-plan.md)
 - [x] Free estimate requests with photos; the staff read for the admin inbox (the inbox page waits for task 26, owner 2026-11-19)
-- [ ] Write the learning doc
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
