@@ -58,6 +58,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
 | 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | In progress | [47_book_wizard.md](../learning/47_book_wizard.md) |
 | 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | Done | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
+| 49 | `49_book_pickup_step` | The pickup and drop step in the `/book` wizard (task 24's areas) | To do |  |
 
 ## Task steps
 
@@ -669,6 +670,20 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [x] Review: `ce-code-review` skipped (mechanical diff: a pinned patch bump plus comment and doc edits); `code-reviewer` "Ready to merge", its two suggestions applied
 - [x] Compound: no new lesson (the learning doc says why)
 - [x] Merge into `main`: PR #25 on GitHub
+
+### 49_book_pickup_step
+
+Task 24 built pickup and drop in the booking engine; task 47 built `/book` and carries a booking's pickup through its answers, but the wizard has no pickup step yet (the owner's choice on 2026-11-19, to keep task 47's pull request reviewable). Until the owner gives real pickup areas, `readPickupAreas()` is empty and the step stays hidden anyway.
+
+- [ ] Create branch `49_book_pickup_step`
+- [ ] Plan with `ce-plan` if it's bigger than a one-file change
+- [ ] Show the pickup step only from `readPickupAreas()` (real areas), never `selectPickupAreas()` (the samples can't be booked), so it stays hidden until real areas exist (task 24)
+- [ ] Ask for the address and the PIN code; show the pickup fee next to the services' total, "Free" for 0 (task 24); post them with Confirm, and handle the "pickup not offered" answer by going back to the pickup step
+- [ ] A browser test with a seeded pickup area (the e2e build has none by default)
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
 
 ## Backlog (later)
 
