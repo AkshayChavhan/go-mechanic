@@ -538,6 +538,33 @@
     "notListed": "PIN code not on the list? <call>Call us</call> or message us on <whatsapp>WhatsApp</whatsapp> and we'll tell you whether we can come."
   },
   "EstimatePage": {
+    "metaTitle": "Free estimate | {brand}",
+    "metaDescription": "Tell the garage what's wrong with your car or two-wheeler, add photos if you like, and get a free estimate before you book.",
+    "heading": "Ask for a free estimate",
+    "lead": "Not sure what's wrong, or what it will cost? Tell us, and the garage will tell you what the work involves before you book. It's free.",
+    "stepsHeading": "How it works",
+    "steps": {
+      "describe": "Choose your vehicle and tell us what you see, hear or feel.",
+      "photos": "Add photos if they help: a warning light, a leak, a dent.",
+      "reply": "The garage looks at your request and gets back to you."
+    },
+    "loading": "Checking your login…",
+    "loginNote": "Log in with your mobile number to ask for an estimate. Then, on your account, choose \"Request a free estimate\".",
+    "loginLink": "Log in",
+    "nameNote": "Add your name on your account first, so the garage knows who's asking.",
+    "nameLink": "Go to your account",
+    "noCatalogue": "Asking here isn't available right now. Call us or message us on WhatsApp instead.",
+    "talkNote": "Rather talk to someone? Call us or message us on WhatsApp.",
+    "vehicleLegend": "Which vehicle?",
+    "otherVehicle": "Another vehicle",
+    "descriptionLabel": "What's wrong?",
+    "descriptionHint": "What do you see, hear or feel, and when does it happen? A few lines are enough.",
+    "descriptionCount": "{count} of {max} characters",
+    "photosLegend": "Photos (optional)",
+    "photosHint": "Photos of the problem help the garage answer faster.",
+    "submit": "Send request",
+    "sending": "Sending…",
+    "waitingForPhotos": "Upload your photos first, or remove them.",
     "errors": {
       "vehicle-missing": "Choose your vehicle.",
       "vehicle-fuel-not-offered": "Choose a fuel this model comes in.",
@@ -550,5 +577,13 @@
       "bad-request": "Something went wrong. Reload the page and try again.",
       "too-many-requests": "You've sent {limit} requests in the last 24 hours. Please call or WhatsApp the garage instead."
     }
+  },
+  "MyEstimates": {
+    "heading": "Your estimate requests",
+    "empty": "Not sure what your vehicle needs? Ask the garage for a free estimate.",
+    "requestLink": "Request a free estimate",
+    "sentOn": "Sent on {date}",
+    "waiting": "Waiting for the garage",
+    "photos": "{count, plural, =0 {No photos} one {# photo} other {# photos}}"
   }
 }
