@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { eq } from "drizzle-orm";
 import { DrizzleQueryError } from "drizzle-orm/errors";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
@@ -51,7 +53,7 @@ async function saveBooking(code = "K7Q4MX"): Promise<string> {
       registrationNumber: "MH12AB1234",
       startsAt: new Date("2027-03-12T04:30:00.000Z"),
       isEstimate: true,
-      requestToken: TOKEN,
+      requestToken: randomUUID(),
       jobStatus: "completed",
     })
     .returning({ id: bookings.id });
