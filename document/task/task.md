@@ -417,11 +417,11 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `26_admin_bookings_board`
 - [x] Plan with `ce-plan`: [the plan](../plans/2026-11-19-1840-feat-admin-bookings-board-plan.md) (document review: 5 fixes applied, 6 more approved by the owner)
-- [ ] The `/admin` area: add `/admin` to `PROTECTED_PREFIXES`; every page calls `requirePermission(locale, "admin.open")` itself, not only its layout; navigation shows only what the role may do (`can()`); browser tests that a customer gets the 404 page and a logged-out visitor a 307; revisit `forbidden()` (task 16)
-- [ ] The bookings board: bookings by date and status, read-only (confirm, cancel, reschedule and assign are task 27); phone numbers only with `customers.contact`
-- [ ] The estimate-request inbox moved to task 51 (owner, 2026-11-19, at the plan's size checkpoint)
-- [ ] Staff can add `/admin` to their phone's home screen (a web app manifest scoped to `/admin`)
-- [ ] Phone and walk-in bookings moved to task 50 (owner, 2026-11-19, to keep this pull request reviewable)
+- [x] The `/admin` area: add `/admin` to `PROTECTED_PREFIXES`; every page calls `requirePermission(locale, ...)` itself, not only its layout; navigation shows only what the role may do (`can()`); browser tests that a customer gets the 404 page and a logged-out visitor a 307; `forbidden()` is still experimental in Next.js 16.4.6, so a wrong role gets the 404 page (task 16)
+- [x] The bookings board: bookings by date, read-only (confirm, cancel, reschedule and assign are task 27; every booking is `booked` until then, so no status filter yet); phone numbers and pickup addresses only with `customers.contact`
+- [x] The estimate-request inbox moved to task 51 (owner, 2026-11-19, at the plan's size checkpoint)
+- [x] Staff can add `/admin` to their phone's home screen (`/admin.webmanifest` and PNG icons, linked only from the admin layout)
+- [x] Phone and walk-in bookings moved to task 50 (owner, 2026-11-19, to keep this pull request reviewable)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -798,6 +798,10 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 42: `/estimate` in the sitemap, and a title and description that name the place and the vehicles (for example "Free car and bike repair estimate in Kiwale, Pune | GoMechanic"); today no public page links to it, so search engines may never find it until the links above exist (SEO check after task 32)
 - Task 47: the booking action's error wrapper (no message, no cause) should cover `sendEstimateRequest` too: a failed insert's error carries the customer's description (task 32)
 - Task 43: deleting a customer's estimate requests (`user_id` restricts deletes, as for bookings), and the privacy notice's "Your estimate requests" retention then (task 32)
+- Tasks 25 and 27: once a booking can be cancelled, the staff board (`listBookingsOn`, `BookingsBoard`) must show each booking's status or leave cancelled ones out: today it shows every row the same, because every booking is `booked` (task 26 code review)
+- A login that returns staff to `/admin` (and a guest to `/estimate`): `/login?next=` accepting only known paths. Today login always lands on `/account`, which shows staff a "Staff area" link (task 26)
+- Browser tests: `e2e/admin.spec.ts`, `booking.spec.ts`, `account.spec.ts` and `estimate.spec.ts` each copy the same small helpers (`field`, `button`, `pill`, `withoutFaviconProbe`); move them into `e2e/helpers.ts` (task 26 simplify pass)
+- The privacy notice's "Your bookings" says "The garage" sees them, while "Your estimate requests" and "Your photos" name "the garage's owner and managers". Both are true today; make them consistent the next time the notice changes, and move `LOGIN_NOTICE_VERSION` then (task 26)
 - A shared helper for the `{placeholder}` text fill and the `aria-describedby` id joiner: `estimate-form.tsx` added a 4th copy of `fill()` and a 3rd of `ids()` (photo-uploader, vehicle-picker, price-finder, login-form and vehicle-form have the others, already drifting apart) (task 32 code review)
 - CLAUDE.md "Services and prices" says anything that shows a vehicle model renders only under `showSamples()`, but the add-vehicle form (task 21) and `/estimate` (task 32) show the draft catalogue to logged-in customers, inside their `<Suspense>` gates. Reconcile the rule with them when the owner approves the models (task 39) or before staging (task 20) (task 32 code review)
 
