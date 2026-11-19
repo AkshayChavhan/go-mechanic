@@ -9,6 +9,7 @@ import { FieldDescription } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
 
 // Locks in our restyle of the shadcn components (see the "Our changes to
 // shadcn's ..." comment at the top of each file). Re-adding a component with
@@ -115,6 +116,25 @@ describe("Input", () => {
   test("has no grey fill inside .dark sections, so placeholder text stays readable", () => {
     render(<Input aria-label="Phone number" />);
     const classes = classesOf(screen.getByRole("textbox"));
+    expect(classes).not.toContain("dark:bg-input/30");
+    expect(classes).not.toContain("dark:disabled:bg-input/80");
+  });
+});
+
+describe("Textarea", () => {
+  test("is at least three lines tall, with text of at least 16px so iOS doesn't zoom in", () => {
+    render(<Textarea aria-label="What's wrong" />);
+    const classes = classesOf(screen.getByRole("textbox"));
+    expect(classes).toContain("min-h-33"); // 132px: three lines of 17px text
+    expect(classes).toContain("type-body"); // 17px
+    expect(classes.filter((name) => /^(?:(?:sm|md|lg|xl|2xl):)?text-(?:xs|sm|base)$/.test(name))).toEqual([]);
+    expect(classes).toEqual(expect.arrayContaining(["rounded-lg", "border-input"]));
+  });
+
+  test("keeps the full red border and no grey fill inside .dark sections", () => {
+    render(<Textarea aria-label="What's wrong" />);
+    const classes = classesOf(screen.getByRole("textbox"));
+    expect(classes).not.toContain("dark:aria-invalid:border-destructive/50");
     expect(classes).not.toContain("dark:bg-input/30");
     expect(classes).not.toContain("dark:disabled:bg-input/80");
   });
