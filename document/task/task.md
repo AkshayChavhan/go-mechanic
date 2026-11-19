@@ -476,7 +476,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 32_estimate_requests
 
 - [x] Create branch `32_estimate_requests`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1334-feat-estimate-requests-plan.md)
 - [ ] Free estimate requests with photos; admin inbox
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
