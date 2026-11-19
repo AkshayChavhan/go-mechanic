@@ -103,11 +103,12 @@ describe("bookTarget (where \"Book a service\" goes)", () => {
     });
   });
 
-  test("the booking page once it's live (task 23)", () => {
+  test("the booking page once it's live (task 47)", () => {
     expect(bookTarget(whatsappBooking, { href: "/book", live: true })).toEqual({ kind: "page", href: "/book" });
   });
 
-  test("uses the real booking page entry by default", () => {
-    expect(bookTarget(whatsappBooking).kind).toBe(bookPage.live ? "page" : "whatsapp");
+  test("uses the real booking page entry by default: /book, live since task 47", () => {
+    expect(bookPage).toEqual({ href: "/book", live: true });
+    expect(bookTarget(whatsappBooking)).toEqual({ kind: "page", href: "/book" });
   });
 });

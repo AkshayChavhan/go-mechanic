@@ -11,6 +11,7 @@ applies_when:
   - "A client form island reads a controlled select, radio or input that the visitor may change before the page's JavaScript loads"
   - "A form passes a browser-side wrapper to useActionState"
   - "A page can be hidden and shown again with React's Activity, as Next.js does on navigation"
+  - "A client island starts its state from per-customer props (saved vehicles, a phone number) on a page a customer can leave and come back to after logging out elsewhere"
 tags:
   - react-19
   - hydration
@@ -18,6 +19,7 @@ tags:
   - activity
   - next-16
   - forms
+  - shared-phone
 ---
 
 # React 19 form islands under Next.js 16: hydration resets, browser-only actions, hidden pages
@@ -87,11 +89,22 @@ Two more rules come with this:
 - Effects run again when a hidden page is shown. A focus effect would therefore re-run on every visit. Run it only after an answer (`state.submission > 0`), and reset the submission count with the remount.
 - A form shown per user takes the user's id in its `key`, so the next customer on a shared phone never sees the last one's draft.
 
+### 3b. `FreshOnEachVisit` remounts with the props the page had when it was hidden
+
+Found in task 47 (`/book`) by a browser test, after the unit tests passed. Customer A opens `/book` while logged in, goes to `/account`, logs out, and follows "Book a service" again. Next.js shows the `/book` it kept hidden. `FreshOnEachVisit` did remount the wizard, but at hide time, with A's props. The fresh props (`account: null`) arrive later, and a mounted island keeps the state it started with (`useState(account)`). So the page showed A's saved vehicle and number plate to the next person.
+
+Keying the island by user id is the fix for most forms. It doesn't work for an island that changes the login itself: the booking wizard logs a customer in inline and must keep every choice, and the page's re-render after its own action still reads the old cookie (`server-action-login-invisible-until-next-request.md`). The wizard uses `FollowPageLogin` (`src/components/booking/booking-wizard.tsx`):
+
+- A `useLayoutEffect` keyed on the login identity (`account?.phoneDisplay`) bumps a key that remounts the island when the identity changes. Layout effects don't run while the page is hidden and do run before paint when it shows, so the old customer is never painted.
+- A ref, set just before the island's own login or "Not you?" action is sent, makes that change not count. Use a ref, not state: state set inside an async action may only commit after the action, which is too late.
+
+Test it the way Next.js runs it: render the island inside `<Activity>`, hide it, show it with stale props, then fresh ones (`booking-wizard.test.tsx`, "the page's login changes under it"). Then check it in a real browser too (`e2e/booking.spec.ts`, "the next customer on a shared phone"): the unit tests had passed before the browser test found the leak.
+
 ## Why This Matters
 
 - Trap 1 loses a visitor's choice silently. Nothing errors, and the form posts the wrong vehicle.
 - Trap 2 breaks the "works without JavaScript" promise the comments made. The break is invisible in the browser when JavaScript is on, so only a no-JS check or reading the server HTML shows it.
-- Trap 3 leaks one customer's draft to the next on a shared phone, and it re-opens the keyboard on a phone.
+- Trap 3 leaks one customer's draft to the next on a shared phone, and it re-opens the keyboard on a phone. 3b leaks their saved data (vehicles, plates, phone number) the same way, even with `FreshOnEachVisit` in place.
 
 ## When to Apply
 
@@ -103,4 +116,6 @@ Two more rules come with this:
 ## Related
 
 - `document/learning/21_customer_vehicles.md`: the task's learning doc, which has the first failing test.
+- `document/learning/47_book_wizard.md`: where 3b was found and fixed.
+- `document/solutions/conventions/server-action-login-invisible-until-next-request.md`: why an island that logs in inline can't trust its page's props.
 - `document/solutions/conventions/nextjs-16-dev-server-is-not-one-process-use-cache-probe.md`: another Next.js 16 surprise, from task 14.

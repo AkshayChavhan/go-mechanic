@@ -26,7 +26,7 @@ import "server-only";
 
 import { randomInt } from "node:crypto";
 
-import { and, eq, gt, sql } from "drizzle-orm";
+import { and, asc, eq, gt, sql } from "drizzle-orm";
 
 import {
   type BookingInput,
@@ -55,7 +55,7 @@ import {
 } from "./customer-vehicles";
 import { readPickupAreas } from "./pickup";
 import { readServicePrices, readServices } from "./services";
-import { reserveSlot } from "./slots";
+import { reserveSlot, type SlotTransaction } from "./slots";
 import { readVehicleCatalogue } from "./vehicles";
 
 /** What can be wrong with a booking before any slot is touched. */
@@ -102,8 +102,12 @@ export type BookedBooking = {
 
 export type CreateBookingResult =
   | { status: "booked"; booking: BookedBooking }
-  /** The same request token again (a double tap, a retry): the first booking's code. */
-  | { status: "duplicate"; code: string }
+  /**
+   * The same request token again (a double tap, a retry), or the same vehicle
+   * in the same slot: no new booking. `booking` is the earlier one, as it was
+   * saved, so a retry with another slot is shown the time really booked.
+   */
+  | { status: "duplicate"; booking: BookedBooking }
   | { status: "problems"; problems: BookingSaveProblem[] }
   /** The saved vehicle isn't this customer's (or doesn't exist). */
   | { status: "not-found" }
@@ -176,12 +180,12 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
     // Waits for this customer's other confirms; released when the transaction ends.
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`booking-user:${user.id}`}))`);
 
-    // The same confirm again: the first booking's code, whatever happened since.
+    // The same confirm again: the first booking, whatever was posted this time.
     const [earlier] = await tx
-      .select({ code: bookings.code })
+      .select({ id: bookings.id })
       .from(bookings)
       .where(and(eq(bookings.userId, user.id), eq(bookings.requestToken, booking.requestToken)));
-    if (earlier) return { status: "duplicate", code: earlier.code };
+    if (earlier) return { status: "duplicate", booking: await readBookedBooking(tx, user.id, earlier.id) };
 
     // A typed number the customer already saved: the same vehicle, or a clash.
     let vehicleId: string | null = vehicle.saved ? vehicle.id : null;
@@ -196,7 +200,7 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
     // The same vehicle in the same slot again, under a new token (a reload
     // makes a new one): the first booking stands, so its code comes back.
     const [sameSlot] = await tx
-      .select({ code: bookings.code })
+      .select({ id: bookings.id })
       .from(bookings)
       .where(
         and(
@@ -206,7 +210,7 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
           eq(bookings.startsAt, booking.startsAt),
         ),
       );
-    if (sameSlot) return { status: "duplicate", code: sameSlot.code };
+    if (sameSlot) return { status: "duplicate", booking: await readBookedBooking(tx, user.id, sameSlot.id) };
 
     if (pickupNotOffered) return { status: "problems", problems: [{ field: "pickup", problem: "pickup-not-offered" }] };
 
@@ -295,4 +299,45 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
       },
     };
   });
+}
+
+/** One of this customer's bookings, as the confirmation shows it. Read inside the save's transaction. */
+async function readBookedBooking(tx: SlotTransaction, userId: string, bookingId: string): Promise<BookedBooking> {
+  const [row] = await tx
+    .select({
+      code: bookings.code,
+      startsAt: bookings.startsAt,
+      kind: bookings.vehicleKind,
+      modelId: bookings.modelId,
+      fuel: bookings.fuel,
+      categoryId: bookings.categoryId,
+      registrationNumber: bookings.registrationNumber,
+      totalPaise: bookings.totalPaise,
+      isEstimate: bookings.isEstimate,
+      pickupAddress: bookings.pickupAddress,
+      pickupPostalCode: bookings.pickupPostalCode,
+      pickupFeePaise: bookings.pickupFeePaise,
+    })
+    .from(bookings)
+    .where(and(eq(bookings.userId, userId), eq(bookings.id, bookingId)));
+  if (!row) throw new Error("The earlier booking was not found");
+  const lines = await tx
+    .select({
+      serviceId: bookingItems.serviceId,
+      kind: bookingItems.serviceKind,
+      name: bookingItems.name,
+      priceStatus: bookingItems.priceStatus,
+      pricePaise: bookingItems.pricePaise,
+      position: bookingItems.position,
+    })
+    .from(bookingItems)
+    .where(eq(bookingItems.bookingId, bookingId))
+    .orderBy(asc(bookingItems.position));
+  const { code, startsAt, totalPaise, isEstimate, pickupAddress, pickupPostalCode, pickupFeePaise, ...vehicle } = row;
+  // All three or none (a CHECK on the table): the earlier booking's own copy.
+  const pickup =
+    pickupAddress !== null && pickupPostalCode !== null && pickupFeePaise !== null
+      ? { address: pickupAddress, postalCode: pickupPostalCode, feePaise: pickupFeePaise }
+      : null;
+  return { code, startsAt, vehicle, lines, totalPaise, isEstimate, pickup };
 }

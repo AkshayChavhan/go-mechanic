@@ -70,4 +70,14 @@ describe("ChoiceGroup", () => {
     // the browser treats it as :disabled and won't check it.
     for (const radio of screen.getAllByRole("radio")) expect(radio.matches(":disabled")).toBe(true);
   });
+
+  test("one disabled option can't be chosen; the others still can", () => {
+    const days = [
+      { value: "mon", label: "Mon", disabled: true },
+      { value: "tue", label: "Tue" },
+    ];
+    render(<ChoiceGroup legend="Day" name="day" options={days} />);
+    expect(screen.getByRole("radio", { name: "Mon" }).matches(":disabled")).toBe(true);
+    expect(screen.getByRole("radio", { name: "Tue" }).matches(":disabled")).toBe(false);
+  });
 });

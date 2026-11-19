@@ -124,15 +124,13 @@ describe("Home page", () => {
   test.each([
     ["the hero", () => screen.getByRole("heading", { level: 1 }).closest("section")!],
     ["the call to action", () => sectionOf(home.cta.title)],
-  ])("%s: one blue Book link to WhatsApp with the booking message, and Call", async (_name, section) => {
+  ])("%s: one blue Book link to the booking page (task 47), and Call", async (_name, section) => {
     renderWithIntl(await Home());
     const links = within(section()).getAllByRole("link");
     const book = links.filter((link) => link.textContent?.includes(messages.Header.book));
     expect(book).toHaveLength(1);
-    const href = new URL(book[0].getAttribute("href")!);
-    expect(href.host).toBe("wa.me");
-    expect(href.searchParams.get("text")).toBe(messages.Contact.bookingMessage);
-    expect(book[0].getAttribute("target")).toBe("_blank");
+    expect(book[0].getAttribute("href")).toBe("/book");
+    expect(book[0].getAttribute("target")).toBeNull();
     expect(book[0].getAttribute("data-variant")).toBe("default");
 
     const call = links.filter((link) => link.getAttribute("href") === "tel:+919764750567");

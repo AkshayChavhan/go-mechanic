@@ -56,8 +56,9 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 44 | `44_real_sms_otp` | Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid) | To do |  |
 | 45 | `45_real_whatsapp_email` | Real WhatsApp Cloud API and email (paid) | To do |  |
 | 46 | `46_production_launch` | Production plans, domain, monitoring, backups, final audit (paid) | To do |  |
-| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | To do |  |
-| 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | In progress | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
+| 47 | `47_book_wizard` | The `/book` page on top of task 23's booking engine | In progress | [47_book_wizard.md](../learning/47_book_wizard.md) |
+| 48 | `48_nextjs_security_upgrade` | Next.js 16.4.3 → 16.4.6: security fixes for `'use cache'` and Cache Components | Done | [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md) |
+| 49 | `49_book_pickup_step` | The pickup and drop step in the `/book` wizard (task 24's areas) | To do |  |
 
 ## Task steps
 
@@ -643,15 +644,15 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 The `/book` page on top of task 23's booking engine: units U6–U10 of [the booking flow plan](../plans/2026-11-11-2016-feat-booking-flow-plan.md). Start it only after task 23 is merged.
 
-- [ ] Create branch `47_book_wizard`
-- [ ] U6: the `(book)` route group and the shell without the phone action bar (no gap where it was)
-- [ ] U7: the booking actions (`bookingLoginStep`, `confirmBooking`, `notMe`) and their state; the inline OTP reuses the login service, its consent snapshot and the e2e outbox file (task 15). Show a `duplicate` answer as "You already booked this vehicle for this time (code K7Q-4MX)", not as a plain success: it also comes back when the same vehicle and slot are confirmed again with other services; changing services belongs to task 25 (code-reviewer in task 23)
-- [ ] U8: the wizard island (four steps, confirm, done)
-- [ ] U9: the `/book` page; set `bookPage.live` to true in `src/components/site/navigation.ts`, so "Book a service" and the phone bar's Book go to `/book` (task 12); update the FAQ's "How do I book?" and the terms' booking text (task 19)
-- [ ] U10: browser tests on a production build, whose database is PGlite in memory: every run starts from the seed, so booking tests must not depend on an earlier run (task 14); docs
-- [ ] Write the learning doc
-- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `47_book_wizard`
+- [x] U6: the `(book)` route group and the shell without the phone action bar (no gap where it was)
+- [x] U7: the booking actions (`bookingLoginStep`, `confirmBooking`, `notMe`) and their state; the inline OTP reuses the login service, its consent snapshot and the e2e outbox file (task 15). Show a `duplicate` answer as "You already have this booking (code K7Q-4MX)" with the earlier booking's time, vehicle and services, not as a plain success: it also comes back when the same vehicle and slot are confirmed again with other services; changing services belongs to task 25 (code-reviewer in task 23)
+- [x] U8: the wizard island (four steps, confirm, done); then a simplification pass (the owner chose "trim, then finish in one PR" when task 47 passed its 2,500-line stop line)
+- [x] U9: the `/book` page; set `bookPage.live` to true in `src/components/site/navigation.ts`, so "Book a service" and the phone bar's Book go to `/book` (task 12); update the FAQ's "How do I book?" and the terms' booking text (task 19)
+- [x] U10: browser tests on a production build, whose database is PGlite in memory: every run starts from the seed, so booking tests must not depend on an earlier run (task 14); docs
+- [x] Write the learning doc: [47_book_wizard.md](../learning/47_book_wizard.md)
+- [x] Review: `ce-code-review` "Ready with fixes" (2 confirmed findings, fixed); `code-reviewer` 1 must-fix (CLAUDE.md, fixed), and its browser-check suggestion found a shared-phone leak (fixed)
+- [x] Compound: section 3b added to [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md)
 - [ ] Merge into `main`
 
 ### 48_nextjs_security_upgrade
@@ -668,6 +669,21 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [x] Write the learning doc: [48_nextjs_security_upgrade.md](../learning/48_nextjs_security_upgrade.md)
 - [x] Review: `ce-code-review` skipped (mechanical diff: a pinned patch bump plus comment and doc edits); `code-reviewer` "Ready to merge", its two suggestions applied
 - [x] Compound: no new lesson (the learning doc says why)
+- [x] Merge into `main`: PR #25 on GitHub
+
+### 49_book_pickup_step
+
+Task 24 built pickup and drop in the booking engine; task 47 built `/book` and carries a booking's pickup through its answers, but the wizard has no pickup step yet (the owner's choice on 2026-11-19, to keep task 47's pull request reviewable). Until the owner gives real pickup areas, `readPickupAreas()` is empty and the step stays hidden anyway.
+
+- [ ] Create branch `49_book_pickup_step`
+- [ ] Plan with `ce-plan` if it's bigger than a one-file change
+- [ ] Show the pickup step only from `readPickupAreas()` (real areas), never `selectPickupAreas()` (the samples can't be booked), so it stays hidden until real areas exist (task 24)
+- [ ] Ask for the address and the PIN code; show the pickup fee next to the services' total, "Free" for 0 (task 24); post them with Confirm, and handle the "pickup not offered" answer by going back to the pickup step
+- [ ] A browser test with a seeded pickup area (the e2e build has none by default)
+- [ ] `Booking.errors.pickup.address-too-long` types "200 characters": use `{max}` and pass `PICKUP_RULES.addressMaxLength` from `problemsAnswer`, so the message follows the rule (code-reviewer in task 47)
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
 ## Backlog (later)

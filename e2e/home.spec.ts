@@ -71,8 +71,8 @@ const sectionHeadings = (page: Page) => page.getByRole("main").getByRole("headin
 const hero = (page: Page) => page.getByRole("region", { name: home.title });
 const cta = (page: Page) => page.getByRole("region", { name: home.cta.title });
 
-/** "Book a service (opens WhatsApp)": the Book link's name for screen readers. */
-const bookName = `${messages.Header.book} ${messages.Contact.opensWhatsApp}`;
+/** "Book a service": the Book link's name (it opens /book since task 47). */
+const bookName = messages.Header.book;
 
 /** Waits until GSAP has loaded and the effects have hidden something below the first screen. */
 async function waitForEffects(page: Page) {
@@ -158,13 +158,11 @@ test.describe("what the production build ships", () => {
     expect(found).toEqual({});
   });
 
-  test("the hero's Book opens WhatsApp with the booking message; Call dials the garage", async ({ page }) => {
+  test("the hero's Book opens the booking page; Call dials the garage", async ({ page }) => {
     await page.goto("/");
-    const book = hero(page).getByRole("link", { name: bookName });
-    await expect(book).toHaveAttribute("target", "_blank");
-    const href = new URL((await book.getAttribute("href")) ?? "");
-    expect(href.host).toBe("wa.me");
-    expect(href.searchParams.get("text")).toBe(messages.Contact.bookingMessage);
+    const book = hero(page).getByRole("link", { name: bookName, exact: true });
+    await expect(book).toHaveAttribute("href", "/book");
+    await expect(book).not.toHaveAttribute("target", "_blank");
 
     const call = hero(page).getByRole("link", { name: `${messages.Contact.call} ${formatPhoneNumber(ownerGarage.phone)}` });
     await expect(call).toHaveAttribute("href", telHref(ownerGarage.phone));

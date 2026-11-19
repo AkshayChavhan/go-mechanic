@@ -63,6 +63,8 @@ Open http://localhost:3000. There's no database to install: the first `npm run d
 
 To log in locally: open http://localhost:3000/login, type any Indian mobile number and tick both boxes. No SMS is sent until the launch: the code shows on http://localhost:3000/dev/outbox instead (newest first). Type it on `/login` and you land on `/account`, which asks for your name once, then lists your vehicles; add one at `/account/vehicles/new`. The header's "Account" link opens `/account` from any page. Log in with the garage's own number (97647 50567) to be the owner; any other number is a customer. Test runs leave users with `60000...` numbers in your local database; `npm run db:reset` clears them.
 
+To book locally: open http://localhost:3000/book (or press "Book a service"), pick a vehicle, services and a time, then log in on the same page with a code from http://localhost:3000/dev/outbox. Until the garage's prices are entered (task 39), every line says "price confirmed at the garage". `npm run db:reset` clears the bookings too.
+
 Other commands:
 
 | Command | What it does |

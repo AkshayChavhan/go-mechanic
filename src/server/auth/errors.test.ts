@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 
 import { redirect } from "@/i18n/navigation";
 
-import { kindOf, LoginServiceError, withoutDetails } from "./errors";
+import { BookingServiceError, bookingWithoutDetails, kindOf, LoginServiceError, withoutDetails } from "./errors";
 
 // A database error as Drizzle throws it: the message holds the query and its
 // values, the cause holds Postgres's own error with its code.
@@ -60,6 +60,40 @@ describe("withoutDetails (errors from the login code, without their details)", (
 
   test("returns the step's answer when nothing goes wrong", async () => {
     await expect(withoutDetails("someStep", async () => 42)).resolves.toBe(42);
+  });
+});
+
+describe("bookingWithoutDetails (errors from the booking action, without their details)", () => {
+  // A failed booking insert: its params hold the pickup address (task 24).
+  function bookingInsertError(): Error {
+    const cause = Object.assign(new Error("new row violates check constraint"), { code: "23514" });
+    return Object.assign(
+      new Error("Failed query: insert into bookings ... params: 12, MG Road, Chakan, 412101, +919876543210", { cause }),
+      { name: "DrizzleQueryError" },
+    );
+  }
+
+  test("a database error becomes a BookingServiceError with no message or cause from the original", async () => {
+    const error = await bookingWithoutDetails("createMyBooking", async () => {
+      throw bookingInsertError();
+    }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(BookingServiceError);
+    expect((error as Error).message).toBe("createMyBooking failed (DrizzleQueryError 23514)");
+    expect((error as Error).cause).toBeUndefined();
+    expect(inspect(error, { depth: 10 })).not.toMatch(/MG Road|412101|9876543210|Failed query/);
+  });
+
+  test("Next.js's signals and errors already without details pass through unchanged", async () => {
+    const moved = await bookingWithoutDetails("step", async () => redirect({ href: "/book", locale: "en" })).catch(
+      (caught: unknown) => caught,
+    );
+    expect(moved).toMatchObject({ digest: expect.stringMatching(/^NEXT_REDIRECT;/) });
+    const login = new LoginServiceError("getCurrentUser", "Error");
+    await expect(
+      bookingWithoutDetails("step", async () => {
+        throw login;
+      }),
+    ).rejects.toBe(login);
   });
 });
 

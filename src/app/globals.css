@@ -260,9 +260,12 @@
 }
 
 /* Below 768px the action bar covers the bottom of the screen too. The same
-   query is phoneQuery in src/lib/motion.ts. */
+   query is phoneQuery in src/lib/motion.ts. Only while the bar is on the
+   page: :has() looks for its marker (data-action-bar, action-bar.tsx), so a
+   shell without it (SiteChrome actionBar={false}, the (book) pages) and the
+   pages outside the shell keep the full height. */
 @media (width < 48rem) {
-    :root {
+    :root:has([data-action-bar]) {
         --stage-height: calc(100svh - var(--header-height) - var(--action-bar-height));
     }
 }
@@ -388,9 +391,10 @@
        header never hides it or its focus outline. */
     scroll-padding-top: calc(var(--header-height) + 0.5rem);
     }
-  /* Below 768px the action bar covers the bottom of the screen too. */
+  /* Below 768px the action bar covers the bottom of the screen too, while
+     it's on the page (its marker, data-action-bar; see --stage-height). */
   @media (width < 48rem) {
-    html {
+    html:has([data-action-bar]) {
       scroll-padding-bottom: calc(var(--action-bar-height) + 0.5rem);
     }
   }

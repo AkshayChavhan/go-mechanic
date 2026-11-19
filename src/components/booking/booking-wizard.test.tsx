@@ -1,0 +1,714 @@
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import { Activity } from "react";
+import { describe, expect, test, vi } from "vitest";
+
+import type { LoginFormLabels } from "@/components/account/login-form";
+import type { VehiclePickerLabels } from "@/components/site/vehicle-picker";
+import { isUuid } from "@/domain/ids";
+import type { Service, ServicePrice } from "@/domain/services";
+import type { VehicleCatalogue } from "@/domain/vehicles";
+import { defaultLocale, GARAGE_TIME_ZONE } from "@/i18n/config";
+import { renderWithIntl } from "@/i18n/test-utils";
+import type { BookingSummary, ConfirmAnswer, ConfirmState, SerializedSlotDay } from "@/lib/booking-form";
+import { initialLoginState } from "@/lib/login-state";
+import type { MyVehicle } from "@/server/dal/customer-vehicles";
+import messages from "../../../messages/en.json";
+
+import {
+  BookingWizard,
+  type BookingLoginAction,
+  type BookingWizardAccount,
+  type BookingWizardProps,
+  type ConfirmAction,
+} from "./booking-wizard";
+
+// The wizard's words are the real Booking.wizard messages, passed raw the
+// way the page passes them. The actions are stand-ins (vi.fn) answering what
+// each test needs, the way the real ones answer (src/server/actions/
+// booking.test.ts tests that side).
+
+const t = messages.Booking.wizard;
+const v = messages.Vehicles;
+const l = messages.Login;
+
+const pickerLabels: VehiclePickerLabels = {
+  kindLegend: v.picker.kindLegend,
+  kinds: { car: v.kinds.car, "two-wheeler": v.kinds.twoWheeler },
+  makeLabel: v.picker.makeLabel,
+  makePlaceholder: v.picker.makePlaceholder,
+  makeGroups: { car: v.picker.makeGroups.car, "two-wheeler": v.picker.makeGroups.twoWheeler },
+  modelLabel: v.picker.modelLabel,
+  modelPlaceholder: v.picker.modelPlaceholder,
+  modelGroup: v.picker.modelGroup,
+  fuelLegend: v.picker.fuelLegend,
+  fuels: { petrol: v.fuels.petrol, diesel: v.fuels.diesel, cng: v.fuels.cng, electric: v.fuels.electric },
+  announceSet: v.picker.announceSet,
+  announceCleared: v.picker.announceCleared,
+};
+
+const loginLabels: LoginFormLabels = {
+  phoneLabel: l.phoneLabel,
+  countryCode: l.countryCode,
+  phoneHint: l.phoneHint,
+  ageLabel: l.ageLabel,
+  consentLabel: l.consentLabel.replace("{brand}", messages.Brand.name),
+  notice: l.notice.replace(/<\/?privacy>/g, ""),
+  sendCode: l.sendCode,
+  sending: l.sending,
+  codeLabel: l.codeLabel,
+  logIn: l.logIn,
+  checking: l.checking,
+  resend: l.resend,
+  resendIn: l.resendIn,
+  resendReady: l.resendReady,
+  waitFor: l.waitFor,
+  changeNumber: l.changeNumber,
+  connection: l.errors.connection,
+};
+
+const text = (en: string) => ({ en });
+
+const catalogue: VehicleCatalogue = {
+  categories: [
+    { id: "sedan", kind: "car", name: text("Sedan") },
+    { id: "scooter", kind: "two-wheeler", name: text("Scooter") },
+  ],
+  makes: [
+    {
+      id: "car-honda",
+      kind: "car",
+      name: text("Honda"),
+      models: [{ id: "car-honda-city", name: text("City"), categoryId: "sedan", fuels: ["petrol", "diesel"] }],
+    },
+    {
+      id: "two-wheeler-honda",
+      kind: "two-wheeler",
+      name: text("Honda"),
+      models: [{ id: "two-wheeler-honda-activa", name: text("Activa"), categoryId: "scooter", fuels: ["petrol"] }],
+    },
+  ],
+};
+
+function service(id: string, name: string, extra: Partial<Service> = {}): Service {
+  return {
+    id,
+    kind: "service",
+    name: text(name),
+    summary: text(name),
+    vehicleKinds: ["car", "two-wheeler"],
+    fuels: ["petrol", "diesel"],
+    included: [text("Checks")],
+    signs: [],
+    pricedAfterInspection: false,
+    ...extra,
+  };
+}
+
+const services: Service[] = [
+  service("car-basic", "Car basic", { kind: "package", vehicleKinds: ["car"] }),
+  service("periodic-service", "Periodic service"),
+  service("ac-service", "AC service", { vehicleKinds: ["car"] }),
+  service("denting", "Denting", { vehicleKinds: ["car"], pricedAfterInspection: true }),
+];
+
+/** 10:00 am and 11:00 am India time on 24 Nov; 10:00 am on 25 Nov; Monday 23 Nov is closed. */
+const slots: SerializedSlotDay[] = [
+  { date: "2026-11-23", weekday: "monday", status: "closed-weekday" },
+  {
+    date: "2026-11-24",
+    weekday: "tuesday",
+    status: "open",
+    slots: [
+      { startsAt: "2026-11-24T04:30:00.000Z", endsAt: "2026-11-24T05:30:00.000Z", remaining: 2 },
+      { startsAt: "2026-11-24T05:30:00.000Z", endsAt: "2026-11-24T06:30:00.000Z", remaining: 0 },
+    ],
+  },
+  {
+    date: "2026-11-25",
+    weekday: "wednesday",
+    status: "open",
+    slots: [{ startsAt: "2026-11-25T04:30:00.000Z", endsAt: "2026-11-25T05:30:00.000Z", remaining: 1 }],
+  },
+];
+
+const savedCity: MyVehicle = {
+  id: "0b6f3f1e-7d8a-4c55-9f1e-2a8c4e9b6d10",
+  kind: "car",
+  modelId: "car-honda-city",
+  makeName: text("Honda"),
+  modelName: text("City"),
+  fuel: "petrol",
+  registrationNumber: "MH12AB0042",
+  pucExpiresOn: null,
+  insuranceExpiresOn: null,
+};
+
+const loggedIn: BookingWizardAccount = { phoneDisplay: "+91 98765 43210", vehicles: [savedCity], needsName: false };
+
+/** What confirm answers, as the state the action returns. */
+function answered(answer: ConfirmAnswer, account = { vehicles: [savedCity], needsName: false }): ConfirmState {
+  return { submission: 1, answer, account, nameTyped: "" };
+}
+
+function renderWizard(props: Partial<BookingWizardProps> = {}) {
+  const loginAction = vi.fn<BookingLoginAction>();
+  const confirmAction = vi.fn<ConfirmAction>();
+  const notMeAction = vi.fn(async () => initialLoginState);
+  renderWithIntl(
+    <BookingWizard
+      loginAction={loginAction}
+      confirmAction={confirmAction}
+      notMeAction={notMeAction}
+      catalogue={catalogue}
+      services={services}
+      prices={[]}
+      slots={slots}
+      account={null}
+      labels={t}
+      loginLabels={loginLabels}
+      pickerLabels={pickerLabels}
+      contactLinks={
+        <p>
+          <a href="tel:+919876500000">Call</a> <a href="https://wa.me/919876500000">WhatsApp</a>
+        </p>
+      }
+      {...props}
+    />,
+  );
+  return { loginAction, confirmAction, notMeAction };
+}
+
+const heading = () => screen.getByRole("heading", { level: 2 });
+const isChecked = (element: HTMLElement) => (element as HTMLInputElement).checked;
+const isDisabled = (element: HTMLElement) => (element as HTMLInputElement | HTMLButtonElement).disabled;
+const press = (name: string) => fireEvent.click(screen.getByRole("button", { name }));
+const tick = (name: string) => fireEvent.click(screen.getByRole("checkbox", { name: new RegExp(`^${name}`) }));
+const registrationField = () => screen.getByLabelText(t.registrationLabel) as HTMLInputElement;
+
+/** Step 1 for a visitor: a model, a fuel and a number. */
+function typeVehicle(modelId = "car-honda-city", registration = "MH 12 AB 1234") {
+  fireEvent.change(screen.getByLabelText(pickerLabels.modelLabel), { target: { value: modelId } });
+  fireEvent.click(screen.getByRole("radio", { name: v.fuels.petrol }));
+  fireEvent.change(registrationField(), { target: { value: registration } });
+}
+
+/** From step 2 to the end of step 3: a service, then 10:00 am on the first open day. */
+function chooseServiceAndTime(name = "Periodic service") {
+  tick(name);
+  press(t.continue);
+  fireEvent.click(screen.getByRole("radio", { name: "10:00 am" }));
+  press(t.continue);
+}
+
+/** Presses a submit button and waits for its action's answer to show. */
+async function submit(name: string) {
+  await act(async () => {
+    fireEvent.click(screen.getByRole("button", { name }));
+  });
+}
+
+/** The phone step, filled in and sent. */
+async function sendPhone() {
+  fireEvent.change(screen.getByLabelText(l.phoneLabel), { target: { value: "91234 56789" } });
+  fireEvent.click(screen.getByRole("checkbox", { name: loginLabels.ageLabel }));
+  fireEvent.click(screen.getByRole("checkbox", { name: loginLabels.consentLabel }));
+  await submit(l.sendCode);
+}
+
+/** A logged-in customer with a saved City, up to the confirm screen. */
+function toConfirm(props: Partial<BookingWizardProps> = {}) {
+  const actions = renderWizard({ account: loggedIn, ...props });
+  press(t.continue);
+  chooseServiceAndTime();
+  expect(heading().textContent).toContain(t.steps.confirm);
+  return actions;
+}
+
+describe("BookingWizard: step 1, the vehicle", () => {
+  test("a visitor gets the picker and the registration field, and Continue waits for both with its reason", () => {
+    renderWizard();
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect(screen.getByText("Step 1 of 4")).toBeTruthy();
+    expect(screen.getByLabelText(pickerLabels.modelLabel)).toBeTruthy();
+    const next = screen.getByRole("button", { name: t.continue });
+    expect(isDisabled(next)).toBe(true);
+    expect(document.getElementById(next.getAttribute("aria-describedby") ?? "")?.textContent).toBe(t.vehicleReason);
+    typeVehicle();
+    expect(isDisabled(next)).toBe(false);
+  });
+
+  test("a logged-in customer sees their saved vehicles first, then another vehicle", () => {
+    renderWizard({ account: loggedIn });
+    const radios = within(screen.getByRole("group", { name: t.savedLegend })).getAllByRole("radio");
+    expect(radios.map((radio) => radio.closest("label")?.textContent)).toEqual([
+      "Honda City, MH 12 AB 0042",
+      t.anotherVehicle,
+    ]);
+    expect(isChecked(radios[0])).toBe(true);
+    expect(screen.queryByLabelText(t.registrationLabel)).toBeNull();
+    fireEvent.click(radios[1]);
+    expect(registrationField()).toBeTruthy();
+  });
+});
+
+describe("BookingWizard: step 2, services and prices", () => {
+  test("a car gets car services and packages; switching to a two-wheeler drops car-only choices and says so", () => {
+    renderWizard();
+    typeVehicle();
+    press(t.continue);
+    expect(screen.getByText("Step 2 of 4")).toBeTruthy();
+    expect(screen.getByRole("checkbox", { name: /^Car basic/ })).toBeTruthy();
+    tick("AC service");
+    tick("Periodic service");
+
+    press(t.back);
+    // Half-way (a type, no model yet) nothing is dropped; the model decides.
+    fireEvent.click(screen.getByRole("radio", { name: v.kinds.twoWheeler }));
+    fireEvent.change(screen.getByLabelText(pickerLabels.modelLabel), {
+      target: { value: "two-wheeler-honda-activa" },
+    });
+    expect(screen.getByText("Removed, as it isn't offered for this vehicle: AC service.").getAttribute("role")).toBe("status");
+    press(t.continue);
+    expect(screen.queryByRole("checkbox", { name: /^AC service/ })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /^Car basic/ })).toBeNull();
+    expect(isChecked(screen.getByRole("checkbox", { name: /^Periodic service/ }))).toBe(true);
+  });
+
+  test("a package then a service: the package is unchosen, and the note says so", () => {
+    renderWizard({ account: loggedIn });
+    press(t.continue);
+    tick("Car basic");
+    tick("AC service");
+    expect(isChecked(screen.getByRole("checkbox", { name: /^Car basic/ }))).toBe(false);
+    expect(isChecked(screen.getByRole("checkbox", { name: /^AC service/ }))).toBe(true);
+    expect(screen.getByText("Car basic removed: a booking has a package or services, not both.")).toBeTruthy();
+  });
+
+  test("with no prices, each line and the total say the price is confirmed at the garage", () => {
+    renderWizard({ account: loggedIn });
+    press(t.continue);
+    tick("AC service");
+    // The line's price, and the total under the list: no amount anywhere.
+    expect(screen.getAllByText(t.noPrice).length).toBeGreaterThanOrEqual(2);
+    expect(screen.queryByText(/₹/)).toBeNull();
+  });
+
+  test("with one priced line, the total is an estimate with the rest confirmed at the garage", () => {
+    const prices: ServicePrice[] = [{ serviceId: "periodic-service", categoryId: "sedan", fuel: null, pricePaise: 249_900 }];
+    renderWizard({ account: loggedIn, prices });
+    press(t.continue);
+    expect(screen.getByRole("checkbox", { name: /^Periodic service/ }).closest("label")?.textContent).toContain("₹2,499");
+    tick("Periodic service");
+    expect(screen.getByText("Total: ₹2,499")).toBeTruthy();
+    tick("Denting");
+    expect(screen.getByText("Estimate: ₹2,499, the rest confirmed at the garage")).toBeTruthy();
+  });
+});
+
+describe("BookingWizard: step 3, the time", () => {
+  test("a closed day is disabled and marked Closed; a full slot isn't offered", () => {
+    renderWizard({ account: loggedIn });
+    press(t.continue);
+    tick("Periodic service");
+    press(t.continue);
+    const monday = screen.getByRole("radio", { name: /Mon, 23 Nov/ });
+    expect(isDisabled(monday)).toBe(true);
+    expect(monday.closest("label")?.textContent).toContain(t.closed);
+    expect(isChecked(screen.getByRole("radio", { name: /Tue, 24 Nov/ }))).toBe(true);
+    expect(screen.getByRole("radio", { name: "10:00 am" })).toBeTruthy();
+    expect(screen.queryByRole("radio", { name: "11:00 am" })).toBeNull();
+  });
+
+  test("with every slot full, the step shows Call and WhatsApp and no Continue", () => {
+    const full = slots.map((day) =>
+      day.status === "open" ? { ...day, slots: day.slots.map((slot) => ({ ...slot, remaining: 0 })) } : day,
+    );
+    renderWizard({ account: loggedIn, slots: full });
+    press(t.continue);
+    tick("Periodic service");
+    press(t.continue);
+    expect(screen.getByText(t.noSlots)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Call" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "WhatsApp" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: t.continue })).toBeNull();
+  });
+});
+
+describe("BookingWizard: logging in and confirming", () => {
+  test("a visitor logs in at step 4; after verified every choice is still there and the confirm screen shows", async () => {
+    const { loginAction } = renderWizard();
+    typeVehicle();
+    press(t.continue);
+    chooseServiceAndTime();
+    expect(heading().textContent).toContain(t.steps.login);
+    expect(screen.getByText("Step 4 of 4")).toBeTruthy();
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
+    await sendPhone();
+
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(document.activeElement).toBe(heading());
+    expect(screen.getByText("Booking as +91 91234 56789")).toBeTruthy();
+    expect(screen.getByText("Honda City, MH 12 AB 1234")).toBeTruthy();
+    expect(screen.getByText("Periodic service")).toBeTruthy();
+    expect(screen.getByText("Tue, 24 Nov at 10:00 am")).toBeTruthy();
+  });
+
+  test("a new customer's verified answer shows the name field on the confirm screen before any Confirm", async () => {
+    const { loginAction, confirmAction } = renderWizard();
+    typeVehicle();
+    press(t.continue);
+    chooseServiceAndTime();
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: true });
+    await sendPhone();
+
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByLabelText(t.nameLabel)).toBeTruthy();
+    expect(screen.queryByText(messages.Booking.errors.needsName)).toBeNull();
+    expect(confirmAction).not.toHaveBeenCalled();
+  });
+
+  test("confirm posts the choices and a uuid token, and nothing the server works out itself", async () => {
+    const { confirmAction } = toConfirm();
+    confirmAction.mockResolvedValueOnce(answered({ kind: "needs-name", step: "confirm", errors: {} }));
+    await submit(t.confirm);
+    const posted = confirmAction.mock.calls[0][1];
+    expect(posted.get("savedVehicleId")).toBe(savedCity.id);
+    expect(posted.getAll("service")).toEqual(["periodic-service"]);
+    expect(posted.get("startsAt")).toBe("2026-11-24T04:30:00.000Z");
+    expect(isUuid(String(posted.get("requestToken")))).toBe(true);
+    expect(posted.has("price")).toBe(false);
+  });
+
+  test("needs-name shows the name field on the confirm screen and keeps the summary", async () => {
+    const { confirmAction } = toConfirm();
+    confirmAction.mockResolvedValueOnce(
+      answered(
+        { kind: "needs-name", step: "confirm", errors: { name: messages.Booking.errors.needsName } },
+        { vehicles: [savedCity], needsName: true },
+      ),
+    );
+    await submit(t.confirm);
+    expect(screen.getByLabelText(t.nameLabel).getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText(messages.Booking.errors.needsName)).toBeTruthy();
+    expect(screen.getByText("Periodic service")).toBeTruthy();
+  });
+
+  test("full goes back to the slot step with the message and fresh slots; the vehicle and services stay chosen", async () => {
+    const { confirmAction } = toConfirm();
+    const fresh = slots.map((day) =>
+      day.date === "2026-11-24" && day.status === "open"
+        ? { ...day, slots: day.slots.map((slot) => ({ ...slot, remaining: 0 })) }
+        : day,
+    );
+    const message = messages.Booking.errors.slot.full;
+    confirmAction.mockResolvedValueOnce(
+      answered({ kind: "slot-problem", step: "slot", problem: "full", errors: { slot: message }, slots: fresh }),
+    );
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.steps.slot);
+    expect(screen.getByText(message)).toBeTruthy();
+    // 24 Nov is full now: the first day with a free time is 25 Nov.
+    expect(isDisabled(screen.getByRole("radio", { name: /Tue, 24 Nov/ }))).toBe(true);
+    expect(isChecked(screen.getByRole("radio", { name: /Wed, 25 Nov/ }))).toBe(true);
+    expect(isDisabled(screen.getByRole("button", { name: t.continue }))).toBe(true);
+    press(t.back);
+    expect(isChecked(screen.getByRole("checkbox", { name: /^Periodic service/ }))).toBe(true);
+    press(t.back);
+    expect(isChecked(screen.getByRole("radio", { name: "Honda City, MH 12 AB 0042" }))).toBe(true);
+  });
+
+  test("registration-duplicate goes back to step 1, which now lists the saved vehicle named in the message", async () => {
+    const { loginAction, confirmAction } = renderWizard();
+    typeVehicle("car-honda-city", "MH 12 AB 42");
+    press(t.continue);
+    chooseServiceAndTime();
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 98765 43210", needsName: false });
+    await sendPhone();
+    const message = "You've already saved MH 12 AB 0042 as a Honda City. Choose it from your vehicles, or check the number.";
+    confirmAction.mockResolvedValueOnce(
+      answered({
+        kind: "registration-duplicate",
+        step: "vehicle",
+        savedVehicleId: savedCity.id,
+        errors: { registration: message },
+      }),
+    );
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect(screen.getByRole("radio", { name: "Honda City, MH 12 AB 0042" })).toBeTruthy();
+    expect(screen.getByText(message)).toBeTruthy();
+    expect(registrationField().getAttribute("aria-invalid")).toBe("true");
+  });
+
+  test('"Not you?" keeps the model and services, asks for the number again, and forgets the first customer', async () => {
+    const { notMeAction, loginAction } = toConfirm();
+    await submit(t.notMe);
+    expect(notMeAction).toHaveBeenCalledOnce();
+    expect(heading().textContent).toContain(t.steps.login);
+    expect((screen.getByLabelText(l.phoneLabel) as HTMLInputElement).value).toBe("");
+
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
+    await sendPhone();
+    // The number was cleared: step 1 asks for it, with the model and fuel kept.
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect(screen.getByText(t.registrationAgain)).toBeTruthy();
+    expect((screen.getByLabelText(pickerLabels.modelLabel) as HTMLInputElement).value).toBe("car-honda-city");
+    expect(isChecked(screen.getByRole("radio", { name: v.fuels.petrol }))).toBe(true);
+    expect((registrationField() as HTMLInputElement).value).toBe("");
+    expect(screen.queryByText(/MH 12 AB 0042/)).toBeNull();
+    expect(screen.queryByText(/98765 43210/)).toBeNull();
+
+    fireEvent.change(registrationField(), { target: { value: "KA 01 MN 7777" } });
+    press(t.continue);
+    expect(isChecked(screen.getByRole("checkbox", { name: /^Periodic service/ }))).toBe(true);
+  });
+
+  test('"Not you?" after a visitor typed a vehicle and logged in: the number is cleared, the model kept', async () => {
+    const { loginAction, notMeAction } = renderWizard();
+    typeVehicle();
+    press(t.continue);
+    chooseServiceAndTime();
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
+    await sendPhone();
+    expect(screen.getByText("Honda City, MH 12 AB 1234")).toBeTruthy();
+
+    await submit(t.notMe);
+    expect(notMeAction).toHaveBeenCalledOnce();
+    expect(heading().textContent).toContain(t.steps.login);
+    expect(screen.queryByText(/Booking as/)).toBeNull();
+    press(t.back);
+    press(t.back);
+    press(t.back);
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect((screen.getByLabelText(pickerLabels.modelLabel) as HTMLInputElement).value).toBe("car-honda-city");
+    expect(isChecked(screen.getByRole("radio", { name: v.fuels.petrol }))).toBe(true);
+    expect(registrationField().value).toBe("");
+  });
+
+  test('"Not you?" that fails (no connection) shows the connection message and keeps the "Booking as" line', async () => {
+    const { notMeAction } = toConfirm();
+    notMeAction.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await submit(t.notMe);
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByText(t.connection)).toBeTruthy();
+    expect(screen.getByText("Booking as +91 98765 43210")).toBeTruthy();
+    expect(screen.getByText("Honda City, MH 12 AB 0042")).toBeTruthy();
+  });
+
+  test("a login that ended before Confirm (saved vehicle): after logging in again, step 1 asks for the number, model and services kept", async () => {
+    const { confirmAction, loginAction } = toConfirm();
+    // The real action sends no account with needs-login: nobody is logged in.
+    confirmAction.mockResolvedValueOnce({
+      submission: 1,
+      nameTyped: "",
+      answer: { kind: "needs-login", step: "login", errors: { form: messages.Booking.errors.needsLogin } },
+    });
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.steps.login);
+    expect(screen.getByText(messages.Booking.errors.needsLogin)).toBeTruthy();
+
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
+    await sendPhone();
+    // Not an empty confirm screen: the saved vehicle became a typed one without its number.
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect(screen.getByText(t.registrationAgain)).toBeTruthy();
+    expect((screen.getByLabelText(pickerLabels.modelLabel) as HTMLInputElement).value).toBe("car-honda-city");
+    expect(isChecked(screen.getByRole("radio", { name: v.fuels.petrol }))).toBe(true);
+    expect(registrationField().value).toBe("");
+    expect(screen.queryByText(/MH 12 AB 0042/)).toBeNull();
+
+    fireEvent.change(registrationField(), { target: { value: "KA 01 MN 7777" } });
+    press(t.continue);
+    expect(isChecked(screen.getByRole("checkbox", { name: /^Periodic service/ }))).toBe(true);
+    press(t.continue);
+    press(t.continue);
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByText("Honda City, KA 01 MN 7777")).toBeTruthy();
+    expect(screen.getByText("Periodic service")).toBeTruthy();
+
+    confirmAction.mockResolvedValueOnce(answered({ kind: "needs-name", step: "confirm", errors: {} }));
+    await submit(t.confirm);
+    const posted = confirmAction.mock.calls[1][1];
+    expect(posted.getAll("service")).toEqual(["periodic-service"]);
+    expect(posted.get("savedVehicleId")).toBeNull();
+    expect(posted.get("vehicleModel")).toBe("car-honda-city");
+    expect(posted.get("registration")).toBe("KA 01 MN 7777");
+  });
+
+  test("a failed call keeps everything and shows the connection message", async () => {
+    const { confirmAction } = toConfirm();
+    confirmAction.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByText(t.connection)).toBeTruthy();
+    expect(screen.getByText("Honda City, MH 12 AB 0042")).toBeTruthy();
+    expect(screen.getByText("Periodic service")).toBeTruthy();
+  });
+});
+
+describe("BookingWizard: the end", () => {
+  const booking: BookingSummary = {
+    code: "K7Q-4MX",
+    startsAt: "2026-11-24T04:30:00.000Z",
+    vehicle: { kind: "car", modelId: "car-honda-city", fuel: "petrol", categoryId: "sedan", registrationNumber: "MH12AB0042" },
+    lines: [
+      {
+        serviceId: "periodic-service",
+        kind: "service",
+        name: text("Periodic service"),
+        priceStatus: "no-price",
+        pricePaise: null,
+        position: 0,
+      },
+    ],
+    totalPaise: null,
+    isEstimate: true,
+    pickup: null,
+  };
+
+  test("done shows the code with the note-it-down line, the slot, the lines, the total and Call and WhatsApp", async () => {
+    const { confirmAction } = toConfirm();
+    confirmAction.mockResolvedValueOnce(answered({ kind: "booked", booking }));
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.doneHeading);
+    expect(screen.getByText("K7Q-4MX")).toBeTruthy();
+    expect(screen.getByText(t.codeNote)).toBeTruthy();
+    expect(screen.getByText("Tue, 24 Nov at 10:00 am")).toBeTruthy();
+    expect(screen.getByText("Honda City, MH 12 AB 0042")).toBeTruthy();
+    expect(screen.getByText("Periodic service")).toBeTruthy();
+    expect(screen.getAllByText(t.noTotal).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("link", { name: "Call" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "WhatsApp" })).toBeTruthy();
+    // Brought in: no pickup row.
+    expect(screen.queryByText(t.pickupTerm)).toBeNull();
+  });
+
+  test("done with free pickup says where from, and Free", async () => {
+    const { confirmAction } = toConfirm();
+    const pickup = { address: "12, MG Road, Chakan", postalCode: "410501", feePaise: 0 };
+    confirmAction.mockResolvedValueOnce(answered({ kind: "booked", booking: { ...booking, pickup } }));
+    await submit(t.confirm);
+    expect(screen.getByText(t.pickupTerm)).toBeTruthy();
+    expect(screen.getByText(/We collect it from 12, MG Road, Chakan, 410501/)).toBeTruthy();
+    expect(screen.getByText(t.pickupFree)).toBeTruthy();
+  });
+
+  test("a duplicate of a booking with pickup says so, with its fee: the earlier booking's, not this confirm's", async () => {
+    const { confirmAction } = toConfirm();
+    const message = messages.Booking.duplicate.replace("{code}", "K7Q-4MX");
+    const pickup = { address: "12, MG Road, Chakan", postalCode: "410501", feePaise: 29_900 };
+    confirmAction.mockResolvedValueOnce(answered({ kind: "duplicate", booking: { ...booking, pickup }, message }));
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.duplicateHeading);
+    expect(screen.getByText(t.pickupTerm)).toBeTruthy();
+    expect(screen.getByText(/We collect it from 12, MG Road, Chakan, 410501/)).toBeTruthy();
+    expect(screen.getByText("Fee: ₹299, paid at the garage")).toBeTruthy();
+  });
+
+  test("a duplicate shows its own message and the earlier booking as saved (its time, not the one just chosen)", async () => {
+    const { confirmAction } = toConfirm();
+    const message = messages.Booking.duplicate.replace("{code}", "K7Q-4MX");
+    // The retry chose Tue 10:00; the booking made by the lost first answer is Wed 10:00.
+    const earlier: BookingSummary = { ...booking, startsAt: "2026-11-25T04:30:00.000Z" };
+    confirmAction.mockResolvedValueOnce(answered({ kind: "duplicate", booking: earlier, message }));
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.duplicateHeading);
+    expect(screen.getByText(message)).toBeTruthy();
+    expect(screen.getByText("K7Q-4MX")).toBeTruthy();
+    expect(screen.getByText("Wed, 25 Nov at 10:00 am")).toBeTruthy();
+    expect(screen.queryByText("Tue, 24 Nov at 10:00 am")).toBeNull();
+    expect(screen.getByText("Honda City, MH 12 AB 0042")).toBeTruthy();
+    expect(screen.getByText("Periodic service")).toBeTruthy();
+    expect(screen.queryByText(t.doneHeading)).toBeNull();
+    expect(screen.queryByText(t.pickupTerm)).toBeNull();
+  });
+});
+
+describe("BookingWizard: the page's login changes under it", () => {
+  /**
+   * The wizard inside React's <Activity>, the way Next.js keeps a page you
+   * leave: hidden, not unmounted. `show` re-renders it with new props and
+   * mode, as a later visit (or an action's re-render) does.
+   */
+  function renderInActivity(account: BookingWizardAccount | null) {
+    const loginAction = vi.fn<BookingLoginAction>();
+    const notMeAction = vi.fn(async () => initialLoginState);
+    const page = (mode: "visible" | "hidden", who: BookingWizardAccount | null) => (
+      <NextIntlClientProvider locale={defaultLocale} messages={messages} timeZone={GARAGE_TIME_ZONE}>
+        <Activity mode={mode}>
+          <BookingWizard
+            loginAction={loginAction}
+            confirmAction={vi.fn<ConfirmAction>()}
+            notMeAction={notMeAction}
+            catalogue={catalogue}
+            services={services}
+            prices={[]}
+            slots={slots}
+            account={who}
+            labels={t}
+            loginLabels={loginLabels}
+            pickerLabels={pickerLabels}
+            contactLinks={null}
+          />
+        </Activity>
+      </NextIntlClientProvider>
+    );
+    const { rerender } = render(page("visible", account));
+    const show = (mode: "visible" | "hidden", who: BookingWizardAccount | null) => act(() => rerender(page(mode, who)));
+    return { show, loginAction, notMeAction };
+  }
+
+  const nothingOfTheFirstCustomer = () => {
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect(screen.queryByRole("group", { name: t.savedLegend })).toBeNull();
+    expect(screen.queryByText(/MH 12 AB 0042/)).toBeNull();
+    expect(screen.queryByText(/98765 43210/)).toBeNull();
+    expect(screen.getByLabelText(pickerLabels.modelLabel)).toBeTruthy();
+  };
+
+  test("A logs out on another page: shown again with the stale props, then the fresh ones, the wizard forgets A", () => {
+    const { show } = renderInActivity(loggedIn);
+    expect(screen.getByRole("radio", { name: "Honda City, MH 12 AB 0042" })).toBeTruthy();
+    show("hidden", loggedIn);
+    // Shown before the fresh props arrive (still A's), then the fresh ones.
+    show("visible", loggedIn);
+    show("visible", null);
+    nothingOfTheFirstCustomer();
+  });
+
+  test("A logs out on another page: the fresh props arrive while /book is hidden", () => {
+    const { show } = renderInActivity(loggedIn);
+    show("hidden", loggedIn);
+    show("hidden", null);
+    show("visible", null);
+    nothingOfTheFirstCustomer();
+  });
+
+  test('"Not you?" keeps its choices when the action\'s re-render still names A, then nobody (plan KTD10)', async () => {
+    const { show, notMeAction } = renderInActivity(loggedIn);
+    press(t.continue);
+    chooseServiceAndTime();
+    await submit(t.notMe);
+    expect(notMeAction).toHaveBeenCalledOnce();
+    show("visible", null);
+    expect(heading().textContent).toContain(t.steps.login);
+    press(t.back);
+    expect(heading().textContent).toContain(t.steps.slot);
+    expect(isChecked(screen.getByRole("radio", { name: "10:00 am" }))).toBe(true);
+  });
+
+  test("an inline login keeps every choice when the page's props later name the new customer (plan KTD10)", async () => {
+    const { show, loginAction } = renderInActivity(null);
+    typeVehicle();
+    press(t.continue);
+    chooseServiceAndTime();
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
+    await sendPhone();
+    expect(heading().textContent).toContain(t.steps.confirm);
+    show("visible", { phoneDisplay: "+91 91234 56789", vehicles: [], needsName: false });
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByText("Honda City, MH 12 AB 1234")).toBeTruthy();
+    expect(screen.getByText("Booking as +91 91234 56789")).toBeTruthy();
+  });
+});

@@ -31,6 +31,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import { LOGIN_NOTICE_VERSION } from "@/domain/consent";
 import { ipLimitKey, parseLoginCode, type SendIntent } from "@/domain/login";
+import { needsName } from "@/domain/profile";
 import type { Locale } from "@/i18n/config";
 import type { Clock } from "@/lib/clock";
 import { parseIndianMobile } from "@/lib/contact-links";
@@ -85,7 +86,8 @@ export type RequestCodeResult =
 export type VerifyCodeInput = { locale: Locale; attemptId: string; codeTyped: string };
 
 export type VerifyCodeResult =
-  | { ok: true }
+  /** `needsName`: the verified user has no name yet (a new customer), from Better Auth's answer. */
+  | { ok: true; needsName: boolean }
   | { ok: false; problem: "invalidCode" | "wrongCode" | "tooManyTries" | "startOver" };
 
 type LoginRequest = { locale: Locale; attempt?: LoginAttempt };
@@ -213,6 +215,7 @@ export async function verifyLoginCode(
     const previous = await auth.api.getSession({ headers: requestHeaders, query: { disableRefresh: true } });
 
     let newToken: string | null;
+    let nameMissing: boolean;
     try {
       // Never updatePhoneNumber: that would move this number onto the user
       // already logged in here, instead of logging in the number's own user.
@@ -220,6 +223,9 @@ export async function verifyLoginCode(
         auth.api.verifyPhoneNumber({ body: { phoneNumber: attempt.phoneNumber, code }, headers: requestHeaders }),
       );
       newToken = verified.token;
+      // From Better Auth's own answer: no extra read, and no session read
+      // (this request can't see the new session yet).
+      nameMissing = needsName(verified.user);
     } catch (error) {
       switch (betterAuthCode(error)) {
         case "INVALID_OTP":
@@ -241,7 +247,7 @@ export async function verifyLoginCode(
     // Only after a correct code: one phone, one login. Another number taking
     // over (or the same number again) ends the old session for good.
     if (previous && previous.session.token !== newToken) await deleteSessionByToken(previous.session.token);
-    return { ok: true };
+    return { ok: true, needsName: nameMissing };
   });
 }
 

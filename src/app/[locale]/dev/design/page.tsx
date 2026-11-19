@@ -757,7 +757,7 @@ export default async function DesignPage() {
 
             <Block
               title="Choice pills"
-              description="One question, answered by native radios drawn as 44px pills: they work before JavaScript loads, and the arrow keys move between them. The chosen pill takes the text colour; blue stays for actions."
+              description="One question, answered by native radios drawn as 44px pills: they work before JavaScript loads, and the arrow keys move between them. The chosen pill takes the text colour; blue stays for actions. One option can be disabled on its own (a closed day on /book): greyed out and skipped by the arrow keys."
             >
               <div data-sample="choice-group" className="grid gap-6 md:grid-cols-2">
                 <ChoiceGroup
@@ -777,6 +777,16 @@ export default async function DesignPage() {
                     { value: "diesel", label: "Diesel" },
                     { value: "cng", label: "CNG" },
                     { value: "electric", label: "Electric" },
+                  ]}
+                />
+                <ChoiceGroup
+                  legend="Day"
+                  name="sample-day"
+                  defaultValue="tue"
+                  options={[
+                    { value: "mon", label: "Mon, 23 Nov (closed)", disabled: true },
+                    { value: "tue", label: "Tue, 24 Nov" },
+                    { value: "wed", label: "Wed, 25 Nov" },
                   ]}
                 />
               </div>
@@ -912,7 +922,7 @@ export default async function DesignPage() {
 
               <Block
                 title="Phone bar"
-                description="Fixed to the bottom of phones, below 768px. Shown here in place, 320px wide: the narrowest phone."
+                description="Fixed to the bottom of phones, below 768px. Shown here in place, 320px wide: the narrowest phone. Pages in the (book) group get the shell without it (SiteChrome actionBar={false}): no bar, no spacer, no scroll padding for it."
               >
                 {/* A 320px phone screen: box-content keeps the border outside the
                     320px. --gutter follows the window's width, so the phone's own

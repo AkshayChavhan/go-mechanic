@@ -24,6 +24,7 @@ import { useActionState, useEffect, useId, useRef, useState } from "react";
 import {
   type FormAction,
   FreshOnEachVisit,
+  ids,
   SubmitButton,
   submitterWithFallback,
 } from "@/components/account/form-parts";
@@ -96,11 +97,6 @@ function VehicleFormVisit({ action, catalogue, labels, pickerLabels }: VehicleFo
       pickerLabels={pickerLabels}
     />
   );
-}
-
-/** "a b" from the ids that are set: the value of an aria-describedby. */
-function ids(...list: (string | false | undefined)[]): string | undefined {
-  return list.filter(Boolean).join(" ") || undefined;
 }
 
 function VehicleFields({

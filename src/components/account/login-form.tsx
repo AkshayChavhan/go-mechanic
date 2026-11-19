@@ -29,6 +29,7 @@ import {
 } from "react";
 import { useFormStatus } from "react-dom";
 
+import { ids } from "@/components/account/form-parts";
 import { CheckboxField } from "@/components/site/checkbox-field";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -74,7 +75,8 @@ type LoginFormProps = {
  * code typed before a call that failed. The server never needs that code
  * back, so it's taken off again before each call.
  */
-type FormState = LoginState & { codeTyped?: string };
+export type LoginFormState = LoginState & { codeTyped?: string };
+type FormState = LoginFormState;
 
 /**
  * Wraps the Server Action into the function useActionState runs on each
@@ -168,7 +170,26 @@ export function LoginForm({ action, labels }: LoginFormProps) {
     loginSubmitter(action, labels.connection),
     initialLoginState,
   );
+  return <LoginSteps state={state} formAction={formAction} isPending={isPending} labels={labels} />;
+}
 
+/**
+ * The two steps and what they share (the "We sent a code" line, "Change
+ * number", where the cursor goes), for a parent that keeps the action's
+ * state: LoginForm on /login, and the booking page's login step (task 47),
+ * which answers "verified" instead of redirecting.
+ */
+export function LoginSteps({
+  state,
+  formAction,
+  isPending,
+  labels,
+}: {
+  state: FormState;
+  formAction: (formData: FormData) => void;
+  isPending: boolean;
+  labels: LoginFormLabels;
+}) {
   // "Change number" goes back to the phone step in the browser alone, with
   // the number and the ticks kept. It remembers which answer it left, so the
   // next answer from the server shows as usual.
@@ -231,18 +252,13 @@ export function LoginForm({ action, labels }: LoginFormProps) {
   );
 }
 
-type StepProps = {
+export type StepProps = {
   state: FormState;
   error: LoginState["error"];
   retryAt: string | undefined;
   labels: LoginFormLabels;
   formAction: (formData: FormData) => void;
 };
-
-/** "a b" from the ids that are set: the value of an aria-describedby. */
-function ids(...list: (string | false | undefined)[]): string | undefined {
-  return list.filter(Boolean).join(" ") || undefined;
-}
 
 /**
  * The number, the two boxes and "Send code".
@@ -252,7 +268,7 @@ function ids(...list: (string | false | undefined)[]): string | undefined {
  * server sent back as typed, so an error never empties the form. They also
  * work before JavaScript has loaded: React replays a form sent that early.
  */
-function PhoneStep({
+export function PhoneStep({
   state,
   error,
   retryAt,
@@ -345,7 +361,7 @@ function PhoneStep({
 }
 
 /** The code field, "Log in", "Send a new code" and "Change number". */
-function CodeStep({
+export function CodeStep({
   state,
   error,
   retryAt,

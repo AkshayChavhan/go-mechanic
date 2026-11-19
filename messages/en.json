@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "title": "GoMechanic",
-    "description": "Car and bike service and repairs at Mukai Chowk, Kiwale, Pune. AC, brakes, tyres, batteries and more, priced before work starts. Book on WhatsApp or call."
+    "description": "Car and bike service and repairs at Mukai Chowk, Kiwale, Pune. AC, brakes, tyres, batteries and more, priced before work starts. Book online, on WhatsApp or by phone."
   },
   "HomePage": {
     "title": "Car and bike service in Kiwale, Pune",
@@ -10,11 +10,11 @@
     },
     "story": {
       "title": "How a visit works",
-      "lead": "Four steps, from your first message to collecting your vehicle.",
+      "lead": "Four steps, from booking to collecting your vehicle.",
       "steps": {
         "book": {
-          "title": "Book on WhatsApp or call",
-          "text": "Tell us your vehicle and what it needs, and we'll agree a time."
+          "title": "Book online, or call or WhatsApp",
+          "text": "Choose your vehicle, the work and a time on our booking page. Or tell us by phone or WhatsApp, and we'll agree a time."
         },
         "visit": {
           "title": "Bring it to Mukai Chowk",
@@ -71,7 +71,7 @@
     },
     "cta": {
       "title": "Book your next service",
-      "lead": "Message us on WhatsApp or call, then bring your vehicle to Mukai Chowk."
+      "lead": "Book online in a few steps, or call or WhatsApp us. Then bring your vehicle to Mukai Chowk."
     },
     "sample": "Sample"
   },
@@ -117,7 +117,7 @@
     "heading": "About the garage",
     "lead": "One garage at Mukai Chowk, Kiwale, in Pune, that services and repairs cars and two-wheelers.",
     "visitTitle": "Visiting us",
-    "visit": "Message us on WhatsApp with your vehicle and what it needs, or call us, and we'll agree a time for you to bring it in."
+    "visit": "Book a time online, or message us on WhatsApp with your vehicle and what it needs, or call us, and we'll agree a time for you to bring it in."
   },
   "FaqPage": {
     "metaTitle": "Questions and answers | {brand}",
@@ -140,7 +140,7 @@
       },
       "howToBook": {
         "question": "How do I book a visit?",
-        "answer": "Message us on <whatsapp>WhatsApp</whatsapp> with your vehicle and what it needs, or call us on <call>{phone}</call>. We'll agree a time with you."
+        "answer": "Book online on our <book>booking page</book>: choose your vehicle, the work and a time. Or call us on <call>{phone}</call>, or message us on <whatsapp>WhatsApp</whatsapp>. We confirm the time with you by phone or WhatsApp."
       },
       "hours": {
         "question": "When are you open?"
@@ -275,11 +275,11 @@
     "heading": "Terms of use",
     "draft": "This is a draft. We're finalising it before the website opens to customers.",
     "updated": "Last updated {date}",
-    "updatedOn": "2026-10-29",
+    "updatedOn": "2026-11-19",
     "intro": "These terms cover using this website and visiting {brand}, a garage at {address}. Parts that aren't decided yet are listed below.",
     "booking": {
       "title": "Booking a visit",
-      "body": "When you book, you're asking for a time to bring your vehicle to the garage. We confirm the time with you by phone or WhatsApp."
+      "body": "You can book online on this website, by phone or on WhatsApp. When you book, you're asking for a time to bring your vehicle to the garage. We confirm the time with you by phone or WhatsApp."
     },
     "work": {
       "title": "Work on your vehicle",
@@ -457,6 +457,107 @@
       "date-out-of-range": "Enter a date from 2000 up to 10 years from today."
     }
   },
+  "Booking": {
+    "metaTitle": "Book a service | {brand}",
+    "metaDescription": "Book a car or two-wheeler service at {brand} in Kiwale, Pune: choose your vehicle, the work and a time, and log in with your mobile number to confirm.",
+    "heading": "Book a service",
+    "intro": "Choose your vehicle, what it needs and a time to bring it in, then confirm with your mobile number. Nothing to pay now.",
+    "noScript": "Booking online needs JavaScript, which is turned off in your browser. You can still book by phone or WhatsApp.",
+    "loading": "Loading the booking form…",
+    "errors": {
+      "needsLogin": "Your login has ended. Log in again to book.",
+      "needsName": "Enter your name to finish booking.",
+      "vehicleNotFound": "We can't find that saved vehicle. Choose your vehicle again.",
+      "registrationDuplicate": "You've already saved {registration} as a {model}. Choose it from your vehicles, or check the number.",
+      "tooManyBookings": "You already have {limit} bookings coming up. To book another, call or WhatsApp us.",
+      "badToken": "Something went wrong. Reload the page and try again.",
+      "pickup": {
+        "address-missing": "Enter the address to collect your vehicle from.",
+        "address-too-short": "Enter the full address to collect your vehicle from.",
+        "address-too-long": "Shorten the address: 200 characters at most.",
+        "postal-code-invalid": "Enter a 6-digit PIN code.",
+        "pickup-not-offered": "We don't offer pickup and drop for that PIN code. You can bring your vehicle in instead."
+      },
+      "services": {
+        "nothing-chosen": "Choose a package or at least one service.",
+        "too-many": "Choose fewer services.",
+        "unknown-service": "One of your choices is no longer offered. Choose your services again.",
+        "package-with-services": "Choose a package or services, not both.",
+        "not-offered": "One of your choices isn't offered for this vehicle. Choose your services again."
+      },
+      "slot": {
+        "full": "That time just filled up. Choose another time.",
+        "not-a-slot": "That time can't be booked. Choose another time.",
+        "slot-invalid": "That time can't be booked. Choose another time.",
+        "closed-date": "We're closed that day. Choose another day.",
+        "outside-window": "That time can't be booked any more. Choose another time."
+      }
+    },
+    "duplicate": "You already have this booking (code {code}).",
+    "wizard": {
+      "stepOf": "Step {n} of {total}",
+      "steps": {
+        "vehicle": "Your vehicle",
+        "services": "What it needs",
+        "slot": "When to come in",
+        "login": "Log in to book",
+        "confirm": "Check and confirm"
+      },
+      "back": "Back",
+      "continue": "Continue",
+      "savedLegend": "Your vehicles",
+      "anotherVehicle": "Another vehicle",
+      "registrationLabel": "Registration number",
+      "registrationHint": "As on the number plate, such as MH 12 AB 1234.",
+      "vehicleReason": "Choose your vehicle and enter its registration number.",
+      "registrationAgain": "Enter your vehicle's registration number to go on.",
+      "packagesLegend": "Packages",
+      "packagesHint": "A package covers several services. Choose one package, or the services you need.",
+      "servicesLegend": "Services",
+      "servicesReason": "Choose a package or at least one service.",
+      "noServices": "We don't list services for this vehicle yet. Call or WhatsApp us to book.",
+      "packageReplaced": "{name} removed: a booking has a package or services, not both.",
+      "servicesReplaced": "Your services were removed: a booking has a package or services, not both.",
+      "notOffered": "Removed, as it isn't offered for this vehicle: {names}.",
+      "atMost": "You've chosen {max} services, the most one booking can hold.",
+      "onInspection": "Price after inspection",
+      "noPrice": "Price confirmed at the garage",
+      "total": "Total: {amount}",
+      "estimate": "Estimate: {amount}, the rest confirmed at the garage",
+      "noTotal": "Price confirmed at the garage",
+      "payAtGarage": "Nothing to pay now. You pay at the garage.",
+      "dayLegend": "Day",
+      "timeLegend": "Time",
+      "closed": "Closed",
+      "full": "Full",
+      "slotReason": "Choose a time.",
+      "timesNote": "Times are India time (IST).",
+      "noSlots": "No times are free in the next few days. Call or WhatsApp us and we'll find one.",
+      "bookingAs": "Booking as {phone}",
+      "notMe": "Not you?",
+      "vehicleTerm": "Vehicle",
+      "servicesTerm": "Services",
+      "timeTerm": "Time",
+      "totalTerm": "Price",
+      "change": "Change",
+      "changeLabel": "Change {part}",
+      "slotAt": "{day} at {time}",
+      "nameLabel": "Your name",
+      "nameHint": "So the garage knows who is coming.",
+      "confirm": "Confirm booking",
+      "confirming": "Booking…",
+      "doneHeading": "You're booked",
+      "duplicateHeading": "Already booked",
+      "codeLabel": "Your booking code",
+      "codeNote": "Note it down or take a screenshot. You'll need it if you call us.",
+      "pickupTerm": "Pickup and drop",
+      "pickupFrom": "We collect it from {address}, {postalCode}, and bring it back.",
+      "pickupFee": "Fee: {amount}, paid at the garage",
+      "pickupFree": "Free",
+      "reachUs": "To change or cancel, call or WhatsApp us.",
+      "connection": "We couldn't reach the server. Check your connection and try again."
+    }
+  },
   "Services": {
     "metaTitle": "Car and two-wheeler services in Kiwale, Pune | {brand}",
     "metaDescription": "What each service at our garage on Mukai Chowk, Kiwale covers: periodic service, AC, brakes, tyres, batteries, denting and more, for cars and two-wheelers.",
@@ -471,7 +572,7 @@
       "signs": "Signs you need it",
       "packages": "Compare the Basic, Standard and Comprehensive packages",
       "actionsTitle": "Book this service",
-      "actionsLead": "Book on WhatsApp, or call us with any questions."
+      "actionsLead": "Book online, or call or WhatsApp us with any questions."
     },
     "price": {
       "title": "Price",
@@ -495,7 +596,7 @@
     "callForPrice": "Call or WhatsApp us for a price",
     "seePackages": "See packages",
     "actionsTitle": "Not sure which one you need?",
-    "actionsLead": "Call or message us on WhatsApp with your vehicle and when it was last serviced.",
+    "actionsLead": "Book online, or call or message us on WhatsApp with your vehicle and when it was last serviced.",
     "finder": {
       "title": "Price for your vehicle",
       "lead": "Choose your vehicle to see what each package costs for it.",

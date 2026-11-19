@@ -15,135 +15,30 @@
 
 import "server-only";
 
-import { getTranslations } from "next-intl/server";
 import { headers } from "next/headers";
 import { RedirectType } from "next/navigation";
 
-import type { Locale } from "@/i18n/config";
-import { formatDate, formatTime } from "@/i18n/format";
 import { redirect } from "@/i18n/navigation";
-import { systemClock } from "@/lib/clock";
-import { formatPhoneNumber } from "@/lib/contact-links";
-import { initialLoginState, type LoginState } from "@/lib/login-state";
+import type { LoginState } from "@/lib/login-state";
 import { getAuth } from "@/server/auth/instance";
-import { clientIpKey, requestLoginCode, verifyLoginCode } from "@/server/auth/login";
-import { serverEnv } from "@/server/env";
 
-import { checkedLocale, formText } from "./form-input";
-
-/**
- * "Try again after 10:00 am", with the date when that's not today in India
- * (the daily limit can lift tomorrow): "Try again on 29 Oct 2026 after 10:00 am".
- */
-function rateLimitedText(
-  t: Awaited<ReturnType<typeof getTranslations<"Login">>>,
-  retryAt: Date,
-  locale: Locale,
-): string {
-  const time = formatTime(retryAt, locale);
-  const date = formatDate(retryAt, locale);
-  return date === formatDate(systemClock.now(), locale)
-    ? t("errors.rateLimited", { time })
-    : t("errors.rateLimitedLater", { date, time });
-}
+import { checkedLocale } from "./form-input";
+import { runLoginFormStep } from "./login-form-step";
 
 /**
  * Every step of the login form, told apart by the button pressed
  * (formData "intent"): "send" (the phone step), "resend" ("Send a new
- * code") or "verify" (the code step). A correct code redirects to /account.
+ * code") or "verify" (the code step). The steps themselves live in
+ * login-form-step.ts, shared with the booking page. A correct code
+ * redirects to /account.
  */
 export async function loginStep(locale: string, previous: LoginState, formData: FormData): Promise<LoginState> {
   const checked = checkedLocale(locale);
-  const t = await getTranslations({ locale: checked, namespace: "Login" });
-  const intent = formText(formData, "intent");
-  const requestHeaders = await headers();
-  const auth = await getAuth();
-
-  if (intent === "verify") {
-    const result = await verifyLoginCode(
-      auth,
-      { locale: checked, attemptId: formText(formData, "attemptId"), codeTyped: formText(formData, "code") },
-      requestHeaders,
-    );
-    if (result.ok) {
-      // Outside any try: redirect() works by throwing. "replace" swaps the
-      // login page out of the history, so Back doesn't return to it.
-      return redirect({ href: "/account", locale: checked }, RedirectType.replace);
-    }
-    if (result.problem === "startOver") {
-      return { ...initialLoginState, error: { field: "form", text: t("errors.startOver") } };
-    }
-    return {
-      ...previous,
-      step: "code",
-      status: undefined,
-      retryAt: undefined,
-      // Unchanged, also after too many tries: the code is dead then, and
-      // "Send a new code" works as soon as the 30 seconds since the last SMS
-      // are over (usually long ago), never earlier, which the server would
-      // only refuse with "please wait".
-      resendAt: previous.resendAt,
-      error: { field: "code", text: t(`errors.${result.problem}`) },
-    };
-  }
-
-  const ipKey = clientIpKey(requestHeaders, serverEnv().appEnv);
-  const resend = intent === "resend";
-  const kept = {
-    phoneTyped: resend ? previous.phoneTyped : formText(formData, "phone"),
-    ageConfirmed: resend ? previous.ageConfirmed : formData.get("age") === "on",
-    contactConsent: resend ? previous.contactConsent : formData.get("consent") === "on",
-  };
-  const result = await requestLoginCode(
-    auth,
-    resend
-      ? { locale: checked, intent: "resend", attemptId: formText(formData, "attemptId"), ipKey }
-      : { locale: checked, intent: "start", ...kept, phoneTyped: kept.phoneTyped, ipKey },
-    systemClock,
-  );
-
-  if (result.ok) {
-    const phoneDisplay = formatPhoneNumber(result.phoneNumber);
-    return {
-      ...kept,
-      step: "code",
-      attemptId: result.attemptId,
-      phoneDisplay,
-      resendAt: result.resendAt.toISOString(),
-      status: t(result.sent ? "codeSentTo" : "alreadySentTo", { number: phoneDisplay }),
-    };
-  }
-
-  const step = resend ? "code" : "phone";
-  switch (result.problem) {
-    case "invalidPhone":
-      return { ...kept, step, error: { field: "phone", text: t("errors.invalidPhone") } };
-    case "consentMissing":
-      return { ...kept, step, error: { field: "consent", text: t("errors.consentMissing") } };
-    case "startOver":
-      return { ...initialLoginState, error: { field: "form", text: t("errors.startOver") } };
-    case "tooSoon":
-      return {
-        ...previous,
-        ...kept,
-        step,
-        attemptId: resend ? result.attemptId : previous.attemptId,
-        resendAt: resend ? result.retryAt.toISOString() : previous.resendAt,
-        retryAt: result.retryAt.toISOString(),
-        status: undefined,
-        error: { field: "form", text: t("errors.tooSoon") },
-      };
-    case "rateLimited":
-      return {
-        ...previous,
-        ...kept,
-        step,
-        attemptId: resend ? result.attemptId : previous.attemptId,
-        resendAt: resend ? result.retryAt.toISOString() : previous.resendAt,
-        status: undefined,
-        error: { field: "form", text: rateLimitedText(t, result.retryAt, checked) },
-      };
-  }
+  const result = await runLoginFormStep(checked, previous, formData);
+  // Outside any try: redirect() works by throwing. "replace" swaps the
+  // login page out of the history, so Back doesn't return to it.
+  if (result.verified) return redirect({ href: "/account", locale: checked }, RedirectType.replace);
+  return result.state;
 }
 
 /** Logs this browser out (its session row and cookie), then goes to the home page. */

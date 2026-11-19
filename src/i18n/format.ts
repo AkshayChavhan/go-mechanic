@@ -77,6 +77,22 @@ export function formatIndiaDate(date: IndiaDate, locale: Locale): string {
   return day ? formatDate(indiaInstantOn(day, 12 * 60), locale) : date;
 }
 
+/**
+ * A date on India's calendar with its weekday and without the year, for a
+ * short list of the next few days: "2026-11-24" -> "Tue, 24 Nov". Text it
+ * can't read is shown as stored, like formatIndiaDate.
+ */
+export function formatIndiaDay(date: IndiaDate, locale: Locale): string {
+  const day = parseIndiaDate(date);
+  if (!day) return date;
+  return new Intl.DateTimeFormat(intlLocales[locale], {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: GARAGE_TIME_ZONE,
+  }).format(indiaInstantOn(day, 12 * 60));
+}
+
 /** "10:00 am", in India time whatever time zone the computer is in. */
 export function formatTime(date: Date, locale: Locale): string {
   assertValidDate(date, "formatTime");

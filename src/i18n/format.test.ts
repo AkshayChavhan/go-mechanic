@@ -4,6 +4,7 @@ import {
   formatAddress,
   formatDate,
   formatIndiaDate,
+  formatIndiaDay,
   formatNumber,
   formatRupees,
   formatTime,
@@ -191,5 +192,24 @@ describe("formatIndiaDate (a stored India date)", () => {
   test("text it can't read is shown as stored", () => {
     expect(formatIndiaDate("2027-02-30", "en")).toBe("2027-02-30");
     expect(formatIndiaDate("soon", "en")).toBe("soon");
+  });
+});
+
+describe("formatIndiaDay (a day in a short list)", () => {
+  const originalTz = process.env.TZ;
+  afterEach(() => {
+    if (originalTz === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTz;
+  });
+
+  test("shows the weekday, the day and the month, in any time zone", () => {
+    for (const zone of ["UTC", "Asia/Kolkata", "America/Los_Angeles", "Pacific/Kiritimati"]) {
+      process.env.TZ = zone;
+      expect(formatIndiaDay("2026-11-24", "en"), zone).toBe("Tue, 24 Nov");
+    }
+  });
+
+  test("text it can't read is shown as stored", () => {
+    expect(formatIndiaDay("2027-02-30", "en")).toBe("2027-02-30");
   });
 });

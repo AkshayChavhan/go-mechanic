@@ -50,6 +50,9 @@ export function ActionBar({ book, garage, className }: ActionBarProps) {
   return (
     <nav
       aria-label={t("label")}
+      // The marker globals.css looks for with :has(): while a bar is on the
+      // page, phones reserve its height (scroll padding, --stage-height).
+      data-action-bar=""
       className={cn("fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background shadow-md md:hidden", className)}
     >
       {/* The bar's parts are tokens in globals.css (--action-bar-*), added up

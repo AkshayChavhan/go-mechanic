@@ -1,6 +1,6 @@
 # 48_nextjs_security_upgrade: Next.js 16.4.3 → 16.4.6 for its security fixes
 
-> **Branch:** `48_nextjs_security_upgrade` · **Date:** 2026-11-18 · **Status:** In progress (ready for review)
+> **Branch:** `48_nextjs_security_upgrade` · **Date:** 2026-11-18 · **Status:** Done (merged through PR #25 on 2026-11-18)
 
 ## In one minute
 

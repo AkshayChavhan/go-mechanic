@@ -52,16 +52,14 @@ const whatsappText = (href: string | null) => new URL(href ?? "").searchParams.g
 test.describe("the garage's details, on every public page", () => {
   test.use(desktop);
 
-  test("the header: the Wordmark links home, and Book a service opens WhatsApp with the booking message", async ({
-    page,
-  }) => {
+  test("the header: the Wordmark links home, and Book a service opens the booking page", async ({ page }) => {
     await openAt(page, "/", TUESDAY_11_00);
     const header = page.getByRole("banner");
     await expect(header.getByRole("link", { name: messages.Brand.name })).toHaveAttribute("href", "/");
-    const book = header.getByRole("link", { name: `${messages.Header.book} ${messages.Contact.opensWhatsApp}` });
+    const book = header.getByRole("link", { name: messages.Header.book, exact: true });
     await expect(book).toBeVisible();
-    await expect(book).toHaveAttribute("target", "_blank");
-    expect(whatsappText(await book.getAttribute("href"))).toBe(messages.Contact.bookingMessage);
+    await expect(book).toHaveAttribute("href", "/book");
+    await expect(book).not.toHaveAttribute("target", "_blank");
   });
 
   test("the footer: phone, WhatsApp and the exact address with its PIN code", async ({ page }) => {
@@ -175,7 +173,7 @@ test.describe("on a phone (375px, touch screen)", () => {
     const names = [
       messages.Contact.call,
       `${messages.Contact.whatsapp} ${messages.Contact.opensWhatsApp}`,
-      `${messages.ActionBar.book} ${messages.Contact.opensWhatsApp}`,
+      messages.ActionBar.book,
     ];
     for (const name of names) {
       const box = await bar.getByRole("link", { name, exact: true }).boundingBox();
