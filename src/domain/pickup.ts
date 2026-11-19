@@ -35,6 +35,9 @@ export type PickupProblem =
   | "postal-code-invalid"
   | "pickup-not-offered";
 
+/** What can be wrong with what was typed (the PIN code being served is the save's check). */
+export type PickupInputProblem = Exclude<PickupProblem, "pickup-not-offered">;
+
 /** Trims and collapses every run of spaces and line breaks: "  12, MG Road\n Chakan " is "12, MG Road Chakan". */
 export function normalizeAddress(typed: string): string {
   return typed.trim().replace(/\s+/g, " ");
@@ -57,8 +60,8 @@ export function asksForPickup(input: PickupInput | undefined): input is PickupIn
  */
 export function checkPickupInput(
   input: PickupInput,
-): { ok: true; pickup: PickupInput } | { ok: false; problems: PickupProblem[] } {
-  const problems: PickupProblem[] = [];
+): { ok: true; pickup: PickupInput } | { ok: false; problems: PickupInputProblem[] } {
+  const problems: PickupInputProblem[] = [];
   const address = normalizeAddress(input.address);
   const length = [...address].length;
   if (length === 0) problems.push("address-missing");
