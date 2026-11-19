@@ -40,13 +40,12 @@ export async function ReviewGate({ locale, bookingId, labels }: ReviewGateProps)
   await requireUser(locale);
   const t = await getTranslations({ locale, namespace: "ReviewPage" });
   const tReviews = await getTranslations({ locale, namespace: "Reviews" });
-  const tEstimate = await getTranslations({ locale, namespace: "EstimatePage" });
 
   if (needsName(await readMyProfile())) {
     return (
-      <GateNote note={tEstimate("nameNote")}>
+      <GateNote note={t("nameNote")}>
         <Button asChild className="w-full sm:w-fit">
-          <Link href={ACCOUNT_PATH}>{tEstimate("nameLink")}</Link>
+          <Link href={ACCOUNT_PATH}>{t("nameLink")}</Link>
         </Button>
       </GateNote>
     );

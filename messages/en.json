@@ -745,8 +745,8 @@
     "submit": "Send review",
     "sending": "Sending…",
     "connection": "We couldn't send your review. Check your connection and try again.",
-    "loginNote": "Log in to review your job.",
-    "loginLink": "Log in",
+    "nameNote": "Add your name on your account first: a review is credited to your first name.",
+    "nameLink": "Go to your account",
     "notFound": "We couldn't find this completed job in your account.",
     "alreadyReviewed": "You've already reviewed this job: {rating} out of 5.",
     "errors": {

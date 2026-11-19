@@ -10,6 +10,7 @@
 // request token sits outside, so a retry reuses it.
 
 import type { ReviewInput } from "@/domain/reviews";
+import { formText } from "@/lib/form-text";
 
 export const REVIEW_FIELD_NAMES = {
   rating: "rating",
@@ -21,19 +22,14 @@ export type ReviewFormValues = { rating: string; comment: string };
 
 export const emptyReviewFormValues: ReviewFormValues = { rating: "", comment: "" };
 
-function text(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  return typeof value === "string" ? value : "";
-}
-
 /** The form's values from what it posted. */
 export function readReviewForm(formData: FormData): ReviewFormValues {
-  return { rating: text(formData, REVIEW_FIELD_NAMES.rating), comment: text(formData, REVIEW_FIELD_NAMES.comment) };
+  return { rating: formText(formData, REVIEW_FIELD_NAMES.rating), comment: formText(formData, REVIEW_FIELD_NAMES.comment) };
 }
 
 /** What the save checks. The booking comes from the page's address, bound to the action. */
 export function reviewInput(bookingId: string, formData: FormData): ReviewInput {
-  return { bookingId, ...readReviewForm(formData), requestToken: text(formData, REVIEW_FIELD_NAMES.requestToken) };
+  return { bookingId, ...readReviewForm(formData), requestToken: formText(formData, REVIEW_FIELD_NAMES.requestToken) };
 }
 
 /** The parts of the form an error can belong to; "form" is the whole form. */

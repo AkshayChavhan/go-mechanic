@@ -23,7 +23,8 @@ import { StarRatingInput } from "@/components/site/star-rating-input";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
-import { RATINGS, type Rating, REVIEW_RULES } from "@/domain/reviews";
+import { type Rating, REVIEW_RULES, toRating } from "@/domain/reviews";
+import { normalizeTypedText, typedLength } from "@/domain/typed-text";
 import { Link } from "@/i18n/navigation";
 import { initialReviewFormState, readReviewForm, REVIEW_FIELD_NAMES, type ReviewFormState } from "@/lib/review-form";
 
@@ -90,6 +91,7 @@ export function ReviewForm(props: ReviewFormProps) {
 function ReviewFormVisit({ action, labels, publicNote }: ReviewFormProps) {
   const id = useId();
   const form = useRef<HTMLFormElement>(null);
+  const thanks = useRef<HTMLHeadingElement>(null);
   const token = useRef<string | null>(null);
   const [state, formAction] = useActionState(
     reviewSubmitter(action, labels.connection, () => (token.current ??= crypto.randomUUID())),
@@ -99,7 +101,13 @@ function ReviewFormVisit({ action, labels, publicNote }: ReviewFormProps) {
   // After an answer with errors, the cursor goes to the first field to fix.
   // Not when the page opens: on a phone that would pop the keyboard up.
   useEffect(() => {
-    if (state.submission === 0 || state.sent) return;
+    if (state.submission === 0) return;
+    // Sent: the form (and the Send button that had focus) is gone, so the
+    // cursor goes to the thank-you heading, which a screen reader then reads.
+    if (state.sent) {
+      thanks.current?.focus();
+      return;
+    }
     const target = state.errors.rating
       ? form.current?.querySelector<HTMLElement>(`input[name="${REVIEW_FIELD_NAMES.rating}"]`)
       : form.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -109,7 +117,9 @@ function ReviewFormVisit({ action, labels, publicNote }: ReviewFormProps) {
   if (state.sent) {
     return (
       <div role="status" className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6">
-        <h2 className="type-title">{labels.thanksHeading}</h2>
+        <h2 ref={thanks} tabIndex={-1} className="type-title outline-none">
+          {labels.thanksHeading}
+        </h2>
         <p className="type-body text-pretty">{labels.thanksBody}</p>
         <div className="flex flex-wrap gap-3">
           <Button asChild>
@@ -147,11 +157,12 @@ function ratingInPage(groupId: string): Rating | null {
   const checked = document
     .getElementById(groupId)
     ?.querySelector<HTMLInputElement>(`input[name="${REVIEW_FIELD_NAMES.rating}"]:checked`);
-  return toRating(checked?.value ?? "");
+  return toRating(checked?.value);
 }
 
-function toRating(value: string): Rating | null {
-  return RATINGS.find((rating) => String(rating) === value) ?? null;
+/** The comment's length as the save counts it. */
+function commentLength(value: string): number {
+  return typedLength(normalizeTypedText(value));
 }
 
 function ReviewFields({ state, labels }: { state: ReviewFormState; labels: ReviewFormLabels }) {
@@ -160,7 +171,9 @@ function ReviewFields({ state, labels }: { state: ReviewFormState; labels: Revie
   // A star tapped before hydration wins over the posted one. Only a value
   // changes here, never the structure, so hydration still matches.
   const [rating, setRating] = useState<Rating | null>(() => ratingInPage(`${id}-rating`) ?? toRating(values.rating));
-  const [length, setLength] = useState([...values.comment.trim()].length);
+  // Text typed before the page's JavaScript loaded is counted from the next
+  // keystroke (the estimate form does the same; a backlog line covers both).
+  const [length, setLength] = useState(commentLength(values.comment));
 
   return (
     <>
@@ -182,7 +195,7 @@ function ReviewFields({ state, labels }: { state: ReviewFormState; labels: Revie
           name={REVIEW_FIELD_NAMES.comment}
           defaultValue={values.comment}
           // No maxLength: the browser counts emoji as two, the check counts them once.
-          onChange={(event) => setLength([...event.currentTarget.value.trim()].length)}
+          onChange={(event) => setLength(commentLength(event.currentTarget.value))}
           aria-invalid={errors.comment ? true : undefined}
           aria-describedby={ids(`${id}-comment-hint`, `${id}-comment-count`, errors.comment && `${id}-comment-error`)}
         />

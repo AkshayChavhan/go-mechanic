@@ -17,7 +17,7 @@ import { cacheLife, cacheTag, updateTag } from "next/cache";
 
 import { isUuid } from "@/domain/ids";
 import { needsName } from "@/domain/profile";
-import { averageRating, checkReviewInput, firstName, type Rating, REVIEW_RULES, type ReviewInput, type ReviewInputProblem } from "@/domain/reviews";
+import { averageRating, checkReviewInput, firstName, type Rating, REVIEW_RULES, type ReviewInput, type ReviewInputProblem, toRating } from "@/domain/reviews";
 import { normalizeTypedText, typedLength } from "@/domain/typed-text";
 import type { Fuel, VehicleKind } from "@/domain/vehicles";
 import type { LocalizedText } from "@/i18n/localized-text";
@@ -157,7 +157,7 @@ export async function listMyCompletedJobs(): Promise<CompletedJobRow[]> {
     .where(and(eq(bookings.userId, user.id), eq(bookings.jobStatus, "completed")))
     .orderBy(desc(completedAt.at), desc(bookings.id))
     .limit(COMPLETED_JOBS_SHOWN);
-  return rows.map((row) => ({ ...row, completedAt: new Date(row.completedAt!), reviewRating: (row.reviewRating as Rating | null) ?? null }));
+  return rows.map((row) => ({ ...row, completedAt: new Date(row.completedAt!), reviewRating: toRating(row.reviewRating) }));
 }
 
 /** What the review page needs for one booking. */
@@ -181,7 +181,8 @@ export async function readMyReviewTarget(bookingId: string): Promise<ReviewTarge
     .leftJoin(reviews, eq(reviews.bookingId, bookings.id))
     .where(and(eq(bookings.id, bookingId), eq(bookings.userId, user.id), eq(bookings.jobStatus, "completed")));
   if (!row) return { status: "not-found" };
-  if (row.rating !== null) return { status: "already-reviewed", bookingId: row.bookingId, rating: row.rating as Rating };
+  const rating = toRating(row.rating);
+  if (rating !== null) return { status: "already-reviewed", bookingId: row.bookingId, rating };
   return { status: "can-review", bookingId: row.bookingId, kind: row.kind, makeName: row.makeName, shownName: firstName(profile.name) };
 }
 
@@ -245,10 +246,11 @@ export async function readPublishedReviews(): Promise<PublishedReviews> {
     .where(isNull(reviews.hiddenAt));
   const total = totals?.count ?? 0;
   return {
-    reviews: rows.map((row) => ({ ...row, rating: row.rating as Rating })),
+    // The CHECK keeps ratings 1 to 5, so toRating never gives null here.
+    reviews: rows.map((row) => ({ ...row, rating: toRating(row.rating)! })),
     count: total,
-    // averageRating's rounding, from the sum, so it counts every published review.
-    average: total === 0 ? null : averageRating([((totals?.sum ?? 0) / total)]),
+    // From the sum and count of every published review, not only the listed ones.
+    average: averageRating(totals?.sum ?? 0, total),
   };
 }
 

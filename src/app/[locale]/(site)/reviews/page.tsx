@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { ReviewCard } from "@/components/site/review-card";
 import { Section } from "@/components/site/section";
-import type { Review } from "@/content/home";
+import { toReviewCard } from "@/content/home";
 import { formatNumber } from "@/i18n/format";
 import { readPublishedReviews } from "@/server/dal/reviews";
 
@@ -31,15 +31,8 @@ export default async function ReviewsPage() {
   const published = await readPublishedReviews();
   const tones = pageTones(2);
 
-  const cards: Review[] = published.reviews.map((review) => ({
-    id: review.id,
-    rating: review.rating,
-    comment: review.comment,
-    kind: review.kind,
-    // The model is a draft until the owner approves the models (task 39): brand and type only.
-    credit: { name: review.shownName, makeName: review.makeName },
-    reply: review.reply,
-  }));
+  // Brand and type only: the model is a draft until the owner approves the models (task 39).
+  const cards = published.reviews.map(toReviewCard);
 
   return (
     <>

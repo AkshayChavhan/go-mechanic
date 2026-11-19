@@ -2,11 +2,14 @@
 //
 // The owner has no real numbers or reviews yet, and decided on 2026-10-27
 // that made-up ones must never reach customers (plan KTD7). So:
-// - `trustStats` and `reviews` hold the real data, or null (both null today).
+// - `trustStats` holds the real stats, or null (null today). Real reviews
+//   come from the database (task 37): the page passes readPublishedReviews()
+//   to selectHomeReviews(), which uses them from 3 published reviews.
 // - `sampleTrustStats` and `sampleReviews` are made up, to judge the design.
-// - The page reads only through selectTrustStats() and selectReviews(). They
-//   return the real data in every build, else the samples under `npm run dev`
-//   (showSamples()), else null, and a section with null renders nothing.
+// - The page reads only through selectTrustStats() and selectHomeReviews().
+//   They return the real data in every build, else the samples under
+//   `npm run dev` (showSamples()), else null, and a section with null
+//   renders nothing.
 //
 // Only Server Components may import this file, so the sample text stays on
 // the server. The words around each number ("Years in business", "+", "/5")
@@ -82,7 +85,6 @@ export type { Shown };
  */
 export const trustStats: readonly TrustStat[] | null = null;
 
-
 // --- Samples: `npm run dev` only ------------------------------------------
 // Round, obviously invented values. Never copy them into trustStats.
 
@@ -136,6 +138,18 @@ export function selectTrustStats(real: readonly TrustStat[] | null = trustStats)
   return realOrSamples(real, sampleTrustStats);
 }
 
+/** A published review as a card shows it: credited to the first name and the brand and type (never the model, task 39). */
+export function toReviewCard(review: PublishedReviewsInput["reviews"][number]): Review {
+  return {
+    id: review.id,
+    rating: review.rating,
+    comment: review.comment,
+    kind: review.kind,
+    credit: { name: review.shownName, makeName: review.makeName },
+    reply: review.reply,
+  };
+}
+
 /** How many reviews the home page shows. */
 export const HOME_REVIEW_CARDS = 3;
 
@@ -149,16 +163,7 @@ export function selectHomeReviews(published: PublishedReviewsInput, minForHome: 
   if (published.count >= minForHome && published.average !== null) {
     const withComment = published.reviews.filter((review) => review.comment !== null);
     const starsOnly = published.reviews.filter((review) => review.comment === null);
-    const items = [...withComment, ...starsOnly].slice(0, HOME_REVIEW_CARDS).map(
-      (review): Review => ({
-        id: review.id,
-        rating: review.rating,
-        comment: review.comment,
-        kind: review.kind,
-        credit: { name: review.shownName, makeName: review.makeName },
-        reply: review.reply,
-      }),
-    );
+    const items = [...withComment, ...starsOnly].slice(0, HOME_REVIEW_CARDS).map(toReviewCard);
     return { items, sample: false, summary: { average: published.average, count: published.count } };
   }
   const samples = realOrSamples(null, sampleReviews);

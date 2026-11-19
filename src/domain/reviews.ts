@@ -23,6 +23,11 @@ export const REVIEW_RULES = {
 export const RATINGS = [1, 2, 3, 4, 5] as const;
 export type Rating = (typeof RATINGS)[number];
 
+/** A rating from what a form or the database gives, or null when it isn't 1 to 5. */
+export function toRating(value: string | number | null | undefined): Rating | null {
+  return RATINGS.find((rating) => String(rating) === String(value ?? "").trim()) ?? null;
+}
+
 /** What the form posts, as strings. */
 export type ReviewInput = {
   bookingId: string;
@@ -53,9 +58,9 @@ export function checkReviewInput(
 ): { ok: true; review: CheckedReview } | { ok: false; problems: ReviewInputProblem[] } {
   const problems: ReviewInputProblem[] = [];
   const rating = input.rating.trim();
-  const parsed = RATINGS.find((value) => String(value) === rating);
+  const parsed = toRating(rating);
   if (rating === "") problems.push({ field: "rating", problem: "rating-missing" });
-  else if (parsed === undefined) problems.push({ field: "rating", problem: "rating-invalid" });
+  else if (parsed === null) problems.push({ field: "rating", problem: "rating-invalid" });
 
   const comment = normalizeTypedText(input.comment);
   if (typedLength(comment) > REVIEW_RULES.commentMaxLength) problems.push({ field: "comment", problem: "comment-too-long" });
@@ -65,7 +70,7 @@ export function checkReviewInput(
   // Both are made by the server and the page; a bad one is a hand-made post.
   if (!isUuid(bookingId) || !isUuid(requestToken)) problems.push({ field: "form", problem: "bad-request" });
 
-  if (problems.length > 0 || parsed === undefined) return { ok: false, problems };
+  if (problems.length > 0 || parsed === null) return { ok: false, problems };
   return {
     ok: true,
     review: {
@@ -86,9 +91,8 @@ export function firstName(name: string): string {
   return normalizeName(name).split(" ")[0] ?? "";
 }
 
-/** The average of `ratings` to one decimal (4.33 → 4.3), or null with none. */
-export function averageRating(ratings: readonly number[]): number | null {
-  if (ratings.length === 0) return null;
-  const sum = ratings.reduce((total, rating) => total + rating, 0);
-  return Math.round((sum / ratings.length) * 10) / 10;
+/** The average of `count` ratings adding up to `sum`, to one decimal (13 / 3 → 4.3), or null with none. */
+export function averageRating(sum: number, count: number): number | null {
+  if (count === 0) return null;
+  return Math.round((sum / count) * 10) / 10;
 }

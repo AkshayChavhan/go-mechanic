@@ -37,7 +37,8 @@ export default async function ReviewJobPage({ params }: PageProps<"/[locale]/acc
     starLabels,
     commentLabel: t("commentLabel"),
     commentHint: t("commentHint"),
-    commentCount: t("commentCount"),
+    // Raw: the form fills {count} and {max} itself, on every keystroke.
+    commentCount: t.raw("commentCount") as string,
     submit: t("submit"),
     sending: t("sending"),
     connection: t("connection"),
