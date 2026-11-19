@@ -46,7 +46,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
-| 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | In progress | |
+| 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | In progress | [37_reviews.md](../learning/37_reviews.md) |
 | 38 | `38_offers_coupons` | Offers, banner, coupons at booking | To do |  |
 | 39 | `39_catalogue_admin` | Admin editing of services, prices, packages, vehicles | To do |  |
 | 40 | `40_content_admin` | Admin editing of FAQ, content blocks and garage info | To do |  |
@@ -532,7 +532,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Customer reviews, `/reviews`, and the staff reply or hide functions (the page waits for task 26)
 - [x] Switch the home page reviews preview and rating from sample content to real reviews: `selectHomeReviews()` reads the real ones from 3 published. `sampleReviews` stays (dev only, for `/dev/design` and the design checks, like the other content files' samples), so `sampleCanary` stays too; the production scan in `e2e/home.spec.ts` now searches only sample-only text, not the section's own words (task 13)
 - [x] Decide the rating stat's one source: the site's own reviews (owner, 2026-11-19). It moved out of the trust stats into the reviews section (task 13)
-- [ ] Write the learning doc
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
