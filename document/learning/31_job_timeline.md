@@ -85,8 +85,8 @@ Claude picked these defaults and flagged them to the owner:
 What was run in this session:
 
 ```bash
-npm run check                               # passed: 2,204 tests
-npm run test:e2e                            # passed: 128 tests on a production build
+npm run check                               # passed: 2,211 tests (on the final code, after the review fixes)
+npm run test:e2e                            # passed: 128 tests on a production build (final code)
 npx playwright test -c <a copy of playwright.dev.config.ts on port 3001>   # design suite
 ```
 
@@ -131,8 +131,32 @@ An honest note on the last one: the first try put the lookup just before the `if
 
 ## Review
 
-`ce-code-review` and the `code-reviewer` agent haven't run yet. Their verdicts and what was fixed will be added here after they run.
+**`ce-code-review`** ran 8 reviewers (correctness, project standards, testing, maintainability, saved lessons, security, migration, adversarial; the cross-model pass is off in this repo). Verdict: **Ready with fixes**, no P0 or P1. An independent validator confirmed both findings:
+
+- **#3 (P2): a mechanic's retry of their "completed" update answered `not-found`.** Four reviewers found it on their own. Completing the job ends the mechanic's access, so the lock found no row and the save said "not found" before it looked at the request token. Fixed in `1d8d24d`: the caller's own token is checked first, and the reassigned case now answers `duplicate` too. Two new tests guard it. Moving the `not-found` line back above the lookup makes both fail (checked).
+- **#4 (P3): an update could link a photo set with no stored photos**, and the customer's timeline would then say the photos are "no longer kept". Fixed: a set must hold at least one stored photo, with a test.
+- Also fixed from its notes:
+  - a customer now sees a job's photos only once an update holds them;
+  - the transaction type and the "not completed" filter are shared;
+  - the reused-token test checks the constraint's name;
+  - a manager's assigned-jobs list has a test.
+
+**`code-reviewer`** (repo rules, the final gate). Verdict: **Needs changes**, with one must-fix, all in docs.
+
+- **Must fix, fixed in `1e2a61d`:** this learning doc still described the old retry order.
+- **Should fix, fixed:** the test counts above were from before the fixes (they are re-run now), and one plan line still said the old answer.
+- **Nice to have, two fixed in `2afe658`:**
+  - a job that went Inspection → Ready showed "In service: Done", which told the customer work happened when it didn't (with tests);
+  - photo view links were made one at a time.
+- **Nice to have, left as is:**
+  - a token reused on another booking throws, which is noted for task 26's action;
+  - one commit (`feat(31): show the job timeline on /dev/design`) should have been `chore`, and rewriting history isn't worth it.
+
+Everything above was re-run after the fixes: `npm run check` (2,211), `npm run test:e2e` (128) and the design suite on port 3001 (50, all passed).
 
 ## Compound
 
-To be filled in after the review: whether a lesson goes to `document/solutions/`, or why none was needed.
+Two lessons pass the question "would a future session repeat this?":
+
+- **Retries after a lock that hides the row:** `document/solutions/conventions/idempotent-save-answer-duplicate-before-refusals-that-can-change.md`, updated with the case the code review caught. When the row lock's own access filter is what the first send changes, the caller's token must still answer `duplicate` before `not-found`.
+- **New enum values:** `document/solutions/conventions/drizzle-migration-new-enum-value-compare-as-text.md`, new, from what the plan review caught. A migration that adds an enum value can't use it anywhere in the same drizzle run, so its CHECKs compare the column as text. Tasks 25, 27 and 33 add more statuses and will hit this.
