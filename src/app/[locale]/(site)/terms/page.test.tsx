@@ -30,7 +30,7 @@ describe("Terms page", () => {
     expect(screen.getAllByRole("heading", { level: 1 }).map((h) => h.textContent)).toEqual([t.heading]);
     expect(screen.getByText(t.draft)).toBeTruthy();
     expect(t.updatedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(container.textContent).toContain(t.updated.replace("{date}", "29 Oct 2026"));
+    expect(container.textContent).toContain(t.updated.replace("{date}", "19 Nov 2026"));
   });
 
   test("says paying is at the garage in cash or by UPI, and lists what isn't decided instead of inventing it", async () => {

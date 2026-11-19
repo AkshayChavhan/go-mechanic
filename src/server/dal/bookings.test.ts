@@ -359,11 +359,11 @@ describe("at most 3 future bookings", () => {
 });
 
 describe("the same confirm twice (the request token)", () => {
-  test("the second answer is duplicate with the first booking's code; one booking, one place", async () => {
+  test("the second answer is duplicate with the first booking as saved; one booking, one place", async () => {
     const requestToken = randomUUID();
     const first = await createMyBooking(input({ requestToken }), clock);
     if (first.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(first)}`);
-    expect(await createMyBooking(input({ requestToken }), clock)).toEqual({ status: "duplicate", code: first.booking.code });
+    expect(await createMyBooking(input({ requestToken }), clock)).toEqual({ status: "duplicate", booking: first.booking });
     expect(await db.$count(bookings)).toBe(1);
     expect(await counterAt(friday10)).toBe(1);
   });
@@ -373,7 +373,22 @@ describe("the same confirm twice (the request token)", () => {
     const requestToken = randomUUID();
     const first = await createMyBooking(input({ requestToken }), clock);
     if (first.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(first)}`);
-    expect(await createMyBooking(input({ requestToken }), clock)).toEqual({ status: "duplicate", code: first.booking.code });
+    expect(await createMyBooking(input({ requestToken }), clock)).toEqual({ status: "duplicate", booking: first.booking });
+  });
+
+  test("a retry with another slot and other services (the first answer was lost): the FIRST booking's time and lines, nothing new", async () => {
+    const requestToken = randomUUID();
+    const first = await createMyBooking(input({ requestToken }), clock);
+    if (first.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(first)}`);
+    const retry = await createMyBooking(
+      input({ requestToken, startsAt: friday11.toISOString(), serviceIds: ["periodic-service"] }),
+      clock,
+    );
+    if (retry.status !== "duplicate") throw new Error(`expected duplicate, got ${JSON.stringify(retry)}`);
+    expect(retry.booking.startsAt).toEqual(friday10);
+    expect(retry.booking.lines.map((line) => line.serviceId)).toEqual(["periodic-service", "brakes"]);
+    expect(retry.booking).toEqual(first.booking);
+    expect(await counterAt(friday11)).toBe(0);
   });
 
   test("a retried third booking answers duplicate, not too-many-bookings", async () => {
@@ -385,7 +400,7 @@ describe("the same confirm twice (the request token)", () => {
     if (third.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(third)}`);
     expect(await createMyBooking(input({ startsAt: slots[2].toISOString(), requestToken }), clock)).toEqual({
       status: "duplicate",
-      code: third.booking.code,
+      booking: third.booking,
     });
     expect(await db.$count(bookings)).toBe(3);
   });
@@ -399,12 +414,12 @@ describe("the same confirm twice (the request token)", () => {
 });
 
 describe("the same vehicle in the same slot again (a new token, after a reload)", () => {
-  test("answers duplicate with the first booking's code; one booking, one place", async () => {
+  test("answers duplicate with the first booking as saved; one booking, one place", async () => {
     const first = await createMyBooking(input(), clock);
     if (first.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(first)}`);
     expect(await createMyBooking(input({ requestToken: randomUUID() }), clock)).toEqual({
       status: "duplicate",
-      code: first.booking.code,
+      booking: first.booking,
     });
     expect(await db.$count(bookings)).toBe(1);
     expect(await counterAt(friday10)).toBe(1);

@@ -461,6 +461,78 @@ describe("BookingWizard: logging in and confirming", () => {
     expect(isChecked(screen.getByRole("checkbox", { name: /^Periodic service/ }))).toBe(true);
   });
 
+  test('"Not you?" after a visitor typed a vehicle and logged in: the number is cleared, the model kept', async () => {
+    const { loginAction, notMeAction } = renderWizard();
+    typeVehicle();
+    press(t.continue);
+    chooseServiceAndTime();
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
+    await sendPhone();
+    expect(screen.getByText("Honda City, MH 12 AB 1234")).toBeTruthy();
+
+    await submit(t.notMe);
+    expect(notMeAction).toHaveBeenCalledOnce();
+    expect(heading().textContent).toContain(t.steps.login);
+    expect(screen.queryByText(/Booking as/)).toBeNull();
+    press(t.back);
+    press(t.back);
+    press(t.back);
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect((screen.getByLabelText(pickerLabels.modelLabel) as HTMLInputElement).value).toBe("car-honda-city");
+    expect(isChecked(screen.getByRole("radio", { name: v.fuels.petrol }))).toBe(true);
+    expect(registrationField().value).toBe("");
+  });
+
+  test('"Not you?" that fails (no connection) shows the connection message and keeps the "Booking as" line', async () => {
+    const { notMeAction } = toConfirm();
+    notMeAction.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await submit(t.notMe);
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByText(t.connection)).toBeTruthy();
+    expect(screen.getByText("Booking as +91 98765 43210")).toBeTruthy();
+    expect(screen.getByText("Honda City, MH 12 AB 0042")).toBeTruthy();
+  });
+
+  test("a login that ended before Confirm (saved vehicle): after logging in again, step 1 asks for the number, model and services kept", async () => {
+    const { confirmAction, loginAction } = toConfirm();
+    // The real action sends no account with needs-login: nobody is logged in.
+    confirmAction.mockResolvedValueOnce({
+      submission: 1,
+      nameTyped: "",
+      answer: { kind: "needs-login", step: "login", errors: { form: messages.Booking.errors.needsLogin } },
+    });
+    await submit(t.confirm);
+    expect(heading().textContent).toContain(t.steps.login);
+    expect(screen.getByText(messages.Booking.errors.needsLogin)).toBeTruthy();
+
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
+    await sendPhone();
+    // Not an empty confirm screen: the saved vehicle became a typed one without its number.
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect(screen.getByText(t.registrationAgain)).toBeTruthy();
+    expect((screen.getByLabelText(pickerLabels.modelLabel) as HTMLInputElement).value).toBe("car-honda-city");
+    expect(isChecked(screen.getByRole("radio", { name: v.fuels.petrol }))).toBe(true);
+    expect(registrationField().value).toBe("");
+    expect(screen.queryByText(/MH 12 AB 0042/)).toBeNull();
+
+    fireEvent.change(registrationField(), { target: { value: "KA 01 MN 7777" } });
+    press(t.continue);
+    expect(isChecked(screen.getByRole("checkbox", { name: /^Periodic service/ }))).toBe(true);
+    press(t.continue);
+    press(t.continue);
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByText("Honda City, KA 01 MN 7777")).toBeTruthy();
+    expect(screen.getByText("Periodic service")).toBeTruthy();
+
+    confirmAction.mockResolvedValueOnce(answered({ kind: "needs-name", step: "confirm", errors: {} }));
+    await submit(t.confirm);
+    const posted = confirmAction.mock.calls[1][1];
+    expect(posted.getAll("service")).toEqual(["periodic-service"]);
+    expect(posted.get("savedVehicleId")).toBeNull();
+    expect(posted.get("vehicleModel")).toBe("car-honda-city");
+    expect(posted.get("registration")).toBe("KA 01 MN 7777");
+  });
+
   test("a failed call keeps everything and shows the connection message", async () => {
     const { confirmAction } = toConfirm();
     confirmAction.mockRejectedValueOnce(new TypeError("Failed to fetch"));
@@ -506,14 +578,20 @@ describe("BookingWizard: the end", () => {
     expect(screen.getByRole("link", { name: "WhatsApp" })).toBeTruthy();
   });
 
-  test("a duplicate shows its own message and the first booking's code, not a fresh booking", async () => {
+  test("a duplicate shows its own message and the earlier booking as saved (its time, not the one just chosen)", async () => {
     const { confirmAction } = toConfirm();
-    const message = "You already booked this vehicle for this time (code K7Q-4MX).";
-    confirmAction.mockResolvedValueOnce(answered({ kind: "duplicate", code: "K7Q-4MX", message }));
+    const message = messages.Booking.duplicate.replace("{code}", "K7Q-4MX");
+    // The retry chose Tue 10:00; the booking made by the lost first answer is Wed 10:00.
+    const earlier: BookingSummary = { ...booking, startsAt: "2026-11-25T04:30:00.000Z" };
+    confirmAction.mockResolvedValueOnce(answered({ kind: "duplicate", booking: earlier, message }));
     await submit(t.confirm);
     expect(heading().textContent).toContain(t.duplicateHeading);
     expect(screen.getByText(message)).toBeTruthy();
     expect(screen.getByText("K7Q-4MX")).toBeTruthy();
+    expect(screen.getByText("Wed, 25 Nov at 10:00 am")).toBeTruthy();
+    expect(screen.queryByText("Tue, 24 Nov at 10:00 am")).toBeNull();
+    expect(screen.getByText("Honda City, MH 12 AB 0042")).toBeTruthy();
+    expect(screen.getByText("Periodic service")).toBeTruthy();
     expect(screen.queryByText(t.doneHeading)).toBeNull();
   });
 });

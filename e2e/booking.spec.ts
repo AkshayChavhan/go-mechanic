@@ -264,6 +264,9 @@ test.describe("one Confirm, one booking", () => {
     await expect(stepHeading(page, wizard.duplicateHeading)).toBeVisible();
     const code = await bookingCode(page);
     await expect(page.getByText(booking.duplicate.replace("{code}", code))).toBeVisible();
+    // With the booking's own details, as after "booked": a retry may have posted another time.
+    await expect(page.getByText(wizard.timeTerm, { exact: true })).toBeVisible();
+    await expect(page.getByText(wizard.vehicleTerm, { exact: true })).toBeVisible();
 
     // The aborted request is the only error: Chrome logs it.
     expect(withoutFaviconProbe(errors).filter((error) => !error.includes("net::ERR_INTERNET_DISCONNECTED"))).toEqual([]);

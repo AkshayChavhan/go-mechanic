@@ -1,7 +1,7 @@
 {
   "Metadata": {
     "title": "GoMechanic",
-    "description": "Car and bike service and repairs at Mukai Chowk, Kiwale, Pune. AC, brakes, tyres, batteries and more, priced before work starts. Book on WhatsApp or call."
+    "description": "Car and bike service and repairs at Mukai Chowk, Kiwale, Pune. AC, brakes, tyres, batteries and more, priced before work starts. Book online, on WhatsApp or by phone."
   },
   "HomePage": {
     "title": "Car and bike service in Kiwale, Pune",
@@ -10,11 +10,11 @@
     },
     "story": {
       "title": "How a visit works",
-      "lead": "Four steps, from your first message to collecting your vehicle.",
+      "lead": "Four steps, from booking to collecting your vehicle.",
       "steps": {
         "book": {
-          "title": "Book on WhatsApp or call",
-          "text": "Tell us your vehicle and what it needs, and we'll agree a time."
+          "title": "Book online, or call or WhatsApp",
+          "text": "Choose your vehicle, the work and a time on our booking page. Or tell us by phone or WhatsApp, and we'll agree a time."
         },
         "visit": {
           "title": "Bring it to Mukai Chowk",
@@ -71,7 +71,7 @@
     },
     "cta": {
       "title": "Book your next service",
-      "lead": "Message us on WhatsApp or call, then bring your vehicle to Mukai Chowk."
+      "lead": "Book online in a few steps, or call or WhatsApp us. Then bring your vehicle to Mukai Chowk."
     },
     "sample": "Sample"
   },
@@ -117,7 +117,7 @@
     "heading": "About the garage",
     "lead": "One garage at Mukai Chowk, Kiwale, in Pune, that services and repairs cars and two-wheelers.",
     "visitTitle": "Visiting us",
-    "visit": "Message us on WhatsApp with your vehicle and what it needs, or call us, and we'll agree a time for you to bring it in."
+    "visit": "Book a time online, or message us on WhatsApp with your vehicle and what it needs, or call us, and we'll agree a time for you to bring it in."
   },
   "FaqPage": {
     "metaTitle": "Questions and answers | {brand}",
@@ -268,7 +268,7 @@
     "heading": "Terms of use",
     "draft": "This is a draft. We're finalising it before the website opens to customers.",
     "updated": "Last updated {date}",
-    "updatedOn": "2026-10-29",
+    "updatedOn": "2026-11-19",
     "intro": "These terms cover using this website and visiting {brand}, a garage at {address}. Parts that aren't decided yet are listed below.",
     "booking": {
       "title": "Booking a visit",
@@ -479,7 +479,7 @@
         "outside-window": "That time can't be booked any more. Choose another time."
       }
     },
-    "duplicate": "You already booked this vehicle for this time (code {code}).",
+    "duplicate": "You already have this booking (code {code}).",
     "wizard": {
       "stepOf": "Step {n} of {total}",
       "steps": {
@@ -554,7 +554,7 @@
       "signs": "Signs you need it",
       "packages": "Compare the Basic, Standard and Comprehensive packages",
       "actionsTitle": "Book this service",
-      "actionsLead": "Book on WhatsApp, or call us with any questions."
+      "actionsLead": "Book online, or call or WhatsApp us with any questions."
     },
     "price": {
       "title": "Price",
@@ -578,7 +578,7 @@
     "callForPrice": "Call or WhatsApp us for a price",
     "seePackages": "See packages",
     "actionsTitle": "Not sure which one you need?",
-    "actionsLead": "Call or message us on WhatsApp with your vehicle and when it was last serviced.",
+    "actionsLead": "Book online, or call or message us on WhatsApp with your vehicle and when it was last serviced.",
     "finder": {
       "title": "Price for your vehicle",
       "lead": "Choose your vehicle to see what each package costs for it.",

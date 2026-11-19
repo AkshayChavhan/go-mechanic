@@ -113,9 +113,10 @@ export type ConfirmAnswer =
   /**
    * This customer already booked this (the same confirm again, or the same
    * vehicle in the same slot): no new booking was made. Shown as its own
-   * message with the first booking's code, not as a fresh booking.
+   * message with the earlier booking as it was saved (its time, vehicle and
+   * lines), not as a fresh booking: a retry may have posted another slot.
    */
-  | { kind: "duplicate"; code: string; message: string }
+  | { kind: "duplicate"; booking: BookingSummary; message: string }
   /** Nobody is logged in (any more): back to the phone step. */
   | { kind: "needs-login"; step: "login"; errors: ConfirmErrors }
   /** The customer has no name yet, or the one posted can't be saved. */

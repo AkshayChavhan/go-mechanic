@@ -28,6 +28,7 @@ import {
   type BookingAccount,
   type BookingLoginState,
   type BookingStep,
+  type BookingSummary,
   type ConfirmAnswer,
   type ConfirmErrors,
   type ConfirmField,
@@ -39,7 +40,7 @@ import {
 import { initialLoginState } from "@/lib/login-state";
 import { AccessDeniedError, authorizeUser } from "@/server/auth/access";
 import { getAuth } from "@/server/auth/instance";
-import { type BookingSaveProblem, createMyBooking } from "@/server/dal/bookings";
+import { type BookedBooking, type BookingSaveProblem, createMyBooking } from "@/server/dal/bookings";
 import { listMyVehicles } from "@/server/dal/customer-vehicles";
 import { readMyProfile, saveMyName } from "@/server/dal/profile";
 import { readAvailableSlots } from "@/server/dal/slots";
@@ -137,26 +138,16 @@ export async function confirmBooking(
   }
 
   const result = await createMyBooking(input);
-  if (result.status === "booked") {
-    const { booking } = result;
-    return reply({
-      kind: "booked",
-      booking: {
-        code: formatBookingCode(booking.code),
-        startsAt: booking.startsAt.toISOString(),
-        vehicle: booking.vehicle,
-        lines: booking.lines,
-        totalPaise: booking.totalPaise,
-        isEstimate: booking.isEstimate,
-      },
-    });
-  }
+  if (result.status === "booked") return reply({ kind: "booked", booking: summaryOf(result.booking) });
 
   // Read after the save: whatever it answered, this is the customer's list now.
   switch (result.status) {
     case "duplicate": {
-      const code = formatBookingCode(result.code);
-      return reply({ kind: "duplicate", code, message: t("duplicate", { code }) }, await accountFor(false));
+      const booking = summaryOf(result.booking);
+      return reply(
+        { kind: "duplicate", booking, message: t("duplicate", { code: booking.code }) },
+        await accountFor(false),
+      );
     }
     case "not-found":
       return reply(
@@ -202,6 +193,18 @@ export async function confirmBooking(
       return reply(answer, account);
     }
   }
+}
+
+/** A saved booking as the done screen shows it: the code with its dash, the time as an ISO string. */
+function summaryOf(booking: BookedBooking): BookingSummary {
+  return {
+    code: formatBookingCode(booking.code),
+    startsAt: booking.startsAt.toISOString(),
+    vehicle: booking.vehicle,
+    lines: booking.lines,
+    totalPaise: booking.totalPaise,
+    isEstimate: booking.isEstimate,
+  };
 }
 
 /** One message per field, sent to the earliest step with a problem. A slot problem brings a fresh slot list. */

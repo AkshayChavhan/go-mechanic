@@ -10,7 +10,7 @@ import { LoginServiceError } from "@/server/auth/errors";
 import { getAuth } from "@/server/auth/instance";
 import { requestLoginCode, verifyLoginCode } from "@/server/auth/login";
 import { getCurrentUser } from "@/server/auth/session";
-import { createMyBooking } from "@/server/dal/bookings";
+import { type BookedBooking, createMyBooking } from "@/server/dal/bookings";
 import { listMyVehicles, type MyVehicle } from "@/server/dal/customer-vehicles";
 import { readMyProfile, saveMyName } from "@/server/dal/profile";
 import { readAvailableSlots } from "@/server/dal/slots";
@@ -95,6 +95,23 @@ const line: BookingLine = {
   priceStatus: "no-price",
   pricePaise: null,
   position: 0,
+};
+
+/** A saved booking, as createMyBooking returns it. */
+const savedBooking: BookedBooking = {
+  code: "K7Q4MX",
+  startsAt: new Date("2026-10-29T04:30:00Z"),
+  vehicle: { kind: "car", modelId: "car-honda-city", fuel: "petrol", categoryId: "sedan", registrationNumber: "MH12AB1234" },
+  lines: [line],
+  totalPaise: null,
+  isEstimate: true,
+};
+
+/** The same booking, as the done screen gets it: the code with its dash, the time as an ISO string. */
+const savedSummary = {
+  ...savedBooking,
+  code: "K7Q-4MX",
+  startsAt: "2026-10-29T04:30:00.000Z",
 };
 
 beforeEach(() => {
@@ -287,7 +304,7 @@ describe("confirmBooking: the name", () => {
 
   test("a posted name is saved first, then the booking", async () => {
     vi.mocked(saveMyName).mockResolvedValue({ ok: true });
-    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", code: "K7Q4MX" });
+    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", booking: savedBooking });
     const state = await confirmBooking("en", initialConfirmState, form({ ...typedPost, name: "Asha Patil" }));
     expect(saveMyName).toHaveBeenCalledWith("Asha Patil");
     expect(vi.mocked(saveMyName).mock.invocationCallOrder[0]).toBeLessThan(
@@ -309,7 +326,7 @@ describe("confirmBooking: the name", () => {
 
   test("a customer who has a name: a posted name is not saved", async () => {
     vi.mocked(readMyProfile).mockResolvedValue({ name: "Asha Patil", phoneNumber: asha.phoneNumber });
-    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", code: "K7Q4MX" });
+    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", booking: savedBooking });
     await confirmBooking("en", initialConfirmState, form({ ...typedPost, name: "Someone Else" }));
     expect(saveMyName).not.toHaveBeenCalled();
   });
@@ -317,7 +334,7 @@ describe("confirmBooking: the name", () => {
 
 describe("confirmBooking: what it sends to the save", () => {
   beforeEach(() => {
-    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", code: "K7Q4MX" });
+    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", booking: savedBooking });
   });
 
   test("only the named fields: a posted userId, price or vehicleKind does nothing", async () => {
@@ -379,15 +396,15 @@ describe("confirmBooking: each answer of the save", () => {
     });
   });
 
-  test("duplicate is its own answer, not a plain 'booked': the first booking's code in the message", async () => {
-    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", code: "K7Q4MX" });
+  test("duplicate is its own answer, not a plain 'booked': the earlier booking's summary and its code in the message", async () => {
+    vi.mocked(createMyBooking).mockResolvedValue({ status: "duplicate", booking: savedBooking });
     expect(await confirmBooking("en", previous, form(typedPost))).toEqual({
       submission: 5,
       nameTyped: "",
       answer: {
         kind: "duplicate",
-        code: "K7Q-4MX",
-        message: "You already booked this vehicle for this time (code K7Q-4MX).",
+        booking: savedSummary,
+        message: "You already have this booking (code K7Q-4MX).",
       },
       account: ashaAccount,
     });

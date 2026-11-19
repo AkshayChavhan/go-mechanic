@@ -17,7 +17,7 @@ import { LoaderCircleIcon } from "lucide-react";
 import { useLocale } from "next-intl";
 import { type ReactNode, useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
 
-import { type FormAction, FreshOnEachVisit, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
+import { type FormAction, FreshOnEachVisit, ids, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
 import {
   loginSubmitter,
   LoginSteps,
@@ -29,7 +29,6 @@ import { offeredServices, pricedVehicleOf, totalOf } from "@/components/booking/
 import {
   BLANK_TYPED_VEHICLE,
   hasFreeSlot,
-  ids,
   savedVehicleText,
   ServicesStep,
   SlotStep,
@@ -217,7 +216,7 @@ function Wizard({
   function verified(phoneDisplay: string, needsName: boolean) {
     setSession({ phoneDisplay, vehicles: [], needsName });
     setErrors({});
-    // After "Not you?" the number was cleared: step 1 asks for it again.
+    // After "Not you?" or an ended login the number was cleared: step 1 asks for it again.
     if (choice.kind === "typed" && choice.registration.trim() === "") {
       setStep("vehicle");
       setNote(labels.registrationAgain);
@@ -245,6 +244,10 @@ function Wizard({
         setDone(answer);
         return;
       case "needs-login":
+        // The login ended: the next person to log in on this phone mustn't
+        // get this customer's number. Keep the model, ask for the number
+        // again after the login (verified() sends them to step 1).
+        setChoice(withoutRegistration(choice, savedVehicles, catalogue));
         setSession(null);
         setLoginRun((run) => run + 1);
         break;
@@ -279,21 +282,7 @@ function Wizard({
         setErrors({ form: labels.connection });
         return;
       }
-      if (choice.kind === "saved") {
-        const vehicle = savedVehicles.find((each) => each.id === choice.vehicleId);
-        const found = vehicle && findModel(catalogue, vehicle.modelId);
-        setChoice(
-          vehicle && found
-            ? {
-                kind: "typed",
-                selection: { kind: vehicle.kind, makeId: found.make.id, modelId: vehicle.modelId, fuel: vehicle.fuel },
-                registration: "",
-              }
-            : BLANK_TYPED_VEHICLE,
-        );
-      } else {
-        setChoice({ ...choice, registration: "" });
-      }
+      setChoice(withoutRegistration(choice, savedVehicles, catalogue));
       setSession(null);
       setNameDraft("");
       setErrors({});
@@ -503,6 +492,28 @@ function newRequestToken(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+/**
+ * The vehicle choice with the number forgotten: a saved vehicle becomes a
+ * typed one with its model and fuel, a typed one loses its number. Used when
+ * the customer changes ("Not you?") or their login ended, so the next
+ * person never books with the last one's plate.
+ */
+function withoutRegistration(
+  choice: VehicleChoice,
+  savedVehicles: readonly MyVehicle[],
+  catalogue: VehicleCatalogue,
+): VehicleChoice {
+  if (choice.kind === "typed") return { ...choice, registration: "" };
+  const vehicle = savedVehicles.find((each) => each.id === choice.vehicleId);
+  const found = vehicle && findModel(catalogue, vehicle.modelId);
+  if (!vehicle || !found) return BLANK_TYPED_VEHICLE;
+  return {
+    kind: "typed",
+    selection: { kind: vehicle.kind, makeId: found.make.id, modelId: vehicle.modelId, fuel: vehicle.fuel },
+    registration: "",
+  };
+}
+
 function pricedVehicleFor(
   choice: VehicleChoice,
   savedVehicles: readonly MyVehicle[],
@@ -663,42 +674,36 @@ function DoneScreen({
   contactLinks: ReactNode;
 }) {
   const locale = useLocale();
-  const code = done.kind === "booked" ? done.booking.code : done.code;
+  const { booking } = done;
   return (
     <div className="flex flex-col gap-8">
       {done.kind === "duplicate" && <p className="type-body">{done.message}</p>}
       <div className="flex flex-col gap-2 rounded-xl bg-card p-6">
         <p className="type-callout text-muted-foreground">{labels.codeLabel}</p>
         <p className="type-display font-semibold tabular-nums" translate="no">
-          {code}
+          {booking.code}
         </p>
         <p className="type-callout">{labels.codeNote}</p>
       </div>
-      {done.kind === "booked" && (
-        <dl className="flex flex-col divide-y divide-border rounded-xl bg-card px-5">
-          <SummaryRow term={labels.vehicleTerm} labels={labels}>
-            {modelText(
-              catalogue,
-              done.booking.vehicle.modelId,
-              formatRegistration(done.booking.vehicle.registrationNumber),
-              locale,
-            )}
-          </SummaryRow>
-          <SummaryRow term={labels.timeTerm} labels={labels}>
-            {slotText(done.booking.startsAt, labels, locale)}
-          </SummaryRow>
-          <SummaryRow term={labels.servicesTerm} labels={labels}>
-            <ServiceLines
-              rows={done.booking.lines.map((line) => ({
-                key: line.serviceId,
-                name: localize(line.name, locale),
-                price: linePriceText(line, labels, locale),
-              }))}
-            />
-          </SummaryRow>
-          <TotalRow total={done.booking} labels={labels} />
-        </dl>
-      )}
+      {/* A duplicate shows the earlier booking as saved: a retry may have posted another time. */}
+      <dl className="flex flex-col divide-y divide-border rounded-xl bg-card px-5">
+        <SummaryRow term={labels.vehicleTerm} labels={labels}>
+          {modelText(catalogue, booking.vehicle.modelId, formatRegistration(booking.vehicle.registrationNumber), locale)}
+        </SummaryRow>
+        <SummaryRow term={labels.timeTerm} labels={labels}>
+          {slotText(booking.startsAt, labels, locale)}
+        </SummaryRow>
+        <SummaryRow term={labels.servicesTerm} labels={labels}>
+          <ServiceLines
+            rows={booking.lines.map((line) => ({
+              key: line.serviceId,
+              name: localize(line.name, locale),
+              price: linePriceText(line, labels, locale),
+            }))}
+          />
+        </SummaryRow>
+        <TotalRow total={booking} labels={labels} />
+      </dl>
       <div className="flex flex-col gap-4">
         <p className="type-body">{labels.reachUs}</p>
         {contactLinks}
