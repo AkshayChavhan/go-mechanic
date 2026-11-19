@@ -288,3 +288,136 @@ test("with JavaScript off, /book says so and offers the garage's phone and Whats
   await expect(noscript.locator(`a[href^="https://wa.me/${ownerGarage.whatsapp.slice(1)}?text="]`)).toBeVisible();
   await context.close();
 });
+
+test.describe("the next customer on a shared phone", () => {
+  // A wide screen: the header's "Book a service" link (a client-side
+  // navigation) shows from md up. On a phone it sits in the menu.
+  test.use({ viewport: { width: 1280, height: 900 }, hasTouch: false, isMobile: false });
+
+  const headerBook = (page: Page) =>
+    page.getByRole("banner").getByRole("link", { name: messages.Header.book, exact: true });
+
+  /** Saves a Honda City with a random number on /account (already named) and waits for the list. */
+  async function saveVehicle(page: Page) {
+    const registration = randomRegistration();
+    await page.getByRole("link", { name: vehicles.addLink }).click();
+    await expect(page.getByRole("heading", { level: 1, name: vehicles.formHeading })).toBeVisible();
+    await page.getByRole("combobox", { name: picker.modelLabel }).selectOption("car-honda-city");
+    await pill(page.getByRole("radio", { name: messages.Vehicles.fuels.petrol, exact: true })).click();
+    await field(page, vehicles.registrationLabel).fill(registration.typed);
+    await button(page, vehicles.submit).click();
+    await expect(page).toHaveURL(/\/account$/);
+    await expect(page.getByText(registration.shown, { exact: true })).toBeVisible();
+    return registration;
+  }
+
+  /** On /book after A logged out: nothing of A's on screen, and step 1 offers the picker. */
+  async function expectNothingOfA(page: Page, plate: string, phoneDisplay: string) {
+    await expect(page).toHaveURL(/\/book$/);
+    await expect(stepHeading(page, wizard.steps.vehicle)).toBeVisible();
+    await expect(page.getByText(plate).filter({ visible: true })).toHaveCount(0);
+    await expect(page.getByText(phoneDisplay).filter({ visible: true })).toHaveCount(0);
+    await expect(page.getByRole("group", { name: wizard.savedLegend })).toHaveCount(0);
+    await expect(page.getByRole("combobox", { name: picker.modelLabel })).toBeVisible();
+  }
+
+  test("after A logs out, /book (shown again by a link, Back or Forward) shows none of A's vehicles or number", async ({
+    page,
+  }) => {
+    const errors = watchErrors(page);
+    const number = await logInThroughTheForm(page);
+    await expectNoErrors(page, errors);
+    await giveName(page, "Asha Patil");
+    const registration = await saveVehicle(page);
+
+    // A opens /book in the page (no reload): their vehicle is offered.
+    await headerBook(page).click();
+    await expect(page).toHaveURL(/\/book$/);
+    await expect(
+      page.getByRole("group", { name: wizard.savedLegend }).getByRole("radio", { name: `Honda City, ${registration.shown}` }),
+    ).toBeChecked();
+
+    // Then /account, Log out (back on the home page).
+    await page.getByRole("banner").getByRole("link", { name: account.headerLink }).click();
+    await expect(page).toHaveURL(/\/account$/);
+    await button(page, account.logOut).click();
+    await expect(page).toHaveURL(/\/$/);
+
+    // "Book a service" again: Next.js may show the /book it kept, hidden.
+    await headerBook(page).click();
+    await expectNothingOfA(page, registration.shown, `+91 ${number.typed}`);
+
+    // Back to the home page, Forward to /book.
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await page.goForward();
+    await expectNothingOfA(page, registration.shown, `+91 ${number.typed}`);
+
+    // Further back, to the /book A opened while logged in (Log out replaced
+    // /account's entry with the home page's).
+    await page.goBack();
+    await expect(page).toHaveURL(/\/$/);
+    await page.goBack();
+    await expectNothingOfA(page, registration.shown, `+91 ${number.typed}`);
+    expect(withoutFaviconProbe(errors)).toEqual([]);
+  });
+
+  test('"Not you?" lets B log in and book on their own account, without A\'s number or vehicle', async ({ page }) => {
+    const errors = watchErrors(page);
+    const a = await logInThroughTheForm(page);
+    await expectNoErrors(page, errors);
+    await giveName(page, "Asha Patil");
+    const aRegistration = await saveVehicle(page);
+
+    // A reaches Confirm with their saved vehicle.
+    await headerBook(page).click();
+    await expect(page).toHaveURL(/\/book$/);
+    await continueTo(page, wizard.steps.services);
+    await chooseTwoServices(page);
+    await continueTo(page, wizard.steps.slot);
+    await chooseRandomSlot(page, wizard.steps.confirm);
+    await expect(page.getByText(wizard.bookingAs.replace("{phone}", `+91 ${a.typed}`))).toBeVisible();
+
+    // "Not you?": the login step, for B.
+    await button(page, wizard.notMe).click();
+    await expect(stepHeading(page, wizard.steps.login)).toBeVisible();
+    const b = freshNumber();
+    const since = new Date();
+    await field(page, login.phoneLabel).fill(b.typed);
+    // Visible ones only: the /login page A logged in on is still in the DOM, hidden.
+    await field(page, login.ageLabel).check();
+    await field(page, login.consentLabel.replace("{brand}", messages.Brand.name)).check();
+    await button(page, login.sendCode).click();
+    await field(page, login.codeLabel).fill(await latestCodeFor(b.e164, since));
+    await button(page, login.logIn).click();
+
+    // A's number was forgotten: step 1 asks B for theirs; the model is kept.
+    await expect(stepHeading(page, wizard.steps.vehicle)).toBeVisible();
+    await expect(page.getByText(wizard.registrationAgain)).toBeVisible();
+    await expect(page.getByRole("group", { name: wizard.savedLegend })).toHaveCount(0);
+    await expect(page.getByText(aRegistration.shown).filter({ visible: true })).toHaveCount(0);
+    await expect(page.getByRole("combobox", { name: picker.modelLabel })).toHaveValue("car-honda-city");
+    const bRegistration = randomRegistration();
+    await field(page, wizard.registrationLabel).fill(bRegistration.typed);
+    await continueTo(page, wizard.steps.services);
+    await continueTo(page, wizard.steps.slot);
+    await continueTo(page, wizard.steps.confirm);
+
+    await expect(page.getByText(wizard.bookingAs.replace("{phone}", `+91 ${b.typed}`))).toBeVisible();
+    await expect(page.getByText(`+91 ${a.typed}`).filter({ visible: true })).toHaveCount(0);
+    await field(page, wizard.nameLabel).fill("Ravi Kumar");
+    await button(page, wizard.confirm).click();
+    await expect(stepHeading(page, wizard.doneHeading)).toBeVisible();
+    await bookingCode(page);
+    await expect(page.getByText(`Honda City, ${bRegistration.shown}`)).toBeVisible();
+
+    // /account is B's, with B's vehicle and not A's.
+    await page.goto("/account");
+    await expect(page.getByText(account.signedInAs.replace("{number}", `+91 ${b.typed}`))).toBeVisible();
+    await expect(page.getByText(`+91 ${a.typed}`)).toHaveCount(0);
+    await expect(page.getByText(account.greeting.replace("{name}", "Ravi Kumar"))).toBeVisible();
+    await expect(page.getByText(bRegistration.shown, { exact: true })).toBeVisible();
+    await expect(page.getByText(aRegistration.shown, { exact: true })).toHaveCount(0);
+    expect(withoutFaviconProbe(errors)).toEqual([]);
+  });
+});

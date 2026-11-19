@@ -10,12 +10,22 @@
 //   So trust the "verified" answer (it says whether the name is missing), and
 //   take saved vehicles from Confirm's answers, never from the first props.
 // - Don't key the wizard by user id: a flipping key remounts it and loses every
-//   choice. "Not you?" clears the first customer's details instead.
+//   choice. "Not you?" clears the first customer's details instead. Only a
+//   login change the wizard didn't make itself starts it over (FollowPageLogin).
 // - Needs JavaScript (browser-side wrappers around the actions); the page has a <noscript>.
 
 import { LoaderCircleIcon } from "lucide-react";
 import { useLocale } from "next-intl";
-import { type ReactNode, useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
+import {
+  type ReactNode,
+  useActionState,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 
 import { type FormAction, FreshOnEachVisit, ids, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
 import {
@@ -97,8 +107,51 @@ type Done = Extract<ConfirmAnswer, { kind: "booked" | "duplicate" }>;
 export function BookingWizard(props: BookingWizardProps) {
   return (
     <FreshOnEachVisit>
-      <Wizard {...props} />
+      <FollowPageLogin {...props} />
     </FreshOnEachVisit>
+  );
+}
+
+/**
+ * Starts the wizard over when the page's login changes under it: someone
+ * logged out (or in) on another page, and Next.js shows the /book it kept
+ * hidden. FreshOnEachVisit already remounted the wizard while it was hidden,
+ * but with the props it had then (the last customer's number and saved
+ * vehicles); the fresh props arrive with the new visit, and a mounted wizard
+ * keeps its first state.
+ *
+ * A change the wizard made itself (its inline login, "Not you?") doesn't
+ * count: the page's re-render in that action's answer still reads the old
+ * request's cookie, so its props are stale, and a remount would lose every
+ * choice (plan KTD10). The flag is a ref, set before the action is sent, so
+ * it holds when that re-render arrives.
+ */
+function FollowPageLogin({ loginAction, notMeAction, ...props }: BookingWizardProps) {
+  const who = props.account?.phoneDisplay ?? null;
+  const [run, setRun] = useState(0);
+  const seen = useRef(who);
+  const loginChangedHere = useRef(false);
+  // A layout effect: it runs before the browser paints, so the stale
+  // customer is never seen. A hidden page runs none, so this also catches a
+  // change that happened while hidden, when the page shows again.
+  useLayoutEffect(() => {
+    if (seen.current === who) return;
+    seen.current = who;
+    if (!loginChangedHere.current) setRun((count) => count + 1);
+  }, [who]);
+  return (
+    <Wizard
+      key={run}
+      {...props}
+      loginAction={(previous, formData) => {
+        loginChangedHere.current = true;
+        return loginAction(previous, formData);
+      }}
+      notMeAction={() => {
+        loginChangedHere.current = true;
+        return notMeAction();
+      }}
+    />
   );
 }
 

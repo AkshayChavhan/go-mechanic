@@ -1,4 +1,6 @@
-import { act, fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { NextIntlClientProvider } from "next-intl";
+import { Activity } from "react";
 import { describe, expect, test, vi } from "vitest";
 
 import type { LoginFormLabels } from "@/components/account/login-form";
@@ -6,6 +8,7 @@ import type { VehiclePickerLabels } from "@/components/site/vehicle-picker";
 import { isUuid } from "@/domain/ids";
 import type { Service, ServicePrice } from "@/domain/services";
 import type { VehicleCatalogue } from "@/domain/vehicles";
+import { defaultLocale, GARAGE_TIME_ZONE } from "@/i18n/config";
 import { renderWithIntl } from "@/i18n/test-utils";
 import type { BookingSummary, ConfirmAnswer, ConfirmState, SerializedSlotDay } from "@/lib/booking-form";
 import { initialLoginState } from "@/lib/login-state";
@@ -593,5 +596,93 @@ describe("BookingWizard: the end", () => {
     expect(screen.getByText("Honda City, MH 12 AB 0042")).toBeTruthy();
     expect(screen.getByText("Periodic service")).toBeTruthy();
     expect(screen.queryByText(t.doneHeading)).toBeNull();
+  });
+});
+
+describe("BookingWizard: the page's login changes under it", () => {
+  /**
+   * The wizard inside React's <Activity>, the way Next.js keeps a page you
+   * leave: hidden, not unmounted. `show` re-renders it with new props and
+   * mode, as a later visit (or an action's re-render) does.
+   */
+  function renderInActivity(account: BookingWizardAccount | null) {
+    const loginAction = vi.fn<BookingLoginAction>();
+    const notMeAction = vi.fn(async () => initialLoginState);
+    const page = (mode: "visible" | "hidden", who: BookingWizardAccount | null) => (
+      <NextIntlClientProvider locale={defaultLocale} messages={messages} timeZone={GARAGE_TIME_ZONE}>
+        <Activity mode={mode}>
+          <BookingWizard
+            loginAction={loginAction}
+            confirmAction={vi.fn<ConfirmAction>()}
+            notMeAction={notMeAction}
+            catalogue={catalogue}
+            services={services}
+            prices={[]}
+            slots={slots}
+            account={who}
+            labels={t}
+            loginLabels={loginLabels}
+            pickerLabels={pickerLabels}
+            contactLinks={null}
+          />
+        </Activity>
+      </NextIntlClientProvider>
+    );
+    const { rerender } = render(page("visible", account));
+    const show = (mode: "visible" | "hidden", who: BookingWizardAccount | null) => act(() => rerender(page(mode, who)));
+    return { show, loginAction, notMeAction };
+  }
+
+  const nothingOfTheFirstCustomer = () => {
+    expect(heading().textContent).toContain(t.steps.vehicle);
+    expect(screen.queryByRole("group", { name: t.savedLegend })).toBeNull();
+    expect(screen.queryByText(/MH 12 AB 0042/)).toBeNull();
+    expect(screen.queryByText(/98765 43210/)).toBeNull();
+    expect(screen.getByLabelText(pickerLabels.modelLabel)).toBeTruthy();
+  };
+
+  test("A logs out on another page: shown again with the stale props, then the fresh ones, the wizard forgets A", () => {
+    const { show } = renderInActivity(loggedIn);
+    expect(screen.getByRole("radio", { name: "Honda City, MH 12 AB 0042" })).toBeTruthy();
+    show("hidden", loggedIn);
+    // Shown before the fresh props arrive (still A's), then the fresh ones.
+    show("visible", loggedIn);
+    show("visible", null);
+    nothingOfTheFirstCustomer();
+  });
+
+  test("A logs out on another page: the fresh props arrive while /book is hidden", () => {
+    const { show } = renderInActivity(loggedIn);
+    show("hidden", loggedIn);
+    show("hidden", null);
+    show("visible", null);
+    nothingOfTheFirstCustomer();
+  });
+
+  test('"Not you?" keeps its choices when the action\'s re-render still names A, then nobody (plan KTD10)', async () => {
+    const { show, notMeAction } = renderInActivity(loggedIn);
+    press(t.continue);
+    chooseServiceAndTime();
+    await submit(t.notMe);
+    expect(notMeAction).toHaveBeenCalledOnce();
+    show("visible", null);
+    expect(heading().textContent).toContain(t.steps.login);
+    press(t.back);
+    expect(heading().textContent).toContain(t.steps.slot);
+    expect(isChecked(screen.getByRole("radio", { name: "10:00 am" }))).toBe(true);
+  });
+
+  test("an inline login keeps every choice when the page's props later name the new customer (plan KTD10)", async () => {
+    const { show, loginAction } = renderInActivity(null);
+    typeVehicle();
+    press(t.continue);
+    chooseServiceAndTime();
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
+    await sendPhone();
+    expect(heading().textContent).toContain(t.steps.confirm);
+    show("visible", { phoneDisplay: "+91 91234 56789", vehicles: [], needsName: false });
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByText("Honda City, MH 12 AB 1234")).toBeTruthy();
+    expect(screen.getByText("Booking as +91 91234 56789")).toBeTruthy();
   });
 });
