@@ -80,15 +80,17 @@ const WORDING_BY_VERSION: Record<string, Pinned> = {
       "We keep your mobile number, when you agreed, and your device's network address (IP address) and browser type. We use them only to log you in, to keep logins safe and to tell you about your bookings. The <privacy>privacy notice</privacy> has the details. To stop this or delete your data, call the garage.",
     privacyNotice: "125019caf00d1f2d2d00582d916dcfaafc9e64a94083001009bc01933e09dde8",
   },
-  // Task 32: a new item, "Your estimate requests", and the lead names
-  // estimate requests. The three login texts are unchanged.
+  // Task 32: a new item, "Your estimate requests" (with when a request's
+  // photos are deleted), and the lead names estimate requests. The three
+  // login texts are unchanged. Not merged yet when the code review changed
+  // the item, so the fingerprint was pinned again under the same version.
   "2026-11-19.2": {
     ageLabel: "I am 18 or older.",
     consentLabel:
       "I agree that {brand} can use my mobile number to log me in and to contact me by SMS, WhatsApp or phone about my bookings.",
     notice:
       "We keep your mobile number, when you agreed, and your device's network address (IP address) and browser type. We use them only to log you in, to keep logins safe and to tell you about your bookings. The <privacy>privacy notice</privacy> has the details. To stop this or delete your data, call the garage.",
-    privacyNotice: "bd921a55c891cc94d33208f50bd2dffdf41d0c8a530eabea11d0b82dfc47f5b4",
+    privacyNotice: "5f22031bbdc3c228a13596607a7a92f76f6ec89402237366c1e013d2efcc6cd7",
   },
 };
 

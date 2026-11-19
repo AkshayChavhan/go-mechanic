@@ -199,7 +199,7 @@
         "what": "Each request for a free estimate: a copy of the vehicle's details (its type, model and fuel, and its registration number when you pick a saved vehicle), what you wrote about the problem, and when you sent it. Photos you add are described under \"Photos you send us\".",
         "why": "So the garage can look at the problem and tell you what the work will involve and cost.",
         "who": "The garage's owner and managers, and the company that hosts the database.",
-        "howLong": "For now we keep every request, even after you remove the vehicle it was for. Nothing deletes requests yet; we'll say here how long we keep them."
+        "howLong": "For now we keep every request, even after you remove the vehicle it was for. Nothing deletes requests yet; we'll say here how long we keep them. Photos you add to a request are deleted {photoDays} days after the first one was sent, even if the garage hasn't answered yet; the request itself stays."
       },
       "photos": {
         "title": "Photos you send us",
