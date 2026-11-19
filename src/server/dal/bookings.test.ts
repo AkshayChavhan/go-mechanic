@@ -14,6 +14,7 @@ import {
   bookingItems,
   bookings,
   customerVehicles,
+  pickupAreas,
   servicePrices,
   slotCounters,
   slotRules,
@@ -73,6 +74,7 @@ beforeEach(async () => {
   await db.delete(customerVehicles);
   await db.delete(slotCounters);
   await db.delete(servicePrices);
+  await db.delete(pickupAreas);
   await db.delete(users);
   await db.delete(slotRules);
   await seedSlotRules(db);
@@ -206,6 +208,7 @@ describe("a booking", () => {
         ],
         totalPaise: 250_000,
         isEstimate: true,
+        pickup: null,
       },
     });
     expect(await counterAt(friday10)).toBe(1);
@@ -440,6 +443,109 @@ describe("the same vehicle in the same slot again (a new token, after a reload)"
       ),
     ).toMatchObject({ status: "booked" });
     expect(await counterAt(friday10)).toBe(2);
+  });
+});
+
+describe("pickup and drop (task 24)", () => {
+  const pickup = { address: "  Flat 4, Shivneri Society,\n Chakan ", postalCode: "412 101" };
+  const copy = { address: "Flat 4, Shivneri Society, Chakan", postalCode: "412101" };
+
+  /** The pickup columns of the customer's only booking. */
+  async function savedPickup() {
+    const [row] = await db
+      .select({ address: bookings.pickupAddress, postalCode: bookings.pickupPostalCode, feePaise: bookings.pickupFeePaise })
+      .from(bookings);
+    return row;
+  }
+
+  beforeEach(async () => {
+    await db.insert(pickupAreas).values([
+      { postalCode: "412101", feePaise: 25_000 },
+      { postalCode: "412105", feePaise: 0 },
+      { postalCode: "410501", feePaise: 40_000, listed: false },
+    ]);
+  });
+
+  test("no pickup asked for: booked as before, with no pickup copy", async () => {
+    expect(await createMyBooking(input(), clock)).toMatchObject({ status: "booked", booking: { pickup: null } });
+    expect(await savedPickup()).toEqual({ address: null, postalCode: null, feePaise: null });
+  });
+
+  test("both fields blank is no pickup, not a problem", async () => {
+    const result = await createMyBooking(input({ pickup: { address: " ", postalCode: "" } }), clock);
+    expect(result).toMatchObject({ status: "booked", booking: { pickup: null } });
+  });
+
+  test("a PIN code the garage serves: booked, with a copy of the address, the PIN code and the fee", async () => {
+    const result = await createMyBooking(input({ pickup }), clock);
+    expect(result).toMatchObject({ status: "booked", booking: { pickup: { ...copy, feePaise: 25_000 } } });
+    expect(await savedPickup()).toEqual({ ...copy, feePaise: 25_000 });
+    // The fee isn't part of the services' total.
+    expect(result.status === "booked" && result.booking.totalPaise).toBe(250_000);
+    expect(await counterAt(friday10)).toBe(1);
+  });
+
+  test("a free area stores a fee of 0, not null", async () => {
+    await createMyBooking(input({ pickup: { ...pickup, postalCode: "412105" } }), clock);
+    expect(await savedPickup()).toEqual({ ...copy, postalCode: "412105", feePaise: 0 });
+  });
+
+  test.each([
+    ["not served", "560001"],
+    ["paused", "410501"],
+  ])("a PIN code %s: pickup-not-offered, and nothing written", async (_case, postalCode) => {
+    expect(await createMyBooking(input({ pickup: { ...pickup, postalCode } }), clock)).toEqual({
+      status: "problems",
+      problems: [{ field: "pickup", problem: "pickup-not-offered" }],
+    });
+    await expectNothingWritten();
+  });
+
+  test("no real areas at all (every build today): pickup-not-offered, even for the garage's own PIN code", async () => {
+    await db.delete(pickupAreas);
+    expect(await createMyBooking(input({ pickup }), clock)).toEqual({
+      status: "problems",
+      problems: [{ field: "pickup", problem: "pickup-not-offered" }],
+    });
+    await expectNothingWritten();
+  });
+
+  test("a bad address comes back with the other problems, before any slot is touched", async () => {
+    expect(
+      await createMyBooking(input({ serviceIds: [], pickup: { address: "", postalCode: "412101" } }), clock),
+    ).toEqual({
+      status: "problems",
+      problems: [
+        { field: "services", problem: "nothing-chosen" },
+        { field: "pickup", problem: "address-missing" },
+      ],
+    });
+    await expectNothingWritten();
+  });
+
+  test("a retry with the same token after the area was paused is still duplicate, not pickup-not-offered", async () => {
+    const requestToken = randomUUID();
+    const first = await createMyBooking(input({ pickup, requestToken }), clock);
+    if (first.status !== "booked") throw new Error(`expected a booking, got ${first.status}`);
+    await db.update(pickupAreas).set({ listed: false }).where(eq(pickupAreas.postalCode, "412101"));
+    expect(await createMyBooking(input({ pickup, requestToken }), clock)).toEqual({
+      status: "duplicate",
+      code: first.booking.code,
+    });
+    expect(await counterAt(friday10)).toBe(1);
+  });
+
+  test("a saved vehicle can be booked with pickup too", async () => {
+    const vehicleId = await saveVehicle(asha);
+    const result = await createMyBooking(input({ vehicle: { savedVehicleId: vehicleId }, pickup }), clock);
+    expect(result).toMatchObject({ status: "booked", booking: { pickup: { ...copy, feePaise: 25_000 } } });
+    expect(await savedPickup()).toEqual({ ...copy, feePaise: 25_000 });
+  });
+
+  test("a later fee change leaves the booked fee as it was", async () => {
+    await createMyBooking(input({ pickup }), clock);
+    await db.update(pickupAreas).set({ feePaise: 99_900 }).where(eq(pickupAreas.postalCode, "412101"));
+    expect(await savedPickup()).toEqual({ ...copy, feePaise: 25_000 });
   });
 });
 

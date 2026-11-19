@@ -1,6 +1,6 @@
 # 30_photo_uploads: private photos, shrunk on the phone, sent straight to storage
 
-> **Branch:** `30_photo_uploads` · **Date:** 2026-11-13 · **Status:** In progress
+> **Branch:** `30_photo_uploads` · **Date:** 2026-11-13 · **Status:** Done
 
 ## In one minute
 

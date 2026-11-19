@@ -28,6 +28,36 @@ function input(overrides: Partial<BookingInput> = {}): BookingInput {
   };
 }
 
+describe("checkBookingInput: pickup and drop (task 24)", () => {
+  test("an address and PIN code come back cleaned", () => {
+    const checked = checkBookingInput(input({ pickup: { address: " 12, MG Road,\n Chakan ", postalCode: "412 101" } }));
+    expect(checked.ok && checked.booking.pickup).toEqual({ address: "12, MG Road, Chakan", postalCode: "412101" });
+  });
+
+  test("both fields blank: no pickup, and no problem", () => {
+    const checked = checkBookingInput(input({ pickup: { address: "  ", postalCode: "" } }));
+    expect(checked.ok && checked.booking.pickup).toBeNull();
+  });
+
+  test("only the PIN code filled: the address is missing", () => {
+    expect(checkBookingInput(input({ pickup: { address: "", postalCode: "412101" } }))).toEqual({
+      ok: false,
+      problems: [{ field: "pickup", problem: "address-missing" }],
+    });
+  });
+
+  test("a bad address and a bad slot come back together", () => {
+    expect(checkBookingInput(input({ startsAt: "soon", pickup: { address: "Chakan", postalCode: "41210" } }))).toEqual({
+      ok: false,
+      problems: [
+        { field: "slot", problem: "slot-invalid" },
+        { field: "pickup", problem: "address-too-short" },
+        { field: "pickup", problem: "postal-code-invalid" },
+      ],
+    });
+  });
+});
+
 describe("checkBookingInput", () => {
   test("a typed vehicle: the registration is stored in its compact form", () => {
     expect(checkBookingInput(input())).toEqual({
@@ -37,6 +67,7 @@ describe("checkBookingInput", () => {
         serviceIds: ["brakes"],
         startsAt: new Date(SLOT),
         requestToken: TOKEN,
+        pickup: null,
       },
     });
   });

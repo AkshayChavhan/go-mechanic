@@ -9,6 +9,7 @@
 import type { LocalizedText } from "@/i18n/localized-text";
 
 import { isUuid } from "./ids";
+import { asksForPickup, checkPickupInput, type PickupInput, type PickupInputProblem } from "./pickup";
 import { parseRegistration, type RegistrationProblem } from "./registration";
 import { priceFor, type PricedVehicle, type Service, type ServiceKind, type ServicePrice } from "./services";
 import { type Fuel, isFuel } from "./vehicles";
@@ -48,6 +49,11 @@ export type BookingInput = {
   startsAt: string;
   /** A random uuid per run of the page, so a second confirm makes no second booking. */
   requestToken: string;
+  /**
+   * Pickup and drop (task 24): the address and PIN code as typed. Left out,
+   * or both blank, books without pickup.
+   */
+  pickup?: PickupInput;
 };
 
 /** What's wrong, tagged with the part of the form it belongs to. */
@@ -56,7 +62,8 @@ export type BookingInputProblem =
   | { field: "registration"; problem: RegistrationProblem }
   | { field: "services"; problem: "nothing-chosen" | "too-many" }
   | { field: "slot"; problem: "slot-invalid" }
-  | { field: "token"; problem: "bad-token" };
+  | { field: "token"; problem: "bad-token" }
+  | { field: "pickup"; problem: PickupInputProblem };
 
 /**
  * The vehicle after the check. A typed one isn't checked against the
@@ -73,6 +80,8 @@ export type CheckedBooking = {
   serviceIds: string[];
   startsAt: Date;
   requestToken: string;
+  /** Cleaned, or null for no pickup. Whether the garage serves the PIN code is the save's check. */
+  pickup: PickupInput | null;
 };
 
 function checkVehicle(
@@ -126,8 +135,18 @@ export function checkBookingInput(
 
   if (!isUuid(input.requestToken)) problems.push({ field: "token", problem: "bad-token" });
 
+  let pickup: PickupInput | null = null;
+  if (asksForPickup(input.pickup)) {
+    const checked = checkPickupInput(input.pickup);
+    if (checked.ok) pickup = checked.pickup;
+    else for (const problem of checked.problems) problems.push({ field: "pickup", problem });
+  }
+
   if (problems.length > 0 || !vehicle) return { ok: false, problems };
-  return { ok: true, booking: { vehicle, serviceIds, startsAt, requestToken: input.requestToken.toLowerCase() } };
+  return {
+    ok: true,
+    booking: { vehicle, serviceIds, startsAt, requestToken: input.requestToken.toLowerCase(), pickup },
+  };
 }
 
 // --- The lines and their prices ---------------------------------------------
