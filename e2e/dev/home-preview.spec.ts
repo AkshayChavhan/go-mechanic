@@ -70,6 +70,7 @@ test.describe("at rest (reduced motion)", () => {
     await expect(reviewCards).toHaveCount(sampleReviews.length);
     // The made-up average and count are marked too (task 37).
     await expect(reviews(page).locator("p[data-sample]")).toHaveCount(1);
+    await expect(reviews(page).locator("p[data-sample]").getByText(home.sample, { exact: true })).toBeVisible();
     for (const item of [...(await statTiles.all()), ...(await reviewCards.all())]) {
       await expect(item.getByText(home.sample, { exact: true })).toBeVisible();
     }

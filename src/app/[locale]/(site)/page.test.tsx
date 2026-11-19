@@ -117,6 +117,7 @@ describe("Home page", () => {
     }
     // 3 stats, 3 review cards, and the made-up summary line.
     expect(container.querySelectorAll("[data-sample]")).toHaveLength(7);
+    expect(within(sectionOf(home.reviews.title).querySelector("p[data-sample]") as HTMLElement).getByText(home.sample)).toBeTruthy();
   });
 
   /** `n` published reviews, newest first, all 4 stars; every other one has a comment. */
