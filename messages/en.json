@@ -702,6 +702,20 @@
       "bookingsDescription": "One day's bookings at a time, in time order, starting with today.",
       "estimatesDescription": "Requests from customers waiting for a price, with their photos.",
       "mechanicNote": "Your jobs will show here once job tracking is added to the staff area."
+    },
+    "bookings": {
+      "today": "Today",
+      "count": "{count, plural, one {# booking} other {# bookings}}, in time order.",
+      "empty": "No bookings on this day.",
+      "dateNote": "That date can't be shown here. The board covers one year before and after today, so this is today.",
+      "dayNavLabel": "Days",
+      "previousDay": "Previous day",
+      "nextDay": "Next day",
+      "dateLabel": "Go to a date",
+      "showDate": "Show",
+      "packageLine": "{name} (package)",
+      "pickupIncluded": "Pickup included",
+      "pickupFrom": "Pickup from {address}"
     }
   }
 }

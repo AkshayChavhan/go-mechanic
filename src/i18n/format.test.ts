@@ -5,6 +5,7 @@ import {
   formatDate,
   formatIndiaDate,
   formatIndiaDay,
+  formatIndiaLongDay,
   formatNumber,
   formatRupees,
   formatTime,
@@ -211,5 +212,24 @@ describe("formatIndiaDay (a day in a short list)", () => {
 
   test("text it can't read is shown as stored", () => {
     expect(formatIndiaDay("2027-02-30", "en")).toBe("2027-02-30");
+  });
+});
+
+describe("formatIndiaLongDay (a day as a page's heading)", () => {
+  const originalTz = process.env.TZ;
+  afterEach(() => {
+    if (originalTz === undefined) delete process.env.TZ;
+    else process.env.TZ = originalTz;
+  });
+
+  test("shows the weekday, the day, the month and the year in full, in any time zone", () => {
+    for (const zone of ["UTC", "Asia/Kolkata", "America/Los_Angeles", "Pacific/Kiritimati"]) {
+      process.env.TZ = zone;
+      expect(formatIndiaLongDay("2026-11-19", "en"), zone).toBe("Thursday, 19 November 2026");
+    }
+  });
+
+  test("text it can't read is shown as stored", () => {
+    expect(formatIndiaLongDay("2027-02-30", "en")).toBe("2027-02-30");
   });
 });
