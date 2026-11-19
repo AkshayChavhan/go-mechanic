@@ -41,7 +41,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Mechanic job updates; customer tracking timeline | To do |  |
-| 32 | `32_estimate_requests` | Free estimate requests with photos; admin inbox | To do |  |
+| 32 | `32_estimate_requests` | Free estimate requests with photos; admin inbox | In progress |  |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
@@ -475,7 +475,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 32_estimate_requests
 
-- [ ] Create branch `32_estimate_requests`
+- [x] Create branch `32_estimate_requests`
 - [ ] Plan with `ce-plan`
 - [ ] Free estimate requests with photos; admin inbox
 - [ ] Write the learning doc
