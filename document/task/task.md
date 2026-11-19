@@ -650,8 +650,8 @@ The `/book` page on top of task 23's booking engine: units U6–U10 of [the book
 - [x] U9: the `/book` page; set `bookPage.live` to true in `src/components/site/navigation.ts`, so "Book a service" and the phone bar's Book go to `/book` (task 12); update the FAQ's "How do I book?" and the terms' booking text (task 19)
 - [x] U10: browser tests on a production build, whose database is PGlite in memory: every run starts from the seed, so booking tests must not depend on an earlier run (task 14); docs
 - [x] Write the learning doc: [47_book_wizard.md](../learning/47_book_wizard.md)
-- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review: `ce-code-review` "Ready with fixes" (2 confirmed findings, fixed); `code-reviewer` 1 must-fix (CLAUDE.md, fixed), and its browser-check suggestion found a shared-phone leak (fixed)
+- [x] Compound: section 3b added to [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md)
 - [ ] Merge into `main`
 
 ### 48_nextjs_security_upgrade

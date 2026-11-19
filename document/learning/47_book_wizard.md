@@ -93,12 +93,12 @@ By hand: run `npm run dev`, open `http://localhost:3000/book` with the browser n
   - After a login ended mid-booking, a customer with a saved vehicle got an empty confirm screen on logging in again (four reviewers found it on their own). The wizard now keeps the model and fuel and asks only for the number again.
   - A retry after a lost answer, with a changed time, said "already booked for this time" with no details. The `duplicate` answer now carries the earlier booking, and the page shows it.
   - Also applied: a shared `loginFormLabels()` and `ids()` (`ddaa52d`), booking-online wording on the home, services, packages and about texts, and the terms' date.
-- **Known risks left (neither checked in a browser):**
-  - Next.js can keep a hidden `(site)` page in the background (`<Activity>`) after a click. Its action bar could still match `:has([data-action-bar])` on `/book`, which only adds extra scroll padding.
-  - If someone logs out in another tab, a hidden `/book` shown again might show the earlier customer's details until the page refetches. It's display only: the server refuses them.
-- **`code-reviewer`:** pending.
-- **Compound step:** pending.
-- **Tests:** `npm run check` passed with 1,949 tests, `npm run test:e2e` with 123 and `npm run test:design` with 50, all on the final code (2026-11-19).
+- **Known risk left (not checked in a browser):** Next.js can keep a hidden `(site)` page in the background (`<Activity>`) after a click. Its action bar could still match `:has([data-action-bar])` on `/book`, which only adds extra scroll padding.
+- **`code-reviewer`:** first "Needs changes", for one must-fix in `CLAUDE.md`: its `/book` notes still quoted the old duplicate message and the old "needs a name" rule. Fixed in `498ae7d`. Its suggestion to check the shared-phone case in a real browser found a real leak:
+  - Customer A opened `/book`, logged out on `/account`, and followed "Book a service" again. The `/book` page Next.js had kept hidden showed A's saved vehicle and number plate to the next person. The unit tests had passed: `FreshOnEachVisit` remounts the wizard while hidden, but with the props it has then, which are still A's.
+  - Fixed in `c1eb0f6`: `FollowPageLogin` starts the wizard over, before the page paints, when the page's login changes under it. A login change the wizard made itself (its inline login, "Not you?") doesn't count, so the choices survive. Two browser tests now cover the shared phone after a log-out and "Not you?" with real cookies.
+- **Compound step:** the shared-phone leak was added to the existing lesson [react-19-form-islands-hydration-action-activity.md](../solutions/conventions/react-19-form-islands-hydration-action-activity.md) (section 3b), since it completes that lesson's "hidden pages" rule.
+- **Tests:** after the shared-phone fix, `npm run check` passed with 1,953 tests and `npm run test:e2e` with 125. `npm run test:design` passed with 50 on 2026-11-19, before that fix (which changes no `site/` component).
 - **Who built what:** the `ui-engineer` agent built U6, U8 and U9 (the shell, the wizard and the page); general-purpose helpers built U7 and U10; each unit was checked and committed by the main session.
 
 ## Common mistakes
