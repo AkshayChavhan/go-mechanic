@@ -214,7 +214,7 @@ describe("loginStep: Send a new code", () => {
 
 describe("loginStep: the code step", () => {
   test("the right code redirects to /account, replacing the login page in the history", async () => {
-    vi.mocked(verifyLoginCode).mockResolvedValue({ ok: true });
+    vi.mocked(verifyLoginCode).mockResolvedValue({ ok: true, needsName: false });
     const error = await thrownBy(loginStep("en", codeStep, form({ intent: "verify", attemptId, code: "123 456" })));
     expect(error).toMatchObject({ digest: expect.stringMatching(/^NEXT_REDIRECT;replace;\/account;/) });
     expect(verifyLoginCode).toHaveBeenCalledWith(

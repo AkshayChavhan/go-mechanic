@@ -340,7 +340,7 @@ describe("BookingWizard: logging in and confirming", () => {
     chooseServiceAndTime();
     expect(heading().textContent).toContain(t.steps.login);
     expect(screen.getByText("Step 4 of 4")).toBeTruthy();
-    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789" });
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
     await sendPhone();
 
     expect(heading().textContent).toContain(t.steps.confirm);
@@ -349,6 +349,20 @@ describe("BookingWizard: logging in and confirming", () => {
     expect(screen.getByText("Honda City, MH 12 AB 1234")).toBeTruthy();
     expect(screen.getByText("Periodic service")).toBeTruthy();
     expect(screen.getByText("Tue, 24 Nov at 10:00 am")).toBeTruthy();
+  });
+
+  test("a new customer's verified answer shows the name field on the confirm screen before any Confirm", async () => {
+    const { loginAction, confirmAction } = renderWizard();
+    typeVehicle();
+    press(t.continue);
+    chooseServiceAndTime();
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: true });
+    await sendPhone();
+
+    expect(heading().textContent).toContain(t.steps.confirm);
+    expect(screen.getByLabelText(t.nameLabel)).toBeTruthy();
+    expect(screen.queryByText(messages.Booking.errors.needsName)).toBeNull();
+    expect(confirmAction).not.toHaveBeenCalled();
   });
 
   test("confirm posts the choices and a uuid token, and nothing the server works out itself", async () => {
@@ -406,7 +420,7 @@ describe("BookingWizard: logging in and confirming", () => {
     typeVehicle("car-honda-city", "MH 12 AB 42");
     press(t.continue);
     chooseServiceAndTime();
-    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 98765 43210" });
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 98765 43210", needsName: false });
     await sendPhone();
     const message = "You've already saved MH 12 AB 0042 as a Honda City. Choose it from your vehicles, or check the number.";
     confirmAction.mockResolvedValueOnce(
@@ -431,7 +445,7 @@ describe("BookingWizard: logging in and confirming", () => {
     expect(heading().textContent).toContain(t.steps.login);
     expect((screen.getByLabelText(l.phoneLabel) as HTMLInputElement).value).toBe("");
 
-    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789" });
+    loginAction.mockResolvedValueOnce({ step: "verified", phoneDisplay: "+91 91234 56789", needsName: false });
     await sendPhone();
     // The number was cleared: step 1 asks for it, with the model and fuel kept.
     expect(heading().textContent).toContain(t.steps.vehicle);

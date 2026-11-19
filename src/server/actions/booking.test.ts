@@ -185,16 +185,26 @@ describe("bookingLoginStep: the phone step, as on /login", () => {
 
 describe("bookingLoginStep: the code step", () => {
   test("the right code answers verified, with the number, and never redirects", async () => {
-    vi.mocked(verifyLoginCode).mockResolvedValue({ ok: true });
+    vi.mocked(verifyLoginCode).mockResolvedValue({ ok: true, needsName: false });
     expect(await bookingLoginStep("en", codeStep, form({ intent: "verify", attemptId, code: "123 456" }))).toEqual({
       step: "verified",
       phoneDisplay: "+91 98765 43210",
+      needsName: false,
     });
     expect(verifyLoginCode).toHaveBeenCalledWith(
       expect.anything(),
       { locale: "en", attemptId, codeTyped: "123 456" },
       expect.any(Headers),
     );
+  });
+
+  test("verified says when a new customer still needs a name", async () => {
+    vi.mocked(verifyLoginCode).mockResolvedValue({ ok: true, needsName: true });
+    expect(await bookingLoginStep("en", codeStep, form({ intent: "verify", attemptId, code: "123456" }))).toEqual({
+      step: "verified",
+      phoneDisplay: "+91 98765 43210",
+      needsName: true,
+    });
   });
 
   test("a wrong code keeps the phone and counts down tries", async () => {

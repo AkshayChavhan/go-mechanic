@@ -147,10 +147,8 @@ test("a visitor books from the home page: a car, two services, a time, an inline
   await expect(page.getByText(wizard.bookingAs.replace("{phone}", `+91 ${number.typed}`))).toBeVisible();
   await expect(page.getByText(`Honda City, ${registration.shown}`)).toBeVisible();
 
-  // A new customer has no name yet: the first Confirm asks for it (the page
-  // can't know before the next request, after an inline login).
-  await button(page, wizard.confirm).click();
-  await expect(page.getByText(booking.errors.needsName)).toBeVisible();
+  // A new customer has no name yet: the code step's answer says so, so the
+  // name field is there before the first Confirm, and one Confirm books.
   await field(page, wizard.nameLabel).fill("Asha Patil");
   await button(page, wizard.confirm).click();
 

@@ -20,7 +20,9 @@ import { formText } from "./form-input";
 
 type LoginTranslator = Awaited<ReturnType<typeof getTranslations<"Login">>>;
 
-export type LoginFormStepResult = { verified: true; phoneDisplay?: string } | { verified: false; state: LoginState };
+export type LoginFormStepResult =
+  | { verified: true; phoneDisplay?: string; needsName: boolean }
+  | { verified: false; state: LoginState };
 
 /**
  * "Try again after 10:00 am", with the date when that's not today in India
@@ -54,7 +56,7 @@ export async function runLoginFormStep(
       { locale, attemptId: formText(formData, "attemptId"), codeTyped: formText(formData, "code") },
       requestHeaders,
     );
-    if (result.ok) return { verified: true, phoneDisplay: previous.phoneDisplay };
+    if (result.ok) return { verified: true, phoneDisplay: previous.phoneDisplay, needsName: result.needsName };
     if (result.problem === "startOver") {
       return { verified: false, state: { ...initialLoginState, error: { field: "form", text: t("errors.startOver") } } };
     }

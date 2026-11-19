@@ -9,8 +9,11 @@ import { formText } from "@/lib/form-text";
 import { initialLoginState, type LoginState } from "@/lib/login-state";
 import type { MyVehicle } from "@/server/dal/customer-vehicles";
 
-/** /login's steps, plus "verified" once the code was right (the page stays where it is). */
-export type BookingLoginState = LoginState | { step: "verified"; phoneDisplay?: string };
+/**
+ * /login's steps, plus "verified" once the code was right (the page stays where it is).
+ * `needsName`: the customer has no name yet, so the confirm step asks for it at once.
+ */
+export type BookingLoginState = LoginState | { step: "verified"; phoneDisplay?: string; needsName: boolean };
 
 export const initialBookingLoginState: BookingLoginState = initialLoginState;
 

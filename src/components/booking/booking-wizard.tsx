@@ -7,8 +7,8 @@
 // Rules to keep:
 // - A login made here isn't visible to the page until the next request
 //   (document/solutions/conventions/server-action-login-invisible-until-next-request.md).
-//   So trust the "verified" answer, and take saved vehicles and needsName from
-//   Confirm's answers, never from the first props.
+//   So trust the "verified" answer (it says whether the name is missing), and
+//   take saved vehicles from Confirm's answers, never from the first props.
 // - Don't key the wizard by user id: a flipping key remounts it and loses every
 //   choice. "Not you?" clears the first customer's details instead.
 // - Needs JavaScript (browser-side wrappers around the actions); the page has a <noscript>.
@@ -214,8 +214,8 @@ function Wizard({
     go(next);
   }
 
-  function verified(phoneDisplay: string) {
-    setSession({ phoneDisplay, vehicles: [], needsName: false });
+  function verified(phoneDisplay: string, needsName: boolean) {
+    setSession({ phoneDisplay, vehicles: [], needsName });
     setErrors({});
     // After "Not you?" the number was cleared: step 1 asks for it again.
     if (choice.kind === "typed" && choice.registration.trim() === "") {
@@ -615,7 +615,7 @@ function LoginPart({
 }: {
   action: BookingLoginAction;
   labels: LoginFormLabels;
-  onVerified: (phoneDisplay: string) => void;
+  onVerified: (phoneDisplay: string, needsName: boolean) => void;
 }) {
   const [state, formAction, isPending] = useActionState<LoginFormState, FormData>(
     bookingLoginSubmitter(action, labels.connection, onVerified),
@@ -632,17 +632,20 @@ function LoginPart({
 function bookingLoginSubmitter(
   action: BookingLoginAction,
   connectionText: string,
-  onVerified: (phoneDisplay: string) => void,
+  onVerified: (phoneDisplay: string, needsName: boolean) => void,
 ) {
   return async function submit(previous: LoginFormState, formData: FormData): Promise<LoginFormState> {
-    let phoneDisplay: string | null = null;
+    let verified: { phoneDisplay: string; needsName: boolean } | null = null;
     const next = await loginSubmitter(async (answer, data) => {
       const reply = await action(answer, data);
       if (reply.step !== "verified") return reply;
-      phoneDisplay = reply.phoneDisplay ?? answer.phoneDisplay ?? "";
+      verified = { phoneDisplay: reply.phoneDisplay ?? answer.phoneDisplay ?? "", needsName: reply.needsName };
       return answer;
     }, connectionText)(previous, formData);
-    if (phoneDisplay !== null) onVerified(phoneDisplay);
+    if (verified !== null) {
+      const { phoneDisplay, needsName } = verified;
+      onVerified(phoneDisplay, needsName);
+    }
     return next;
   };
 }

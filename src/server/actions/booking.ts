@@ -7,8 +7,9 @@
 // an answer that sends the wizard back to its login step.
 //
 // A login made by bookingLoginStep can't be read until the next request, so the
-// code step only answers "verified", and confirmBooking (the next request)
-// saves the booking
+// code step only answers "verified" (with needsName, from Better Auth's own
+// answer, not a session read), and confirmBooking (the next request) saves the
+// booking
 // (document/solutions/conventions/server-action-login-invisible-until-next-request.md).
 
 import "server-only";
@@ -54,7 +55,9 @@ export async function bookingLoginStep(
 ): Promise<BookingLoginState> {
   const checked = checkedLocale(locale);
   const result = await runLoginFormStep(checked, previous.step === "verified" ? initialLoginState : previous, formData);
-  return result.verified ? { step: "verified", phoneDisplay: result.phoneDisplay } : result.state;
+  return result.verified
+    ? { step: "verified", phoneDisplay: result.phoneDisplay, needsName: result.needsName }
+    : result.state;
 }
 
 /** "Not you?": logs this browser out and answers the empty phone step. */

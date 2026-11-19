@@ -189,7 +189,7 @@ describe("the whole login", () => {
 
     moveTo(20);
     if (!result.ok) throw new Error("unreachable");
-    expect(await check(result.attemptId, (await latestCode()).replace(/^(\d{3})/, "$1 "))).toEqual({ ok: true });
+    expect(await check(result.attemptId, (await latestCode()).replace(/^(\d{3})/, "$1 "))).toEqual({ ok: true, needsName: true });
 
     const [user] = await db.select().from(users);
     expect(user).toMatchObject({ phoneNumber: number, role: "customer" });
@@ -211,9 +211,17 @@ describe("the whole login", () => {
   test("a returning user at the same notice version adds no consent rows", async () => {
     await check(await askForCode(), await latestCode());
     moveTo(10 * 60);
-    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true, needsName: true });
     expect(await db.$count(consents)).toBe(2);
     expect(await db.$count(sessions)).toBe(2);
+  });
+
+  test("a new number needs a name; a customer who gave one doesn't", async () => {
+    // From Better Auth's answer: the first login creates the user with an empty name.
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true, needsName: true });
+    await db.update(users).set({ name: "Asha Patil" }).where(eq(users.phoneNumber, number));
+    moveTo(10 * 60);
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true, needsName: false });
   });
 
   test("a login under newer wording adds rows for that version", async () => {
@@ -276,7 +284,7 @@ describe("asking for a code", () => {
     }
     if (!resent.ok) throw new Error("unreachable");
     expect(await check(resent.attemptId, first)).toEqual({ ok: false, problem: "wrongCode" });
-    expect(await check(resent.attemptId, second)).toEqual({ ok: true });
+    expect(await check(resent.attemptId, second)).toEqual({ ok: true, needsName: true });
     // The consent is the one given on the phone step (ticked at `start`),
     // carried by "Send a new code", not a new one at the resend's time.
     const givenAt = (await db.select().from(consents)).map((row) => row.givenAt.getTime());
@@ -435,7 +443,7 @@ describe("checking a code", () => {
     expect(await db.$count(users)).toBe(1);
 
     moveTo(31);
-    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true, needsName: true });
     expect(await db.$count(consents)).toBe(2);
   });
 
@@ -468,7 +476,7 @@ describe("a phone that is already logged in (plan KTD8)", () => {
   /** Logs `phoneNumber` in from a phone with no cookie and returns its session token. */
   async function logInFresh(phoneNumber: string): Promise<string> {
     const typedNumber = phoneNumber.slice(3);
-    expect(await check(await askForCode({ phoneTyped: typedNumber }), await latestCode(phoneNumber))).toEqual({ ok: true });
+    expect(await check(await askForCode({ phoneTyped: typedNumber }), await latestCode(phoneNumber))).toEqual({ ok: true, needsName: true });
     const [user] = await db.select().from(users).where(eq(users.phoneNumber, phoneNumber));
     const [session] = await db.select().from(sessions).where(eq(sessions.userId, user.id));
     return session.token;
@@ -485,7 +493,7 @@ describe("a phone that is already logged in (plan KTD8)", () => {
   test("another number logs in: the old login stops working and the new one is the other user's", async () => {
     const oldToken = await logInFresh(number);
     const attemptId = await askForCode({ phoneTyped: other.slice(3) });
-    expect(await checkFrom(await cookieFor(oldToken), attemptId, await latestCode(other))).toEqual({ ok: true });
+    expect(await checkFrom(await cookieFor(oldToken), attemptId, await latestCode(other))).toEqual({ ok: true, needsName: true });
 
     expect(await sessionOf(await cookieFor(oldToken))).toBeNull();
     const rows = await db.select().from(sessions);
@@ -505,7 +513,7 @@ describe("a phone that is already logged in (plan KTD8)", () => {
   test("the same number again leaves one working session", async () => {
     const oldToken = await logInFresh(number);
     moveTo(10 * 60);
-    expect(await checkFrom(await cookieFor(oldToken), await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await checkFrom(await cookieFor(oldToken), await askForCode(), await latestCode())).toEqual({ ok: true, needsName: true });
     expect(await sessionOf(await cookieFor(oldToken))).toBeNull();
     const rows = await db.select().from(sessions);
     expect(rows).toHaveLength(1);
@@ -516,7 +524,7 @@ describe("a phone that is already logged in (plan KTD8)", () => {
     const oldToken = await logInFresh(number);
     const forged = await cookieFor(oldToken, "another-secret-that-is-at-least-32-characters");
     const attemptId = await askForCode({ phoneTyped: other.slice(3) });
-    expect(await checkFrom(forged, attemptId, await latestCode(other))).toEqual({ ok: true });
+    expect(await checkFrom(forged, attemptId, await latestCode(other))).toEqual({ ok: true, needsName: true });
     expect((await sessionOf(await cookieFor(oldToken)))?.user.phoneNumber).toBe(number);
     expect(await db.$count(sessions)).toBe(2);
   });
@@ -531,12 +539,12 @@ describe("the owner (OWNER_PHONE_NUMBER)", () => {
 
   test("the owner's number is stored as the owner at its first login", async () => {
     settings.ownerPhoneNumber = number;
-    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true, needsName: true });
     expect(await storedRole()).toBe("owner");
   });
 
   test("any other number stays a customer", async () => {
-    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true, needsName: true });
     expect(await storedRole()).toBe("customer");
   });
 
@@ -556,7 +564,7 @@ describe("the owner (OWNER_PHONE_NUMBER)", () => {
     expect(await db.$count(consents)).toBe(2);
 
     moveTo(31);
-    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true });
+    expect(await check(await askForCode(), await latestCode())).toEqual({ ok: true, needsName: true });
     expect(await db.$count(sessions)).toBe(1);
   });
 
