@@ -894,7 +894,7 @@ export default async function DesignPage() {
 
               <Block
                 title="Phone bar"
-                description="Fixed to the bottom of phones, below 768px. Shown here in place, 320px wide: the narrowest phone."
+                description="Fixed to the bottom of phones, below 768px. Shown here in place, 320px wide: the narrowest phone. Pages in the (book) group get the shell without it (SiteChrome actionBar={false}): no bar, no spacer, no scroll padding for it."
               >
                 {/* A 320px phone screen: box-content keeps the border outside the
                     320px. --gutter follows the window's width, so the phone's own

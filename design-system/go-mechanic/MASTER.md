@@ -153,7 +153,7 @@ For the parts in "Site shell" below.
 | `--action-bar-height` | 1px border + the three above | The whole bar. Sizes the spacer after the footer and the scroll padding |
 | `--stage-height` | `100svh` minus `--header-height`; below 768px also minus `--action-bar-height` | The screen left for the page between the bars: the most a full-height section or a sticky visual takes (the home hero on large screens, the story's picture). `svh`: it doesn't jump when a phone's address bar hides |
 
-**Scroll padding** on `html`: `scroll-padding-top` is the header's height plus 8px; below 768px, `scroll-padding-bottom` is the bar's height plus 8px. When the browser scrolls to an anchor (`#main`) or a focused control, it stops clear of both bars, so neither hides the focus outline.
+**Scroll padding** on `html`: `scroll-padding-top` is the header's height plus 8px; below 768px, while the phone bar is on the page (`html:has([data-action-bar])`), `scroll-padding-bottom` is the bar's height plus 8px. `--stage-height` drops the bar's height under the same condition, so a page without the bar keeps no gap. When the browser scrolls to an anchor (`#main`) or a focused control, it stops clear of both bars, so neither hides the focus outline.
 
 **Full-height and sticky sections** (task 13): size them with `--stage-height` and stick them at `top-(--header-height)`, so on phones they start below the header and end above the phone bar.
 
@@ -227,7 +227,7 @@ The frame around every public page (task 12). Pages in `src/app/[locale]/(site)/
 
 | Component | What it does |
 | --- | --- |
-| `SiteChrome` (`site-chrome.tsx`) | The frame, in order: skip link, header, offer banner, the page in `<main id="main">`, footer, action bar, then a phone-only spacer the bar's height. It gets the garage as a prop (`garage`) from its callers, the `(site)` layout and `global-not-found.tsx`, which read it from the database with `readGarage()` (`src/server/dal/garage.ts`; the home page and both 404 pages call it too). It reads the offer and `navigation.ts` itself, and passes all of them down as props |
+| `SiteChrome` (`site-chrome.tsx`) | The frame, in order: skip link, header, offer banner, the page in `<main id="main">`, footer, action bar, then a phone-only spacer the bar's height (both left out with `actionBar={false}`). It gets the garage as a prop (`garage`) from its callers, the `(site)` and `(book)` layouts and `global-not-found.tsx`, which read it from the database with `readGarage()` (`src/server/dal/garage.ts`; the home page and both 404 pages call it too). It reads the offer and `navigation.ts` itself, and passes all of them down as props |
 | `SiteHeader` (`site-header.tsx`) | Frosted, sticky. The Wordmark links home; from 768px, the live page links, "Account" and one blue "Book a service"; below 768px, "Account" and the menu button |
 | `AccountLink` (`account-link.tsx`) | The header's static link to `/account` (task 21): a ghost button, the word "Account" from 1024px and a 44px person icon below (the word stays for screen readers; the word didn't fit the 768px header). Outside the `<nav>`, `prefetch={false}`, and it never reads the session: a logged-out visitor gets the proxy's 307 to `/login` |
 | `MobileMenu` (`mobile-menu.tsx`) | Client island: the menu button and its panel. A plain button that sets `aria-expanded` and gets focus back when the menu closes (task 18). The panel's code loads only when the menu is wanted: the first pointer-down or focus mounts it, still closed, so the tap opens the real panel at once. If the panel isn't in yet (a slow connection) or can't be downloaded, a plain panel shows the title and the page links, drawn into `document.body`. Tapping any link in the panel closes the menu |
@@ -255,6 +255,7 @@ The frame around every public page (task 12). Pages in `src/app/[locale]/(site)/
 - **Tab-bar layout:** three equal columns, each icon above its label. At 320px "WhatsApp" doesn't fit beside its icon.
 - **Safe area:** the bottom padding grows to clear the iPhone home indicator (`--action-bar-padding-bottom`).
 - **Never covers the page:** a spacer of `--action-bar-height` follows the footer, and the scroll padding keeps focused controls above the bar.
+- **Not on every page:** `SiteChrome actionBar={false}` leaves out the bar and its spacer. The `(book)` route group's layout does this, so `/book` (task 47) keeps its own buttons at the bottom of the phone. The bar's root carries `data-action-bar`, the marker the scroll padding and `--stage-height` look for.
 - **Floats, but never moves:** solid `bg-background`, top border, `shadow-md`, `z-40`. No animation, so reduced motion needs nothing extra.
 
 ## Page blocks and scroll motion

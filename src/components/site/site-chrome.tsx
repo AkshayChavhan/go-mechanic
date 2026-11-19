@@ -14,15 +14,30 @@ import { SiteHeader } from "./site-header";
 /**
  * The frame around every public page: a "skip to main content" link, the
  * header, the offer banner, the page itself in <main>, the footer and, on
- * phones, the action bar.
+ * phones, the action bar (unless actionBar is false).
  *
  * It gets the garage's details as a prop: its callers read them from the
  * database with readGarage() (src/server/dal/garage.ts). It reads the list of
  * live pages (navigation.ts) and the offer itself, and passes all of it down
- * as props. Used by src/app/[locale]/(site)/layout.tsx and
+ * as props. Used by src/app/[locale]/(site)/layout.tsx,
+ * src/app/[locale]/(book)/layout.tsx (without the bar) and
  * src/app/global-not-found.tsx.
  */
-export function SiteChrome({ garage, children }: { garage: Garage; children: ReactNode }) {
+type SiteChromeProps = {
+  garage: Garage;
+  children: ReactNode;
+  /**
+   * Whether phones get the fixed action bar (Call, WhatsApp, Book) and the
+   * spacer that keeps it off the footer. Default true. The (book) layout
+   * passes false: on /book the page's own buttons sit where the bar would,
+   * and with no bar on the page globals.css reserves no room for it either.
+   * A prop rather than a check of the URL, so the shell never reads the
+   * request and every page stays prerendered.
+   */
+  actionBar?: boolean;
+};
+
+export function SiteChrome({ garage, children, actionBar = true }: SiteChromeProps) {
   const t = useTranslations("Common");
   const tContact = useTranslations("Contact");
 
@@ -51,10 +66,14 @@ export function SiteChrome({ garage, children }: { garage: Garage; children: Rea
       </main>
 
       <SiteFooter items={items} footerOnlyItems={liveNavItems(footerItems)} garage={garage} />
-      <ActionBar book={book} garage={garage} />
-      {/* Below 768px: empty space the height of the fixed action bar, so the
-          bar never covers the end of the footer. */}
-      <div aria-hidden="true" className="h-(--action-bar-height) md:hidden" />
+      {actionBar && (
+        <>
+          <ActionBar book={book} garage={garage} />
+          {/* Below 768px: empty space the height of the fixed action bar, so the
+              bar never covers the end of the footer. */}
+          <div aria-hidden="true" className="h-(--action-bar-height) md:hidden" />
+        </>
+      )}
     </>
   );
 }
