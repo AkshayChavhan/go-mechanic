@@ -248,6 +248,17 @@ describe("PhotoUploader", () => {
     expect(onBusyChange).toHaveBeenLastCalledWith(false);
   });
 
+  test("a removed failed photo still counts against the 6: its place on the server stays", async () => {
+    const { finish } = setup({ alreadyInSet: 5, setId });
+    finishWith(finish, [false]);
+    pick("1.jpg");
+    await screen.findByRole("img");
+    fireEvent.click(screen.getByRole("button", { name: "T-Upload" }));
+    await screen.findByText("T-Failed");
+    fireEvent.click(screen.getByRole("button", { name: "T-Remove 1" }));
+    expect((screen.getByRole("button", { name: "T-Add photos" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   test("uploadVariant changes the Upload button's look", async () => {
     setup({ uploadVariant: "secondary" });
     pick("1.jpg");

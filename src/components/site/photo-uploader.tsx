@@ -126,9 +126,12 @@ export function PhotoUploader({
   const [setId, setSetId] = useState(initialSetId);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  // Failed photos removed from the list keep their place on the server
+  // (pending until the 24-hour cleanup), so they still count against the 6.
+  const [releasedPlaces, setReleasedPlaces] = useState(0);
 
   const max = PHOTO_RULES.maxPerSet - alreadyInSet;
-  const room = max - items.filter((item) => HOLDS_A_PLACE.includes(item.status)).length;
+  const room = max - releasedPlaces - items.filter((item) => HOLDS_A_PLACE.includes(item.status)).length;
   const toSend = items.filter((item) => TO_SEND.includes(item.status) && item.photo);
   const stillResizing = items.some((item) => item.status === "resizing");
   const onItsWay = busy || items.some((item) => ON_ITS_WAY.includes(item.status));
@@ -163,6 +166,7 @@ export function PhotoUploader({
 
   function remove(item: Item) {
     setItems((current) => current.filter((other) => other.key !== item.key));
+    if (item.upload) setReleasedPlaces((count) => count + 1);
   }
 
   async function upload() {
