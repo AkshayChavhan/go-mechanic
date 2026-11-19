@@ -314,7 +314,7 @@ stateDiagram-v2
   - Idempotency:
     - the same token twice gives `duplicate` with the first event, even though the status has moved;
     - a token from booking X sent with booking Y never returns X's event;
-    - after reassignment, the retry gets `not-found` (KTD5).
+    - ~~after reassignment, the retry gets `not-found` (KTD5)~~ changed in review: the retry gets `duplicate`, and a mechanic's retry of their completing update too.
   - Photos:
     - an update with the job's set links it, sets `had_photos` and closes the set;
     - a used set, another booking's set or a customer set gives `photos-not-found`;
