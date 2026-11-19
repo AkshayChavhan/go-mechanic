@@ -36,7 +36,7 @@ Claude's default: **the staff page waits for task 26**, as task 32's inbox did.
 | `src/lib/review-form.ts` | Added | The review form's state, shared by the action and the form |
 | `src/server/actions/reviews.ts` (+ test) | Added | `sendReview`: `requireUser`, then `createMyReview` |
 | `src/app/[locale]/(site)/account/reviews/[bookingId]/` | Added | The review page (prerendered shell) and `ReviewGate`, which reads the id and session inside `<Suspense>` |
-| `src/components/reviews/review-form.tsx` (+ test) | Added | The client island: stars, comment with characters left, the public note, the thank-you panel |
+| `src/components/reviews/review-form.tsx` (+ test) | Added | The client island: stars, comment with a character count, the public note, the thank-you panel |
 | `src/components/site/star-rating-input.tsx` (+ test) | Added | Five native radios with 44px stars that fill by CSS alone |
 | `src/components/site/review-card.tsx` (+ test) | Changed | The real credit, a `preview` and a `full` variant, the garage's reply, stars-only cards |
 | `src/components/account/completed-jobs.tsx` (+ test), `account-content.tsx` | Added / Changed | "Your completed jobs" on `/account`, each with "Write a review" or its stars |
@@ -60,7 +60,7 @@ Claude's default: **the staff page waits for task 26**, as task 32's inbox did.
    - **A 3-tile stat grid**, now that the rating left it.
    - **The privacy notice's name promise:** a review keeps its own copy of the first name, so changing your name doesn't change a sent review.
    - **Recorded a dependency:** nothing in this task can take a public review down without the database, so the staff hide screen must ship no later than the first screen that moves a job to "completed" (a backlog line in `task.md`).
-2. **The rules (U1).** `src/domain/reviews.ts`. `firstName("Asha Patil")` is `"Asha"`; `averageRating([5, 4, 4])` is `4.3`.
+2. **The rules (U1).** `src/domain/reviews.ts`. `firstName("Asha Patil")` is `"Asha"`; `averageRating(13, 3)` (a sum and a count) is `4.3`.
 3. **The table (U2).**
    ```bash
    npm run db:generate -- --name=reviews   # wrote 0011_reviews.sql + meta/
@@ -92,9 +92,9 @@ Claude's default: **the staff page waits for task 26**, as task 32's inbox did.
 What was run in this session:
 
 ```bash
-npm run check      # passed: 2,292 tests at the time
-npm run test:e2e   # passed: 131 tests on a production build, 3 new in e2e/reviews.spec.ts
-npx playwright test -c <a copy of playwright.dev.config.ts on port 3001>   # design suite
+npm run check      # passed: 2,292 tests before the review fixes; 2,296 on the final code (b5e46e6)
+npm run test:e2e   # passed: 131 tests on a production build (3 new in e2e/reviews.spec.ts), before and after the fixes
+npx playwright test -c <a copy of playwright.dev.config.ts on port 3001>   # design suite: 50 passed on the final code
 ```
 
 **What e2e can't prove.** A browser test can't make a completed job: there is no staff page yet, and each `next start` has its own fresh database. So writing a review and the 3-review home page are proven in Vitest. The e2e tests check the empty `/reviews`, that the review page gives a logged-out visitor a 307 to `/login`, a logged-in customer opening someone else's booking, and that no sample reaches the production home page.
@@ -137,8 +137,37 @@ An honest note on the last one: at first no test failed. "Completed" is a final 
 
 ## Review
 
-_To fill in after `ce-code-review` and `code-reviewer` have run._
+**`ce-code-review`** ran 9 reviewers: correctness, project standards, testing, maintainability, saved lessons, security, migration, adversarial, and form timing and hydration. The cross-model pass is off in this repo. Verdict: **Ready with fixes**, with no P0 or P1. A validator confirmed all 8 findings it was given. Fixed in `544a56c` and `14f6005`:
+
+- **#1 (P2): the character counter's template went through `t()` with no values.** Under `npm run dev`, use-intl's development build would show the message key "ReviewPage.commentCount" instead of "0 of 1000 characters". Production happens to work, so every suite passed. Fixed with `t.raw`, as the estimate page does. A page test now fails if `t()` comes back (checked). This is the new lesson below.
+- **#2 (P2): no test proved the duplicate check only matches the caller's own token.** Added: a second customer sending the first one's token gets `sent`, not `duplicate`.
+- **Smaller fixes:**
+  - the cursor moves to the thank-you heading after sending;
+  - the review page has its own name note;
+  - one `toReviewCard` serves both `/reviews` and the home page;
+  - `averageRating(sum, count)`;
+  - `toRating` replaces the casts;
+  - the shared `formText` replaces a local copy;
+  - the brand name in tests now comes from messages;
+  - the sample guard covers `sampleReviewsSummary`;
+  - stale comments in `home.ts` and `MASTER.md` are fixed;
+  - `review-form.ts` is in the repo map.
+- **Left for later (a backlog line):** text typed before the page's JavaScript loads isn't counted until the next keystroke. React's lint rule refuses the easy fix (setting state in an effect), and the estimate form has the same gap.
+
+**`code-reviewer`** (the repo rules, the final gate). Verdict: **Needs changes**, with no code bugs:
+
+- **Its two must-fixes were in this doc:** the test runs after the fixes weren't recorded (they are above now), and the `averageRating` example was stale.
+- **Fixed in `b5e46e6`, from its should-fixes and suggestions:**
+  - a screen reader on a star now hears the rating's error (`aria-describedby` on each radio);
+  - this doc calls the counter a "character count";
+  - the `/dev/design` sample uses `REVIEW_RULES.minForHome`.
+- **Left as they are:**
+  - a second copy of `fill()` (a backlog line already covers the shared helper);
+  - `readPublishedReviews` returning the model name for task 39 (server-only; `toReviewCard` drops it);
+  - a subquery that could filter by user earlier (correct, just more work as events grow).
+
+After the fixes, `npm run check` (2,296), `npm run test:e2e` (131) and the design suite (50) all passed on `b5e46e6`.
 
 ## Compound
 
-_To fill in after the compound step._
+One lesson passes the question "would a future session repeat this?": `document/solutions/conventions/next-intl-template-for-client-fill-use-t-raw.md`. A template the browser fills must be read with `t.raw`. `t()` without values breaks only under `npm run dev`, so builds and tests stay green. The review's other findings are recorded in the code and its tests.
