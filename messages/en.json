@@ -686,5 +686,30 @@
     "sentOn": "Sent on {date}",
     "waiting": "Waiting for the garage",
     "photos": "{count, plural, =0 {No photos} one {# photo} other {# photos}}"
+  },
+  "JobTimeline": {
+    "stepsHeading": "Progress",
+    "steps": {
+      "booked": "Booked",
+      "vehicle-received": "Vehicle received",
+      "inspection": "Inspection",
+      "awaiting-approval": "Awaiting your approval",
+      "in-service": "In service",
+      "ready": "Ready",
+      "completed": "Completed"
+    },
+    "states": {
+      "done": "Done",
+      "current": "Now",
+      "upcoming": "To come"
+    },
+    "updatesHeading": "Updates from the garage",
+    "noUpdates": "No updates yet. The garage adds notes and photos here as the work goes on.",
+    "movedTo": "Moved to {step}",
+    "updateDuring": "Update during {step}",
+    "updateBeforeStart": "Update",
+    "at": "{date}, {time}",
+    "photoAlt": "Photo {n} from this update",
+    "photosGone": "The photos from this update are no longer kept."
   }
 }
