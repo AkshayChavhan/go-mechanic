@@ -10,6 +10,7 @@ import { describe, expect, test } from "vitest";
 
 import { NextRequest } from "next/server";
 
+import { ADMIN_MANIFEST_PATH, HOME_SCREEN_ICONS } from "./components/admin/home-screen";
 import proxy, { config } from "./proxy";
 
 // The proxy rewrites "/x" to "/en/x". That's right for pages, and wrong for a
@@ -73,6 +74,13 @@ describe("the proxy matcher (src/proxy.ts)", () => {
     "/_vercel/insights/script.js",
     "/api/health",
   ])("skips %s", (url) => {
+    expect(runsFor(url)).toBe(false);
+  });
+
+  // The staff area's manifest and home-screen icons (task 26): Route
+  // Handlers, so the metadata walk below can't see them. A phone fetches
+  // them without the login cookie, so the proxy must never send them to /login.
+  test.each([ADMIN_MANIFEST_PATH, ...Object.values(HOME_SCREEN_ICONS)])("skips %s (add to home screen)", (url) => {
     expect(runsFor(url)).toBe(false);
   });
 
