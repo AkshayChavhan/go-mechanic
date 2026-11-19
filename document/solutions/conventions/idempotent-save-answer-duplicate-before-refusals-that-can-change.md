@@ -1,5 +1,6 @@
 ---
 title: "Idempotent saves: answer \"duplicate\" before any refusal that depends on data that can change, or a retried request gets refused for a booking that already exists"
+last_updated: 2026-11-19
 date: 2026-11-19
 category: conventions
 module: "src/server/dal/bookings.ts"
@@ -37,7 +38,7 @@ if (booking.pickup) {
 }
 
 // inside it: token lookup -> same vehicle + same slot -> then the refusal
-if (sameSlot) return { status: "duplicate", code: sameSlot.code };
+if (sameSlot) return { status: "duplicate", booking: await readBookedBooking(tx, user.id, sameSlot.id) };
 if (pickupNotOffered) return { status: "problems", problems: [{ field: "pickup", problem: "pickup-not-offered" }] };
 // ... future-bookings limit, then reserveSlot
 ```
@@ -49,5 +50,5 @@ The test that guards it is in `src/server/dal/bookings.test.ts`: "a retry with t
 ## When to apply
 
 - **Every new refusal in a save with a request token.** If its answer can differ between the first try and a retry (because an owner edit, a price change or a hidden row changed the data in between), it belongs after the duplicate checks.
-- **Not yet fixed, for the same reason:** task 23's refusals still sit before the transaction. These are a saved vehicle that was removed (`not-found`), a hidden or unpriced service (`problems`), and an unlisted model. A retry after such a change answers that refusal instead of "duplicate". Move them the same way when a task next changes that code (task 25 or 47), with a retry test for each.
+- **Not yet fixed, for the same reason:** task 23's refusals still sit before the transaction. These are a saved vehicle that was removed (`not-found`), a hidden or unpriced service (`problems`), and an unlisted model. A retry after such a change answers that refusal instead of "duplicate". Move them the same way when a task next changes that code (task 25), with a retry test for each.
 - **Pure input checks may stay first.** `checkBookingInput` gives the same answer on every retry of the same input, so it can't contradict the first answer.

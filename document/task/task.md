@@ -680,6 +680,7 @@ Task 24 built pickup and drop in the booking engine; task 47 built `/book` and c
 - [ ] Show the pickup step only from `readPickupAreas()` (real areas), never `selectPickupAreas()` (the samples can't be booked), so it stays hidden until real areas exist (task 24)
 - [ ] Ask for the address and the PIN code; show the pickup fee next to the services' total, "Free" for 0 (task 24); post them with Confirm, and handle the "pickup not offered" answer by going back to the pickup step
 - [ ] A browser test with a seeded pickup area (the e2e build has none by default)
+- [ ] `Booking.errors.pickup.address-too-long` types "200 characters": use `{max}` and pass `PICKUP_RULES.addressMaxLength` from `problemsAnswer`, so the message follows the rule (code-reviewer in task 47)
 - [ ] Write the learning doc
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
