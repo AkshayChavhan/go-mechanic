@@ -40,7 +40,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
-| 31 | `31_job_timeline` | Mechanic job updates; customer tracking timeline | To do |  |
+| 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | In progress | |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | Done | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
@@ -466,9 +466,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 31_job_timeline
 
-- [ ] Create branch `31_job_timeline`
+- [x] Create branch `31_job_timeline`
 - [ ] Plan with `ce-plan`
-- [ ] Mechanic job updates; customer tracking timeline
+- [ ] Job statuses, mechanic job updates and the customer's timeline: the engine only (owner, 2026-11-19: the pages wait for tasks 25 and 26)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
