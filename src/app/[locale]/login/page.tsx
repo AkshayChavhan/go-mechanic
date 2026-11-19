@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Suspense, type ReactNode } from "react";
 
 import { LoginForm } from "@/components/account/login-form";
+import { loginFormLabels } from "@/components/account/login-form-labels";
 import { Section } from "@/components/site/section";
 import { Wordmark } from "@/components/site/wordmark";
 import { Link } from "@/i18n/navigation";
@@ -35,8 +36,8 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function LoginPage() {
   const locale = await getLocale();
   const t = await getTranslations("Login");
-  const tBrand = await getTranslations("Brand");
   const garage = await readGarage();
+  const labels = await loginFormLabels();
 
   // "Call us on +91 97647 50567": the number is a link that dials it.
   const phone = formatPhoneNumber(garage.phone);
@@ -45,15 +46,6 @@ export default async function LoginPage() {
       {chunks}
     </a>
   );
-  // The full privacy notice opens in a new tab, so a half-filled form here
-  // isn't lost (the number and both boxes live only in this page).
-  const privacy = (chunks: ReactNode) => (
-    <Link href="/privacy" target="_blank" rel="noopener" className="text-link underline underline-offset-4">
-      {chunks}
-      <span className="sr-only"> {t("opensInNewTab")}</span>
-    </Link>
-  );
-
   return (
     <>
       <header className="border-b border-border">
@@ -79,26 +71,7 @@ export default async function LoginPage() {
               // The locale goes in as the action's first argument: a Server
               // Action has no [locale] page around it to read it from.
               action={loginStep.bind(null, locale)}
-              labels={{
-                phoneLabel: t("phoneLabel"),
-                countryCode: t("countryCode"),
-                phoneHint: t("phoneHint"),
-                ageLabel: t("ageLabel"),
-                consentLabel: t("consentLabel", { brand: tBrand("name") }),
-                notice: t.rich("notice", { privacy }),
-                sendCode: t("sendCode"),
-                sending: t("sending"),
-                codeLabel: t("codeLabel"),
-                logIn: t("logIn"),
-                checking: t("checking"),
-                resend: t("resend"),
-                // Raw templates: the browser fills in {time} as it counts down.
-                resendIn: t.raw("resendIn") as string,
-                resendReady: t("resendReady"),
-                waitFor: t.raw("waitFor") as string,
-                changeNumber: t("changeNumber"),
-                connection: t("errors.connection"),
-              }}
+              labels={labels}
             />
             <p className="border-t border-border pt-6 type-callout text-muted-foreground">
               {t.rich("help", { phone, call })}

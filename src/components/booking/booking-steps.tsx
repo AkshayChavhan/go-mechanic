@@ -5,6 +5,7 @@
 import { useLocale } from "next-intl";
 import { type ReactNode, useId, useMemo } from "react";
 
+import { ids } from "@/components/account/form-parts";
 import { type BookingWizardLabels, fill, linePriceText } from "@/components/booking/booking-labels";
 import type { OfferedService } from "@/components/booking/booking-prices";
 import { CheckboxField } from "@/components/site/checkbox-field";
@@ -30,11 +31,6 @@ export const BLANK_TYPED_VEHICLE: VehicleChoice = { kind: "typed", selection: EM
 
 export function savedVehicleText(vehicle: MyVehicle, locale: string): string {
   return `${localize(vehicle.makeName, locale)} ${localize(vehicle.modelName, locale)}, ${formatRegistration(vehicle.registrationNumber)}`;
-}
-
-/** "a b" from the ids that are set: the value of an aria-describedby. */
-export function ids(...list: (string | false | undefined)[]): string | undefined {
-  return list.filter(Boolean).join(" ") || undefined;
 }
 
 export function VehicleStep({

@@ -1,13 +1,13 @@
 import { PhoneIcon } from "lucide-react";
 import type { Metadata } from "next";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
-import { Suspense, type ReactNode } from "react";
+import { Suspense } from "react";
 
+import { loginFormLabels } from "@/components/account/login-form-labels";
 import { Section } from "@/components/site/section";
 import { vehiclePickerLabels } from "@/components/site/vehicle-picker-labels";
 import { WhatsAppLink } from "@/components/site/whatsapp-link";
 import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { telHref, whatsappHref } from "@/lib/contact-links";
 import { bookingLoginStep, confirmBooking, notMe } from "@/server/actions/booking";
 import { readGarage } from "@/server/dal/garage";
@@ -43,13 +43,11 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function BookPage() {
   const locale = await getLocale();
   const t = await getTranslations("Booking");
-  const tLogin = await getTranslations("Login");
-  const tBrand = await getTranslations("Brand");
   const tContact = await getTranslations("Contact");
   // The wizard's words as one object, templates with their {placeholders}
   // left in: the wizard fills them in itself (booking-labels.ts).
   const wizardLabels = (await getMessages()).Booking.wizard;
-  const [catalogue, services, prices, garage, pickerLabels] = await Promise.all([
+  const [catalogue, services, prices, garage, pickerLabels, loginLabels] = await Promise.all([
     readVehicleCatalogue(),
     readServices(),
     // The real prices only, never the samples `npm run dev` shows elsewhere
@@ -57,6 +55,7 @@ export default async function BookPage() {
     readServicePrices(),
     readGarage(),
     vehiclePickerLabels(),
+    loginFormLabels(),
   ]);
 
   // The way out when the wizard can't help (no JavaScript, nothing offered,
@@ -77,35 +76,6 @@ export default async function BookPage() {
       </Button>
     </div>
   );
-
-  // The login step's words, as /login builds them (keep the two in step).
-  // The privacy notice opens in a new tab, so the choices made so far aren't lost.
-  const privacy = (chunks: ReactNode) => (
-    <Link href="/privacy" target="_blank" rel="noopener" className="text-link underline underline-offset-4">
-      {chunks}
-      <span className="sr-only"> {tLogin("opensInNewTab")}</span>
-    </Link>
-  );
-  const loginLabels = {
-    phoneLabel: tLogin("phoneLabel"),
-    countryCode: tLogin("countryCode"),
-    phoneHint: tLogin("phoneHint"),
-    ageLabel: tLogin("ageLabel"),
-    consentLabel: tLogin("consentLabel", { brand: tBrand("name") }),
-    notice: tLogin.rich("notice", { privacy }),
-    sendCode: tLogin("sendCode"),
-    sending: tLogin("sending"),
-    codeLabel: tLogin("codeLabel"),
-    logIn: tLogin("logIn"),
-    checking: tLogin("checking"),
-    resend: tLogin("resend"),
-    // Raw templates: the browser fills in {time} as it counts down.
-    resendIn: tLogin.raw("resendIn") as string,
-    resendReady: tLogin("resendReady"),
-    waitFor: tLogin.raw("waitFor") as string,
-    changeNumber: tLogin("changeNumber"),
-    connection: tLogin("errors.connection"),
-  };
 
   return (
     // wide: the left edge lines up with the header's Wordmark.

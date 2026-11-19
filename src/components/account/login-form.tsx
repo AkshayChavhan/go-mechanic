@@ -29,6 +29,7 @@ import {
 } from "react";
 import { useFormStatus } from "react-dom";
 
+import { ids } from "@/components/account/form-parts";
 import { CheckboxField } from "@/components/site/checkbox-field";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
@@ -258,11 +259,6 @@ export type StepProps = {
   labels: LoginFormLabels;
   formAction: (formData: FormData) => void;
 };
-
-/** "a b" from the ids that are set: the value of an aria-describedby. */
-function ids(...list: (string | false | undefined)[]): string | undefined {
-  return list.filter(Boolean).join(" ") || undefined;
-}
 
 /**
  * The number, the two boxes and "Send code".

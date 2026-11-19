@@ -2,7 +2,8 @@
 
 // What the account's form islands share (NameForm, VehicleForm; task 21):
 // the submit button, the wrapper that starts a form fresh on every visit,
-// and the submit function useActionState runs. LoginForm keeps its own: its
+// the submit function useActionState runs, and ids() for aria-describedby
+// (also used by LoginForm and the booking wizard). LoginForm keeps its own: its
 // two steps and countdowns need more.
 
 import { LoaderCircleIcon } from "lucide-react";
@@ -14,6 +15,11 @@ import { Button } from "@/components/ui/button";
 
 /** A form's Server Action with the locale already bound: saveName.bind(null, locale). */
 export type FormAction<State> = (previous: State, formData: FormData) => Promise<State>;
+
+/** "a b" from the ids that are set: the value of an aria-describedby. */
+export function ids(...list: (string | false | undefined)[]): string | undefined {
+  return list.filter(Boolean).join(" ") || undefined;
+}
 
 /**
  * Wraps a Server Action into the function useActionState runs on each
