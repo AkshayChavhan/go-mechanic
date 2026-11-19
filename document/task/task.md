@@ -529,9 +529,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `37_reviews`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-2019-feat-customer-reviews-plan.md)
-- [ ] Customer reviews, `/reviews`, admin reply or hide
-- [ ] Switch the home page reviews preview and rating from sample content to real reviews: `selectReviews()` in `src/content/home.ts` reads the real ones; delete `sampleReviews`, and move the production no-samples scan in `e2e/home.spec.ts` off `sampleCanary`, which goes with them (task 13)
-- [ ] Decide the rating stat's one source, the owner's Google rating or the site's own average: two ratings that disagree would confuse visitors (task 13)
+- [x] Customer reviews, `/reviews`, and the staff reply or hide functions (the page waits for task 26)
+- [x] Switch the home page reviews preview and rating from sample content to real reviews: `selectHomeReviews()` reads the real ones from 3 published. `sampleReviews` stays (dev only, for `/dev/design` and the design checks, like the other content files' samples), so `sampleCanary` stays too; the production scan in `e2e/home.spec.ts` now searches only sample-only text, not the section's own words (task 13)
+- [x] Decide the rating stat's one source: the site's own reviews (owner, 2026-11-19). It moved out of the trust stats into the reviews section (task 13)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -771,6 +771,12 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 35: queue the customer's notification for a job update where `updateJob` marks the spot, inside its transaction (task 31)
 - Task 43: deleting a booking with job photos needs its photos deleted first (`photo_sets.booking_id` restricts it), and the notice's "Your bookings" then says how long progress and notes are kept (task 31)
 - Task 20: on Postgres, check two `updateJob` calls on one booking at once (the `for update` lock); PGlite runs one transaction at a time and can't show the race (task 31)
+- Task 26 (or the task split from it): the staff reviews page: a list of every review, hidden ones included, with the customer's name (no phone number) and `hideReview`, `showReview`, `setReviewReply`, `clearReviewReply` behind Server Actions that call `requireUser` first. It must ship no later than the first screen that moves a job to "completed": reviews are public at once, and nothing else can take one down (task 37)
+- A "Reviews" link to `/reviews` in the menu or the footer (`src/components/site/navigation.ts`, `navItems` or `footerItems`, with its `Nav` label): left out while another session is changing that file; the home page's reviews section links to it from 3 reviews (task 37)
+- Task 39: once the owner approves the models, credit reviews with the model too ("Asha, Honda City"): `readPublishedReviews` already returns `modelName` (task 37)
+- Task 42: `AggregateRating` and `Review` structured data for `/reviews` and the home page, from `readPublishedReviews()` (count and average) (task 37)
+- Task 43: deleting a customer's reviews (`reviews.user_id` restricts deletes, as for bookings; deleting a booking deletes its review), and the notice's "Your reviews" retention then (task 37)
+- Task 20: on Postgres, check `updateTag("reviews")` refreshes `/reviews` and the home page across Vercel's instances after a review is sent or hidden (task 37)
 
 ## How to add a task
 
