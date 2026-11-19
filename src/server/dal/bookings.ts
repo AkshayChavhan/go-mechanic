@@ -14,8 +14,10 @@
 //    confirms from them run one after the other. Then, reads only: the
 //    request token (a double tap answers "duplicate"), the typed plate, the
 //    same vehicle already booked in the same slot (a reload, also
-//    "duplicate"), the future-bookings limit. Then reserveSlot. Last, the
-//    writes.
+//    "duplicate"), a pickup PIN code the garage doesn't serve (found before
+//    the transaction, answered only here, so a retry after the area was
+//    paused still gets "duplicate"), the future-bookings limit. Then
+//    reserveSlot. Last, the writes.
 // Every answer that refuses comes before reserveSlot, so after it the only
 // answer is "booked". A write that fails after it throws, and the whole
 // transaction rolls back, the slot's place included. Nothing here catches.
@@ -160,11 +162,13 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
   }
 
   // Real areas only (never the samples /contact shows under npm run dev).
+  // Read here, refused inside the transaction after the duplicate checks.
   let pickup: BookedPickup | null = null;
+  let pickupNotOffered = false;
   if (booking.pickup) {
     const area = findPickupArea(await readPickupAreas(), booking.pickup.postalCode);
-    if (!area) return { status: "problems", problems: [{ field: "pickup", problem: "pickup-not-offered" }] };
-    pickup = { ...booking.pickup, feePaise: area.feePaise };
+    if (area) pickup = { ...booking.pickup, feePaise: area.feePaise };
+    else pickupNotOffered = true;
   }
 
   const db = await getDatabase();
@@ -203,6 +207,8 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
         ),
       );
     if (sameSlot) return { status: "duplicate", code: sameSlot.code };
+
+    if (pickupNotOffered) return { status: "problems", problems: [{ field: "pickup", problem: "pickup-not-offered" }] };
 
     const now = clock.now();
     const future = await tx.$count(

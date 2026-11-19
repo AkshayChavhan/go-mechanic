@@ -508,6 +508,25 @@ describe("pickup and drop (task 24)", () => {
     await expectNothingWritten();
   });
 
+  test("a retry with the same token after the area was paused is still duplicate, not pickup-not-offered", async () => {
+    const requestToken = randomUUID();
+    const first = await createMyBooking(input({ pickup, requestToken }), clock);
+    if (first.status !== "booked") throw new Error(`expected a booking, got ${first.status}`);
+    await db.update(pickupAreas).set({ listed: false }).where(eq(pickupAreas.postalCode, "412101"));
+    expect(await createMyBooking(input({ pickup, requestToken }), clock)).toEqual({
+      status: "duplicate",
+      code: first.booking.code,
+    });
+    expect(await counterAt(friday10)).toBe(1);
+  });
+
+  test("a saved vehicle can be booked with pickup too", async () => {
+    const vehicleId = await saveVehicle(asha);
+    const result = await createMyBooking(input({ vehicle: { savedVehicleId: vehicleId }, pickup }), clock);
+    expect(result).toMatchObject({ status: "booked", booking: { pickup: { ...copy, feePaise: 25_000 } } });
+    expect(await savedPickup()).toEqual({ ...copy, feePaise: 25_000 });
+  });
+
   test("a later fee change leaves the booked fee as it was", async () => {
     await createMyBooking(input({ pickup }), clock);
     await db.update(pickupAreas).set({ feePaise: 99_900 }).where(eq(pickupAreas.postalCode, "412101"));
