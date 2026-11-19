@@ -1,6 +1,6 @@
 # 24_pickup_drop: pickup and drop by PIN code, with one fee
 
-> **Branch:** `24_pickup_drop` · **Date:** 2026-11-19 · **Status:** In progress
+> **Branch:** `24_pickup_drop` · **Date:** 2026-11-19 · **Status:** Done
 
 ## In one minute
 
