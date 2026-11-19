@@ -467,7 +467,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 31_job_timeline
 
 - [x] Create branch `31_job_timeline`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1833-feat-job-timeline-engine-plan.md)
 - [ ] Job statuses, mechanic job updates and the customer's timeline: the engine only (owner, 2026-11-19: the pages wait for tasks 25 and 26)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
