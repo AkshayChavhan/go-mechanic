@@ -477,7 +477,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `32_estimate_requests`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-1334-feat-estimate-requests-plan.md)
-- [ ] Free estimate requests with photos; admin inbox
+- [x] Free estimate requests with photos; the staff read for the admin inbox (the inbox page waits for task 26, owner 2026-11-19)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -741,6 +741,11 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 28: add, change and pause pickup areas (`pickup_areas`, PIN code and fee in paise, 0 for free), with `authorize()` first, and call `updateTag("pickup-areas")` after each save. Until then the table is empty, so a pickup booking can be tried end to end only after this (task 24)
 - Task 47: show the pickup step only from `readPickupAreas()` (real areas), never `selectPickupAreas()` (the samples can't be booked), so it stays hidden until real areas exist; show the pickup fee next to the services' total, and say "Free" for 0. Wrap the booking action's unexpected errors like `LoginServiceError` (step, error name, Postgres code; no message, no cause): a failed insert's error carries the query's values, the pickup address included. A "duplicate" answer for the same vehicle and slot under a new token returns the first booking's code even if this confirm asked for pickup and the first didn't: say on that screen whether the booked one includes pickup (task 24)
 - Task 43: deleting a customer's bookings deletes their pickup addresses with them (they're columns on `bookings`); the privacy notice's "Your bookings" then says so (task 24)
+- Task 26: the `/admin` inbox for estimate requests: call `listEstimateRequests()` (it checks `estimates.manage` itself, and gives the phone number only with `customers.contact`), open the photos with `photoViewUrls(photoSetId)`, and decide paging and filters (it returns the newest 50 today) (task 32)
+- Task 33: answer estimate requests. Close the request's photo set (`photo_sets.closed_at`) when the garage answers, or an open set (and the request's photos) is deleted 30 days after it started; also refuse uploads to a set a request already uses (a direct `startPhotos` call could add to it). The request has no status column: work its state out from its estimates (task 32)
+- Links to `/estimate` from the menu, the footer and the home page (`src/components/site/navigation.ts`, which another session is changing for `/book`), and a login that returns a guest to `/estimate` (today they land on `/account`, which links to it) (task 32)
+- Task 47: the booking action's error wrapper (no message, no cause) should cover `sendEstimateRequest` too: a failed insert's error carries the customer's description (task 32)
+- Task 43: deleting a customer's estimate requests (`user_id` restricts deletes, as for bookings), and the privacy notice's "Your estimate requests" retention then (task 32)
 
 ## How to add a task
 

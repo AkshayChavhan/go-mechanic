@@ -124,8 +124,8 @@ A customer who isn't sure what's wrong, or what it will cost, asks the garage fo
   - Anything else returns the form state with one message per field. Form state and its reader live in `src/lib/estimate-form.ts`.
 - **KTD6. The form island `src/components/estimate/estimate-form.tsx`.**
   - It follows `VehicleForm` (`FreshOnEachVisit`, `submitterWithFallback`, labels as props), with one difference: here the visit-level component renders the `<form action={formAction}>` itself.
-  - The `<form>`'s direct children are the hidden request-token field, the `PhotoUploader` and the Send button. Only the inner fields (the vehicle choice, the picker and the description, with their errors) are keyed by the submission counter.
-  - The visit-level component holds the request token, made in the browser after mount (`crypto.randomUUID()` in an effect; submit is disabled until it's set), and the `PhotoUploader`. Both survive the remount after each answer. So a retry reuses the token, and an error never empties the photos.
+  - The `<form>`'s direct children are the `PhotoUploader` and the Send button; the token is added to the posted form data, not a hidden field. Only the inner fields (the vehicle choice, the picker and the description, with their errors) are keyed by the submission counter.
+  - The visit-level component holds the request token and the `PhotoUploader`. The token is made on the first send (`crypto.randomUUID()` in the submitter, kept in a ref) and added to every send of that visit; an effect that set it was refused by the lint rule against setting state in effects. Both survive the remount after each answer. So a retry reuses the token, and an error never empties the photos.
   - While Send is disabled because of photos, a hint under it (linked with `aria-describedby`) says why: "Upload your photos first, or remove them", or that photos are uploading. Otherwise the hint is empty.
   - The description is a labelled multi-line field:
     - a shadcn `textarea` added through the CLI to `src/components/ui/`, restyled to the design system and covered by `restyle.test.tsx`;
