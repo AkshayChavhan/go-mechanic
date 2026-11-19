@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import { renderWithIntl } from "@/i18n/test-utils";
@@ -72,6 +72,13 @@ describe("SiteChrome (the frame around every public page)", () => {
     renderChrome();
     expect(screen.getAllByRole("main")).toHaveLength(1);
     expect(screen.getByRole("main").textContent).toContain(messages.HomePage.title);
+  });
+
+  test('"Book a service" in the header and the action bar\'s Book open /book (live since task 47)', () => {
+    renderChrome();
+    expect(screen.getByRole("link", { name: messages.Header.book }).getAttribute("href")).toBe("/book");
+    const bar = screen.getByRole("navigation", { name: messages.ActionBar.label });
+    expect(within(bar).getByRole("link", { name: messages.ActionBar.book }).getAttribute("href")).toBe("/book");
   });
 
   test("shows no offer banner today (src/content/offer.ts is null)", () => {

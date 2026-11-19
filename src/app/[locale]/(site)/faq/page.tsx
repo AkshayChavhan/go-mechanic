@@ -2,22 +2,24 @@ import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
+import { bookPage } from "@/components/site/navigation";
 import { OpeningHoursList } from "@/components/site/opening-hours-list";
 import { SampleBadge } from "@/components/site/sample-badge";
 import { Section } from "@/components/site/section";
 import { FAQ_GROUPS, type FaqGroup, selectFaqItems } from "@/content/faq";
 import { localize } from "@/i18n/localized-text";
+import { Link } from "@/i18n/navigation";
 import { readGarage } from "@/server/dal/garage";
 
-import { contactRichText } from "../_components/contact-rich-text";
+import { contactRichText, inlineLinkClass } from "../_components/contact-rich-text";
 import { pageTones } from "../_components/page-tones";
 
 // /faq (task 19): common questions, as plain headings and paragraphs (no
 // accordion), so every answer is in the page built ahead of time.
 //
-// Confirmed answers (owner, 2026-10-29: cash or UPI at the garage; booking by
-// WhatsApp or call; the hours from the database) show in every build. Answers
-// nobody has confirmed yet show under `npm run dev` as labelled samples
+// Confirmed answers (owner, 2026-10-29: cash or UPI at the garage; booking
+// online since task 47, or by WhatsApp or call; the hours from the database)
+// show in every build. Answers nobody has confirmed yet show under `npm run dev` as labelled samples
 // (src/content/faq.ts); a group with nothing confirmed isn't there in
 // production. Task 42 adds the FAQPage structured data.
 
@@ -64,7 +66,14 @@ export default async function FaqPage() {
   const answers: Record<ConfirmedKey, ReactNode> = {
     howToPay: t("items.howToPay.answer"),
     payOnline: t("items.payOnline.answer"),
-    howToBook: t.rich("items.howToBook.answer", contactRichText(garage, tContact("whatsappMessage"))),
+    howToBook: t.rich("items.howToBook.answer", {
+      ...contactRichText(garage, tContact("whatsappMessage")),
+      book: (chunks) => (
+        <Link href={bookPage.href} className={inlineLinkClass}>
+          {chunks}
+        </Link>
+      ),
+    }),
     hours: <OpeningHoursList hours={garage.hours} />,
   };
   const questions: Record<ConfirmedKey, string> = {

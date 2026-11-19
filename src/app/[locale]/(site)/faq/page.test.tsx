@@ -79,10 +79,11 @@ describe("FAQ page in production (no samples)", () => {
     expect(text).not.toMatch(/card/i);
   });
 
-  test("booking links WhatsApp and the garage's phone, from the database", async () => {
+  test("booking links the booking page, WhatsApp and the garage's phone, from the database", async () => {
     vi.mocked(readGarage).mockResolvedValue({ ...ownerGarage, phone: "+912012345678", whatsapp: "+919812345678" });
     const { container } = renderWithIntl(await FaqPage());
     const hrefs = [...container.querySelectorAll("a")].map((link) => link.getAttribute("href") ?? "");
+    expect(hrefs).toContain("/book");
     expect(hrefs).toContain("tel:+912012345678");
     expect(hrefs.some((href) => href.startsWith("https://wa.me/919812345678"))).toBe(true);
   });

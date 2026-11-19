@@ -1,4 +1,4 @@
-// The booking wizard's words and the small functions that fill their {placeholders}. The page passes Booking.wizard from messages/en.json as one prop (t.raw("wizard")); the wizard reads no messages itself.
+// The booking wizard's words and the small functions that fill their {placeholders}. The page passes Booking.wizard from messages/en.json as one prop (getMessages().Booking.wizard); the wizard reads no messages itself.
 
 import type { LinePrice } from "@/components/booking/booking-prices";
 import type { BookingStep } from "@/lib/booking-form";

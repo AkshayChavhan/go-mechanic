@@ -140,7 +140,7 @@
       },
       "howToBook": {
         "question": "How do I book a visit?",
-        "answer": "Message us on <whatsapp>WhatsApp</whatsapp> with your vehicle and what it needs, or call us on <call>{phone}</call>. We'll agree a time with you."
+        "answer": "Book online on our <book>booking page</book>: choose your vehicle, the work and a time. Or call us on <call>{phone}</call>, or message us on <whatsapp>WhatsApp</whatsapp>. We confirm the time with you by phone or WhatsApp."
       },
       "hours": {
         "question": "When are you open?"
@@ -272,7 +272,7 @@
     "intro": "These terms cover using this website and visiting {brand}, a garage at {address}. Parts that aren't decided yet are listed below.",
     "booking": {
       "title": "Booking a visit",
-      "body": "When you book, you're asking for a time to bring your vehicle to the garage. We confirm the time with you by phone or WhatsApp."
+      "body": "You can book online on this website, by phone or on WhatsApp. When you book, you're asking for a time to bring your vehicle to the garage. We confirm the time with you by phone or WhatsApp."
     },
     "work": {
       "title": "Work on your vehicle",
@@ -451,6 +451,12 @@
     }
   },
   "Booking": {
+    "metaTitle": "Book a service | {brand}",
+    "metaDescription": "Book a car or two-wheeler service at {brand} in Kiwale, Pune: choose your vehicle, the work and a time, and log in with your mobile number to confirm.",
+    "heading": "Book a service",
+    "intro": "Choose your vehicle, what it needs and a time to bring it in, then confirm with your mobile number. Nothing to pay now.",
+    "noScript": "Booking online needs JavaScript, which is turned off in your browser. You can still book by phone or WhatsApp.",
+    "loading": "Loading the booking form…",
     "errors": {
       "needsLogin": "Your login has ended. Log in again to book.",
       "needsName": "Enter your name to finish booking.",

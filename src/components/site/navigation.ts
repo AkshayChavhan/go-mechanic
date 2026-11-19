@@ -38,8 +38,8 @@ export const footerItems: readonly NavItem[] = [
   { label: "terms", href: "/terms", live: true },
 ];
 
-/** The booking page (task 23). Not in the menu: "Book a service" is the header's own button. */
-export const bookPage: SitePage = { href: "/book", live: false };
+/** The booking page (task 47). Not in the menu: "Book a service" is the header's own button. */
+export const bookPage: SitePage = { href: "/book", live: true };
 
 /** Every page the shell can link to: the menu items, the footer's own items and the booking page. */
 export const sitePages: readonly SitePage[] = [...navItems, ...footerItems, bookPage];

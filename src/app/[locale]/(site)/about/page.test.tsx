@@ -108,12 +108,12 @@ describe("About page once the owner gives real topics", () => {
 });
 
 describe("About page links", () => {
-  test("Book goes somewhere that exists (WhatsApp until /book is live), and Call dials the garage", async () => {
+  test("Book goes to the booking page (live since task 47), and Call dials the garage", async () => {
     const { container } = renderWithIntl(await AboutPage());
     const hrefs = [...container.querySelectorAll("a")].map((link) => link.getAttribute("href") ?? "");
     for (const href of hrefs.filter((href) => href.startsWith("/"))) expect(isLivePage(href), href).toBe(true);
     expect(hrefs).toContain("tel:+919764750567");
-    expect(hrefs.some((href) => href.startsWith("https://wa.me/"))).toBe(true);
+    expect(hrefs).toContain("/book");
   });
 
   test("must be built ahead of time, and has its own title and description", async () => {
