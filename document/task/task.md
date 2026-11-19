@@ -644,10 +644,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 The `/book` page on top of task 23's booking engine: units U6–U10 of [the booking flow plan](../plans/2026-11-11-2016-feat-booking-flow-plan.md). Start it only after task 23 is merged.
 
 - [x] Create branch `47_book_wizard`
-- [ ] U6: the `(book)` route group and the shell without the phone action bar (no gap where it was)
-- [ ] U7: the booking actions (`bookingLoginStep`, `confirmBooking`, `notMe`) and their state; the inline OTP reuses the login service, its consent snapshot and the e2e outbox file (task 15). Show a `duplicate` answer as "You already booked this vehicle for this time (code K7Q-4MX)", not as a plain success: it also comes back when the same vehicle and slot are confirmed again with other services; changing services belongs to task 25 (code-reviewer in task 23)
-- [ ] U8: the wizard island (four steps, confirm, done)
-- [ ] U9: the `/book` page; set `bookPage.live` to true in `src/components/site/navigation.ts`, so "Book a service" and the phone bar's Book go to `/book` (task 12); update the FAQ's "How do I book?" and the terms' booking text (task 19)
+- [x] U6: the `(book)` route group and the shell without the phone action bar (no gap where it was)
+- [x] U7: the booking actions (`bookingLoginStep`, `confirmBooking`, `notMe`) and their state; the inline OTP reuses the login service, its consent snapshot and the e2e outbox file (task 15). Show a `duplicate` answer as "You already booked this vehicle for this time (code K7Q-4MX)", not as a plain success: it also comes back when the same vehicle and slot are confirmed again with other services; changing services belongs to task 25 (code-reviewer in task 23)
+- [x] U8: the wizard island (four steps, confirm, done); then a simplification pass (the owner chose "trim, then finish in one PR" when task 47 passed its 2,500-line stop line)
+- [x] U9: the `/book` page; set `bookPage.live` to true in `src/components/site/navigation.ts`, so "Book a service" and the phone bar's Book go to `/book` (task 12); update the FAQ's "How do I book?" and the terms' booking text (task 19)
 - [ ] U10: browser tests on a production build, whose database is PGlite in memory: every run starts from the seed, so booking tests must not depend on an earlier run (task 14); docs
 - [ ] Write the learning doc
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
