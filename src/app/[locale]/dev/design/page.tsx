@@ -37,6 +37,7 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@/components/ui/native-select";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Sheet,
   SheetClose,
@@ -60,7 +61,7 @@ import { readVehicleCatalogue } from "@/server/dal/vehicles";
 import { ColorPair } from "./_components/color-pair";
 import { FontPreview, FontToggle } from "./_components/font-switch";
 import { MotionDemo } from "./_components/motion-demo";
-import { PhotoUploaderSample } from "./_components/photo-uploader-sample";
+import { PhotoUploaderFormSample, PhotoUploaderSample } from "./_components/photo-uploader-sample";
 
 // /dev/design: the whole design system on one page, so the owner can judge it
 // and later tasks can copy from it. Development only: devOnly() makes it a
@@ -677,6 +678,19 @@ export default async function DesignPage() {
                   <FieldDescription>Locked after booking. Call us to change it.</FieldDescription>
                 </Field>
               </FieldGroup>
+              {/* The textarea (task 32): at least three lines tall, and it grows with what's typed. */}
+              <FieldGroup data-sample="textarea" className="mt-6 grid gap-6 md:grid-cols-2">
+                <Field>
+                  <FieldLabel htmlFor="problem">What&rsquo;s wrong?</FieldLabel>
+                  <Textarea id="problem" aria-describedby="problem-hint" />
+                  <FieldDescription id="problem-hint">When does it happen? A few words are enough.</FieldDescription>
+                </Field>
+                <Field data-invalid>
+                  <FieldLabel htmlFor="problem-invalid">What&rsquo;s wrong?</FieldLabel>
+                  <Textarea id="problem-invalid" defaultValue="Noise" aria-invalid aria-describedby="problem-invalid-error" />
+                  <FieldError id="problem-invalid-error">Tell us a little more: at least 10 characters.</FieldError>
+                </Field>
+              </FieldGroup>
             </Block>
 
             <Separator />
@@ -804,6 +818,10 @@ export default async function DesignPage() {
             >
               <div data-sample="photo-uploader" className="max-w-xl">
                 <PhotoUploaderSample labels={photoLabels} />
+              </div>
+              {/* Inside a form (task 32): its own box, so the photo-resize spec finds one uploader. */}
+              <div data-sample="photo-uploader-form" className="mt-10 max-w-xl">
+                <PhotoUploaderFormSample labels={photoLabels} />
               </div>
             </Block>
 

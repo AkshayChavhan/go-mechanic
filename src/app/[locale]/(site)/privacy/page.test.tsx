@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { noticeDate } from "@/domain/consent";
 import { indiaInstantOn } from "@/domain/india-time";
 import { LOGIN_RULES } from "@/domain/login";
+import { PHOTO_RULES } from "@/domain/photos";
 import { formatDate } from "@/i18n/format";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { readGarage } from "@/server/dal/garage";
@@ -53,6 +54,8 @@ describe("Privacy page", () => {
     expect(t.items.attempts.howLong).toContain("the next time anyone asks for a code");
     expect(text).toContain(t.items.codes.howLong.replace("{minutes}", String(LOGIN_RULES.codeLifetimeSeconds / 60)));
     expect(text).toContain(t.items.session.why.replace("{days}", String(LOGIN_RULES.sessionDays)));
+    // An estimate request's photos: the open-set rule, since nothing closes a request's set yet (task 32).
+    expect(text).toContain(t.items.estimates.howLong.replace("{photoDays}", String(PHOTO_RULES.keepOpenDays)));
   });
 
   test("says sessions keep the IP address and the browser's description", () => {

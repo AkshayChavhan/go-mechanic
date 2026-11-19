@@ -157,7 +157,7 @@
     "intro": "This notice explains what personal data the {brand} website keeps about you, why, who helps us handle it, how long we keep it, and what you can ask us to do. {brand} is one garage, at {address}.",
     "data": {
       "title": "What we keep, and why",
-      "lead": "The website keeps personal data when you ask for a login code, when you log in, when you give your name or add a vehicle to your account, and when you book. Here is each thing it keeps."
+      "lead": "The website keeps personal data when you ask for a login code, when you log in, when you give your name or add a vehicle to your account, when you book, and when you ask for a free estimate. Here is each thing it keeps."
     },
     "labels": {
       "what": "What",
@@ -193,6 +193,13 @@
         "why": "To run your booking, to collect your vehicle and bring it back when you ask for pickup and drop, and to keep the garage's records of the work it was booked for.",
         "who": "The garage, and the company that hosts the database.",
         "howLong": "For now we keep every booking, even after you remove the vehicle it was for. Nothing deletes bookings yet; we'll say here how long we keep them."
+      },
+      "estimates": {
+        "title": "Your estimate requests",
+        "what": "Each request for a free estimate: a copy of the vehicle's details (its type, model and fuel, and its registration number when you pick a saved vehicle), what you wrote about the problem, and when you sent it. Photos you add are described under \"Photos you send us\".",
+        "why": "So the garage can look at the problem and tell you what the work will involve and cost.",
+        "who": "The garage's owner and managers, and the company that hosts the database.",
+        "howLong": "For now we keep every request, even after you remove the vehicle it was for. Nothing deletes requests yet; we'll say here how long we keep them. Photos you add to a request are deleted {photoDays} days after the first one was sent, even if the garage hasn't answered yet; the request itself stays."
       },
       "photos": {
         "title": "Photos you send us",
@@ -529,5 +536,54 @@
     "feeHeader": "Fee for pickup and drop",
     "free": "Free",
     "notListed": "PIN code not on the list? <call>Call us</call> or message us on <whatsapp>WhatsApp</whatsapp> and we'll tell you whether we can come."
+  },
+  "EstimatePage": {
+    "metaTitle": "Free estimate | {brand}",
+    "metaDescription": "Tell the garage what's wrong with your car or two-wheeler, add photos if you like, and get a free estimate before you book.",
+    "heading": "Ask for a free estimate",
+    "lead": "Not sure what's wrong, or what it will cost? Tell us, and the garage will tell you what the work involves before you book. It's free.",
+    "stepsHeading": "How it works",
+    "steps": {
+      "describe": "Choose your vehicle and tell us what you see, hear or feel.",
+      "photos": "Add photos if they help: a warning light, a leak, a dent.",
+      "reply": "The garage looks at your request and gets back to you."
+    },
+    "loading": "Checking your login…",
+    "loginNote": "Log in with your mobile number to ask for an estimate. Then, on your account, choose \"Request a free estimate\".",
+    "loginLink": "Log in",
+    "nameNote": "Add your name on your account first, so the garage knows who's asking.",
+    "nameLink": "Go to your account",
+    "noCatalogue": "Asking here isn't available right now. Call us or message us on WhatsApp instead.",
+    "talkNote": "Rather talk to someone? Call us or message us on WhatsApp.",
+    "vehicleLegend": "Which vehicle?",
+    "otherVehicle": "Another vehicle",
+    "descriptionLabel": "What's wrong?",
+    "descriptionHint": "What do you see, hear or feel, and when does it happen? A few lines are enough.",
+    "descriptionCount": "{count} of {max} characters",
+    "photosLegend": "Photos (optional)",
+    "photosHint": "Photos of the problem help the garage answer faster.",
+    "submit": "Send request",
+    "sending": "Sending…",
+    "waitingForPhotos": "Upload your photos first, or remove them.",
+    "errors": {
+      "vehicle-missing": "Choose your vehicle.",
+      "vehicle-fuel-not-offered": "Choose a fuel this model comes in.",
+      "vehicle-unknown-model": "We don't list this model any more. Choose another, or call the garage.",
+      "vehicle-gone": "This vehicle is no longer on your account. Choose another.",
+      "description-missing": "Tell us what's wrong.",
+      "description-too-short": "Tell us a little more: at least 10 characters.",
+      "description-too-long": "Keep it to 1,000 characters or fewer.",
+      "photos-not-found": "Your photos couldn't be added. Remove them and add them again, or send without photos.",
+      "bad-request": "Something went wrong. Reload the page and try again.",
+      "too-many-requests": "You've sent {limit} requests in the last 24 hours. Please call or WhatsApp the garage instead."
+    }
+  },
+  "MyEstimates": {
+    "heading": "Your estimate requests",
+    "empty": "Not sure what your vehicle needs? Ask the garage for a free estimate.",
+    "requestLink": "Request a free estimate",
+    "sentOn": "Sent on {date}",
+    "waiting": "Waiting for the garage",
+    "photos": "{count, plural, =0 {No photos} one {# photo} other {# photos}}"
   }
 }

@@ -832,3 +832,57 @@ export const photos = pgTable(
     check("photos_stored_complete", sql`${table.status} <> 'stored' or (${table.bytes} is not null and ${table.storedAt} is not null)`),
   ],
 );
+
+/**
+ * Requests for a free estimate (task 32): a customer says which vehicle and
+ * what's wrong, with photos if they like. The vehicle is a copy, like a
+ * booking's, so a later change to the saved vehicle never changes the
+ * request. There's no status yet: every request is waiting for the garage
+ * until task 33's estimates answer it.
+ */
+export const estimateRequests = pgTable(
+  "estimate_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Like bookings, deleting a customer with requests is refused until task 43 decides. */
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    /** The saved vehicle it was sent for; null when it came from the picker, or once the vehicle is removed. */
+    vehicleId: uuid("vehicle_id").references(() => customerVehicles.id, { onDelete: "set null" }),
+    // The vehicle, copied when the request is sent.
+    vehicleKind: vehicleKind("vehicle_kind").notNull(),
+    modelId: text("model_id")
+      .notNull()
+      .references(() => vehicleModels.id, { onDelete: "restrict" }),
+    fuel: fuel("fuel").notNull(),
+    /** The compact form ("MH12AB1234"), only when it came from a saved vehicle. */
+    registrationNumber: text("registration_number"),
+    /** What's wrong, as the customer wrote it (trimmed; line breaks kept). */
+    description: text("description").notNull(),
+    /**
+     * The customer's photos, if any. One set belongs to one request. When the
+     * photo cleanup deletes the set (30 days after it started, unless task 33
+     * closes it), this goes null and the request stays.
+     */
+    photoSetId: uuid("photo_set_id")
+      .unique()
+      .references(() => photoSets.id, { onDelete: "set null" }),
+    /** A random uuid per visit of the form: a second send makes no second request. */
+    requestToken: uuid("request_token").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("estimate_requests_user_request_token").on(table.userId, table.requestToken),
+    // Backstops: the save only ever writes checkEstimateRequestInput's and parseRegistration's forms.
+    // 10 and 1000 are ESTIMATE_REQUEST_RULES; estimate-requests-table.test.ts keeps them in step.
+    check(
+      "estimate_requests_description_length",
+      sql`char_length(${table.description}) between 10 and 1000`,
+    ),
+    check("estimate_requests_registration_compact", sql`${table.registrationNumber} ~ '^[A-Z0-9]{8,11}$'`),
+    // The customer's list, and the staff list, newest first.
+    index("estimate_requests_user_created_index").on(table.userId, table.createdAt),
+    index("estimate_requests_created_index").on(table.createdAt),
+  ],
+);
