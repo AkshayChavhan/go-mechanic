@@ -81,7 +81,7 @@ Run on 2026-11-19, it printed `Test Files  7 passed (7)` and `Tests  52 passed (
 npm run test:e2e
 ```
 
-Run on 2026-11-19: 133 passed. `npm run check` passed with 2,203 tests after the two review tests in `a55be68`. `npm run test:design` wasn't needed: no `site/` or `ui/` component changed.
+Run on 2026-11-19: 133 passed. `npm run check` passed with 2,203 tests after the two review tests in `a55be68`. After merging `main` (task 31, the job timeline) the full check ran 2,299 tests: one failed in the first run and the rerun passed them all. The failing test wasn't captured, so it was most likely load from other sessions on the machine. `npm run test:e2e` then passed 133 on the merged tree. `npm run test:design` wasn't needed: no `site/` or `ui/` component changed.
 
 By hand: `npm run dev`, log in at `/login` with `97647 50567` (the code is on `/dev/outbox`), press **Staff area** on `/account`, then **Bookings**. Try `/admin/bookings?date=2026-02-30`: you get today and a note.
 
