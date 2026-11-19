@@ -25,10 +25,13 @@ export function mayWorkOnAnyJob(user: CurrentUser): boolean {
   return can(user.role, "bookings.manage");
 }
 
+/** A job that isn't completed: not started (null) counts too. */
+export const notCompleted: SQL = sql`${bookings.jobStatus} is distinct from 'completed'`;
+
 /** The bookings `user` may work on as jobs (see above), as a WHERE condition. */
 export function jobsOf(user: CurrentUser): SQL | undefined {
   if (mayWorkOnAnyJob(user)) return undefined;
-  return and(eq(bookings.assignedMechanicId, user.id), sql`${bookings.jobStatus} is distinct from 'completed'`);
+  return and(eq(bookings.assignedMechanicId, user.id), notCompleted);
 }
 
 /** One booking, if `user` may work on it, as a WHERE condition. */

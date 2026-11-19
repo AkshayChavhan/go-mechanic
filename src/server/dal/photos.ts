@@ -31,6 +31,7 @@ import type { CurrentUser } from "@/server/auth/session";
 import { type Database, getDatabase } from "@/server/db";
 import { bookings, photoSets, photos } from "@/server/db/schema";
 import { jobRowFilter, jobsOf } from "@/server/dal/job-access";
+import type { SlotTransaction } from "@/server/dal/slots";
 import { photoStorage, type PhotoStorage, type UploadTarget } from "@/server/providers/photos";
 
 /** What the browser needs to upload one photo. */
@@ -51,7 +52,7 @@ const DAY_MS = 24 * HOUR_MS;
 /** Files removed per storage call during cleanup. */
 const REMOVE_BATCH = 100;
 
-type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+type Transaction = SlotTransaction;
 type PlannedRow = { id: string; setId: string; storageKey: string; createdAt: Date };
 type Planned = { ok: true; setId: string; created: boolean; rows: PlannedRow[] };
 
@@ -334,7 +335,8 @@ export type PhotoViewResult = { ok: true; photos: { photoId: string; url: string
 
 /**
  * Short-lived view links for a set's stored photos, oldest first, for:
- * - the set's customer;
+ * - the set's customer (a job's set only once an update holds it, which
+ *   closes it: staff choose what the customer sees);
  * - staff with "photos.view" (manager, owner);
  * - for a job's set (task 31), staff with "jobs.update" who may work on that
  *   job (job-access.ts): the assigned mechanic, until the job is reassigned
@@ -348,9 +350,13 @@ export async function photoViewUrls(
   const user = await authorizeUser();
   if (!isUuid(setId)) return { ok: false, problem: "not-found" };
   const db = await getDatabase();
-  const [set] = await db.select({ userId: photoSets.userId, bookingId: photoSets.bookingId }).from(photoSets).where(eq(photoSets.id, setId));
+  const [set] = await db
+    .select({ userId: photoSets.userId, bookingId: photoSets.bookingId, closedAt: photoSets.closedAt })
+    .from(photoSets)
+    .where(eq(photoSets.id, setId));
   if (!set) return { ok: false, problem: "not-found" };
-  if (set.userId !== user.id && !can(user.role, "photos.view") && !(await mayWorkOnJobOfSet(db, user, set.bookingId))) {
+  const customerMaySee = set.userId === user.id && (set.bookingId === null || set.closedAt !== null);
+  if (!customerMaySee && !can(user.role, "photos.view") && !(await mayWorkOnJobOfSet(db, user, set.bookingId))) {
     return { ok: false, problem: "not-found" };
   }
   const links = await viewLinksFor([setId], storage);

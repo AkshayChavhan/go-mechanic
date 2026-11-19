@@ -25,11 +25,12 @@ import type { LocalizedText } from "@/i18n/localized-text";
 import { type Clock, systemClock } from "@/lib/clock";
 import { authorize, authorizeUser } from "@/server/auth/access";
 import { type Database, getDatabase } from "@/server/db";
-import { bookingEvents, bookingItems, bookings, photoSets, users, vehicleMakes, vehicleModels } from "@/server/db/schema";
+import { bookingEvents, bookingItems, bookings, photoSets, photos, users, vehicleMakes, vehicleModels } from "@/server/db/schema";
 import { photoStorage, type PhotoStorage } from "@/server/providers/photos";
 
-import { jobRowFilter, jobsOf } from "./job-access";
+import { jobRowFilter, jobsOf, notCompleted } from "./job-access";
 import { viewLinksFor } from "./photos";
+import type { SlotTransaction } from "./slots";
 
 /** What can be wrong with an update: the input's problems, or what only the locked booking shows. */
 export type JobUpdateProblem =
@@ -70,6 +71,12 @@ const savedUpdateColumns = {
  * step has moved, the photo set is used); then the refusals; then the writes.
  * The token is looked up on this booking only, so a token first used on
  * another booking never answers with that booking's update.
+ *
+ * The lock's filter is itself a refusal the first send can change: a
+ * mechanic's update to "completed" ends their access to the job. So when no
+ * row comes back, the caller's own earlier update with this token still
+ * answers "duplicate" (task 31 review): it's what they wrote, so it shows
+ * them nothing new. The same holds after the job was reassigned.
  */
 export async function updateJob(input: JobUpdateInput, clock: Clock = systemClock): Promise<UpdateJobResult> {
   const user = await authorize("jobs.update");
@@ -86,19 +93,20 @@ export async function updateJob(input: JobUpdateInput, clock: Clock = systemCloc
       .from(bookings)
       .where(jobRowFilter(user, update.bookingId))
       .for("update");
-    if (!job) return { status: "not-found" };
 
+    // Looked up after the lock, so a second send waiting on it sees the first one's update.
     const [earlier] = await tx
       .select(savedUpdateColumns)
       .from(bookingEvents)
       .where(
         and(
-          eq(bookingEvents.bookingId, job.id),
+          eq(bookingEvents.bookingId, update.bookingId),
           eq(bookingEvents.actorUserId, user.id),
           eq(bookingEvents.requestToken, update.requestToken),
         ),
       );
     if (earlier) return { status: "duplicate", update: earlier };
+    if (!job) return { status: "not-found" };
 
     if (job.jobStatus === "completed") return { status: "job-closed" };
     const problems: JobUpdateProblem[] = [];
@@ -139,10 +147,14 @@ export async function updateJob(input: JobUpdateInput, clock: Clock = systemCloc
   });
 }
 
-type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
-
-/** Whether `setId` is an open set of job `bookingId` that no update uses yet. Locks the set. */
-async function jobSetIsFree(tx: Transaction, bookingId: string, setId: string): Promise<boolean> {
+/**
+ * Whether `setId` is an open set of job `bookingId` that no update uses yet
+ * and that holds at least one stored photo. A set whose uploads all failed
+ * would otherwise be saved as "had photos" with none to show, and the
+ * customer's timeline would say they're no longer kept (task 31 review).
+ * Locks the set.
+ */
+async function jobSetIsFree(tx: SlotTransaction, bookingId: string, setId: string): Promise<boolean> {
   const [set] = await tx
     .select({ closedAt: photoSets.closedAt })
     .from(photoSets)
@@ -150,7 +162,13 @@ async function jobSetIsFree(tx: Transaction, bookingId: string, setId: string): 
     .for("update");
   if (!set || set.closedAt !== null) return false;
   const [used] = await tx.select({ id: bookingEvents.id }).from(bookingEvents).where(eq(bookingEvents.photoSetId, setId));
-  return used === undefined;
+  if (used) return false;
+  const [stored] = await tx
+    .select({ id: photos.id })
+    .from(photos)
+    .where(and(eq(photos.setId, setId), eq(photos.status, "stored")))
+    .limit(1);
+  return stored !== undefined;
 }
 
 // --- Reads ---------------------------------------------------------------------
@@ -234,7 +252,7 @@ async function readUpdates(db: Database, bookingId: string, storage: PhotoStorag
   const rows = await db
     .select({ ...savedUpdateColumns, photoSetId: bookingEvents.photoSetId })
     .from(bookingEvents)
-    .where(and(eq(bookingEvents.bookingId, bookingId), sql`${bookingEvents.kind}::text = 'job-update'`))
+    .where(and(eq(bookingEvents.bookingId, bookingId), eq(bookingEvents.kind, "job-update")))
     .orderBy(asc(bookingEvents.createdAt), asc(bookingEvents.id));
   const links = await viewLinksFor(
     rows.flatMap((row) => (row.photoSetId ? [row.photoSetId] : [])),
@@ -317,7 +335,7 @@ export async function listMyAssignedJobs(): Promise<AssignedJobRow[]> {
     .innerJoin(vehicleModels, eq(bookings.modelId, vehicleModels.id))
     .innerJoin(vehicleMakes, eq(vehicleModels.makeId, vehicleMakes.id))
     .where(
-      and(eq(bookings.assignedMechanicId, user.id), sql`${bookings.jobStatus} is distinct from 'completed'`, jobsOf(user)),
+      and(eq(bookings.assignedMechanicId, user.id), notCompleted, jobsOf(user)),
     )
     .orderBy(asc(bookings.startsAt), asc(bookings.id));
   return rows.map(toAssignedJob);
