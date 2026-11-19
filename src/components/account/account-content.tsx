@@ -1,4 +1,4 @@
-import { PlusIcon } from "lucide-react";
+import { BriefcaseIcon, PlusIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { EstimateRequests } from "@/components/account/estimate-requests";
@@ -6,6 +6,7 @@ import { NameForm } from "@/components/account/name-form";
 import { VehicleList } from "@/components/account/vehicle-list";
 import { Button } from "@/components/ui/button";
 import { indiaDateOf } from "@/domain/india-time";
+import { can } from "@/domain/permissions";
 import { needsName } from "@/domain/profile";
 import type { Locale } from "@/i18n/config";
 import { Link } from "@/i18n/navigation";
@@ -30,26 +31,39 @@ export async function AccountContent({ locale }: { locale: Locale }) {
   const user = await requireUser(locale);
   const profile = await readMyProfile();
   const tAccount = await getTranslations({ locale, namespace: "Account" });
+  // Login always lands here, so this is how staff reach /admin. Inside the
+  // <Suspense> part: it depends on who is logged in.
+  const staffLink = can(user.role, "admin.open") && (
+    <Button asChild variant="outline" className="w-full sm:w-fit">
+      <Link href="/admin">
+        <BriefcaseIcon data-icon="inline-start" />
+        {tAccount("staffLink")}
+      </Link>
+    </Button>
+  );
 
   if (needsName(profile)) {
     const tLogin = await getTranslations({ locale, namespace: "Login" });
     return (
-      // Keyed by the user: on a shared phone, the next customer to log in
-      // never sees what the last one typed.
-      <NameForm
-        key={user.id}
-        // The locale goes in as the action's first argument: a Server
-        // Action has no [locale] page around it to read it from.
-        action={saveName.bind(null, locale)}
-        labels={{
-          heading: tAccount("nameHeading"),
-          note: tAccount("nameNote"),
-          label: tAccount("nameLabel"),
-          submit: tAccount("nameSubmit"),
-          saving: tAccount("saving"),
-          connection: tLogin("errors.connection"),
-        }}
-      />
+      <>
+        {staffLink}
+        {/* Keyed by the user: on a shared phone, the next customer to log
+            in never sees what the last one typed. */}
+        <NameForm
+          key={user.id}
+          // The locale goes in as the action's first argument: a Server
+          // Action has no [locale] page around it to read it from.
+          action={saveName.bind(null, locale)}
+          labels={{
+            heading: tAccount("nameHeading"),
+            note: tAccount("nameNote"),
+            label: tAccount("nameLabel"),
+            submit: tAccount("nameSubmit"),
+            saving: tAccount("saving"),
+            connection: tLogin("errors.connection"),
+          }}
+        />
+      </>
     );
   }
 
@@ -66,6 +80,7 @@ export async function AccountContent({ locale }: { locale: Locale }) {
   return (
     <div className="flex flex-col gap-8">
       <p className="type-lead text-pretty">{tAccount("greeting", { name: profile.name })}</p>
+      {staffLink}
       {requests.length > 0 && estimates}
       <section aria-labelledby="my-vehicles" className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-4">

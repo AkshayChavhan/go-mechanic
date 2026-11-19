@@ -43,6 +43,7 @@ vi.mock("next-intl/server", async () => {
 
 const asha = { id: "asha", phoneNumber: "+919876500001", role: "customer" as const };
 const ravi = { id: "ravi", phoneNumber: "+919876500002", role: "customer" as const };
+const omar = { id: "omar", phoneNumber: "+919764750567", role: "owner" as const };
 
 /** The provider renderWithIntl wraps around a first render, for rerenders. */
 function withIntl(ui: ReactElement) {
@@ -122,6 +123,38 @@ describe("AccountContent", () => {
     vi.mocked(listMyEstimateRequests).mockResolvedValue([{ id: "r1" } as never]);
     renderWithIntl(await AccountContent({ locale: "en" }));
     expect(order()).toEqual(["estimate-requests", "vehicle-list"]);
+  });
+
+  describe("the Staff area link (task 26)", () => {
+    const staffLink = () => screen.queryByRole("link", { name: messages.Account.staffLink });
+
+    test("the owner: a link to /admin, under the hello", async () => {
+      vi.mocked(getCurrentUser).mockResolvedValue(omar);
+      vi.mocked(readMyProfile).mockResolvedValue({ name: "Omar", phoneNumber: omar.phoneNumber });
+      renderWithIntl(await AccountContent({ locale: "en" }));
+      expect(staffLink()?.getAttribute("href")).toBe("/admin");
+      const greeting = screen.getByText(messages.Account.greeting.replace("{name}", "Omar"));
+      expect(greeting.compareDocumentPosition(staffLink()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    test("the owner with no name yet: the link too, above the name form", async () => {
+      vi.mocked(getCurrentUser).mockResolvedValue(omar);
+      vi.mocked(readMyProfile).mockResolvedValue({ name: "", phoneNumber: omar.phoneNumber });
+      renderWithIntl(await AccountContent({ locale: "en" }));
+      expect(staffLink()?.getAttribute("href")).toBe("/admin");
+      expect(screen.getByLabelText(messages.Account.nameLabel)).toBeTruthy();
+    });
+
+    test("a customer: no link, with or without a name", async () => {
+      vi.mocked(readMyProfile).mockResolvedValue({ name: "Asha Patil", phoneNumber: asha.phoneNumber });
+      const { unmount } = renderWithIntl(await AccountContent({ locale: "en" }));
+      expect(staffLink()).toBeNull();
+      unmount();
+
+      vi.mocked(readMyProfile).mockResolvedValue({ name: "", phoneNumber: asha.phoneNumber });
+      renderWithIntl(await AccountContent({ locale: "en" }));
+      expect(staffLink()).toBeNull();
+    });
   });
 
   test("logged out (a leftover cookie): sent to /login?session=ended, before any data is read", async () => {

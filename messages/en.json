@@ -412,6 +412,7 @@
     "logOut": "Log out",
     "headerLink": "Account",
     "greeting": "Hello, {name}.",
+    "staffLink": "Staff area",
     "nameHeading": "What's your name?",
     "nameNote": "We use your name to greet you and to know whose vehicle is whose at the garage.",
     "nameLabel": "Your name",
@@ -686,5 +687,21 @@
     "sentOn": "Sent on {date}",
     "waiting": "Waiting for the garage",
     "photos": "{count, plural, =0 {No photos} one {# photo} other {# photos}}"
+  },
+  "Admin": {
+    "loading": "Loading…",
+    "backToSite": "Back to site",
+    "nav": {
+      "label": "Staff",
+      "bookings": "Bookings",
+      "estimates": "Estimate requests"
+    },
+    "overview": {
+      "heading": "Staff area",
+      "intro": "Pick what to work on.",
+      "bookingsDescription": "One day's bookings at a time, in time order, starting with today.",
+      "estimatesDescription": "Requests from customers waiting for a price, with their photos.",
+      "mechanicNote": "Your jobs will show here once job tracking is added to the staff area."
+    }
   }
 }
