@@ -60,10 +60,17 @@ describe("the /admin layout", () => {
     expect(html).not.toContain("<nav");
   });
 
-  test("metadata: the brand alone as the title, and noindex", async () => {
+  test("metadata: the brand alone as the title, noindex, and add to home screen (R10)", async () => {
     expect(await generateMetadata()).toEqual({
       title: brand,
       robots: { index: false, follow: false },
+      manifest: "/admin.webmanifest",
+      appleWebApp: { capable: true, title: brand, statusBarStyle: "default" },
+      icons: {
+        // The site's favicon, kept: an `icons` export replaces icon.svg's link.
+        icon: [{ url: "/icon.svg", type: "image/svg+xml", sizes: "any" }],
+        apple: [{ url: "/admin-apple-icon.png", type: "image/png", sizes: "180x180" }],
+      },
     });
   });
 });

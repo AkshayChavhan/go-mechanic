@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 
 import { AdminBar } from "@/components/admin/admin-bar";
+import { ADMIN_MANIFEST_PATH, HOME_SCREEN_ICONS } from "@/components/admin/home-screen";
 import { AdminNavGate } from "@/components/admin/admin-nav-gate";
 
 // The staff area, /admin (task 26). Beside login/, outside (site) and (book),
@@ -31,7 +32,17 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: tBrand("name"),
     robots: { index: false, follow: false },
-    // Task 26's U5 adds `manifest` and `appleWebApp` here (add to home screen).
+    // Add to home screen (R10). Only this layout links the manifest, so
+    // public pages offer nothing. A URL and the brand: no staff word.
+    manifest: ADMIN_MANIFEST_PATH,
+    // iOS reads no manifest icons: it wants these tags and the apple-touch-icon.
+    appleWebApp: { capable: true, title: tBrand("name"), statusBarStyle: "default" },
+    icons: {
+      // An `icons` export here replaces the link Next.js makes for
+      // src/app/icon.svg, so the tab's favicon is listed again.
+      icon: [{ url: "/icon.svg", type: "image/svg+xml", sizes: "any" }],
+      apple: [{ url: HOME_SCREEN_ICONS.apple, type: "image/png", sizes: "180x180" }],
+    },
   };
 }
 
