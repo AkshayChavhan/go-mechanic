@@ -29,6 +29,7 @@ import { VehiclePicker } from "@/components/site/vehicle-picker";
 import { photoUploaderLabels } from "@/components/site/photo-uploader-labels";
 import { vehiclePickerLabels } from "@/components/site/vehicle-picker-labels";
 import { VisualSlot } from "@/components/site/visual-slot";
+import { JobTimeline } from "@/components/jobs/job-timeline";
 import { Wordmark } from "@/components/site/wordmark";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ import { devOnly } from "@/lib/dev-only";
 import { countDuration, distance, duration, ease } from "@/lib/motion";
 import { readGarage } from "@/server/dal/garage";
 import { readServices } from "@/server/dal/services";
+import type { JobUpdateEntry } from "@/server/dal/jobs";
 import { readVehicleCatalogue } from "@/server/dal/vehicles";
 
 import { ColorPair } from "./_components/color-pair";
@@ -203,6 +205,41 @@ const statusSamples = [
     { isOpen: false, nextOpening: { at: new Date("2026-11-03T04:30:00Z"), when: "later", weekday: "tuesday" } },
   ],
 ] as const;
+
+/** One made-up job update for the Job timeline sample, `minutes` after 10:00 India time on 19 Nov 2026. */
+function sampleJobUpdate({
+  id,
+  minutes,
+  ...changes
+}: { id: string; minutes: number } & Partial<Omit<JobUpdateEntry, "id" | "createdAt">>): JobUpdateEntry {
+  return {
+    id,
+    createdAt: new Date(Date.UTC(2026, 10, 19, 4, 30 + minutes)),
+    movedTo: null,
+    stepAfter: null,
+    note: null,
+    hadPhotos: false,
+    photos: [],
+    ...changes,
+  };
+}
+
+const sampleJobUpdates: JobUpdateEntry[] = [
+  sampleJobUpdate({ id: "s1", minutes: 0, movedTo: "vehicle-received", stepAfter: "vehicle-received" }),
+  sampleJobUpdate({
+    id: "s2",
+    minutes: 45,
+    movedTo: "inspection",
+    stepAfter: "inspection",
+    note: "Front brake pads are worn down to 2 mm.\nDiscs are fine. We'll replace the pads.",
+    hadPhotos: true,
+    photos: [
+      { photoId: "p1", url: "/icon.svg" },
+      { photoId: "p2", url: "/icon.svg" },
+    ],
+  }),
+  sampleJobUpdate({ id: "s3", minutes: 120, movedTo: "in-service", stepAfter: "in-service" }),
+];
 
 /** A titled group inside a section. */
 function Block({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
@@ -1113,6 +1150,34 @@ export default async function DesignPage() {
                 </Section>
               </Block>
             )}
+
+            <Block
+              title="Job timeline"
+              description="A job's steps and the garage's updates (task 31), for the customer's booking page (task 25) and the mechanic's job page (task 26). Awaiting approval shows only for jobs that needed an estimate. Updates are newest first; notes keep their line breaks."
+            >
+              <div data-sample="job-timeline" className="grid gap-10 lg:grid-cols-3">
+                <div data-sample="job-timeline-not-started" className="flex flex-col gap-4">
+                  <p className="type-callout font-semibold">Not started</p>
+                  <JobTimeline jobStatus={null} updates={[]} locale="en" />
+                </div>
+                <div data-sample="job-timeline-in-progress" className="flex flex-col gap-4">
+                  <p className="type-callout font-semibold">In service, with photos</p>
+                  <JobTimeline jobStatus="in-service" updates={sampleJobUpdates} locale="en" />
+                </div>
+                <div data-sample="job-timeline-completed" className="flex flex-col gap-4">
+                  <p className="type-callout font-semibold">Completed</p>
+                  <JobTimeline
+                    jobStatus="completed"
+                    updates={[
+                      ...sampleJobUpdates,
+                      sampleJobUpdate({ id: "s4", minutes: 300, movedTo: "ready", stepAfter: "ready", note: "Ready for pickup." }),
+                      sampleJobUpdate({ id: "s5", minutes: 360, movedTo: "completed", stepAfter: "completed" }),
+                    ]}
+                    locale="en"
+                  />
+                </div>
+              </div>
+            </Block>
 
             <Block
               title="Sample badge"
