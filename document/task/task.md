@@ -46,7 +46,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
-| 37 | `37_reviews` | Customer reviews, `/reviews`, admin reply or hide | To do |  |
+| 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | In progress | |
 | 38 | `38_offers_coupons` | Offers, banner, coupons at booking | To do |  |
 | 39 | `39_catalogue_admin` | Admin editing of services, prices, packages, vehicles | To do |  |
 | 40 | `40_content_admin` | Admin editing of FAQ, content blocks and garage info | To do |  |
@@ -527,7 +527,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 37_reviews
 
-- [ ] Create branch `37_reviews`
+- [x] Create branch `37_reviews`
 - [ ] Plan with `ce-plan`
 - [ ] Customer reviews, `/reviews`, admin reply or hide
 - [ ] Switch the home page reviews preview and rating from sample content to real reviews: `selectReviews()` in `src/content/home.ts` reads the real ones; delete `sampleReviews`, and move the production no-samples scan in `e2e/home.spec.ts` off `sampleCanary`, which goes with them (task 13)
