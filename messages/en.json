@@ -520,5 +520,14 @@
         "offline": "We couldn't reach our server. Check your connection and try again."
       }
     }
+  },
+  "PickupAreas": {
+    "title": "Pickup and drop",
+    "lead": "We can collect your vehicle from your address and bring it back after the work. One fee covers both trips, for cars and two-wheelers alike.",
+    "caption": "PIN codes we pick up from",
+    "postalCodeHeader": "PIN code",
+    "feeHeader": "Fee for pickup and drop",
+    "free": "Free",
+    "notListed": "PIN code not on the list? <call>Call us</call> or message us on <whatsapp>WhatsApp</whatsapp> and we'll tell you whether we can come."
   }
 }

@@ -29,6 +29,12 @@ const sampleOnly = [
   ...sampleAboutTopics.flatMap((topic) => [topic.title.en, topic.body.en]),
   ...sampleFaqItems.flatMap((item) => [item.question.en, item.answer.en]),
   messages.FaqPage.groups.work,
+  // /contact's pickup list (task 24) shows only with real areas, else samples
+  // under npm run dev: no build has real areas yet, so none of it may ship.
+  // (Its PIN codes can't be searched for: the garage's address has one.)
+  "₹",
+  messages.PickupAreas.lead,
+  messages.PickupAreas.feeHeader,
 ];
 
 const samplesIn = (text: string) => sampleOnly.filter((sample) => text.includes(sample));
@@ -63,7 +69,7 @@ for (const { path, heading } of pages) {
 }
 
 test.describe("what the production build ships", () => {
-  for (const path of ["/about", "/faq"]) {
+  for (const path of ["/contact", "/about", "/faq"]) {
     test(`${path}: no sample text on the page, in its HTML, its page data or its scripts`, async ({ page }) => {
       const scripts = new Set<string>();
       page.on("response", (response) => {
@@ -74,7 +80,7 @@ test.describe("what the production build ships", () => {
 
       const html = await (await page.request.get(path)).text();
       // The checks must be reading the real page, not an empty string.
-      expect(html).toContain(path === "/about" ? messages.AboutPage.heading : messages.FaqPage.heading);
+      expect(html).toContain(pages.find((info) => info.path === path)!.heading);
       expect.soft(samplesIn(html), "in the HTML").toEqual([]);
       expect.soft(samplesIn(rscPayload(html)), "in the page data inside the HTML").toEqual([]);
       const flight = await (await page.request.get(path, { headers: { RSC: "1" } })).text();
