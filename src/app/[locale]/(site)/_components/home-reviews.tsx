@@ -1,6 +1,7 @@
 import { useLocale, useTranslations } from "next-intl";
 
 import { ReviewCard } from "@/components/site/review-card";
+import { SampleBadge } from "@/components/site/sample-badge";
 import { sceneMark } from "@/components/site/scroll-scene-attributes";
 import { Section } from "@/components/site/section";
 import { Button } from "@/components/ui/button";
@@ -34,11 +35,15 @@ export function HomeReviews({ reviews, tone }: { reviews: HomeReviewsShown; tone
           <h2 id="home-reviews" className="type-headline text-balance">
             {t("title")}
           </h2>
-          <p className="type-title text-muted-foreground" {...(reviews.sample ? { "data-sample": "" } : {})}>
+          <p
+            className="flex flex-wrap items-center gap-3 type-title text-muted-foreground"
+            {...(reviews.sample ? { "data-sample": "" } : {})}
+          >
             {tReviews("summary", {
               average: formatNumber(reviews.summary.average, locale, 1),
               count: reviews.summary.count,
             })}
+            {reviews.sample && <SampleBadge />}
           </p>
         </div>
         <ul {...sceneMark("revealGroup")} className="grid gap-4 md:grid-cols-3">
