@@ -132,7 +132,15 @@ function EstimateFormVisit({ action, labels, photoLabels, startPhotos, finishPho
   // Not when the page opens: on a phone that would pop the keyboard up.
   useEffect(() => {
     if (state.submission === 0) return;
-    form.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    // A saved-vehicle choice left empty has no invalid field (the radios
+    // can't carry aria-invalid), so its first radio takes the cursor. With
+    // "Another vehicle" chosen, the picker's own invalid field does.
+    const radios = `input[name="${ESTIMATE_FIELD_NAMES.vehicleChoice}"]`;
+    const noChoice = form.current?.querySelector(radios) && !form.current.querySelector(`${radios}:checked`);
+    const target = noChoice
+      ? form.current?.querySelector<HTMLElement>(radios)
+      : form.current?.querySelector<HTMLElement>('[aria-invalid="true"]');
+    target?.focus();
   }, [state.submission]);
 
   return (
@@ -278,7 +286,8 @@ function EstimateFields({
           aria-describedby={ids(`${id}-description-hint`, `${id}-description-count`, errors.description && `${id}-description-error`)}
         />
         <FieldDescription id={`${id}-description-hint`}>{labels.descriptionHint}</FieldDescription>
-        <p id={`${id}-description-count`} className="type-caption text-muted-foreground tabular-nums" aria-live="polite">
+        {/* Not a live region: read with the field (aria-describedby), not on every keystroke. */}
+        <p id={`${id}-description-count`} className="type-caption text-muted-foreground tabular-nums">
           {fill(labels.descriptionCount, { count: length, max: ESTIMATE_REQUEST_RULES.descriptionMaxLength })}
         </p>
         {errors.description && <FieldError id={`${id}-description-error`}>{errors.description}</FieldError>}

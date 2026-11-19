@@ -192,6 +192,26 @@ describe("EstimateForm", () => {
     expect(document.activeElement).toBe(description());
   });
 
+  test("no vehicle chosen: the cursor goes to the first vehicle choice, not past it", async () => {
+    const answer: EstimateFormState = {
+      submission: 1,
+      values: { vehicleChoice: "", modelId: "", fuel: "", description: "Brakes squeal" },
+      errors: { vehicle: t.errors["vehicle-missing"] },
+    };
+    renderWithIntl(form(vi.fn<EstimateAction>().mockResolvedValue(answer)));
+    fireEvent.change(description(), { target: { value: "Brakes squeal" } });
+    await submit();
+    expect(screen.getByText(t.errors["vehicle-missing"])).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByRole("radio", { name: saved[0]!.label }));
+  });
+
+  test("the character count is read with the field, not announced on every keystroke", () => {
+    renderWithIntl(form(vi.fn<EstimateAction>()));
+    const count = screen.getByText("0 of 1000 characters");
+    expect(count.hasAttribute("aria-live")).toBe(false);
+    expect(description().getAttribute("aria-describedby")).toContain(count.id);
+  });
+
   test("a failed call keeps everything and says so", async () => {
     renderWithIntl(form(vi.fn<EstimateAction>().mockRejectedValue(new TypeError("Failed to fetch"))));
     fireEvent.change(description(), { target: { value: "Brakes squeal" } });
