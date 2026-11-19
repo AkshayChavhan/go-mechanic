@@ -237,17 +237,42 @@ describe("updateJob: a second send", () => {
     const first = await updateJob(input(x, { note: "About X", requestToken: token }), nextClock());
     expect(first.status).toBe("updated");
     // The unique (actor, token) refuses the second write: a throw, never X's update.
-    await expect(updateJob(input(y, { note: "About Y", requestToken: token }), nextClock())).rejects.toThrow();
+    const error = await updateJob(input(y, { note: "About Y", requestToken: token }), nextClock()).then(
+      () => null,
+      (failure: unknown) => failure,
+    );
+    expect((error as { cause?: { constraint?: string } } | null)?.cause?.constraint).toBe("booking_events_actor_request_token");
     const [onY] = await db.select().from(bookingEvents).where(eq(bookingEvents.bookingId, y));
     expect(onY!.kind).toBe("booked");
   });
 
-  test("after the job is reassigned, the first mechanic's retry is not-found (they no longer see it)", async () => {
+  test("after the job is reassigned, the first mechanic's retry still answers duplicate with their own update", async () => {
     const bookingId = await job();
     const send = input(bookingId, { toStatus: "vehicle-received" });
-    expect((await updateJob(send, nextClock())).status).toBe("updated");
+    const first = await updateJob(send, nextClock());
+    if (first.status !== "updated") throw new Error(first.status);
     await db.update(bookings).set({ assignedMechanicId: "mike" }).where(eq(bookings.id, bookingId));
-    expect(await updateJob(send, nextClock())).toEqual({ status: "not-found" });
+    expect(await updateJob(send, nextClock())).toEqual({ status: "duplicate", update: first.update });
+    // A new update from them is refused: the job isn't theirs any more.
+    expect(await updateJob(input(bookingId, { note: "More" }), nextClock())).toEqual({ status: "not-found" });
+  });
+
+  test("the mechanic's retry of the update that completed the job answers duplicate, not not-found", async () => {
+    const bookingId = await job({ jobStatus: "ready" });
+    const send = input(bookingId, { toStatus: "completed" });
+    const first = await updateJob(send, nextClock());
+    if (first.status !== "updated") throw new Error(first.status);
+    expect(await updateJob(send, nextClock())).toEqual({ status: "duplicate", update: first.update });
+  });
+
+  test("a manager's retry of the update that completed the job answers duplicate before job-closed", async () => {
+    const bookingId = await job({ jobStatus: "ready" });
+    logIn(manu);
+    const send = input(bookingId, { toStatus: "completed" });
+    const first = await updateJob(send, nextClock());
+    if (first.status !== "updated") throw new Error(first.status);
+    expect(await updateJob(send, nextClock())).toEqual({ status: "duplicate", update: first.update });
+    expect(await updateJob(input(bookingId, { note: "Later" }), nextClock())).toEqual({ status: "job-closed" });
   });
 });
 
@@ -262,6 +287,16 @@ describe("updateJob: photos", () => {
     expect(set!.closedAt).not.toBeNull();
     const [other] = await db.select().from(photoSets).where(eq(photoSets.id, otherSet));
     expect(other!.closedAt).toBeNull();
+  });
+
+  test("a set whose photos never arrived is photos-not-found, so a customer is never told photos are gone", async () => {
+    const bookingId = await job({ jobStatus: "inspection" });
+    const started = await startJobPhotoUpload({ bookingId, count: 1 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    expect(await updateJob(input(bookingId, { photoSetId: started.setId }), nextClock())).toEqual({
+      status: "problems",
+      problems: [{ field: "photos", problem: "photos-not-found" }],
+    });
   });
 
   test("a used set, another job's set, a customer's own set and a missing set are photos-not-found", async () => {
@@ -373,5 +408,13 @@ describe("listMyAssignedJobs", () => {
     const rows = await listMyAssignedJobs();
     expect(rows.map((row) => row.bookingId)).toEqual([sooner, later]);
     expect(rows[1]).toMatchObject({ jobStatus: "inspection", vehicle: { registrationNumber: "MH12AB1234" } });
+  });
+
+  test("a manager sees only the jobs assigned to them here, not everyone's", async () => {
+    const theirs = await job({ assigned: "manu" });
+    await job();
+    await job({ assigned: "manu", jobStatus: "completed" });
+    logIn(manu);
+    expect((await listMyAssignedJobs()).map((row) => row.bookingId)).toEqual([theirs]);
   });
 });

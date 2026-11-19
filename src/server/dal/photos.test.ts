@@ -570,10 +570,22 @@ describe("finishJobPhotoUpload", () => {
 });
 
 describe("photoViewUrls for job sets", () => {
+  test("the customer sees a job set only once an update holds it (closed); staff see it before", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const setId = await storedJobSet(bookingId);
+    logIn(asha);
+    expect(await photoViewUrls(setId, deps)).toEqual({ ok: false, problem: "not-found" });
+    await db.update(photoSets).set({ closedAt: now }).where(eq(photoSets.id, setId));
+    expect((await photoViewUrls(setId, deps)).ok).toBe(true);
+  });
+
   test("the customer, the assigned mechanic and a manager see them; another mechanic doesn't", async () => {
     const bookingId = await job();
     logIn(mechanic);
     const setId = await storedJobSet(bookingId);
+    // Held by an update, as the customer sees it.
+    await db.update(photoSets).set({ closedAt: now }).where(eq(photoSets.id, setId));
     for (const user of [asha, mechanic, manager, owner]) {
       logIn(user);
       const view = await photoViewUrls(setId, deps);
@@ -596,6 +608,7 @@ describe("photoViewUrls for job sets", () => {
     expect((await photoViewUrls(setId, deps)).ok).toBe(true);
     await db.update(bookings).set({ jobStatus: "completed" }).where(eq(bookings.id, bookingId));
     expect(await photoViewUrls(setId, deps)).toEqual({ ok: false, problem: "not-found" });
+    await db.update(photoSets).set({ closedAt: now }).where(eq(photoSets.id, setId));
     logIn(asha);
     expect((await photoViewUrls(setId, deps)).ok).toBe(true);
   });
