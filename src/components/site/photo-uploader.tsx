@@ -21,6 +21,11 @@
 //
 // When `name` is set, a hidden field of that name carries the set's id, so
 // the form around the uploader posts it. Every word comes from `labels`.
+//
+// Inside a form (task 32's estimate request), `onBusyChange` tells the form
+// when photos are still on their way (being resized, picked but not sent,
+// uploading, or failed), so it can wait before sending. A failed photo can
+// be removed, so a bad connection never blocks the form for good.
 
 import { ImagePlusIcon, LoaderCircleIcon, XIcon } from "lucide-react";
 import { unstable_rethrow } from "next/navigation";
@@ -67,6 +72,13 @@ export type PhotoUploaderProps = {
   name?: string;
   /** How one photo gets to storage; a PUT by default. /dev/design passes a stand-in. */
   put?: (target: UploadTarget, blob: Blob) => Promise<boolean>;
+  /**
+   * Called with true while any photo is resizing, picked but not sent,
+   * uploading or failed, and with false once none is (task 32).
+   */
+  onBusyChange?: (busy: boolean) => void;
+  /** The Upload button's look: blue by default; "secondary" inside a form whose own button is the blue one. */
+  uploadVariant?: "default" | "secondary";
 };
 
 type Status = "resizing" | "ready" | "unreadable" | "uploading" | "stored" | "failed";
@@ -91,6 +103,10 @@ function fill(template: string, values: Record<string, string | number>): string
 const HOLDS_A_PLACE: readonly Status[] = ["resizing", "ready", "uploading", "stored", "failed"];
 /** Statuses the upload button sends: new photos, and failed ones again. */
 const TO_SEND: readonly Status[] = ["ready", "failed"];
+/** Statuses that mean a photo is still on its way: a form around the uploader waits. */
+const ON_ITS_WAY: readonly Status[] = ["resizing", "ready", "uploading", "failed"];
+/** Statuses with a remove button: photos not stored yet, and not being sent. */
+const REMOVABLE: readonly Status[] = ["ready", "unreadable", "failed"];
 
 export function PhotoUploader({
   labels,
@@ -100,6 +116,8 @@ export function PhotoUploader({
   alreadyInSet = 0,
   name,
   put = putPhoto,
+  onBusyChange,
+  uploadVariant = "default",
 }: PhotoUploaderProps) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -113,6 +131,18 @@ export function PhotoUploader({
   const room = max - items.filter((item) => HOLDS_A_PLACE.includes(item.status)).length;
   const toSend = items.filter((item) => TO_SEND.includes(item.status) && item.photo);
   const stillResizing = items.some((item) => item.status === "resizing");
+  const onItsWay = busy || items.some((item) => ON_ITS_WAY.includes(item.status));
+
+  // Tells the form around it, on each change only. The latest callback is
+  // kept in a ref, so a parent passing a new function each render doesn't
+  // call it again.
+  const busyListener = useRef(onBusyChange);
+  useEffect(() => {
+    busyListener.current = onBusyChange;
+  });
+  useEffect(() => {
+    busyListener.current?.(onItsWay);
+  }, [onItsWay]);
 
   function update(key: number, change: Partial<Item>) {
     setItems((current) => current.map((item) => (item.key === key ? { ...item, ...change } : item)));
@@ -229,8 +259,11 @@ export function PhotoUploader({
             <li key={item.key} className="flex flex-col gap-1">
               <div className="relative aspect-4/3 overflow-hidden rounded-xl bg-muted">
                 {item.photo && <PhotoPreview photo={item.photo} alt={fill(labels.photoAlt, { n: index + 1 })} />}
-                {/* A photo that already has its place on the server can only be sent again. */}
-                {(item.status === "ready" || item.status === "unreadable") && !busy && (
+                {/* A failed photo can be sent again or removed. Removing it only
+                    takes it off this list: its place on the server stays
+                    pending until the 24-hour cleanup, since its upload link
+                    still works. */}
+                {REMOVABLE.includes(item.status) && !busy && (
                   <Button
                     type="button"
                     variant="secondary"
@@ -258,7 +291,13 @@ export function PhotoUploader({
       </p>
 
       {toSend.length > 0 && (
-        <Button type="button" className="w-full sm:w-fit" disabled={busy || stillResizing} onClick={upload}>
+        <Button
+          type="button"
+          variant={uploadVariant}
+          className="w-full sm:w-fit"
+          disabled={busy || stillResizing}
+          onClick={upload}
+        >
           {busy && <LoaderCircleIcon data-icon="inline-start" className="animate-spin" />}
           {busy ? labels.uploading : labels.upload}
         </Button>
