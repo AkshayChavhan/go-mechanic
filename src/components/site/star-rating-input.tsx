@@ -42,7 +42,7 @@ export function StarRatingInput({ legend, name, starLabels, value, defaultValue,
   return (
     <FieldSet data-slot="star-rating" data-invalid={error ? true : undefined} className="min-w-0 gap-0">
       <FieldLegend variant="label">{legend}</FieldLegend>
-      <div className="flex gap-1" aria-describedby={error ? errorId : undefined}>
+      <div className="flex gap-1">
         {RATINGS.map((rating) => (
           <label
             key={rating}
@@ -61,6 +61,10 @@ export function StarRatingInput({ legend, name, starLabels, value, defaultValue,
               name={name}
               value={String(rating)}
               aria-label={starLabels[rating]}
+              // On the radios themselves: a screen reader hears the error with
+              // whichever star has focus. (aria-invalid isn't allowed on a radio;
+              // the fieldset carries data-invalid.)
+              aria-describedby={error ? errorId : undefined}
               {...(controlled ? { checked: rating === value } : { defaultChecked: rating === defaultValue })}
               {...(onChange ? { onChange: () => onChange(rating) } : { readOnly: controlled })}
             />

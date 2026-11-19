@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/sheet";
 import { type Review, selectHomeReviews, selectTrustStats } from "@/content/home";
 import { selectPrices } from "@/content/sample-prices";
+import { REVIEW_RULES } from "@/domain/reviews";
 import { fromPrice, servicePath } from "@/domain/services";
 import { formatRupees } from "@/i18n/format";
 import { whatsappHref } from "@/lib/contact-links";
@@ -353,7 +354,7 @@ export default async function DesignPage() {
   // shows dev pages must still show no samples. null there: the blocks below go.
   const shownStats = selectTrustStats(null);
   // No published reviews: the samples (under `npm run dev`).
-  const shownReviews = selectHomeReviews({ reviews: [], count: 0, average: null }, 3);
+  const shownReviews = selectHomeReviews({ reviews: [], count: 0, average: null }, REVIEW_RULES.minForHome);
   const shownPrices = selectPrices([]);
 
   return (
