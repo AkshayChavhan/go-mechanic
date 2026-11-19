@@ -61,7 +61,7 @@ import { readVehicleCatalogue } from "@/server/dal/vehicles";
 import { ColorPair } from "./_components/color-pair";
 import { FontPreview, FontToggle } from "./_components/font-switch";
 import { MotionDemo } from "./_components/motion-demo";
-import { PhotoUploaderSample } from "./_components/photo-uploader-sample";
+import { PhotoUploaderFormSample, PhotoUploaderSample } from "./_components/photo-uploader-sample";
 
 // /dev/design: the whole design system on one page, so the owner can judge it
 // and later tasks can copy from it. Development only: devOnly() makes it a
@@ -818,6 +818,10 @@ export default async function DesignPage() {
             >
               <div data-sample="photo-uploader" className="max-w-xl">
                 <PhotoUploaderSample labels={photoLabels} />
+              </div>
+              {/* Inside a form (task 32): its own box, so the photo-resize spec finds one uploader. */}
+              <div data-sample="photo-uploader-form" className="mt-10 max-w-xl">
+                <PhotoUploaderFormSample labels={photoLabels} />
               </div>
             </Block>
 

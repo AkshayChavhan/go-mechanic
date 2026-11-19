@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 // real (that's what e2e/dev/photo-resize.spec.ts checks), but nothing is
 // sent anywhere. Each "upload" waits a moment and succeeds.
 //
-// The second sample is the uploader inside a form, as on /estimate (task
-// 32): a grey Upload button, a Send button that waits while photos are on
+// PhotoUploaderFormSample is the uploader inside a form, as on /estimate
+// (task 32), in its own sample box (e2e/dev/photo-resize.spec.ts scopes to
+// the first one): a grey Upload button, a Send button that waits while photos are on
 // their way, and every second photo failing, so its remove button shows.
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -45,24 +46,25 @@ async function flakyFinish(photoIds: string[]) {
 }
 
 export function PhotoUploaderSample({ labels }: { labels: PhotoUploaderLabels }) {
+  return <PhotoUploader labels={labels} start={start} finish={finish} put={put} />;
+}
+
+export function PhotoUploaderFormSample({ labels }: { labels: PhotoUploaderLabels }) {
   const [busy, setBusy] = useState(false);
   return (
-    <div className="flex flex-col gap-10">
-      <PhotoUploader labels={labels} start={start} finish={finish} put={put} />
-      <form className="flex flex-col gap-4" onSubmit={(event) => event.preventDefault()}>
-        <p className="type-callout text-muted-foreground">Inside a form (task 32): every second photo fails here.</p>
-        <PhotoUploader
-          labels={labels}
-          start={start}
-          finish={flakyFinish}
-          put={put}
-          uploadVariant="secondary"
-          onBusyChange={setBusy}
-        />
-        <Button type="submit" className="w-full sm:w-fit" disabled={busy}>
-          Send request
-        </Button>
-      </form>
-    </div>
+    <form className="flex flex-col gap-4" onSubmit={(event) => event.preventDefault()}>
+      <p className="type-callout text-muted-foreground">Inside a form (task 32): every second photo fails here.</p>
+      <PhotoUploader
+        labels={labels}
+        start={start}
+        finish={flakyFinish}
+        put={put}
+        uploadVariant="secondary"
+        onBusyChange={setBusy}
+      />
+      <Button type="submit" className="w-full sm:w-fit" disabled={busy}>
+        Send request
+      </Button>
+    </form>
   );
 }
