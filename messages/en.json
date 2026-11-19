@@ -536,5 +536,19 @@
     "feeHeader": "Fee for pickup and drop",
     "free": "Free",
     "notListed": "PIN code not on the list? <call>Call us</call> or message us on <whatsapp>WhatsApp</whatsapp> and we'll tell you whether we can come."
+  },
+  "EstimatePage": {
+    "errors": {
+      "vehicle-missing": "Choose your vehicle.",
+      "vehicle-fuel-not-offered": "Choose a fuel this model comes in.",
+      "vehicle-unknown-model": "We don't list this model any more. Choose another, or call the garage.",
+      "vehicle-gone": "This vehicle is no longer on your account. Choose another.",
+      "description-missing": "Tell us what's wrong.",
+      "description-too-short": "Tell us a little more: at least 10 characters.",
+      "description-too-long": "Keep it to 1,000 characters or fewer.",
+      "photos-not-found": "Your photos couldn't be added. Remove them and add them again, or send without photos.",
+      "bad-request": "Something went wrong. Reload the page and try again.",
+      "too-many-requests": "You've sent {limit} requests in the last 24 hours. Please call or WhatsApp the garage instead."
+    }
   }
 }
