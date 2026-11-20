@@ -25,7 +25,7 @@ import {
 } from "@/domain/services";
 import { type Fuel, isTextId } from "@/domain/vehicles";
 import { authorize } from "@/server/auth/access";
-import { getDatabase } from "@/server/db";
+import { type Database, getDatabase } from "@/server/db";
 import { servicePrices, services } from "@/server/db/schema";
 import { draftServices } from "@/server/db/service-seed-data";
 
@@ -83,7 +83,7 @@ export function serviceIdsToBuild(): string[] {
 
 /**
  * Every real price. Empty until staff save one (task 39's editor): pages then
- * show the samples under `npm run dev` (selectPrices() in
+ * show the samples under `npm run dev` (selectPriceRows() in
  * src/content/sample-prices.ts) and no price anywhere else. A price of a
  * hidden service is still returned; pages only look up the services they show.
  */
@@ -93,7 +93,7 @@ export async function readServicePrices(): Promise<ServicePrice[]> {
   cacheLife("max");
 
   const db = await getDatabase();
-  return selectPrices(db);
+  return selectPriceRows(db);
 }
 
 // --- Staff: the price editor (task 39) ----------------------------------------
@@ -102,7 +102,7 @@ export async function readServicePrices(): Promise<ServicePrice[]> {
 export async function listPricesForStaff(): Promise<ServicePrice[]> {
   await authorize("content.edit");
   const db = await getDatabase();
-  return selectPrices(db);
+  return selectPriceRows(db);
 }
 
 export type SaveGroupPricesResult =
@@ -143,8 +143,8 @@ export async function saveGroupPrices(
 
   // Cached reads before the transaction: each opens its own query, and PGlite
   // would wait forever for a connection the transaction holds.
-  const service = (await readServices()).find((row) => row.id === serviceId);
-  const catalogue = await readVehicleCatalogue();
+  const [listed, catalogue] = await Promise.all([readServices(), readVehicleCatalogue()]);
+  const service = listed.find((row) => row.id === serviceId);
   const category = catalogue.categories.find((row) => row.id === categoryId);
   if (!service || !category) return { status: "not-found" };
 
@@ -163,16 +163,16 @@ export async function saveGroupPrices(
         .insert(servicePrices)
         .values(entries.map((entry) => ({ serviceId, categoryId, fuel: entry.fuel, pricePaise: entry.pricePaise })));
     }
-    return selectPrices(tx, group);
+    return selectPriceRows(tx, group);
   });
   updateTag(SERVICE_PRICES_TAG);
   return { status: "saved", prices, fuels: groupFuels(catalogue, categoryId, service) };
 }
 
-type Reader = Pick<Awaited<ReturnType<typeof getDatabase>>, "select">;
+type Reader = Pick<Database, "select">;
 
 /** The price rows (all, or those matching `where`), in a fixed order. */
-function selectPrices(db: Reader, where?: ReturnType<typeof and>): Promise<ServicePrice[]> {
+function selectPriceRows(db: Reader, where?: ReturnType<typeof and>): Promise<ServicePrice[]> {
   return db
     .select({
       serviceId: servicePrices.serviceId,

@@ -13,15 +13,15 @@
 // shows once React's script has run. It reads no messages: the gate passes
 // every label as a prop.
 
-import { useActionState, useEffect, useId, useRef } from "react";
+import { Fragment, useActionState, useEffect, useId, useRef } from "react";
 
 import { type FormAction, FreshOnEachVisit, ids, SubmitButton, submitterWithFallback } from "@/components/account/form-parts";
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import type { PriceBox } from "@/domain/services";
 import type { Fuel } from "@/domain/vehicles";
 import {
   initialPriceFormState,
-  type PriceBox,
   type PriceFormState,
   type PriceFormValues,
   priceFieldName,
@@ -62,7 +62,7 @@ type PriceGroupFormProps = {
  * What useActionState runs on each submit: a failed call (no network)
  * becomes the `connection` message, with what was typed kept.
  */
-export function priceSubmitter(action: PriceAction, connectionText: string) {
+function priceSubmitter(action: PriceAction, connectionText: string) {
   return submitterWithFallback(action, (previous, formData) => ({
     submission: previous.submission + 1,
     values: readPriceForm(formData),
@@ -141,7 +141,7 @@ function PriceGroupFormVisit({ action, heading, fuels, initial, labels }: PriceG
             <div className="flex flex-col gap-4">
               <p className="type-caption text-pretty text-muted-foreground">{labels.fuelsHint}</p>
               {fuels.map(({ fuel, label }) => (
-                <div key={fuel}>{box(fuel, label)}</div>
+                <Fragment key={fuel}>{box(fuel, label)}</Fragment>
               ))}
             </div>
           </details>

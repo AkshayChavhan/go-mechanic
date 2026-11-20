@@ -15,9 +15,9 @@ import "server-only";
 
 import { getTranslations } from "next-intl/server";
 
-import type { ServicePrice } from "@/domain/services";
-import { formatNumber, formatRupees } from "@/i18n/format";
-import { PRICE_BOXES, type PriceFormField, type PriceFormState, type PriceFormValues, priceEntries, readPriceForm } from "@/lib/price-form";
+import { groupPriceRow } from "@/domain/services";
+import { formatRupeeAmount, formatRupees } from "@/i18n/format";
+import { PRICE_BOXES, type PriceFormState, type PriceFormValues, priceEntries, readPriceForm } from "@/lib/price-form";
 import { requirePermission } from "@/server/auth/access";
 import { saveGroupPrices } from "@/server/dal/services";
 
@@ -40,7 +40,7 @@ export async function savePrices(
 
   const parsed = priceEntries(typed);
   if (!parsed.ok) {
-    const errors: Partial<Record<PriceFormField, string>> = {};
+    const errors: PriceFormState["errors"] = {};
     for (const { box, problem } of parsed.problems) errors[box] = t(`errors.${problem}`);
     return { ...next, errors };
   }
@@ -55,21 +55,19 @@ export async function savePrices(
     return { ...next, errors: { form: t(`errors.${result.status}`) } };
   }
   if (result.status === "problems") {
-    const errors: Partial<Record<PriceFormField, string>> = {};
+    const errors: PriceFormState["errors"] = {};
     // One message per box: the first problem found is the one to fix first.
     for (const { field, problem } of result.problems) errors[field] ??= t(`errors.${problem}`);
     return { ...next, errors };
   }
 
   const tVehicles = await getTranslations({ locale: checked, namespace: "Vehicles" });
-  const rowFor = (fuel: ServicePrice["fuel"]) => result.prices.find((row) => row.fuel === fuel);
-
   // What the boxes show now: the saved amounts, grouped the Indian way, without "₹".
   const values: PriceFormValues = {};
   for (const box of PRICE_BOXES) {
     if (typed[box] === undefined) continue;
-    const row = rowFor(box === "group" ? null : box);
-    values[box] = row ? formatNumber(row.pricePaise / 100, checked) : "";
+    const row = result.prices.find((price) => price.fuel === (box === "group" ? null : box));
+    values[box] = row ? formatRupeeAmount(row.pricePaise, checked) : "";
   }
 
   // What each fuel pays now: its own price, else the group's, else none.
@@ -77,7 +75,7 @@ export async function savePrices(
     result.prices.length === 0
       ? [t("savedNone")]
       : result.fuels.map((fuel) => {
-          const row = rowFor(fuel) ?? rowFor(null);
+          const row = groupPriceRow(result.prices, fuel);
           return t("savedLine", {
             fuel: tVehicles(`fuels.${fuel}`),
             price: row ? formatRupees(row.pricePaise, checked) : t("noPrice"),

@@ -8,7 +8,7 @@ import { localize } from "@/i18n/localized-text";
 import { Link } from "@/i18n/navigation";
 
 /** The address of a service's or package's price page in the staff area. */
-export function adminPricePath(serviceId: string): `/admin/prices/${string}` {
+function adminPricePath(serviceId: string): `/admin/prices/${string}` {
   return `/admin/prices/${serviceId}`;
 }
 
@@ -16,7 +16,7 @@ export function adminPricePath(serviceId: string): `/admin/prices/${string}` {
  * The price groups `service` can be priced for: those of its vehicle kinds
  * whose listed models run on a fuel it covers, in catalogue order.
  */
-export function pricedGroups(service: Service, catalogue: VehicleCatalogue) {
+function pricedGroups(service: Service, catalogue: VehicleCatalogue) {
   return catalogue.categories.filter(
     (category) => service.vehicleKinds.includes(category.kind) && groupFuels(catalogue, category.id, service).length > 0,
   );

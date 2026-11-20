@@ -9,12 +9,9 @@
 // submission counter, and the card remounts after it with the answer's values.
 
 import { parseRupees, type RupeesProblem } from "@/domain/money";
-import type { GroupPriceEntry } from "@/domain/services";
-import { FUELS, type Fuel } from "@/domain/vehicles";
+import type { GroupPriceEntry, GroupPriceField, PriceBox } from "@/domain/services";
+import { FUELS } from "@/domain/vehicles";
 import { formText } from "@/lib/form-text";
-
-/** A card's boxes: the group's own price, or one fuel's. */
-export type PriceBox = "group" | Fuel;
 
 export const PRICE_BOXES: readonly PriceBox[] = ["group", ...FUELS];
 
@@ -35,14 +32,15 @@ export function readPriceForm(formData: FormData): PriceFormValues {
   return values;
 }
 
-export type PriceEntries =
-  | { ok: true; entries: GroupPriceEntry[] }
-  | { ok: false; problems: { box: PriceBox; problem: Exclude<RupeesProblem, "blank"> }[] };
+/** A box whose text can't be read as an amount (a blank box is no price, not a problem). */
+export type PriceBoxProblem = { box: PriceBox; problem: Exclude<RupeesProblem, "blank"> };
+
+export type PriceEntries = { ok: true; entries: GroupPriceEntry[] } | { ok: false; problems: PriceBoxProblem[] };
 
 /** The prices to save from the typed boxes: blank boxes are left out (no price). */
 export function priceEntries(values: PriceFormValues): PriceEntries {
   const entries: GroupPriceEntry[] = [];
-  const problems: { box: PriceBox; problem: Exclude<RupeesProblem, "blank"> }[] = [];
+  const problems: PriceBoxProblem[] = [];
   for (const box of PRICE_BOXES) {
     const typed = values[box];
     if (typed === undefined) continue;
@@ -53,15 +51,13 @@ export function priceEntries(values: PriceFormValues): PriceEntries {
   return problems.length > 0 ? { ok: false, problems } : { ok: true, entries };
 }
 
-/** The parts of a card an error can belong to; "form" is the whole card. */
-export type PriceFormField = PriceBox | "form";
-
 export type PriceFormState = {
   /** Goes up by one with every answer. */
   submission: number;
   /** After a save, the saved amounts ("1,500"); after an error, what was typed. */
   values: PriceFormValues;
-  errors: Partial<Record<PriceFormField, string>>;
+  /** One message per box, or "form" for the whole card. */
+  errors: Partial<Record<GroupPriceField, string>>;
   /** After a save: one line per fuel the card offers, with its price or "no price". */
   saved: string[] | null;
 };

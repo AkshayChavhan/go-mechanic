@@ -80,20 +80,25 @@ export function servicePath(id: string): `/services/${string}` {
   return `/services/${id}`;
 }
 
-/** The row that prices this fuel in this group: the fuel's own row, else the every-fuel row. */
+/**
+ * The row that prices `fuel` among one service's rows for one price group:
+ * the fuel's own row, else the every-fuel row. The one place this rule lives.
+ */
+export function groupPriceRow(groupRows: readonly ServicePrice[], fuel: Fuel): ServicePrice | undefined {
+  return groupRows.find((row) => row.fuel === fuel) ?? groupRows.find((row) => row.fuel === null);
+}
+
+/** The row that prices this fuel in this group for this service (groupPriceRow). */
 function findPrice(
   service: PricedService,
   prices: readonly ServicePrice[],
   categoryId: string,
   fuel: Fuel,
 ): ServicePrice | undefined {
-  let everyFuel: ServicePrice | undefined;
-  for (const row of prices) {
-    if (row.serviceId !== service.id || row.categoryId !== categoryId) continue;
-    if (row.fuel === fuel) return row;
-    if (row.fuel === null) everyFuel = row;
-  }
-  return everyFuel;
+  return groupPriceRow(
+    prices.filter((row) => row.serviceId === service.id && row.categoryId === categoryId),
+    fuel,
+  );
 }
 
 /** What `vehicle` pays for `service`, or why there's no number. */
@@ -155,8 +160,11 @@ export function fromPrice(
 /** One price staff typed for a group: every fuel (null) or one fuel. */
 export type GroupPriceEntry = { fuel: Fuel | null; pricePaise: number };
 
-/** Where a problem shows: the group's own box, a fuel's box, or the whole form. */
-export type GroupPriceField = "group" | Fuel | "form";
+/** A price group card's boxes: the group's own price (every fuel), or one fuel's. */
+export type PriceBox = "group" | Fuel;
+
+/** Where a problem shows: one of the boxes, or the whole form. */
+export type GroupPriceField = PriceBox | "form";
 
 export type GroupPriceProblem = {
   field: GroupPriceField;

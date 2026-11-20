@@ -30,6 +30,18 @@ export function formatRupees(paise: number, locale: Locale): string {
 }
 
 /**
+ * An amount stored as paise, as a price box shows it: whole rupees grouped
+ * the Indian way, without the sign (150_000 -> "1,500"). parseRupees reads
+ * it back. Throws RangeError like formatRupees for a non-whole paise value.
+ */
+export function formatRupeeAmount(paise: number, locale: Locale): string {
+  if (!Number.isSafeInteger(paise)) {
+    throw new RangeError(`formatRupeeAmount: expected whole paise, got ${paise}`);
+  }
+  return formatNumber(paise / 100, locale, paise % 100 === 0 ? 0 : 2);
+}
+
+/**
  * The rupee sign as `locale` writes it ("₹"), for a price box's visible
  * prefix: messages hold no "₹" (e2e/services.spec.ts scans live pages for it).
  */

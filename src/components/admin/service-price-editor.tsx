@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { groupFuels, type Service, type ServicePrice } from "@/domain/services";
 import type { VehicleCatalogue } from "@/domain/vehicles";
 import type { Locale } from "@/i18n/config";
-import { formatNumber, rupeeSymbol } from "@/i18n/format";
+import { formatRupeeAmount, rupeeSymbol } from "@/i18n/format";
 import { localize } from "@/i18n/localized-text";
 import { Link } from "@/i18n/navigation";
 import type { PriceFormValues } from "@/lib/price-form";
@@ -33,7 +33,7 @@ export async function ServicePriceEditor({ locale, service, prices, catalogue }:
   const t = await getTranslations({ locale, namespace: "AdminPrices" });
   const tFuels = await getTranslations({ locale, namespace: "Vehicles.fuels" });
   const title = await serviceTitle(service, locale);
-  const amount = (row: ServicePrice | undefined) => (row ? formatNumber(row.pricePaise / 100, locale) : "");
+  const amount = (row: ServicePrice | undefined) => (row ? formatRupeeAmount(row.pricePaise, locale) : "");
 
   const groups = catalogue.categories
     .filter((category) => service.vehicleKinds.includes(category.kind))
