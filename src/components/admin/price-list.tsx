@@ -72,12 +72,12 @@ export async function PriceList({ locale, services, prices, catalogue }: PriceLi
   return (
     <div className="flex flex-col gap-10">
       <div className="flex max-w-2xl flex-col gap-3">
-        <h1 className="type-title">{t("heading")}</h1>
+        <h1 className="type-headline text-balance">{t("heading")}</h1>
         <p className="type-body text-pretty text-muted-foreground">{t("intro")}</p>
       </div>
       {rows.map((list) => (
         <section key={list.key} aria-labelledby={`prices-${list.key}`} className="flex max-w-2xl flex-col gap-3">
-          <h2 id={`prices-${list.key}`} className="type-headline">
+          <h2 id={`prices-${list.key}`} className="type-title">
             {list.heading}
           </h2>
           <ul className="flex flex-col divide-y divide-border rounded-xl bg-card">

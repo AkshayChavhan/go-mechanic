@@ -60,18 +60,18 @@ export async function ServicePriceEditor({ locale, service, prices, catalogue }:
             {t("back")}
           </Link>
         </Button>
-        <h1 className="type-title">{title}</h1>
+        <h1 className="type-headline text-balance">{title}</h1>
         {service.pricedAfterInspection && (
           <p className="type-body text-pretty text-muted-foreground">{t("onInspectionNote")}</p>
         )}
       </div>
       {!service.pricedAfterInspection && (
-        <div className="grid max-w-4xl gap-4 md:grid-cols-2">
+        <div className="grid max-w-4xl items-start gap-4 md:grid-cols-2">
           {groups.map(({ category, fuels, initial }) => {
             const name = localize(category.name, locale);
             return fuels.length === 0 ? (
               <section key={category.id} aria-label={name} className="flex flex-col gap-2 rounded-xl bg-card p-5">
-                <h2 className="type-headline">{name}</h2>
+                <h2 className="type-title">{name}</h2>
                 <p className="type-callout text-pretty text-muted-foreground">{t("notOffered")}</p>
               </section>
             ) : (

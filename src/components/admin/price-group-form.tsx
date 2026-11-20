@@ -126,7 +126,7 @@ function PriceGroupFormVisit({ action, heading, fuels, initial, labels }: PriceG
 
   return (
     <section aria-labelledby={`${id}-heading`} className="flex flex-col gap-4 rounded-xl bg-card p-5 shadow-sm">
-      <h2 id={`${id}-heading`} className="type-headline">
+      <h2 id={`${id}-heading`} className="type-title">
         {heading}
       </h2>
       {/* Keyed by the answer: the card remounts after each one, with the
@@ -138,7 +138,7 @@ function PriceGroupFormVisit({ action, heading, fuels, initial, labels }: PriceG
             <summary className="flex min-h-11 cursor-pointer items-center rounded-md type-callout font-medium text-link outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
               {labels.fuelsSummary}
             </summary>
-            <div className="flex flex-col gap-4 pt-2">
+            <div className="flex flex-col gap-4">
               <p className="type-caption text-pretty text-muted-foreground">{labels.fuelsHint}</p>
               {fuels.map(({ fuel, label }) => (
                 <div key={fuel}>{box(fuel, label)}</div>
