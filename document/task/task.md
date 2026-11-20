@@ -558,7 +558,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 39_catalogue_admin
 
 - [x] Create branch `39_catalogue_admin`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-20-1311-feat-staff-price-editor-plan.md)
 - [ ] `/admin/prices`: managers and the owner (`content.edit`) set each service's and package's real price per price group, with an optional different price for one fuel, or clear it (owner, 2026-11-20). A save goes live at once (`updateTag("service-prices")`)
 - [ ] Public price tables show the price group names once real prices exist (owner, 2026-11-20); rename `Nav.prices` back to "Prices" and `Packages.seePackages` to "See prices" when the first real price exists
 - [ ] `fromPrice()` uses only the fuels the service page shows (task 18 code review)
