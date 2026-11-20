@@ -48,6 +48,10 @@ const STAFF_WORDS = [
   admin.bookings.nextDay,
   admin.bookings.dateLabel,
   admin.bookings.dateNote,
+  admin.bookings.unassigned,
+  admin.bookings.manage.confirm,
+  admin.bookings.manage.reasonLabel,
+  admin.bookings.manage.saveMechanic,
   account.staffLink,
 ];
 
@@ -181,8 +185,9 @@ test("the manifest and home-screen icons answer for anyone, and only /admin link
   expect(home).not.toContain("/admin.webmanifest");
 });
 
-test("the owner opens the staff area from /account, finds the booking on its day, then a customer on the same phone presses Back and sees nothing of it", async ({
+test("the owner opens the staff area from /account, finds the booking on its day, confirms and cancels it before the page's JavaScript loads, then a customer on the same phone presses Back and sees nothing of it", async ({
   page,
+  browser,
 }) => {
   expect(booked.code, "the booking test ran first").not.toBe("");
   const errors = watchErrors(page);
@@ -226,6 +231,57 @@ test("the owner opens the staff area from /account, finds the booking on its day
   await days.getByRole("link", { name: admin.bookings.nextDay }).click();
   await expect(page).toHaveURL(new RegExp(`date=${booked.day}$`));
   await expect(card).toHaveCount(1);
+
+  // Task 27: confirm, then cancel with a reason, in a tab with the owner's
+  // cookies where the page's JavaScript files never load: the Manage panel
+  // is a native <details> and its buttons are plain form posts, so this is
+  // what a slow phone does before React starts. Not JavaScript turned off:
+  // the board streams in after the access check (inside <Suspense>), and
+  // the small script inside the HTML that shows a streamed part has to run.
+  const bookings = admin.bookings;
+  const reason = `Customer phoned to cancel ${booked.code}`;
+  const noScript = await browser.newContext({ ...phone, storageState: await page.context().storageState() });
+  await noScript.route("**/_next/static/**/*.js", (route) => route.abort());
+  const staff = await noScript.newPage();
+  await staff.goto(`/admin/bookings?date=${booked.day}`);
+  const staffCard = staff
+    .getByRole("listitem")
+    .filter({ has: staff.getByRole("heading", { level: 2, name: new RegExp(booked.code) }) });
+  const status = (name: string) => staffCard.getByText(name, { exact: true });
+  const panel = staffCard.locator("summary", { hasText: bookings.manage.summary.replace("{code}", booked.code) });
+  await expect(status(bookings.statuses.booked)).toBeVisible();
+
+  await panel.click();
+  await staffCard.getByRole("button", { name: bookings.manage.confirm }).click();
+  await expect(staff).toHaveURL(/notice=confirmed/);
+  await expect(staff.getByRole("status").filter({ hasText: bookings.notices.confirmed.replace("{code}", booked.code) })).toBeVisible();
+  await expect(status(bookings.statuses.confirmed)).toBeVisible();
+
+  await panel.click();
+  await staffCard.getByLabel(bookings.manage.reasonLabel).fill(reason);
+  await staffCard.getByRole("button", { name: bookings.manage.cancel }).click();
+  await expect(staff).toHaveURL(/notice=cancelled/);
+  // The card is hidden (cancelled ones are, by default), so the notice
+  // carries the customer's name and a call link.
+  await expect(staffCard).toHaveCount(0);
+  const notice = staff.getByRole("status").filter({ hasText: bookings.notices.cancelled.replace("{code}", booked.code) });
+  await expect(notice).toBeVisible();
+  await expect(notice.getByRole("link", { name: bookings.notices.call.replace("{name}", booked.name) })).toHaveAttribute(
+    "href",
+    `tel:${booked.phone}`,
+  );
+  // "Show cancelled (N)": other specs may have cancelled ones too, so N isn't checked.
+  await staff.getByRole("link", { name: /^Show cancelled \(\d+\)$/ }).click();
+  await expect(status(bookings.statuses.cancelled)).toBeVisible();
+  await expect(staffCard.getByText(bookings.cancelReason.replace("{reason}", reason))).toBeVisible();
+  await noScript.close();
+
+  // The reason is for the garage only: the customer's /admin HTML still holds none of it.
+  const customer404 = await browser.newContext({ ...phone, storageState: booked.storage });
+  const raw = await (await customer404.request.get(`/admin/bookings?date=${booked.day}`, { maxRedirects: 0 })).text();
+  expect(raw).not.toContain(reason);
+  expect(raw).not.toContain(bookings.manage.reasonLabel);
+  await customer404.close();
 
   // Shared phone: the owner logs out from the staff bar...
   await button(page, account.logOut).click();
