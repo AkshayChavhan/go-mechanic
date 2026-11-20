@@ -12,15 +12,101 @@ import { isUuid } from "./ids";
 import { asksForPickup, checkPickupInput, type PickupInput, type PickupInputProblem } from "./pickup";
 import { parseRegistration, type RegistrationProblem } from "./registration";
 import { priceFor, type PricedVehicle, type Service, type ServiceKind, type ServicePrice } from "./services";
+import { normalizeTypedText, typedLength } from "./typed-text";
 import { type Fuel, isFuel } from "./vehicles";
 
-/** A booking's status. Tasks 25–27 add more (cancelled, confirmed...). */
-export const BOOKING_STATUSES = ["booked"] as const;
+/**
+ * A booking's status (task 27). "booked" holds a place from the moment the
+ * customer confirms; staff then confirm it, cancel it, or mark a no-show.
+ */
+export const BOOKING_STATUSES = ["booked", "confirmed", "cancelled", "no-show"] as const;
 export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 
-/** What a booking's history entry records: the booking, then job updates (task 31). */
-export const BOOKING_EVENT_KINDS = ["booked", "job-update"] as const;
+/**
+ * The statuses whose booking still takes a place in its slot: what the slot
+ * counters count. A no-show is here because marking it frees nothing: the
+ * time has passed, so nobody else could use the place.
+ */
+export const PLACE_HOLDING_STATUSES = ["booked", "confirmed", "no-show"] as const satisfies readonly BookingStatus[];
+
+/**
+ * The statuses of a visit that is still going to happen (or happening): it
+ * can be moved or given a mechanic, a mechanic may work on it, and it counts
+ * toward the customer's limit and blocks a second booking of the same vehicle
+ * in the same slot. A no-show holds a place but isn't active, which is why
+ * these are two lists, not one.
+ */
+export const ACTIVE_STATUSES = ["booked", "confirmed"] as const satisfies readonly BookingStatus[];
+
+/** Whether a booking with this status is still active (ACTIVE_STATUSES). */
+export function isActiveStatus(status: BookingStatus): boolean {
+  return (ACTIVE_STATUSES as readonly BookingStatus[]).includes(status);
+}
+
+/**
+ * What a booking's history entry records: the booking, job updates (task
+ * 31), and staff changes (task 27): a status change, a move to another slot,
+ * a mechanic assigned.
+ */
+export const BOOKING_EVENT_KINDS = ["booked", "job-update", "status-change", "rescheduled", "assigned"] as const;
 export type BookingEventKind = (typeof BOOKING_EVENT_KINDS)[number];
+
+/**
+ * The status changes staff may make (owner, 2026-11-20). Cancelled is final;
+ * "Arrived after all" takes a no-show back to confirmed. Each row is one
+ * button on the board; a new change is a new row here.
+ */
+const STATUS_CHANGES: readonly (readonly [BookingStatus, BookingStatus])[] = [
+  ["booked", "confirmed"],
+  ["booked", "cancelled"],
+  ["confirmed", "cancelled"],
+  ["booked", "no-show"],
+  ["confirmed", "no-show"],
+  ["no-show", "confirmed"],
+];
+
+/** Facts the save reads from the locked booking row, at its own clock. */
+export type StatusChangeFacts = {
+  /** The job has a step (bookings.job_status isn't null): the vehicle is in. */
+  jobStarted: boolean;
+  /** The slot's start time has come. */
+  slotStarted: boolean;
+};
+
+export type StatusChangeProblem = "not-allowed" | "job-started" | "too-early";
+
+/**
+ * Whether staff may change a booking from `from` to `to`. Cancelling frees a
+ * place, so it's refused once the vehicle has arrived (the job started); a
+ * no-show is refused then too, and before the slot has even started.
+ */
+export function canChangeStatus(
+  from: BookingStatus,
+  to: BookingStatus,
+  facts: StatusChangeFacts,
+): { ok: true } | { ok: false; problem: StatusChangeProblem } {
+  if (!STATUS_CHANGES.some(([a, b]) => a === from && b === to)) return { ok: false, problem: "not-allowed" };
+  if ((to === "cancelled" || to === "no-show") && facts.jobStarted) return { ok: false, problem: "job-started" };
+  if (to === "no-show" && !facts.slotStarted) return { ok: false, problem: "too-early" };
+  return { ok: true };
+}
+
+/** How long a cancel reason may be, in characters (task 27). */
+export const CANCEL_REASON_RULES = { minLength: 3, maxLength: 200 } as const;
+
+/**
+ * A cancel reason as stored, or what's wrong with it. It's for the garage
+ * only: the customer never sees it.
+ */
+export function checkCancelInput(
+  typed: string,
+): { ok: true; reason: string } | { ok: false; problem: "reason-too-short" | "reason-too-long" } {
+  const reason = normalizeTypedText(typed);
+  const length = typedLength(reason);
+  if (length < CANCEL_REASON_RULES.minLength) return { ok: false, problem: "reason-too-short" };
+  if (length > CANCEL_REASON_RULES.maxLength) return { ok: false, problem: "reason-too-long" };
+  return { ok: true, reason };
+}
 
 /** How a line is priced: an amount, after inspection, or no price set yet. */
 export const LINE_PRICE_STATUSES = ["price", "on-inspection", "no-price"] as const;
