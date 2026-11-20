@@ -81,7 +81,10 @@ describe("/packages", () => {
     expect(container.querySelector("[data-sample]")).toBeNull();
     expect(screen.queryByText(t.finder.title)).toBeNull();
     expect(screen.getAllByText(t.callForPrice)).toHaveLength(packages.length);
-    expect(readVehicleCatalogue).not.toHaveBeenCalled();
+    // The catalogue is read for "From ₹…" (task 39), but no model reaches the page.
+    const models = draftCatalogue.makes.flatMap((make) => make.models.map((model) => model.name.en));
+    const words = new Set(container.textContent?.split(/[^\p{L}\p{N}]+/u));
+    for (const model of models.filter((name) => name.length >= 5)) expect(words.has(model)).toBe(false);
   });
 
   test("with a real price: that card's From price in every build, unmarked; the others ask to call; no finder", async () => {
