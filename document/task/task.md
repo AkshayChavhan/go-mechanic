@@ -36,7 +36,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | Done | [24_pickup_drop.md](../learning/24_pickup_drop.md) |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | Done | [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md) |
-| 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | To do |  |
+| 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | In progress |  |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
@@ -429,9 +429,13 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 27_booking_management
 
-- [ ] Create branch `27_booking_management`
+- [x] Create branch `27_booking_management`
 - [ ] Plan with `ce-plan`
 - [ ] Confirm, cancel, reschedule, assign mechanic; status rules
+- [ ] Statuses (owner, 2026-11-20): a new booking is Booked until staff Confirm it (its place in the slot is held from the start); staff can also mark it Cancelled (with a short reason kept for the garage; frees the place) or No-show (the slot has passed; nothing is freed)
+- [ ] Reschedule: staff may pick from today onward, past the customer's 7-day window, never over a full slot (the same rule as task 50's phone bookings); lock the booking row first and use `moveSlot` (task 22)
+- [ ] Assign a mechanic now (owner, 2026-11-20): lists users whose role holds `jobs.update` but not `bookings.manage`; empty until task 29, so the board says "No mechanics yet"; tested with seeded users
+- [ ] The board shows each booking's status and lets staff hide cancelled ones (task 26 backlog); `updateJob` refuses a cancelled booking, and cancelling refuses a job that has started (task 31)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
