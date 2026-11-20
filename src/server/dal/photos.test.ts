@@ -634,6 +634,22 @@ describe("photoViewUrls for job sets", () => {
     logIn(asha);
     expect((await photoViewUrls(setId, deps)).ok).toBe(true);
   });
+
+  test.each(["cancelled", "no-show"] as const)(
+    "the mechanic loses access while the booking is %s; a manager keeps it; Arrived after all gives it back",
+    async (status) => {
+      const bookingId = await job();
+      logIn(mechanic);
+      const setId = await storedJobSet(bookingId);
+      await db.update(bookings).set({ status }).where(eq(bookings.id, bookingId));
+      expect(await photoViewUrls(setId, deps)).toEqual({ ok: false, problem: "not-found" });
+      logIn(manager);
+      expect((await photoViewUrls(setId, deps)).ok).toBe(true);
+      await db.update(bookings).set({ status: "confirmed" }).where(eq(bookings.id, bookingId));
+      logIn(mechanic);
+      expect((await photoViewUrls(setId, deps)).ok).toBe(true);
+    },
+  );
 });
 
 describe("cleanup and deletion of job sets", () => {
