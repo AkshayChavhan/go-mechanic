@@ -430,7 +430,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 ### 27_booking_management
 
 - [x] Create branch `27_booking_management`
-- [ ] Plan with `ce-plan`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-20-1302-feat-booking-management-plan.md) (owner, 2026-11-20: staff reschedule up to 60 days ahead; "Arrived after all" undoes a no-show; the board reminds staff to call the customer after a cancel or move; split check before reschedule)
 - [ ] Confirm, cancel, reschedule, assign mechanic; status rules
 - [ ] Statuses (owner, 2026-11-20): a new booking is Booked until staff Confirm it (its place in the slot is held from the start); staff can also mark it Cancelled (with a short reason kept for the garage; frees the place) or No-show (the slot has passed; nothing is freed)
 - [ ] Reschedule: staff may pick from today onward, past the customer's 7-day window, never over a full slot (the same rule as task 50's phone bookings); lock the booking row first and use `moveSlot` (task 22)
