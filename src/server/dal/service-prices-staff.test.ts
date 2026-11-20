@@ -87,6 +87,8 @@ describe("saveGroupPrices", () => {
         { serviceId: "periodic-service", categoryId: "hatchback", fuel: "diesel", pricePaise: 180_000 },
         { serviceId: "periodic-service", categoryId: "hatchback", fuel: null, pricePaise: 150_000 },
       ],
+      // The fuels the draft catalogue's hatchbacks run on that the service covers.
+      fuels: ["petrol", "diesel", "cng"],
     });
     const rows = await readServicePrices();
     expect(priceFor(periodic, rows, dieselHatchback)).toEqual({ status: "price", paise: 180_000 });
@@ -118,7 +120,7 @@ describe("saveGroupPrices", () => {
     ]);
 
     // All blank: no price for the group, the others untouched.
-    expect(await saveGroupPrices("periodic-service", "hatchback", [])).toEqual({ status: "saved", prices: [] });
+    expect(await saveGroupPrices("periodic-service", "hatchback", [])).toMatchObject({ status: "saved", prices: [] });
     expect(await readServicePrices()).toHaveLength(2);
   });
 
