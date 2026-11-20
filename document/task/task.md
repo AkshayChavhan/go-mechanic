@@ -46,7 +46,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
-| 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | In progress | [37_reviews.md](../learning/37_reviews.md) |
+| 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | Done | [37_reviews.md](../learning/37_reviews.md) |
 | 38 | `38_offers_coupons` | Offers, banner, coupons at booking | To do |  |
 | 39 | `39_catalogue_admin` | Admin editing of services, prices, packages, vehicles | To do |  |
 | 40 | `40_content_admin` | Admin editing of FAQ, content blocks and garage info | To do |  |
@@ -541,7 +541,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `ce-code-review` ("Ready with fixes": 2 P2 and 7 P3, 8 fixed, 1 to the backlog) and `code-reviewer` (2 must-fixes in the learning doc and 1 accessibility fix, all done)
 - [x] Compound: [next-intl-template-for-client-fill-use-t-raw.md](../solutions/conventions/next-intl-template-for-client-fill-use-t-raw.md) (new)
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 38_offers_coupons
 
