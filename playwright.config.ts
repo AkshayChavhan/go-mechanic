@@ -26,6 +26,15 @@ export default defineConfig({
     // zone. Tests that need another zone set timezoneId themselves.
     timezoneId: "UTC",
   },
+  // Every spec shares one `next start` and its one in-memory database, in
+  // parallel. A spec that saves data other specs read (a real price, task
+  // 39) runs in the last project, after all the others: a price saved
+  // mid-run would break the specs that expect none (services, booking).
+  // A project's testIgnore replaces the top-level one, so "site" repeats it.
+  projects: [
+    { name: "site", testIgnore: ["**/e2e/dev/**", "**/prices.spec.ts"] },
+    { name: "prices", testMatch: "**/prices.spec.ts", dependencies: ["site"] },
+  ],
   webServer: {
     command: `npm run build && npm run start -- --port ${PORT}`,
     url: `http://localhost:${PORT}`,
