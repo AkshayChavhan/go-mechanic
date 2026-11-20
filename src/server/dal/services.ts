@@ -15,8 +15,15 @@ import "server-only";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { cacheLife, cacheTag, updateTag } from "next/cache";
 
-import { checkGroupPrices, type GroupPriceEntry, type GroupPriceProblem, type Service, type ServicePrice } from "@/domain/services";
-import { isTextId } from "@/domain/vehicles";
+import {
+  checkGroupPrices,
+  type GroupPriceEntry,
+  type GroupPriceProblem,
+  groupFuels,
+  type Service,
+  type ServicePrice,
+} from "@/domain/services";
+import { type Fuel, isTextId } from "@/domain/vehicles";
 import { authorize } from "@/server/auth/access";
 import { getDatabase } from "@/server/db";
 import { servicePrices, services } from "@/server/db/schema";
@@ -99,13 +106,20 @@ export async function listPricesForStaff(): Promise<ServicePrice[]> {
 }
 
 export type SaveGroupPricesResult =
-  /** Saved and live; `prices` are this service's rows for the group now. */
-  | { status: "saved"; prices: ServicePrice[] }
+  /** Saved and live: this service's rows for the group now, and the fuels the group is shown for (groupFuels). */
+  | { status: "saved"; prices: ServicePrice[]; fuels: Fuel[] }
   /** No listed service or package with that id, or no such group for its vehicle kinds. */
   | { status: "not-found" }
   /** The garage prices this service after seeing the vehicle. */
   | { status: "on-inspection" }
-  | { status: "problems"; problems: GroupPriceProblem[] };
+  | { status: "problems"; problems: BoxPriceProblem[] };
+
+/** A problem with one typed box (the whole-card ones become their own answers). */
+export type BoxPriceProblem = GroupPriceProblem & { problem: "fuel-not-offered" | "bad-price" | "repeated" };
+
+function isBoxProblem(problem: GroupPriceProblem): problem is BoxPriceProblem {
+  return problem.problem !== "on-inspection" && problem.problem !== "category-kind";
+}
 
 /**
  * Replaces one price group's prices for one service or package with
@@ -137,7 +151,7 @@ export async function saveGroupPrices(
   const problems = checkGroupPrices(service, category, catalogue, entries);
   if (problems.some((problem) => problem.problem === "on-inspection")) return { status: "on-inspection" };
   if (problems.some((problem) => problem.problem === "category-kind")) return { status: "not-found" };
-  if (problems.length > 0) return { status: "problems", problems };
+  if (problems.length > 0) return { status: "problems", problems: problems.filter(isBoxProblem) };
 
   const db = await getDatabase();
   const prices = await db.transaction(async (tx) => {
@@ -152,7 +166,7 @@ export async function saveGroupPrices(
     return selectPrices(tx, group);
   });
   updateTag(SERVICE_PRICES_TAG);
-  return { status: "saved", prices };
+  return { status: "saved", prices, fuels: groupFuels(catalogue, categoryId, service) };
 }
 
 type Reader = Pick<Awaited<ReturnType<typeof getDatabase>>, "select">;
