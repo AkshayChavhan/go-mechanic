@@ -22,7 +22,7 @@ export function HomeStats({ stats, tone }: { stats: Shown<TrustStat>; tone: Tone
         <h2 id="home-stats" {...sceneMark("reveal")} className="type-headline text-balance">
           {t("title")}
         </h2>
-        <dl {...sceneMark("revealGroup")} className="grid grid-cols-2 gap-3 md:gap-4 lg:grid-cols-4">
+        <dl {...sceneMark("revealGroup")} className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:gap-4">
           {stats.items.map((stat) => (
             <StatTile key={stat.id} stat={stat} sample={stats.sample} />
           ))}

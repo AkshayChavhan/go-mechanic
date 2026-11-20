@@ -108,6 +108,25 @@ const TABLES: Record<string, Personal | null> = {
       "created_at",
     ],
   },
+  // A customer's reviews of completed jobs (task 37): stars, comment, the first name copied, and staff moderation.
+  reviews: {
+    item: "reviews",
+    columns: [
+      "id",
+      "booking_id",
+      "user_id",
+      "rating",
+      "comment",
+      "shown_name",
+      "request_token",
+      "created_at",
+      "hidden_at",
+      "hidden_by",
+      "reply",
+      "replied_at",
+      "replied_by",
+    ],
+  },
   // Photos of a customer's vehicle (task 30), sent by them or taken by the garage for a job (task 31,
   // booking_id): the set they belong to, and each file's record.
   photo_sets: { item: "photos", columns: ["id", "user_id", "created_at", "closed_at", "booking_id"] },

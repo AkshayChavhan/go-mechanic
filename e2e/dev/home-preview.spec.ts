@@ -26,7 +26,7 @@ const home = messages.HomePage;
 // screenshots always show the same status.
 const TUESDAY_11_AM_IST = new Date("2026-10-27T05:30:00Z");
 
-/** Each sample stat as the page writes it: "10+", "5,000+", "4.8/5", "6 months". */
+/** Each sample stat as the page writes it: "10+", "5,000+", "6 months" (the rating left the stats in task 37). */
 const statTexts = sampleTrustStats.map((stat) =>
   home.stats[stat.id].value.replace("<number>{value}</number>", formatNumber(stat.value, "en", stat.decimals)),
 );
@@ -66,8 +66,11 @@ test.describe("at rest (reduced motion)", () => {
 
     const statTiles = stats(page).locator("dl > [data-sample]");
     await expect(statTiles).toHaveCount(sampleTrustStats.length);
-    const reviewCards = reviews(page).locator("[data-sample]");
+    const reviewCards = reviews(page).locator("li [data-sample]");
     await expect(reviewCards).toHaveCount(sampleReviews.length);
+    // The made-up average and count are marked too (task 37).
+    await expect(reviews(page).locator("p[data-sample]")).toHaveCount(1);
+    await expect(reviews(page).locator("p[data-sample]").getByText(home.sample, { exact: true })).toBeVisible();
     for (const item of [...(await statTiles.all()), ...(await reviewCards.all())]) {
       await expect(item.getByText(home.sample, { exact: true })).toBeVisible();
     }
@@ -91,7 +94,7 @@ test.describe("with motion allowed (no fixed clock)", () => {
     await page.goto("/");
     await expect.poll(() => gsapVersions(page)).not.toBeNull();
     // Below the first screen, the counting digits wait at zero (the warranty doesn't count).
-    await expect.poll(() => stats(page).locator("[data-scene-count]").allTextContents()).toEqual(["0", "0", "0.0"]);
+    await expect.poll(() => stats(page).locator("[data-scene-count]").allTextContents()).toEqual(["0", "0"]);
 
     // Record both copies on every frame while the numbers count.
     await stats(page).evaluate((region) => {
