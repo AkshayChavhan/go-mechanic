@@ -86,10 +86,28 @@ const TABLES: Record<string, Personal | null> = {
     item: "bookings",
     columns: ["id", "booking_id", "service_id", "service_kind", "name", "price_status", "price_paise", "position"],
   },
-  // The booking's history, and from task 31 the job's updates: a step, a note, photos.
+  // The booking's history, from task 31 the job's updates (a step, a note,
+  // photos), and from task 27 the staff changes: the new status, a cancel
+  // reason for the garage, a move's two times, the mechanic assigned.
   booking_events: {
     item: "bookings",
-    columns: ["id", "booking_id", "kind", "actor_user_id", "job_status", "note", "photo_set_id", "had_photos", "request_token", "created_at"],
+    columns: [
+      "id",
+      "booking_id",
+      "kind",
+      "actor_user_id",
+      "job_status",
+      "note",
+      "photo_set_id",
+      "had_photos",
+      "request_token",
+      "new_status",
+      "reason",
+      "moved_from",
+      "moved_to",
+      "mechanic_id",
+      "created_at",
+    ],
   },
   // Requests for a free estimate (task 32): the vehicle copy, the description and the photo set it points to.
   estimate_requests: {

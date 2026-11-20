@@ -607,12 +607,20 @@ export const customerVehicles = pgTable(
 // never changes a booking that's already made.
 
 /** Every status, as in BOOKING_STATUSES (src/domain/bookings.ts; bookings-tables.test.ts checks they match). */
-export const bookingStatus = pgEnum("booking_status", ["booked"] as const satisfies readonly BookingStatus[]);
+export const bookingStatus = pgEnum("booking_status", [
+  "booked",
+  "confirmed",
+  "cancelled",
+  "no-show",
+] as const satisfies readonly BookingStatus[]);
 
 /** Every history entry kind, as in BOOKING_EVENT_KINDS (bookings-tables.test.ts checks they match). */
 export const bookingEventKind = pgEnum("booking_event_kind", [
   "booked",
   "job-update",
+  "status-change",
+  "rescheduled",
+  "assigned",
 ] as const satisfies readonly BookingEventKind[]);
 
 /** A job's step after Booked, as in JOB_STATUSES (src/domain/jobs.ts; job-timeline-tables.test.ts checks they match). */
@@ -756,8 +764,12 @@ export const bookingItems = pgTable(
 /**
  * A booking's history: who did what, and when. Each booking starts with one
  * "booked" entry; staff add "job-update" entries (task 31): a move to a new
- * step, a note for the customer, photos, or a mix. Tasks 25–27 add
- * cancelling, confirming and moving. Deleting a booking deletes its history
+ * step, a note for the customer, photos, or a mix. Task 27 adds the staff
+ * changes: "status-change" (confirmed, cancelled with a reason, no-show),
+ * "rescheduled" (from one slot to another) and "assigned" (a mechanic, or
+ * nobody). The booking row holds the current state; these rows are how it
+ * got there. Customers only ever read "job-update" entries (task 31's
+ * timeline), so the garage-only reason never reaches them. Deleting a booking deletes its history
  * ("cascade"); a user named in one can't be deleted ("restrict"), like the
  * booking itself.
  */
@@ -789,6 +801,19 @@ export const bookingEvents = pgTable(
     hadPhotos: boolean("had_photos").notNull().default(false),
     /** A random uuid per visit of the update form: a second send makes no second update. */
     requestToken: uuid("request_token"),
+    // A staff change's parts (task 27); all empty on every other kind.
+    /** "status-change": the status the booking moved to. */
+    newStatus: bookingStatus("new_status"),
+    /** "status-change" to cancelled only: why, for the garage (never shown to the customer). */
+    reason: text("reason"),
+    /** "rescheduled": the slot it left and the slot it moved to (UTC). */
+    movedFrom: timestamp("moved_from", { withTimezone: true }),
+    movedTo: timestamp("moved_to", { withTimezone: true }),
+    /**
+     * "assigned": the mechanic given the job; null when the job was left with
+     * nobody. Deleting that user keeps the entry ("set null").
+     */
+    mechanicId: text("mechanic_id").references(() => users.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
@@ -808,6 +833,28 @@ export const bookingEvents = pgTable(
     check("booking_events_photos_flag", sql`${table.photoSetId} is null or ${table.hadPhotos}`),
     // 1000 is JOB_UPDATE_RULES.noteMaxLength; job-timeline-tables.test.ts keeps them in step.
     check("booking_events_note_length", sql`char_length(${table.note}) between 1 and 1000`),
+    // Task 27's staff changes. Like the CHECKs above, these compare kind and
+    // new_status as text: the values are added by the same migration.
+    check(
+      "booking_events_staff_change_shape",
+      sql`${table.kind}::text not in ('status-change', 'rescheduled', 'assigned') or (${table.requestToken} is not null and ${table.jobStatus} is null and ${table.note} is null and ${table.photoSetId} is null and not ${table.hadPhotos})`,
+    ),
+    check(
+      "booking_events_status_change_has_status",
+      sql`(${table.kind}::text = 'status-change') = (${table.newStatus} is not null)`,
+    ),
+    // coalesce: with new_status null the comparison is null, and a CHECK lets null through.
+    check(
+      "booking_events_reason_only_on_cancel",
+      sql`(${table.reason} is not null) = coalesce(${table.kind}::text = 'status-change' and ${table.newStatus}::text = 'cancelled', false)`,
+    ),
+    check(
+      "booking_events_rescheduled_has_times",
+      sql`(${table.kind}::text = 'rescheduled') = (${table.movedFrom} is not null) and (${table.movedFrom} is null) = (${table.movedTo} is null) and (${table.movedFrom} is null or ${table.movedFrom} <> ${table.movedTo})`,
+    ),
+    check("booking_events_mechanic_only_on_assigned", sql`${table.kind}::text = 'assigned' or ${table.mechanicId} is null`),
+    // 3 and 200 are CANCEL_REASON_RULES; booking-management-tables.test.ts keeps them in step.
+    check("booking_events_reason_length", sql`char_length(${table.reason}) between 3 and 200`),
   ],
 );
 

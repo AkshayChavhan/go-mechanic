@@ -85,6 +85,13 @@
       "when": 1795100189850,
       "tag": "0011_reviews",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795161833031,
+      "tag": "0012_booking_management",
+      "breakpoints": true
     }
   ]
 }
