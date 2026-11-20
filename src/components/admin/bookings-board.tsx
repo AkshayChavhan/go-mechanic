@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { boardRange, isOnBoard } from "@/domain/board-dates";
-import { formatBookingCode } from "@/domain/bookings";
+import { type BoardNotice as Notice, type BoardView, boardQuery, boardRange, isOnBoard, SHOW_CANCELLED } from "@/domain/board-dates";
+import { type BookingStatus, formatBookingCode } from "@/domain/bookings";
 import { addDays, type IndiaDate } from "@/domain/india-time";
 import { formatRegistration } from "@/domain/registration";
 import type { Locale } from "@/i18n/config";
@@ -16,6 +16,10 @@ import { localize } from "@/i18n/localized-text";
 import { getPathname, Link } from "@/i18n/navigation";
 import { formatPhoneNumber, telHref } from "@/lib/contact-links";
 import type { StaffBookingRow } from "@/server/dal/staff-bookings";
+import type { Mechanic } from "@/server/dal/staff-users";
+
+import { BoardNotice } from "./board-notice";
+import { BookingManagePanel } from "./booking-manage-panel";
 
 export type BookingsBoardProps = {
   locale: Locale;
@@ -25,21 +29,67 @@ export type BookingsBoardProps = {
   today: IndiaDate;
   /** True when the asked-for date couldn't be used, so `date` is today. */
   note: boolean;
-  /** That day's bookings, earliest first (listBookingsOn). */
+  /** That day's bookings, earliest first (listBookingsOn), cancelled ones included. */
   bookings: StaffBookingRow[];
+  /** `?cancelled=show`: list the cancelled bookings too. */
+  showCancelled: boolean;
+  /** The notice from `?notice=` and `?code=` (parseBoardNotice), or null. */
+  notice: { notice: Notice; code: string } | null;
+  /** Everyone who may be given jobs (listMechanics). */
+  mechanics: Mechanic[];
+  /** Whether the viewer has "customers.contact" (the cancel notice's call links). */
+  canContact: boolean;
+  /** The time the page was asked for, read at request time. */
+  now: Date;
+  /** A fresh request token for each form (a random uuid). */
+  newToken: () => string;
 };
+
+/** Each status's badge: green only for confirmed (status, never an action), red for cancelled. */
+const STATUS_BADGES = {
+  booked: "outline",
+  confirmed: "success",
+  "no-show": "secondary",
+  cancelled: "destructive",
+} as const satisfies Record<BookingStatus, "outline" | "success" | "secondary" | "destructive">;
 
 /**
  * The staff bookings board, /admin/bookings (task 26): one India day's
- * bookings, read-only. It only shows what it's given; its gate checks
- * access and reads the data. Everything here is plain server-rendered HTML:
- * the day links are links and the date field is a GET form, so it all works
- * without JavaScript, and no booking data reaches a client component.
+ * bookings, each with its status, mechanic and job step, and from task 27 a
+ * "Manage booking" panel to confirm, cancel, mark a no-show or assign a
+ * mechanic. It only shows what it's given; its gate checks access and reads
+ * the data. Everything here is plain server-rendered HTML: the day links are
+ * links, the date field is a GET form and every action is a <form> posting to
+ * a Server Action, so it all works without JavaScript, and no booking data
+ * reaches a client component.
+ *
+ * Cancelled bookings are hidden unless `showCancelled`; the day's count
+ * leaves them out either way. Every link and form keeps the filter.
  */
-export async function BookingsBoard({ locale, date, today, note, bookings }: BookingsBoardProps) {
+export async function BookingsBoard({
+  locale,
+  date,
+  today,
+  note,
+  bookings,
+  showCancelled,
+  notice,
+  mechanics,
+  canContact,
+  now,
+  newToken,
+}: BookingsBoardProps) {
   const t = await getTranslations({ locale, namespace: "Admin" });
   const tVehicles = await getTranslations({ locale, namespace: "Vehicles" });
   const isToday = date === today;
+  const view: BoardView = { date, showCancelled };
+
+  const cancelledCount = bookings.filter((booking) => booking.status === "cancelled").length;
+  const activeCount = bookings.length - cancelledCount;
+  const shown = showCancelled ? bookings : bookings.filter((booking) => booking.status !== "cancelled");
+  // Only a code that is one of this day's bookings, cancelled ones included
+  // whatever the filter: the address bar can't make the board name another.
+  const noticeBooking = notice ? bookings.find((booking) => booking.code === notice.code) : undefined;
 
   return (
     <div className="flex max-w-3xl flex-col gap-8">
@@ -48,26 +98,30 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
           {formatIndiaLongDay(date, locale)}{" "}
           {isToday && <Badge variant="secondary">{t("bookings.today")}</Badge>}
         </h1>
-        {bookings.length > 0 && (
-          <p className="type-lead text-muted-foreground">{t("bookings.count", { count: bookings.length })}</p>
-        )}
+        {activeCount > 0 && <p className="type-lead text-muted-foreground">{t("bookings.count", { count: activeCount })}</p>}
       </div>
+
+      {notice && noticeBooking && (
+        <BoardNotice locale={locale} notice={notice.notice} booking={noticeBooking} canContact={canContact} />
+      )}
 
       {note && <p className="rounded-xl bg-muted p-4 type-callout text-pretty">{t("bookings.dateNote")}</p>}
 
       <div className="flex flex-col gap-4">
         <nav aria-label={t("bookings.dayNavLabel")} className="flex flex-wrap gap-3">
-          <DayLink date={addDays(date, -1)} today={today}>
+          <DayLink date={addDays(date, -1)} today={today} showCancelled={showCancelled}>
             <ChevronLeftIcon data-icon="inline-start" aria-hidden />
             {t("bookings.previousDay")}
           </DayLink>
-          <DayLink date={addDays(date, 1)} today={today}>
+          <DayLink date={addDays(date, 1)} today={today} showCancelled={showCancelled}>
             {t("bookings.nextDay")}
             <ChevronRightIcon data-icon="inline-end" aria-hidden />
           </DayLink>
           {!isToday && (
             <Button asChild variant="outline">
-              <Link href="/admin/bookings">{t("bookings.today")}</Link>
+              <Link href={{ pathname: "/admin/bookings", query: boardQuery({ date: null, showCancelled }) }}>
+                {t("bookings.today")}
+              </Link>
             </Button>
           )}
         </nav>
@@ -80,6 +134,8 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
           method="get"
           className="flex flex-wrap items-end gap-3"
         >
+          {/* Keeps the filter: a GET form sends only its own fields. */}
+          {showCancelled && <input type="hidden" name="cancelled" value={SHOW_CANCELLED} />}
           <Field className="w-auto">
             <FieldLabel htmlFor="board-date">{t("bookings.dateLabel")}</FieldLabel>
             <Input
@@ -99,12 +155,29 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
         </form>
       </div>
 
-      {bookings.length === 0 ? (
-        <p className="type-body text-muted-foreground">{t("bookings.empty")}</p>
+      {cancelledCount > 0 && (
+        <p>
+          <Link
+            href={{ pathname: "/admin/bookings", query: boardQuery({ date, showCancelled: !showCancelled }) }}
+            className="inline-flex min-h-11 items-center type-body text-link underline-offset-4 hover:underline"
+          >
+            {showCancelled ? t("bookings.hideCancelled") : t("bookings.showCancelled", { count: cancelledCount })}
+          </Link>
+        </p>
+      )}
+
+      {shown.length === 0 ? (
+        <p className="type-body text-muted-foreground">
+          {cancelledCount > 0 ? t("bookings.emptyAllCancelled") : t("bookings.empty")}
+        </p>
       ) : (
         <ul className="flex flex-col gap-4">
-          {bookings.map((booking) => (
-            <li key={booking.id} className="flex flex-col gap-4 rounded-xl border border-border bg-card p-5 md:flex-row md:gap-8 md:p-6">
+          {shown.map((booking) => (
+            <li
+              key={booking.id}
+              id={`booking-${booking.id}`}
+              className="flex scroll-mt-6 flex-col gap-4 rounded-xl border border-border bg-card p-5 md:flex-row md:gap-8 md:p-6"
+            >
               <h2 className="flex flex-wrap items-baseline gap-x-3 md:w-28 md:shrink-0 md:flex-col md:gap-1">
                 <span className="type-title tabular-nums">{formatTime(booking.startsAt, locale)}</span>{" "}
                 <span className="type-callout font-semibold tabular-nums text-muted-foreground">
@@ -113,6 +186,21 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
               </h2>
 
               <div className="flex min-w-0 flex-1 flex-col gap-4">
+                <div className="flex flex-col gap-2">
+                  <p className="flex flex-wrap items-center gap-x-4 gap-y-2 type-callout text-muted-foreground">
+                    <Badge variant={STATUS_BADGES[booking.status]}>{t(`bookings.statuses.${booking.status}`)}</Badge>
+                    <span>
+                      {booking.mechanic
+                        ? t("bookings.mechanic", { name: booking.mechanic.name || t("bookings.unnamedMechanic") })
+                        : t("bookings.unassigned")}
+                    </span>
+                    <span>{t("bookings.job", { step: t(`bookings.jobSteps.${booking.jobStatus ?? "not-started"}`) })}</span>
+                  </p>
+                  {booking.status === "cancelled" && booking.cancelReason && (
+                    <p className="type-callout text-pretty break-words">{t("bookings.cancelReason", { reason: booking.cancelReason })}</p>
+                  )}
+                </div>
+
                 <div className="flex flex-col gap-1">
                   <p className="type-body font-semibold">
                     {localize(booking.vehicle.makeName, locale)} {localize(booking.vehicle.modelName, locale)}
@@ -161,6 +249,16 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
                     </p>
                   )}
                 </div>
+
+                <BookingManagePanel
+                  locale={locale}
+                  booking={booking}
+                  view={view}
+                  mechanics={mechanics}
+                  now={now}
+                  newToken={newToken}
+                  notice={notice?.code === booking.code ? notice.notice : null}
+                />
               </div>
             </li>
           ))}
@@ -176,7 +274,17 @@ export async function BookingsBoard({ locale, date, today, note, bookings }: Boo
  * instead of a link: nothing to click, and screen readers announce it as
  * unavailable (aria-disabled on a plain span is ignored).
  */
-function DayLink({ date, today, children }: { date: IndiaDate; today: IndiaDate; children: ReactNode }) {
+function DayLink({
+  date,
+  today,
+  showCancelled,
+  children,
+}: {
+  date: IndiaDate;
+  today: IndiaDate;
+  showCancelled: boolean;
+  children: ReactNode;
+}) {
   if (!isOnBoard(date, today)) {
     return (
       <Button variant="outline" disabled>
@@ -186,7 +294,7 @@ function DayLink({ date, today, children }: { date: IndiaDate; today: IndiaDate;
   }
   return (
     <Button asChild variant="outline">
-      <Link href={{ pathname: "/admin/bookings", query: { date } }}>{children}</Link>
+      <Link href={{ pathname: "/admin/bookings", query: boardQuery({ date, showCancelled }) }}>{children}</Link>
     </Button>
   );
 }

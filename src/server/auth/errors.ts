@@ -7,7 +7,9 @@
 // LoginServiceError that keeps only what helps debugging and names nobody:
 // the step, the error's name and, for a database error, its Postgres code.
 // bookingWithoutDetails does the same for the booking action (task 47),
-// throwing a BookingServiceError.
+// throwing a BookingServiceError, and staffWithoutDetails for the board's
+// staff actions (task 27), throwing a StaffServiceError: a failed status
+// change's event insert carries the cancel reason in its values.
 
 import "server-only";
 
@@ -64,5 +66,29 @@ export async function bookingWithoutDetails<T>(step: string, run: () => Promise<
     unstable_rethrow(error);
     if (error instanceof BookingServiceError || error instanceof LoginServiceError) throw error;
     throw new BookingServiceError(step, kindOf(error));
+  }
+}
+
+/** The board actions' sibling of BookingServiceError (task 27): the step and the kind of error, nothing else. */
+export class StaffServiceError extends Error {
+  constructor(step: string, kind: string) {
+    super(`${step} failed (${kind})`);
+    this.name = "StaffServiceError";
+  }
+}
+
+/**
+ * withoutDetails for the staff board's actions: any unexpected error becomes
+ * a StaffServiceError, so a cancel reason, a request token or a name in a
+ * failed query's values never reaches the logs. Next.js's signals pass
+ * through first; so does an error that already carries no details.
+ */
+export async function staffWithoutDetails<T>(step: string, run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    unstable_rethrow(error);
+    if (error instanceof StaffServiceError || error instanceof LoginServiceError) throw error;
+    throw new StaffServiceError(step, kindOf(error));
   }
 }

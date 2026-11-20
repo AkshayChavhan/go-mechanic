@@ -716,7 +716,67 @@
       "showDate": "Show",
       "packageLine": "{name} (package)",
       "pickupIncluded": "Pickup included",
-      "pickupFrom": "Pickup from {address}"
+      "pickupFrom": "Pickup from {address}",
+      "emptyAllCancelled": "No bookings to show on this day.",
+      "showCancelled": "Show cancelled ({count})",
+      "hideCancelled": "Hide cancelled",
+      "statuses": {
+        "booked": "Booked",
+        "confirmed": "Confirmed",
+        "cancelled": "Cancelled",
+        "no-show": "No-show"
+      },
+      "mechanic": "Mechanic: {name}",
+      "unassigned": "Unassigned",
+      "unnamedMechanic": "Mechanic without a name",
+      "job": "Job: {step}",
+      "jobSteps": {
+        "not-started": "Not started",
+        "vehicle-received": "Vehicle received",
+        "inspection": "Inspection",
+        "awaiting-approval": "Waiting for the customer's approval",
+        "in-service": "In service",
+        "ready": "Ready",
+        "completed": "Completed"
+      },
+      "cancelReason": "Reason: {reason}",
+      "manage": {
+        "summary": "Manage booking {code}",
+        "confirm": "Confirm booking",
+        "noShow": "Mark as no-show",
+        "arrived": "Arrived after all",
+        "reasonLabel": "Reason for cancelling",
+        "reasonHint": "Only staff see this, never the customer. {min} to {max} characters.",
+        "reasonTooShort": "Give a reason of at least {min} characters.",
+        "reasonTooLong": "Keep the reason to {max} characters or fewer.",
+        "cancel": "Cancel booking",
+        "mechanicLabel": "Mechanic",
+        "nobody": "Nobody",
+        "saveMechanic": "Save mechanic",
+        "noMechanics": "No mechanics yet. They show here once the owner adds them to the team."
+      },
+      "notices": {
+        "refused": "Not saved",
+        "confirmed": "Booking {code} is confirmed.",
+        "cancelled": "Booking {code} is cancelled. Its time is free for another booking.",
+        "no-show": "Booking {code} is marked as a no-show. Its place stays taken.",
+        "arrived": "Booking {code} is confirmed again: the customer arrived.",
+        "assigned": "Booking {code} is now with {mechanic}.",
+        "unassigned": "Booking {code} now has no mechanic.",
+        "unchanged": "Booking {code} already had that mechanic, so nothing changed.",
+        "changed": "Booking {code} changed in the meantime and is now {status}. Check its card, then try again if you still need to.",
+        "job-started": "Booking {code}'s job has started, so it can't be cancelled or marked as a no-show.",
+        "too-early": "Booking {code} can't be marked as a no-show before its time, {time}.",
+        "job-closed": "Booking {code}'s job is completed, so its mechanic can't change.",
+        "not-a-mechanic": "That person can't take jobs any more. Pick someone else for booking {code}.",
+        "reason-too-short": "To cancel booking {code}, give a reason of at least {min} characters.",
+        "reason-too-long": "To cancel booking {code}, keep the reason to {max} characters or fewer.",
+        "not-saved": "Booking {code} wasn't changed. Reload the page and try again.",
+        "callReminder": "Call or WhatsApp {name} to let them know: the website doesn't tell customers yet.",
+        "call": "Call {name}",
+        "whatsapp": "WhatsApp {name}",
+        "whatsappMessage": "Hello {name}, this is about your booking {code} on {day} at {time}."
+      }
     }
   },
   "JobTimeline": {
