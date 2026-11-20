@@ -28,6 +28,7 @@ export type AdminNavItem = {
 /** Every staff section, in the order the bar shows them. */
 export const adminNavItems: readonly AdminNavItem[] = [
   { href: "/admin/bookings", labelKey: "bookings", permission: "bookings.manage" },
+  { href: "/admin/prices", labelKey: "prices", permission: "content.edit" },
   // Task 51 adds the estimate-request inbox here:
   // { href: "/admin/estimates", labelKey: "estimates", permission: "estimates.manage" }.
   // Its words are already in Admin.nav and Admin.overview.

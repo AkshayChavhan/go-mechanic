@@ -30,6 +30,15 @@ export function formatRupees(paise: number, locale: Locale): string {
 }
 
 /**
+ * The rupee sign as `locale` writes it ("₹"), for a price box's visible
+ * prefix: messages hold no "₹" (e2e/services.spec.ts scans live pages for it).
+ */
+export function rupeeSymbol(locale: Locale): string {
+  const parts = new Intl.NumberFormat(intlLocales[locale], { style: "currency", currency: "INR" }).formatToParts(0);
+  return parts.find((part) => part.type === "currency")?.value ?? "";
+}
+
+/**
  * A plain number, grouped the Indian way, with exactly `decimals` digits
  * after the point: 123456 -> "1,23,456"; 4.8 with 1 decimal -> "4.8".
  * The home page's counting numbers use it for the final value on the server
