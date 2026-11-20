@@ -65,13 +65,13 @@ export type StaffBookingRow = {
 
 export type ListBookingsOnResult = { ok: true; bookings: StaffBookingRow[] } | { ok: false; problem: "invalid-date" };
 
+// The assigned mechanic is another users row: joined under its own name.
+const mechanics = alias(users, "mechanics");
+
 /**
  * The bookings whose slot falls on `date` (an India date, "YYYY-MM-DD"),
  * earliest first, for staff with "bookings.manage" (manager, owner).
  */
-// The assigned mechanic is another users row: joined under its own name.
-const mechanics = alias(users, "mechanics");
-
 export async function listBookingsOn(date: string): Promise<ListBookingsOnResult> {
   const user = await authorize("bookings.manage");
   const day = parseIndiaDate(date);

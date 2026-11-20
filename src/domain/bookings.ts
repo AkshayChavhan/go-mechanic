@@ -25,7 +25,9 @@ export type BookingStatus = (typeof BOOKING_STATUSES)[number];
 /**
  * The statuses whose booking still takes a place in its slot: what the slot
  * counters count. A no-show is here because marking it frees nothing: the
- * time has passed, so nobody else could use the place.
+ * time has passed, so nobody else could use the place. No query reads this
+ * list: the counters stay right because only a cancel calls `releaseSlot`.
+ * Tests use it to check the counters against the bookings.
  */
 export const PLACE_HOLDING_STATUSES = ["booked", "confirmed", "no-show"] as const satisfies readonly BookingStatus[];
 

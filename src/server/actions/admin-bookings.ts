@@ -114,7 +114,7 @@ function statusNotice(result: ChangeBookingStatusResult, success: BoardNotice | 
       // A refused reason gets its own notice (its panel reopens with the
       // message under the field); anything else means a broken form.
       const reason = result.problems.find((problem) => problem.field === "reason");
-      return reason ? (reason.problem as BoardNotice) : "not-saved";
+      return reason ? reason.problem : "not-saved";
     }
     case "not-found":
       return null;
