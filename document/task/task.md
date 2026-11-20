@@ -560,7 +560,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Create branch `39_catalogue_admin`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-20-1311-feat-staff-price-editor-plan.md)
 - [ ] `/admin/prices`: managers and the owner (`content.edit`) set each service's and package's real price per price group, with an optional different price for one fuel, or clear it (owner, 2026-11-20). A save goes live at once (`updateTag("service-prices")`)
-- [ ] Public price tables show the price group names once real prices exist (owner, 2026-11-20); rename `Nav.prices` back to "Prices" and `Packages.seePackages` to "See prices" when the first real price exists
+- [ ] Public price tables show the price group names once real prices exist (owner, 2026-11-20). The menu keeps "Packages": the rename moved to the backlog (plan KTD8)
 - [ ] `fromPrice()` uses only the fuels the service page shows (task 18 code review)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
@@ -823,6 +823,10 @@ Not in version 1. See [features.md](../website/features.md).
 - The review form's and the estimate form's character counters miss text typed before the page's JavaScript loads (the textarea is uncontrolled; React's lint rule refuses syncing state from an effect): count it once after hydration in a way the lint allows, with a `hydrateRoot` test, in both `review-form.tsx` and `estimate-form.tsx` (task 37 review)
 - Split from task 39 (owner, 2026-11-20): staff editing of services and packages (names, summaries, what's included, signs, order, hide with `listed = false`, "priced after inspection", a "time taken" per service; `updateTag("services")`; a service added later is built on its first visit). Needs a task number
 - Split from task 39 (owner, 2026-11-20): staff editing of brands and models (add, rename, order, price group, fuels, hide with `listed = false`; ids never change; `updateTag("vehicle-catalogue")`) and the "models approved" switch, separate from `showSamples()`, that lets the price finder on `/packages`, the model in review credits and the other model displays go live. Carries task 39's backlog notes about the catalogue (brands whose models are all hidden, the draft-catalogue rule for `/estimate` and the add-vehicle form, review credits with the model). Needs a task number
+- Owner: the menu calls `/packages` "Packages" (`Nav.prices`) and the home hero's link says "See packages" (`Packages.seePackages`). Task 18 planned to rename them "Prices" and "See prices" once real prices exist; task 39 kept them, since a label that depends on data would put a price read into the shell that `global-not-found.tsx` also renders, and `/packages` is still the packages page. Ask the owner whether "Packages" is fine (task 39)
+- Prices on each line of the staff bookings board (`src/components/admin/bookings-board.tsx`, "Names only: prices come with task 39"): `listBookingsOn` already returns them. Left out of task 39 while task 27 changes that board (task 39)
+- Task 20: on Postgres, check two `saveGroupPrices` calls on one service and price group at once: the advisory lock should make the last save win with no unique-constraint error; PGlite runs one transaction at a time and can't show it (task 39)
+- `npm run dev` logged "Next.js encountered the unstable value `Date.now()` while prerendering" at `AdminNavGate` (`src/app/[locale]/admin/layout.tsx`) twice, each time on the first staff page load right after a file change recompiled the page; never on a fresh load. The e2e run doesn't read the server's log, so the production build is unchecked. Find out whether it's Next.js's dev-only re-check after a recompile or a real read before `headers()` (task 39)
 
 ## How to add a task
 
