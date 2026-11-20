@@ -65,7 +65,7 @@ To log in locally: open http://localhost:3000/login, type any Indian mobile numb
 
 To book locally: open http://localhost:3000/book (or press "Book a service"), pick a vehicle, services and a time, then log in on the same page with a code from http://localhost:3000/dev/outbox. Until the garage's prices are entered (task 39), every line says "price confirmed at the garage". `npm run db:reset` clears the bookings too.
 
-To see the staff area locally: log in with the garage's own number (97647 50567), then press "Staff area" on `/account`, or open http://localhost:3000/admin. The bookings board (`/admin/bookings`) shows one day at a time, today first. On a phone, the browser's "Add to home screen" opens it like an app. Customers who open `/admin` get the 404 page.
+To see the staff area locally: log in with the garage's own number (97647 50567), then press "Staff area" on `/account`, or open http://localhost:3000/admin. The bookings board (`/admin/bookings`) shows one day at a time, today first; each booking's Manage panel confirms it, cancels it with a reason, marks a no-show (and undoes it), or gives it to a mechanic. The mechanic list stays empty until team management (task 29) adds mechanics. On a phone, the browser's "Add to home screen" opens it like an app. Customers who open `/admin` get the 404 page.
 
 Other commands:
 
