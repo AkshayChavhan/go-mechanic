@@ -1,9 +1,9 @@
 import { randomInt, randomUUID } from "node:crypto";
 
-import { asc, count, eq } from "drizzle-orm";
+import { asc, count, eq, inArray, sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
-import type { BookingInput } from "@/domain/bookings";
+import { type BookingInput, type BookingStatus, PLACE_HOLDING_STATUSES } from "@/domain/bookings";
 import { indiaInstantOn } from "@/domain/india-time";
 import { fixedClock } from "@/lib/clock";
 import { AccessDeniedError } from "@/server/auth/access";
@@ -86,7 +86,8 @@ beforeEach(async () => {
   await db.insert(servicePrices).values({ serviceId: "periodic-service", categoryId: "sedan", fuel: null, pricePaise: 250_000 });
 });
 
-// Whatever a test did, every slot's counter must equal its booked bookings.
+// Whatever a test did, every slot's counter must equal the bookings holding a
+// place there (booked, confirmed, no-show; a cancel frees it).
 afterEach(async () => {
   expect(await countersByStart()).toEqual(await bookedByStart());
 });
@@ -153,10 +154,25 @@ async function bookedByStart(): Promise<Record<string, number>> {
   const rows = await db
     .select({ startsAt: bookings.startsAt, booked: count() })
     .from(bookings)
-    .where(eq(bookings.status, "booked"))
+    .where(inArray(bookings.status, [...PLACE_HOLDING_STATUSES]))
     .groupBy(bookings.startsAt)
     .orderBy(asc(bookings.startsAt));
   return Object.fromEntries(rows.map((row) => [row.startsAt.toISOString(), row.booked]));
+}
+
+/**
+ * Sets the booking at `startsAt` to `status`, as staff will (task 27's staff
+ * writes are tested elsewhere). A cancel also gives the slot's place back, so
+ * the counters still match the bookings.
+ */
+async function setStatusAt(startsAt: Date, status: BookingStatus) {
+  await db.update(bookings).set({ status }).where(eq(bookings.startsAt, startsAt));
+  if (status === "cancelled") {
+    await db
+      .update(slotCounters)
+      .set({ reserved: sql`${slotCounters.reserved} - 1` })
+      .where(eq(slotCounters.startsAt, startsAt));
+  }
 }
 
 /** Nothing written at all: no booking, no slot taken, no vehicle beyond `vehicles`. */
@@ -359,6 +375,18 @@ describe("at most 3 future bookings", () => {
     await db.update(slotCounters).set({ startsAt: past }).where(eq(slotCounters.startsAt, slots[0]));
     expect(await createMyBooking(input({ startsAt: slots[3].toISOString() }), clock)).toMatchObject({ status: "booked" });
   });
+
+  test.each([
+    ["cancelled", "booked"],
+    ["no-show", "booked"],
+    ["confirmed", "too-many-bookings"],
+  ] as const)("with one of the three %s, a fourth answers %s", async (status, answer) => {
+    for (const slot of slots.slice(0, 3)) {
+      expect(await createMyBooking(input({ startsAt: slot.toISOString() }), clock)).toMatchObject({ status: "booked" });
+    }
+    await setStatusAt(slots[0], status);
+    expect(await createMyBooking(input({ startsAt: slots[3].toISOString() }), clock)).toMatchObject({ status: answer });
+  });
 });
 
 describe("the same confirm twice (the request token)", () => {
@@ -443,6 +471,24 @@ describe("the same vehicle in the same slot again (a new token, after a reload)"
       ),
     ).toMatchObject({ status: "booked" });
     expect(await counterAt(friday10)).toBe(2);
+  });
+
+  test("a cancelled booking doesn't block it: a new booking, the place taken again", async () => {
+    const first = await createMyBooking(input(), clock);
+    if (first.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(first)}`);
+    await setStatusAt(friday10, "cancelled");
+    const again = await createMyBooking(input(), clock);
+    if (again.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(again)}`);
+    expect(again.booking.code).not.toBe(first.booking.code);
+    expect(await counterAt(friday10)).toBe(1);
+  });
+
+  test("a confirmed booking still answers duplicate with itself", async () => {
+    const first = await createMyBooking(input(), clock);
+    if (first.status !== "booked") throw new Error(`expected a booking, got ${JSON.stringify(first)}`);
+    await setStatusAt(friday10, "confirmed");
+    expect(await createMyBooking(input(), clock)).toMatchObject({ status: "duplicate", booking: { code: first.booking.code } });
+    expect(await db.$count(bookings)).toBe(1);
   });
 });
 
