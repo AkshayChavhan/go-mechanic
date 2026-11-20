@@ -48,7 +48,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
 | 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | Done | [37_reviews.md](../learning/37_reviews.md) |
 | 38 | `38_offers_coupons` | Offers, banner, coupons at booking | To do |  |
-| 39 | `39_catalogue_admin` | Admin editing of real prices (services and packages edits, and brands and models, split off: see the backlog) | In progress |  |
+| 39 | `39_catalogue_admin` | Admin editing of real prices (services and packages edits, and brands and models, split off: see the backlog) | In progress | [39_catalogue_admin.md](../learning/39_catalogue_admin.md) |
 | 40 | `40_content_admin` | Admin editing of FAQ, content blocks and garage info | To do |  |
 | 41 | `41_admin_reports` | Reports and CSV export | To do |  |
 | 42 | `42_local_seo` | Metadata, sitemap, robots, social image, AutoRepair structured data | To do |  |
@@ -559,10 +559,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `39_catalogue_admin`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-20-1311-feat-staff-price-editor-plan.md)
-- [ ] `/admin/prices`: managers and the owner (`content.edit`) set each service's and package's real price per price group, with an optional different price for one fuel, or clear it (owner, 2026-11-20). A save goes live at once (`updateTag("service-prices")`)
-- [ ] Public price tables show the price group names once real prices exist (owner, 2026-11-20). The menu keeps "Packages": the rename moved to the backlog (plan KTD8)
-- [ ] `fromPrice()` uses only the fuels the service page shows (task 18 code review)
-- [ ] Write the learning doc
+- [x] `/admin/prices`: managers and the owner (`content.edit`) set each service's and package's real price per price group, with an optional different price for one fuel, or clear it (owner, 2026-11-20). A save goes live at once (`updateTag("service-prices")`)
+- [x] Public price tables show the price group names once real prices exist (owner, 2026-11-20). The menu keeps "Packages": the rename moved to the backlog (plan KTD8)
+- [x] `fromPrice()` uses only the fuels the service page shows (task 18 code review)
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
