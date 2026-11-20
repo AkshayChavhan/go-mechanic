@@ -40,6 +40,9 @@ function booking(overrides: Partial<StaffBookingRow> & Pick<StaffBookingRow, "id
     pickup: { included: false, address: null, postalCode: null, feePaise: null },
     customerName: "Asha Patil",
     phoneNumber: null,
+    jobStatus: null,
+    mechanic: null,
+    cancelReason: null,
     ...overrides,
   };
 }
