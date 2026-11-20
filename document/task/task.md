@@ -36,7 +36,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | Done | [24_pickup_drop.md](../learning/24_pickup_drop.md) |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | Done | [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md) |
-| 27 | `27_booking_management` | Confirm, cancel, no-show and assign a mechanic; status rules (reschedule split into task 52) | In progress |  |
+| 27 | `27_booking_management` | Confirm, cancel, no-show and assign a mechanic; status rules (reschedule split into task 52) | In progress | [27_booking_management.md](../learning/27_booking_management.md) |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
@@ -409,6 +409,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [ ] Create branch `25_my_bookings`
 - [ ] Plan with `ce-plan`
 - [ ] Customer bookings list and detail, cancel or reschedule
+- [ ] A retry of `/book`'s Confirm after the booking was cancelled (task 27 review): `createMyBooking`'s request-token lookup answers `duplicate` with the earlier booking whatever its status, so a cancelled booking would show as "You already have this booking". Decide what a retry of a cancelled booking shows, now that customers can cancel
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -438,9 +439,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Assign a mechanic now (owner, 2026-11-20): lists users whose role holds `jobs.update` but not `bookings.manage`; empty until task 29, so the board says "No mechanics yet"; tested with seeded users
 - [x] The board shows each booking's status and lets staff hide cancelled ones (task 26 backlog); `updateJob` refuses a cancelled booking, and cancelling refuses a job that has started (task 31)
 - [x] Privacy notice: the staff history (cancel reasons, who changed what); `LOGIN_NOTICE_VERSION` moved to `2026-11-20`
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Write the learning doc: [27_booking_management.md](../learning/27_booking_management.md)
+- [x] Review: `ce-code-review` "Ready with fixes" (one missing test, three tidy-ups; fixed); `code-reviewer` "Needs changes" for one broken `CLAUDE.md` line (fixed), its suggestions fixed too
+- [x] Compound: [suspense-streaming-needs-inline-script-test-no-js-by-blocking-bundles.md](../solutions/conventions/suspense-streaming-needs-inline-script-test-no-js-by-blocking-bundles.md)
 - [ ] Merge into `main`
 
 ### 28_schedule_settings
