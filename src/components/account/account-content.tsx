@@ -1,6 +1,7 @@
 import { BriefcaseIcon, PlusIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
+import { CompletedJobs } from "@/components/account/completed-jobs";
 import { EstimateRequests } from "@/components/account/estimate-requests";
 import { NameForm } from "@/components/account/name-form";
 import { VehicleList } from "@/components/account/vehicle-list";
@@ -16,11 +17,13 @@ import { requireUser } from "@/server/auth/access";
 import { listMyVehicles } from "@/server/dal/customer-vehicles";
 import { listMyEstimateRequests } from "@/server/dal/estimate-requests";
 import { readMyProfile } from "@/server/dal/profile";
+import { listMyCompletedJobs } from "@/server/dal/reviews";
 
 /**
  * The main part of /account (task 21): the name form, until the customer
  * has given their name, then a hello by name, their vehicles and "Add a
- * vehicle", and their estimate requests (task 32).
+ * vehicle", their estimate requests (task 32), and their completed jobs with
+ * "Write a review" (task 37).
  *
  * An async Server Component that reads the session, so /account puts it
  * inside <Suspense>, below Log out: it streams in under the parts already
@@ -70,6 +73,7 @@ export async function AccountContent({ locale }: { locale: Locale }) {
   const t = await getTranslations({ locale, namespace: "MyVehicles" });
   const vehicles = await listMyVehicles();
   const requests = await listMyEstimateRequests();
+  const completed = await listMyCompletedJobs();
   // With a request, its list comes first, so the one just sent (the estimate
   // form leads here) shows without scrolling past the vehicles (task 32).
   const estimates = <EstimateRequests requests={requests} locale={locale} />;
@@ -82,6 +86,7 @@ export async function AccountContent({ locale }: { locale: Locale }) {
       <p className="type-lead text-pretty">{tAccount("greeting", { name: profile.name })}</p>
       {staffLink}
       {requests.length > 0 && estimates}
+      {completed.length > 0 && <CompletedJobs jobs={completed} locale={locale} />}
       <section aria-labelledby="my-vehicles" className="flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <h2 id="my-vehicles" className="type-title">

@@ -47,20 +47,21 @@ const TUESDAY_11_AM_IST = new Date("2026-10-27T05:30:00Z");
 const REVEAL_TARGETS = `${sceneSelector("reveal")}, ${sceneSelector("revealGroup")} > *`;
 
 /**
- * Text that only the sample sections hold. None of it may reach a production
- * build: not its HTML, not its page data, not its JavaScript.
+ * Text that only the samples hold. None of it may reach a production build:
+ * not its HTML, not its page data, not its JavaScript. The reviews section's
+ * own words (its title, "Read all reviews") aren't here: once 3 real reviews
+ * exist (task 37), a production build shows them. The stats have no real
+ * numbers yet, so their words still count as sample-only.
  */
 const sampleOnly = [
   sampleCanary,
-  ...sampleReviews.map((review) => review.text.en),
+  ...sampleReviews.flatMap((review) => (review.comment ? [review.comment] : [])),
   home.stats.title,
   home.stats.years.label,
   home.stats.vehicles.label,
-  home.stats.rating.label,
   home.stats.warranty.label,
-  home.reviews.title,
-  // "Sample customer with", before the ICU part of the message.
-  home.reviews.sampleCredit.split(" {")[0],
+  // "Sample customer, ", before the ICU part of the message.
+  messages.Reviews.sampleCredit.split("{")[0],
 ];
 
 /** Which of the sample-only texts `text` contains (none, we hope). */

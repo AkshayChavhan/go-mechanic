@@ -40,13 +40,13 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
-| 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | In progress | [31_job_timeline.md](../learning/31_job_timeline.md) |
+| 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | Done | [31_job_timeline.md](../learning/31_job_timeline.md) |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | Done | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
 | 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
-| 37 | `37_reviews` | Customer reviews, `/reviews`, admin reply or hide | To do |  |
+| 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | In progress | [37_reviews.md](../learning/37_reviews.md) |
 | 38 | `38_offers_coupons` | Offers, banner, coupons at booking | To do |  |
 | 39 | `39_catalogue_admin` | Admin editing of services, prices, packages, vehicles | To do |  |
 | 40 | `40_content_admin` | Admin editing of FAQ, content blocks and garage info | To do |  |
@@ -482,7 +482,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `ce-code-review` ("Ready with fixes": 2 findings, both fixed) and `code-reviewer` (1 must-fix in the learning doc and 2 smaller points, fixed, plus 2 of its suggestions)
 - [x] Compound: [idempotent-save-answer-duplicate-before-refusals-that-can-change.md](../solutions/conventions/idempotent-save-answer-duplicate-before-refusals-that-can-change.md) (updated: a lock that hides the row) and [drizzle-migration-new-enum-value-compare-as-text.md](../solutions/conventions/drizzle-migration-new-enum-value-compare-as-text.md) (new)
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 32_estimate_requests
 
@@ -537,14 +537,14 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 37_reviews
 
-- [ ] Create branch `37_reviews`
-- [ ] Plan with `ce-plan`
-- [ ] Customer reviews, `/reviews`, admin reply or hide
-- [ ] Switch the home page reviews preview and rating from sample content to real reviews: `selectReviews()` in `src/content/home.ts` reads the real ones; delete `sampleReviews`, and move the production no-samples scan in `e2e/home.spec.ts` off `sampleCanary`, which goes with them (task 13)
-- [ ] Decide the rating stat's one source, the owner's Google rating or the site's own average: two ratings that disagree would confuse visitors (task 13)
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `37_reviews`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-19-2019-feat-customer-reviews-plan.md)
+- [x] Customer reviews, `/reviews`, and the staff reply or hide functions (the page waits for task 26)
+- [x] Switch the home page reviews preview and rating from sample content to real reviews: `selectHomeReviews()` reads the real ones from 3 published. `sampleReviews` stays (dev only, for `/dev/design` and the design checks, like the other content files' samples), so `sampleCanary` stays too; the production scan in `e2e/home.spec.ts` now searches only sample-only text, not the section's own words (task 13)
+- [x] Decide the rating stat's one source: the site's own reviews (owner, 2026-11-19). It moved out of the trust stats into the reviews section (task 13)
+- [x] Write the learning doc
+- [x] Review with `ce-code-review` ("Ready with fixes": 2 P2 and 7 P3, 8 fixed, 1 to the backlog) and `code-reviewer` (2 must-fixes in the learning doc and 1 accessibility fix, all done)
+- [x] Compound: [next-intl-template-for-client-fill-use-t-raw.md](../solutions/conventions/next-intl-template-for-client-fill-use-t-raw.md) (new)
 - [ ] Merge into `main`
 
 ### 38_offers_coupons
@@ -816,6 +816,13 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 35: queue the customer's notification for a job update where `updateJob` marks the spot, inside its transaction (task 31)
 - Task 43: deleting a booking with job photos needs its photos deleted first (`photo_sets.booking_id` restricts it), and the notice's "Your bookings" then says how long progress and notes are kept (task 31)
 - Task 20: on Postgres, check two `updateJob` calls on one booking at once (the `for update` lock); PGlite runs one transaction at a time and can't show the race (task 31)
+- Task 26 (or the task split from it): the staff reviews page: a list of every review, hidden ones included, with the customer's name (no phone number) and `hideReview`, `showReview`, `setReviewReply`, `clearReviewReply` behind Server Actions that call `requireUser` first. It must ship no later than the first screen that moves a job to "completed": reviews are public at once, and nothing else can take one down (task 37)
+- A "Reviews" link to `/reviews` in the menu or the footer (`src/components/site/navigation.ts`, `navItems` or `footerItems`, with its `Nav` label): left out while another session is changing that file; the home page's reviews section links to it from 3 reviews (task 37)
+- Task 39: once the owner approves the models, credit reviews with the model too ("Asha, Honda City"): `readPublishedReviews` already returns `modelName` (task 37)
+- Task 42: `AggregateRating` and `Review` structured data for `/reviews` and the home page, from `readPublishedReviews()` (count and average) (task 37)
+- Task 43: deleting a customer's reviews (`reviews.user_id` restricts deletes, as for bookings; deleting a booking deletes its review), and the notice's "Your reviews" retention then (task 37)
+- Task 20: on Postgres, check `updateTag("reviews")` refreshes `/reviews` and the home page across Vercel's instances after a review is sent or hidden (task 37)
+- The review form's and the estimate form's character counters miss text typed before the page's JavaScript loads (the textarea is uncontrolled; React's lint rule refuses syncing state from an effect): count it once after hydration in a way the lint allows, with a `hydrateRoot` test, in both `review-form.tsx` and `estimate-form.tsx` (task 37 review)
 
 ## How to add a task
 

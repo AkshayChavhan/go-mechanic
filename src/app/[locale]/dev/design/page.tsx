@@ -23,6 +23,7 @@ import { ServicePrices } from "@/components/site/service-prices";
 import { ServiceTile } from "@/components/site/service-tile";
 import { SiteFooter } from "@/components/site/site-footer";
 import { MobileMenuContent, SiteHeader } from "@/components/site/site-header";
+import { StarRatingInput } from "@/components/site/star-rating-input";
 import { StatTile } from "@/components/site/stat-tile";
 import { VehicleIllustration } from "@/components/site/vehicle-illustration";
 import { VehiclePicker } from "@/components/site/vehicle-picker";
@@ -48,8 +49,9 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { selectReviews, selectTrustStats } from "@/content/home";
+import { type Review, selectHomeReviews, selectTrustStats } from "@/content/home";
 import { selectPrices } from "@/content/sample-prices";
+import { REVIEW_RULES } from "@/domain/reviews";
 import { fromPrice, servicePath } from "@/domain/services";
 import { formatRupees } from "@/i18n/format";
 import { whatsappHref } from "@/lib/contact-links";
@@ -206,6 +208,20 @@ const statusSamples = [
   ],
 ] as const;
 
+/** The star rating sample's names for screen readers. */
+const sampleStarLabels = { 1: "1 out of 5 stars", 2: "2 out of 5 stars", 3: "3 out of 5 stars", 4: "4 out of 5 stars", 5: "5 out of 5 stars" };
+
+/** A made-up real-looking review for the Review card samples: a long comment and a reply. */
+const sampleRealReview: Review = {
+  id: "demo-long",
+  rating: 5,
+  kind: "car",
+  comment:
+    "They called before starting to tell me the front pads were worn and what it would cost.\nThe car was ready on time, the old pads were in the boot so I could see them, and the bill matched the estimate to the rupee. The waiting area was clean and they offered tea. I'll come back for the next service.",
+  credit: { name: "Asha", makeName: { en: "Honda" } },
+  reply: "Thank you, Asha! See you at the next service.",
+};
+
 /** One made-up job update for the Job timeline sample, `minutes` after 10:00 India time on 19 Nov 2026. */
 function sampleJobUpdate({
   id,
@@ -337,7 +353,8 @@ export default async function DesignPage() {
   // devOnly() keeps this page out of production, but a staging server that
   // shows dev pages must still show no samples. null there: the blocks below go.
   const shownStats = selectTrustStats(null);
-  const shownReviews = selectReviews(null);
+  // No published reviews: the samples (under `npm run dev`).
+  const shownReviews = selectHomeReviews({ reviews: [], count: 0, average: null }, REVIEW_RULES.minForHome);
   const shownPrices = selectPrices([]);
 
   return (
@@ -832,6 +849,24 @@ export default async function DesignPage() {
             <Separator />
 
             <Block
+              title="Star rating"
+              description="1 to 5 stars for a review (task 37): five native radios in a fieldset, each a 44px square, so a star can be chosen before JavaScript loads. Stars fill up to the chosen one by CSS alone, and differ in shape (filled or outlined), not only colour. Each radio has a name for screen readers; an error sits under the stars."
+            >
+              <div data-sample="star-rating" className="grid gap-6 md:grid-cols-2">
+                <StarRatingInput legend="Your rating" name="sample-rating" starLabels={sampleStarLabels} defaultValue={4} />
+                <StarRatingInput
+                  legend="Your rating"
+                  name="sample-rating-error"
+                  starLabels={sampleStarLabels}
+                  error="Choose a rating from 1 to 5 stars."
+                  errorId="sample-rating-error"
+                />
+              </div>
+            </Block>
+
+            <Separator />
+
+            <Block
               title="Vehicle picker"
               description="Type, brand, model and fuel, from the database's catalogue (a draft of the models, for the owner to check). Each choice narrows the lists after it; a model fills in its brand and type, and a screen reader hears what changed. Without JavaScript every list stays complete."
             >
@@ -1141,11 +1176,20 @@ export default async function DesignPage() {
             {shownReviews && (
               <Block
                 title="Review card"
-                description="Stars for the eye, the rating in words for screen readers. A sample is credited to a vehicle, never a name."
+                description="Stars for the eye, the rating in words for screen readers. A sample is credited to a vehicle, never a name; a real review to a first name and the vehicle's brand and type. The home page's preview clamps a long comment to 4 lines and leaves the reply out; /reviews shows both in full. Stars only: no quotation."
               >
                 <Section tone="grey" className="rounded-xl py-(--gutter)">
-                  <div data-sample="review-card" className="max-w-md">
+                  <div data-sample="review-card" className="grid gap-4 md:grid-cols-2">
                     <ReviewCard review={shownReviews.items[2]} sample={shownReviews.sample} />
+                    <div data-sample="review-card-long">
+                      <ReviewCard review={sampleRealReview} />
+                    </div>
+                    <div data-sample="review-card-reply">
+                      <ReviewCard review={sampleRealReview} variant="full" />
+                    </div>
+                    <div data-sample="review-card-stars-only">
+                      <ReviewCard review={{ ...sampleRealReview, id: "demo-stars", comment: null, reply: null, rating: 4 }} variant="full" />
+                    </div>
                   </div>
                 </Section>
               </Block>

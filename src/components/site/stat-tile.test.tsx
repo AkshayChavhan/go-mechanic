@@ -8,7 +8,8 @@ import { sceneAttribute } from "./scroll-scene-attributes";
 import { StatTile } from "./stat-tile";
 
 const vehicles: TrustStat = { id: "vehicles", value: 5000, decimals: 0, counts: true };
-const rating: TrustStat = { id: "rating", value: 4.8, decimals: 1, counts: true };
+// A stat with a decimal: the rating used to be one (task 37 moved it to the reviews).
+const decimal: TrustStat = { id: "years", value: 4.8, decimals: 1, counts: true };
 const warranty: TrustStat = { id: "warranty", value: 6, decimals: 0, counts: false };
 
 /** A stat inside the <dl> it belongs in, and its parts. */
@@ -55,9 +56,9 @@ describe("StatTile", () => {
     expect(container.querySelector("[aria-live]")).toBeNull();
   });
 
-  test("the rating counts with one decimal: 4.8/5", () => {
-    const { copy, animated } = renderStat(rating);
-    expect(copy.textContent).toBe("4.8/5");
+  test("a value with one decimal counts with it: 4.8+", () => {
+    const { copy, animated } = renderStat(decimal);
+    expect(copy.textContent).toBe("4.8+");
     const digits = animated.querySelector(`[${sceneAttribute.count}]`)!;
     expect(digits.getAttribute(sceneAttribute.count)).toBe("4.8");
     expect(digits.getAttribute(sceneAttribute.countDecimals)).toBe("1");

@@ -961,3 +961,60 @@ export const estimateRequests = pgTable(
     index("estimate_requests_created_index").on(table.createdAt),
   ],
 );
+
+// --- Reviews (task 37) --------------------------------------------------------
+//
+// A customer's review of one completed job, public as soon as it's sent
+// (owner, 2026-11-19). Staff with "content.edit" can hide it, show it
+// again, and reply. Only src/server/dal/reviews.ts writes them.
+
+/**
+ * One review per booking. It keeps its own copy of the first name it's
+ * credited to, so a later name change never rewrites a public review; the
+ * vehicle comes from the booking, which keeps its own copy. Deleting the
+ * booking deletes its review ("cascade"); a customer with reviews can't be
+ * deleted ("restrict"), like their bookings, until task 43 decides.
+ */
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .unique()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    /** 1 to 5 stars. */
+    rating: integer("rating").notNull(),
+    /** As the customer wrote it (trimmed; line breaks kept), or null for stars only. */
+    comment: text("comment"),
+    /** The first word of the customer's name when they sent it: "Asha". */
+    shownName: text("shown_name").notNull(),
+    /** A random uuid per visit of the form: a second send makes no second review. */
+    requestToken: uuid("request_token").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Set while staff hide it: hidden reviews stay stored but aren't shown or counted. */
+    hiddenAt: timestamp("hidden_at", { withTimezone: true }),
+    hiddenBy: text("hidden_by").references(() => users.id, { onDelete: "set null" }),
+    /** The garage's one reply, shown under the review. */
+    reply: text("reply"),
+    repliedAt: timestamp("replied_at", { withTimezone: true }),
+    repliedBy: text("replied_by").references(() => users.id, { onDelete: "set null" }),
+  },
+  (table) => [
+    unique("reviews_user_request_token").on(table.userId, table.requestToken),
+    // Backstops: the save only writes checkReviewInput's forms. 1000 is
+    // REVIEW_RULES.commentMaxLength and 60 the name form's NAME_MAX_LENGTH;
+    // reviews-table.test.ts keeps them in step.
+    check("reviews_rating_range", sql`${table.rating} between 1 and 5`),
+    check("reviews_comment_length", sql`char_length(${table.comment}) between 1 and 1000`),
+    check("reviews_shown_name_length", sql`char_length(${table.shownName}) between 1 and 60`),
+    check("reviews_reply_length", sql`char_length(${table.reply}) between 1 and 1000`),
+    // A reply has its time, and only a reply has one.
+    check("reviews_reply_complete", sql`(${table.reply} is null) = (${table.repliedAt} is null)`),
+    // The public list: shown ones, newest first.
+    index("reviews_hidden_created_index").on(table.hiddenAt, table.createdAt),
+  ],
+);

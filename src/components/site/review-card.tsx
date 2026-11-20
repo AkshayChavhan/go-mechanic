@@ -15,7 +15,7 @@ const STARS = [1, 2, 3, 4, 5] as const;
  * screen readers), which hear `label` instead ("Rated 4 out of 5"). Filled
  * and outlined stars differ in shape, not only in colour.
  */
-function Stars({ rating, label }: { rating: number; label: string }) {
+export function Stars({ rating, label }: { rating: number; label: string }) {
   return (
     <div className="flex items-center gap-0.5">
       {STARS.map((star) => (
@@ -30,15 +30,29 @@ function Stars({ rating, label }: { rating: number; label: string }) {
   );
 }
 
+type ReviewCardProps = {
+  review: Review;
+  /** A made-up review (`npm run dev` only): a "Sample" badge and data-sample. */
+  sample?: boolean;
+  /**
+   * "preview" (the home page): the comment clamped to 4 lines, no reply, so
+   * three cards in a row stay calm. "full" (/reviews): the whole comment and
+   * the garage's reply.
+   */
+  variant?: "preview" | "full";
+};
+
 /**
- * One customer review: its stars, its words as a quotation, and who wrote it
- * (a vehicle, never a name for a sample). `sample` marks a made-up review
- * (`npm run dev` only): a "Sample" badge, data-sample, and the credit
- * "Sample customer with a car". Task 37 brings real reviews.
+ * One customer review: its stars, its words as a quotation (none for stars
+ * only), who wrote it, and on /reviews the garage's reply. A real review is
+ * credited "Asha, Honda car" (task 37); a sample "Sample customer, car".
  */
-export function ReviewCard({ review, sample = false }: { review: Review; sample?: boolean }) {
-  const t = useTranslations("HomePage.reviews");
+export function ReviewCard({ review, sample = false, variant = "preview" }: ReviewCardProps) {
+  const t = useTranslations("Reviews");
   const locale = useLocale();
+  const credit = review.credit
+    ? t("credit", { name: review.credit.name, make: localize(review.credit.makeName, locale), kind: review.kind })
+    : t("sampleCredit", { kind: review.kind });
 
   return (
     <Card {...(sample ? { "data-sample": "" } : {})} className="h-full [--card-spacing:--spacing(6)]">
@@ -46,13 +60,26 @@ export function ReviewCard({ review, sample = false }: { review: Review; sample?
         <Stars rating={review.rating} label={t("rating", { rating: review.rating })} />
         {sample && <SampleBadge />}
       </CardHeader>
-      <CardContent>
-        <figure className="flex flex-col gap-4">
-          <blockquote className="type-body">{localize(review.text, locale)}</blockquote>
-          <figcaption className="text-muted-foreground">
-            {t(sample ? "sampleCredit" : "credit", { vehicle: review.vehicle })}
-          </figcaption>
-        </figure>
+      <CardContent className="flex flex-col gap-4">
+        {review.comment ? (
+          <figure className="flex flex-col gap-4">
+            {/* Plain text: the customer's line breaks are kept by CSS, never as HTML. */}
+            <blockquote
+              className={cn("type-body break-words whitespace-pre-line text-pretty", variant === "preview" && "line-clamp-4")}
+            >
+              {review.comment}
+            </blockquote>
+            <figcaption className="text-muted-foreground">{credit}</figcaption>
+          </figure>
+        ) : (
+          <p className="text-muted-foreground">{credit}</p>
+        )}
+        {variant === "full" && review.reply && (
+          <div className="flex flex-col gap-1 rounded-lg bg-muted p-4">
+            <p className="type-callout font-semibold">{t("reply")}</p>
+            <p className="type-callout break-words whitespace-pre-line text-pretty">{review.reply}</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

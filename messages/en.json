@@ -54,10 +54,6 @@
         "label": "Vehicles serviced",
         "value": "<number>{value}</number>+"
       },
-      "rating": {
-        "label": "Google rating",
-        "value": "<number>{value}</number>/5"
-      },
       "warranty": {
         "label": "Warranty on our work",
         "value": "<number>{value}</number> months"
@@ -65,9 +61,7 @@
     },
     "reviews": {
       "title": "What customers say",
-      "rating": "Rated {rating} out of 5",
-      "credit": "Customer with {vehicle, select, car {a car} other {a two-wheeler}}",
-      "sampleCredit": "Sample customer with {vehicle, select, car {a car} other {a two-wheeler}}"
+      "allLink": "Read all reviews"
     },
     "cta": {
       "title": "Book your next service",
@@ -157,7 +151,7 @@
     "intro": "This notice explains what personal data the {brand} website keeps about you, why, who helps us handle it, how long we keep it, and what you can ask us to do. {brand} is one garage, at {address}.",
     "data": {
       "title": "What we keep, and why",
-      "lead": "The website keeps personal data when you ask for a login code, when you log in, when you give your name or add a vehicle to your account, when you book, and when you ask for a free estimate. Here is each thing it keeps."
+      "lead": "The website keeps personal data when you ask for a login code, when you log in, when you give your name or add a vehicle to your account, when you book, when you ask for a free estimate, and when you review a job. Here is each thing it keeps."
     },
     "labels": {
       "what": "What",
@@ -177,8 +171,8 @@
         "title": "Your name",
         "what": "The name you give us after your first login.",
         "why": "So the garage knows who you are, and to greet you on the website.",
-        "who": "The garage, and the company that hosts the database.",
-        "howLong": "As long as you have a login with us. You can ask us to correct or delete it."
+        "who": "The garage, and the company that hosts the database. If you write a review, your first name is shown publicly with it (see \"Your reviews\").",
+        "howLong": "As long as you have a login with us. You can ask us to correct or delete it. A review keeps its own copy of your first name: changing or deleting your name doesn't change a review you've already sent."
       },
       "vehicles": {
         "title": "Your vehicles",
@@ -200,6 +194,13 @@
         "why": "So the garage can look at the problem and tell you what the work will involve and cost.",
         "who": "The garage's owner and managers, and the company that hosts the database.",
         "howLong": "For now we keep every request, even after you remove the vehicle it was for. Nothing deletes requests yet; we'll say here how long we keep them. Photos you add to a request are deleted {photoDays} days after the first one was sent, even if the garage hasn't answered yet; the request itself stays."
+      },
+      "reviews": {
+        "title": "Your reviews",
+        "what": "Each review you write of a completed job: the stars you give, your comment if you write one, the first word of your name as it was when you sent it, and when you sent it. It's shown with your vehicle's brand and type from that booking, and with the garage's reply if there is one.",
+        "why": "So other customers can read what customers think of the garage's work.",
+        "who": "Everyone: a review is public on this website as soon as you send it, with your first name and your vehicle's brand and type. The garage's owner and managers can hide it or reply, and the company that hosts the database stores it.",
+        "howLong": "For now we keep every review, also one the garage has hidden: hiding takes it off the website but keeps it stored. Nothing deletes reviews yet; we'll say here how long we keep them. Deleting a booking deletes its review. You can't edit or delete a review on the website: call the garage and they will hide it."
       },
       "photos": {
         "title": "Photos of your vehicle",
@@ -742,5 +743,60 @@
     "at": "{date}, {time}",
     "photoAlt": "Photo {n} from this update",
     "photosGone": "The photos from this update are no longer kept."
+  },
+  "Reviews": {
+    "rating": "Rated {rating} out of 5",
+    "credit": "{name}, {make} {kind, select, car {car} other {two-wheeler}}",
+    "sampleCredit": "Sample customer, {kind, select, car {car} other {two-wheeler}}",
+    "reply": "Reply from the garage",
+    "summary": "{average} out of 5 · {count, plural, one {# review} other {# reviews}}"
+  },
+  "ReviewsPage": {
+    "metaTitle": "Customer reviews | {brand}",
+    "metaDescription": "Reviews from {brand} customers whose cars and two-wheelers we've serviced, with their star ratings.",
+    "heading": "Customer reviews",
+    "intro": "Every review here comes from a customer whose vehicle we've serviced. We don't edit them.",
+    "empty": "No reviews yet.",
+    "howTo": "After we finish a job, you can review it from your account."
+  },
+  "ReviewPage": {
+    "metaTitle": "Review your job | {brand}",
+    "heading": "Review your job",
+    "intro": "Tell other customers how it went.",
+    "loading": "Loading…",
+    "back": "Back to your account",
+    "vehicle": "Your {make} {kind, select, car {car} other {two-wheeler}}",
+    "creditPreview": "Shown as: {credit}",
+    "publicNote": "Your review is shown publicly as soon as you send it, with your first name and your vehicle's brand. You can't edit it here; call the garage if you want it hidden. See the <privacy>privacy notice</privacy>.",
+    "ratingLegend": "Your rating",
+    "starLabel": "{n} out of 5 stars",
+    "commentLabel": "Your comment (optional)",
+    "commentHint": "What did the garage do well, or what could be better?",
+    "commentCount": "{count} of {max} characters",
+    "submit": "Send review",
+    "sending": "Sending…",
+    "connection": "We couldn't send your review. Check your connection and try again.",
+    "nameNote": "Add your name on your account first: a review is credited to your first name.",
+    "nameLink": "Go to your account",
+    "notFound": "We couldn't find this completed job in your account.",
+    "alreadyReviewed": "You've already reviewed this job: {rating} out of 5.",
+    "errors": {
+      "rating-missing": "Choose a rating from 1 to 5 stars.",
+      "rating-invalid": "Choose a rating from 1 to 5 stars.",
+      "comment-too-long": "Use 1,000 characters or fewer.",
+      "bad-request": "Something went wrong. Reload the page and try again.",
+      "not-found": "We couldn't find this completed job in your account.",
+      "already-reviewed": "You've already reviewed this job."
+    },
+    "thanksHeading": "Thank you for your review",
+    "thanksBody": "It's on our reviews page now.",
+    "seeReviews": "See the reviews"
+  },
+  "MyReviews": {
+    "heading": "Your completed jobs",
+    "completedOn": "Completed on {date}",
+    "code": "Booking {code}",
+    "write": "Write a review",
+    "yourRating": "You rated it {rating} out of 5"
   }
 }

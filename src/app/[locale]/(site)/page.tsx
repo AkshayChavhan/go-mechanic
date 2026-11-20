@@ -2,9 +2,11 @@ import { getTranslations } from "next-intl/server";
 
 import { bookTarget } from "@/components/site/navigation";
 import { ScrollScene } from "@/components/site/scroll-scene";
-import { selectReviews, selectTrustStats } from "@/content/home";
+import { selectHomeReviews, selectTrustStats } from "@/content/home";
+import { REVIEW_RULES } from "@/domain/reviews";
 import { whatsappHref } from "@/lib/contact-links";
 import { readGarage } from "@/server/dal/garage";
+import { readPublishedReviews } from "@/server/dal/reviews";
 import { readServices } from "@/server/dal/services";
 import { readVehicleCatalogue } from "@/server/dal/vehicles";
 
@@ -52,8 +54,9 @@ export default async function Home() {
   const brands = catalogue.makes.map(({ id, kind, name }) => ({ id, kind, name }));
 
   // Real data, else samples under `npm run dev`, else null (src/content/home.ts).
+  // The reviews are a cached read too, refreshed when one is sent or hidden.
   const stats = selectTrustStats();
-  const reviews = selectReviews();
+  const reviews = selectHomeReviews(await readPublishedReviews(), REVIEW_RULES.minForHome);
   const tones = homeTones({ stats: stats !== null, reviews: reviews !== null });
 
   return (
