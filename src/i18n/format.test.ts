@@ -8,6 +8,7 @@ import {
   formatIndiaLongDay,
   formatNumber,
   formatRupees,
+  rupeeSymbol,
   formatTime,
   formatTimeOfDay,
   formatWeekday,
@@ -16,6 +17,10 @@ import {
 
 // The expected strings below were copied from a real run of Node 24's Intl,
 // not typed from memory.
+
+test("rupeeSymbol: the sign a price box shows before the amount", () => {
+  expect(rupeeSymbol("en")).toBe("₹");
+});
 
 describe("formatRupees (money is stored as integer paise)", () => {
   test("Indian digit grouping", () => {

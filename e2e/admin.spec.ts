@@ -41,6 +41,7 @@ const STAFF_WORDS = [
   admin.overview.intro,
   admin.overview.bookingsDescription,
   admin.overview.estimatesDescription,
+  admin.overview.pricesDescription,
   admin.overview.mechanicNote,
   admin.bookings.empty,
   admin.bookings.dayNavLabel,
@@ -49,6 +50,11 @@ const STAFF_WORDS = [
   admin.bookings.dateLabel,
   admin.bookings.dateNote,
   account.staffLink,
+  // The price editor (task 39). Not Admin.nav.prices ("Prices"): too common a word.
+  messages.AdminPrices.intro,
+  messages.AdminPrices.groupHint,
+  messages.AdminPrices.fuelsSummary,
+  messages.AdminPrices.onInspectionNote,
 ];
 
 const CODE_SHAPE = new RegExp(`^[${BOOKING_CODE_ALPHABET}]{3}-[${BOOKING_CODE_ALPHABET}]{3}$`);
@@ -126,7 +132,7 @@ test("a customer books a visit on /book (the booking the owner looks for)", asyn
   expect(withoutFaviconProbe(errors)).toEqual([]);
 });
 
-test("a customer opening /admin or /admin/bookings sees the 404 page, and its HTML holds no staff word or booking", async ({
+test("a customer opening a staff page sees the 404 page, and its HTML holds no staff word or booking", async ({
   browser,
 }) => {
   expect(booked.storage, "the booking test ran first").toBeDefined();
@@ -143,7 +149,13 @@ test("a customer opening /admin or /admin/bookings sees the 404 page, and its HT
 
   // The raw HTML, with the customer's cookies (the page's request API shares
   // them): what the server sent, page data included, not just what's shown.
-  for (const path of ["/admin", "/admin/bookings", `/admin/bookings?date=${booked.day}`]) {
+  for (const path of [
+    "/admin",
+    "/admin/bookings",
+    `/admin/bookings?date=${booked.day}`,
+    "/admin/prices",
+    "/admin/prices/periodic-service",
+  ]) {
     const response = await page.request.get(path, { maxRedirects: 0 });
     // A 404 inside <Suspense> streams with status 200 (CLAUDE.md, "Roles and access").
     expect(response.status(), path).toBe(200);
