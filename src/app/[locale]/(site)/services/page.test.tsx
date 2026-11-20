@@ -4,14 +4,18 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { renderWithIntl } from "@/i18n/test-utils";
 import { readServicePrices, readServices } from "@/server/dal/services";
 import { draftServices } from "@/server/db/service-seed-data";
+import { draftCatalogue } from "@/server/db/vehicle-seed-data";
+import { readVehicleCatalogue } from "@/server/dal/vehicles";
 import messages from "../../../../../messages/en.json";
 
 import ServicesPage, { ensureStatic, generateMetadata } from "./page";
 
 // The page is an async Server Component: each test renders `await
 // ServicesPage()`, with the cached reads replaced by the draft services and
-// no real prices, and next-intl/server by next-intl's own translator.
+// no real prices, the draft catalogue, and next-intl/server by next-intl's
+// own translator.
 vi.mock("@/server/dal/services", () => ({ readServices: vi.fn(), readServicePrices: vi.fn() }));
+vi.mock("@/server/dal/vehicles", () => ({ readVehicleCatalogue: vi.fn() }));
 vi.mock("next-intl/server", async () => {
   const { createTranslator } = await import("next-intl");
   const { default: allMessages } = await import("../../../../../messages/en.json");
@@ -27,6 +31,7 @@ const services = draftServices.filter((service) => service.kind === "service");
 beforeEach(() => {
   vi.mocked(readServices).mockResolvedValue([...draftServices]);
   vi.mocked(readServicePrices).mockResolvedValue([]);
+  vi.mocked(readVehicleCatalogue).mockResolvedValue(draftCatalogue);
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -73,6 +78,17 @@ describe("/services", () => {
     ]);
     const { container } = renderWithIntl(await ServicesPage());
     expect(container.querySelector("[data-sample]")).toBeNull();
+    const brakes = screen.getByRole("link", { name: "Brakes" }).closest('[data-slot="card"]')!;
+    expect(brakes.textContent).toContain("From ₹1,400");
+  });
+
+  test("\"From\" leaves out a price for a fuel no model of the group runs on (task 39)", async () => {
+    // No scooter in the draft catalogue runs on CNG, so that row never shows on a page.
+    vi.mocked(readServicePrices).mockResolvedValue([
+      { serviceId: "brakes", categoryId: "hatchback", fuel: null, pricePaise: 140_000 },
+      { serviceId: "brakes", categoryId: "scooter", fuel: "cng", pricePaise: 10_000 },
+    ]);
+    renderWithIntl(await ServicesPage());
     const brakes = screen.getByRole("link", { name: "Brakes" }).closest('[data-slot="card"]')!;
     expect(brakes.textContent).toContain("From ₹1,400");
   });

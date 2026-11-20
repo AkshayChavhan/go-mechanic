@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  checkGroupPrices,
   checkServices,
   fromPrice,
+  groupFuels,
   type PricedVehicle,
   priceFor,
   type Service,
@@ -10,7 +12,7 @@ import {
   servicePath,
   SERVICE_KINDS,
 } from "./services";
-import type { VehicleCategory } from "./vehicles";
+import type { VehicleCatalogue, VehicleCategory } from "./vehicles";
 
 const categories: VehicleCategory[] = [
   { id: "hatchback", kind: "car", name: { en: "Hatchback" } },
@@ -37,6 +39,29 @@ function service(overrides: Partial<Service> = {}): Service {
 function price(overrides: Partial<ServicePrice> = {}): ServicePrice {
   return { serviceId: "brakes", categoryId: "hatchback", fuel: null, pricePaise: 150_000, ...overrides };
 }
+
+/** A small catalogue: which fuels each price group's models run on. */
+const catalogue: VehicleCatalogue = {
+  categories,
+  makes: [
+    {
+      id: "car-honda",
+      kind: "car",
+      name: { en: "Honda" },
+      models: [
+        { id: "car-honda-jazz", name: { en: "Jazz" }, categoryId: "hatchback", fuels: ["petrol", "diesel"] },
+        { id: "car-honda-brio", name: { en: "Brio" }, categoryId: "hatchback", fuels: ["cng", "petrol"] },
+        { id: "car-honda-city", name: { en: "City" }, categoryId: "sedan", fuels: ["petrol"] },
+      ],
+    },
+    {
+      id: "two-wheeler-honda",
+      kind: "two-wheeler",
+      name: { en: "Honda" },
+      models: [{ id: "two-wheeler-honda-activa", name: { en: "Activa" }, categoryId: "scooter", fuels: ["petrol"] }],
+    },
+  ],
+};
 
 const petrolHatchback: PricedVehicle = { kind: "car", categoryId: "hatchback", fuel: "petrol" };
 
@@ -145,33 +170,114 @@ describe("priceFor", () => {
   });
 });
 
+describe("groupFuels", () => {
+  test("the fuels the group's models run on that the service covers, in FUELS order", () => {
+    expect(groupFuels(catalogue, "hatchback", service())).toEqual(["petrol", "diesel", "cng"]);
+    expect(groupFuels(catalogue, "hatchback", service({ fuels: ["diesel", "electric"] }))).toEqual(["diesel"]);
+    expect(groupFuels(catalogue, "sedan", service())).toEqual(["petrol"]);
+  });
+
+  test("a group with no models, or none on a covered fuel, has no fuels", () => {
+    expect(groupFuels(catalogue, "suv", service())).toEqual([]);
+    expect(groupFuels(catalogue, "scooter", service({ fuels: ["electric"] }))).toEqual([]);
+  });
+});
+
 describe("fromPrice", () => {
   test("the lowest price any covered vehicle pays", () => {
     const rows = [
       price({ pricePaise: 150_000 }),
-      price({ categoryId: "sedan", fuel: "diesel", pricePaise: 210_000 }),
+      price({ categoryId: "sedan", fuel: "petrol", pricePaise: 210_000 }),
       price({ categoryId: "scooter", pricePaise: 60_000 }),
     ];
-    expect(fromPrice(service(), rows)).toBe(60_000);
+    expect(fromPrice(service(), rows, catalogue)).toBe(60_000);
   });
 
-  test("ignores an every-fuel row that exact-fuel rows replace for every covered fuel", () => {
+  test("ignores an every-fuel row that exact-fuel rows replace for every fuel the group's models run on", () => {
     const petrolDiesel = service({ fuels: ["petrol", "diesel"] });
     const rows = [
       price({ pricePaise: 50_000 }),
       price({ fuel: "petrol", pricePaise: 120_000 }),
       price({ fuel: "diesel", pricePaise: 140_000 }),
     ];
-    expect(fromPrice(petrolDiesel, rows)).toBe(120_000);
+    expect(fromPrice(petrolDiesel, rows, catalogue)).toBe(120_000);
+  });
+
+  test("ignores a fuel row for a fuel no model in the group runs on (the page never shows it)", () => {
+    // Sedans here are all petrol: a cheaper CNG sedan price is never on the page.
+    const rows = [price({ categoryId: "sedan", pricePaise: 50_000 }), price({ categoryId: "sedan", fuel: "cng", pricePaise: 40_000 })];
+    expect(fromPrice(service(), rows, catalogue)).toBe(50_000);
   });
 
   test("ignores other services' rows", () => {
-    expect(fromPrice(service(), [price({ serviceId: "ac", pricePaise: 1 }), price()])).toBe(150_000);
+    expect(fromPrice(service(), [price({ serviceId: "ac", pricePaise: 1 }), price()], catalogue)).toBe(150_000);
   });
 
-  test("is null with no rows, or for a service priced after an inspection", () => {
-    expect(fromPrice(service(), [])).toBeNull();
-    expect(fromPrice(service({ pricedAfterInspection: true }), [price()])).toBeNull();
+  test("is null with no rows, for a group with no models, or for a service priced after an inspection", () => {
+    expect(fromPrice(service(), [], catalogue)).toBeNull();
+    expect(fromPrice(service(), [price({ categoryId: "suv" })], catalogue)).toBeNull();
+    expect(fromPrice(service({ pricedAfterInspection: true }), [price()], catalogue)).toBeNull();
+  });
+});
+
+describe("checkGroupPrices", () => {
+  const hatchback = categories[0]!;
+
+  test.each([
+    ["a group price alone", [{ fuel: null, pricePaise: 150_000 }]],
+    ["a fuel price alone", [{ fuel: "diesel", pricePaise: 180_000 }]],
+    ["both", [{ fuel: null, pricePaise: 150_000 }, { fuel: "diesel", pricePaise: 180_000 }]],
+    ["nothing (no price for the group)", []],
+  ] as const)("passes %s", (_, entries) => {
+    expect(checkGroupPrices(service(), hatchback, catalogue, entries)).toEqual([]);
+  });
+
+  test("a service priced after an inspection takes no price", () => {
+    expect(checkGroupPrices(service({ pricedAfterInspection: true }), hatchback, catalogue, [{ fuel: null, pricePaise: 1_000 }])).toEqual([
+      { field: "form", problem: "on-inspection" },
+    ]);
+  });
+
+  test("a group of a kind the service doesn't cover", () => {
+    expect(checkGroupPrices(service({ vehicleKinds: ["car"] }), categories[2]!, catalogue, [{ fuel: null, pricePaise: 1_000 }])).toEqual([
+      { field: "form", problem: "category-kind" },
+    ]);
+  });
+
+  test("a fuel the service doesn't cover, or no model in the group runs on", () => {
+    const noElectric = service({ fuels: ["petrol", "diesel", "cng"] });
+    expect(
+      checkGroupPrices(noElectric, hatchback, catalogue, [
+        { fuel: "electric", pricePaise: 1_000 },
+        { fuel: "petrol", pricePaise: 1_000 },
+      ]),
+    ).toEqual([{ field: "electric", problem: "fuel-not-offered" }]);
+    expect(checkGroupPrices(service(), categories[1]!, catalogue, [{ fuel: "cng", pricePaise: 1_000 }])).toEqual([
+      { field: "cng", problem: "fuel-not-offered" },
+    ]);
+  });
+
+  test("an amount outside ₹1 to ₹10,00,000, or not whole paise", () => {
+    expect(
+      checkGroupPrices(service(), hatchback, catalogue, [
+        { fuel: null, pricePaise: 99 },
+        { fuel: "petrol", pricePaise: 100_000_001 },
+        { fuel: "diesel", pricePaise: 1.5 },
+      ]),
+    ).toEqual([
+      { field: "group", problem: "bad-price" },
+      { field: "petrol", problem: "bad-price" },
+      { field: "diesel", problem: "bad-price" },
+    ]);
+  });
+
+  test("the same fuel twice", () => {
+    expect(
+      checkGroupPrices(service(), hatchback, catalogue, [
+        { fuel: "petrol", pricePaise: 1_000 },
+        { fuel: "petrol", pricePaise: 2_000 },
+      ]),
+    ).toEqual([{ field: "petrol", problem: "repeated" }]);
   });
 });
 
