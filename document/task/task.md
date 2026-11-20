@@ -36,7 +36,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | Done | [24_pickup_drop.md](../learning/24_pickup_drop.md) |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | Done | [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md) |
-| 27 | `27_booking_management` | Confirm, cancel, reschedule, assign mechanic; status rules | In progress |  |
+| 27 | `27_booking_management` | Confirm, cancel, no-show and assign a mechanic; status rules (reschedule split into task 52) | In progress |  |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
@@ -61,6 +61,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 49 | `49_book_pickup_step` | The pickup and drop step in the `/book` wizard (task 24's areas) | To do |  |
 | 50 | `50_staff_phone_bookings` | Phone and walk-in bookings made by staff (split from task 26) | To do |  |
 | 51 | `51_admin_estimate_inbox` | The estimate-request inbox and its photo page in `/admin` (split from task 26) | To do |  |
+| 52 | `52_staff_reschedule` | Staff move a booking to another free time, up to 60 days ahead (split from task 27); build before task 50 | To do |  |
 
 ## Task steps
 
@@ -431,11 +432,12 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `27_booking_management`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-20-1302-feat-booking-management-plan.md) (owner, 2026-11-20: staff reschedule up to 60 days ahead; "Arrived after all" undoes a no-show; the board reminds staff to call the customer after a cancel or move; split check before reschedule)
-- [ ] Confirm, cancel, reschedule, assign mechanic; status rules
-- [ ] Statuses (owner, 2026-11-20): a new booking is Booked until staff Confirm it (its place in the slot is held from the start); staff can also mark it Cancelled (with a short reason kept for the garage; frees the place) or No-show (the slot has passed; nothing is freed)
-- [ ] Reschedule: staff may pick from today onward, past the customer's 7-day window, never over a full slot (the same rule as task 50's phone bookings); lock the booking row first and use `moveSlot` (task 22)
-- [ ] Assign a mechanic now (owner, 2026-11-20): lists users whose role holds `jobs.update` but not `bookings.manage`; empty until task 29, so the board says "No mechanics yet"; tested with seeded users
-- [ ] The board shows each booking's status and lets staff hide cancelled ones (task 26 backlog); `updateJob` refuses a cancelled booking, and cancelling refuses a job that has started (task 31)
+- [x] Confirm, cancel, no-show and assign a mechanic; status rules (`canChangeStatus` in `src/domain/bookings.ts`)
+- [x] Statuses (owner, 2026-11-20): a new booking is Booked until staff Confirm it (its place in the slot is held from the start); staff can also mark it Cancelled (with a short reason kept for the garage; frees the place) or No-show (the slot has passed; nothing is freed); "Arrived after all" undoes a no-show
+- [x] Reschedule: split into task 52 at the size checkpoint (2026-11-20; about 1,300 more lines, which task 50 also needs). Its `rescheduled` history kind and columns are already in migration 0012
+- [x] Assign a mechanic now (owner, 2026-11-20): lists users whose role holds `jobs.update` but not `bookings.manage`; empty until task 29, so the board says "No mechanics yet"; tested with seeded users
+- [x] The board shows each booking's status and lets staff hide cancelled ones (task 26 backlog); `updateJob` refuses a cancelled booking, and cancelling refuses a job that has started (task 31)
+- [x] Privacy notice: the staff history (cancel reasons, who changed what); `LOGIN_NOTICE_VERSION` moved to `2026-11-20`
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -720,6 +722,21 @@ Split from task 26 at its size checkpoint (owner, 2026-11-19). Build it from U4 
 - [ ] `/admin/estimates`: `listEstimateRequests()` (newest 50), an empty state, and "Showing the newest 50 requests" when the page is full; each row links to its detail page (task 32)
 - [ ] `/admin/estimates/<id>`: a new `readEstimateRequestForStaff(id)` (`estimates.manage` first, then `isUuid`); photos through `photoViewUrls(photoSetId)`, loaded at once, with the 5-minute expiry line; "the photos were removed" when the set is gone; a back link
 - [ ] Browser tests: the owner opens a customer's request and its photo loads; a customer gets the 404 page with no staff words in its HTML
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
+
+### 52_staff_reschedule
+
+Split from task 27 at its size checkpoint (2026-11-20). Build it from U7 and U8 in [task 27's plan](../plans/2026-11-20-1302-feat-booking-management-plan.md) (R5, R6, the reschedule half of R13, KTD7, KTD9, KTD10). Build it before task 50, which needs the same staff window.
+
+- [ ] Create branch `52_staff_reschedule`
+- [ ] A staff window in the slot engine (U7): from now up to 60 days ahead, never over a full slot or on a closed date; the customer's 7-day window stays every function's default, and every existing slot and booking test passes unchanged
+- [ ] `rescheduleBooking` (U8) in `src/server/dal/staff-booking-changes.ts`, in the staff write order (CLAUDE.md "Booking management"): active status and a job not started, `same-slot`, `vehicle-busy` (the same vehicle already booked in the new slot), then `moveSlot` with the staff window, then `starts_at` and a `rescheduled` event (the kind and its columns are already in migration 0012)
+- [ ] The board's picker: a day, then that day's free slots (`readStaffSlotsOn`); the action lands on the new day with the "moved" notice and the reminder to call or WhatsApp the customer
+- [ ] Update the privacy notice: reschedules join the staff history; move `LOGIN_NOTICE_VERSION`
+- [ ] Browser test: move the test booking to another day and find it there
 - [ ] Write the learning doc
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
