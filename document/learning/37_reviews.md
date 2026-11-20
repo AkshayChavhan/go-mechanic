@@ -8,7 +8,12 @@ A customer whose job is completed can now give it 1 to 5 stars and an optional c
 
 Full details: [the plan](../plans/2026-11-19-2019-feat-customer-reviews-plan.md) (R1–R9, KTD1–KTD11, units U1–U6) and the "Reviews" block in `CLAUDE.md`.
 
-**Built in parallel.** Two other Claude sessions worked at the same time, each in its own git worktree. This was Session 2, in `go-mechanic-s2`. There was no merge conflict. Migration `0011_reviews` sits on top of `main`'s `0010`, and `LOGIN_NOTICE_VERSION` moved from `2026-11-19.3` to `2026-11-19.4`.
+**Built in parallel.** Two other Claude sessions worked at the same time, each in its own git worktree. This was Session 2, in `go-mechanic-s2`. Task 26 (the admin bookings board) merged into `main` just before this branch was pushed, so `main` was merged in (`c29c97f`). Two files conflicted because both tasks added to the same lines:
+
+- **`CLAUDE.md`'s repo map:** both tasks added rows and changed the `src/domain/` and `src/server/` rows. Both sides' additions were kept, task 26's rows and task 37's reviews files.
+- **`src/components/account/account-content.test.tsx`:** task 37's completed-jobs test and task 26's Staff area link tests were added in the same place. Both were kept.
+
+The first full check after the merge reported 3 failures and 5 unhandled errors while other sessions were running. A rerun passed: 2,384 tests, and 136 browser tests. Migration `0011_reviews` still sits on top of `main`'s `0010`, since task 26 added none, and `LOGIN_NOTICE_VERSION` moved from `2026-11-19.3` to `2026-11-19.4`.
 
 ## Why: the problem we solved
 
