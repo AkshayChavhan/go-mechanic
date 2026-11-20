@@ -42,6 +42,7 @@ const NOT_FOUND = { digest: "NEXT_HTTP_ERROR_FALLBACK;404" };
 const price = { serviceId: "brakes", categoryId: "hatchback", fuel: null, pricePaise: 90_000 };
 
 beforeEach(() => {
+  gate.suspend = false;
   vi.mocked(getCurrentUser).mockReset();
   vi.mocked(readServices).mockResolvedValue([...draftServices]);
   vi.mocked(listPricesForStaff).mockReset();

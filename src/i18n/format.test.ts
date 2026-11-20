@@ -8,6 +8,7 @@ import {
   formatIndiaLongDay,
   formatNumber,
   formatRupees,
+  formatRupeeAmount,
   rupeeSymbol,
   formatTime,
   formatTimeOfDay,
@@ -17,6 +18,13 @@ import {
 
 // The expected strings below were copied from a real run of Node 24's Intl,
 // not typed from memory.
+
+test("formatRupeeAmount: paise as a price box shows them, without the sign; parseRupees reads it back", () => {
+  expect(formatRupeeAmount(150_000, "en")).toBe("1,500");
+  expect(formatRupeeAmount(12_345_600, "en")).toBe("1,23,456");
+  expect(formatRupeeAmount(49_950, "en")).toBe("499.50");
+  expect(() => formatRupeeAmount(1.5, "en")).toThrow(RangeError);
+});
 
 test("rupeeSymbol: the sign a price box shows before the amount", () => {
   expect(rupeeSymbol("en")).toBe("₹");

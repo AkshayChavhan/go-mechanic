@@ -42,6 +42,7 @@ const NOT_FOUND = { digest: "NEXT_HTTP_ERROR_FALLBACK;404" };
 const gateFor = (serviceId: string) => ServicePricesGate({ locale: "en", params: Promise.resolve({ serviceId }) });
 
 beforeEach(() => {
+  gate.suspend = false;
   vi.mocked(getCurrentUser).mockReset();
   vi.mocked(readServices).mockReset();
   // The hidden ones are left out by readServices itself: here, brakes.
