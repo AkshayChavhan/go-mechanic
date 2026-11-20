@@ -6,18 +6,23 @@
 // 2. Public reads need no check: anyone can see the services and their
 //    prices. Both reads are cached, so the pages that show them stay
 //    prebuilt.
-// 3. Writes come later: task 39 adds the saves, with authorize("content.edit"),
-//    and they call updateTag() with the tags below.
+// 3. Staff work (task 39's price editor) starts with authorize("content.edit")
+//    and reads live. Only saveGroupPrices writes prices; it calls updateTag()
+//    with the tag below, so the public pages show the new price at once.
 
 import "server-only";
 
-import { asc, eq } from "drizzle-orm";
-import { cacheLife, cacheTag } from "next/cache";
+import { and, asc, eq, sql } from "drizzle-orm";
+import { cacheLife, cacheTag, updateTag } from "next/cache";
 
-import type { Service, ServicePrice } from "@/domain/services";
+import { checkGroupPrices, type GroupPriceEntry, type GroupPriceProblem, type Service, type ServicePrice } from "@/domain/services";
+import { isTextId } from "@/domain/vehicles";
+import { authorize } from "@/server/auth/access";
 import { getDatabase } from "@/server/db";
 import { servicePrices, services } from "@/server/db/schema";
 import { draftServices } from "@/server/db/service-seed-data";
+
+import { readVehicleCatalogue } from "./vehicles";
 
 /** The cache tag on every cached read of the services and packages. */
 export const SERVICES_TAG = "services";
@@ -70,7 +75,7 @@ export function serviceIdsToBuild(): string[] {
 }
 
 /**
- * Every real price. Empty until the owner gives prices (task 39): pages then
+ * Every real price. Empty until staff save one (task 39's editor): pages then
  * show the samples under `npm run dev` (selectPrices() in
  * src/content/sample-prices.ts) and no price anywhere else. A price of a
  * hidden service is still returned; pages only look up the services they show.
@@ -81,6 +86,79 @@ export async function readServicePrices(): Promise<ServicePrice[]> {
   cacheLife("max");
 
   const db = await getDatabase();
+  return selectPrices(db);
+}
+
+// --- Staff: the price editor (task 39) ----------------------------------------
+
+/** Every real price, read live for the staff editor (never cached), for "content.edit". */
+export async function listPricesForStaff(): Promise<ServicePrice[]> {
+  await authorize("content.edit");
+  const db = await getDatabase();
+  return selectPrices(db);
+}
+
+export type SaveGroupPricesResult =
+  /** Saved and live; `prices` are this service's rows for the group now. */
+  | { status: "saved"; prices: ServicePrice[] }
+  /** No listed service or package with that id, or no such group for its vehicle kinds. */
+  | { status: "not-found" }
+  /** The garage prices this service after seeing the vehicle. */
+  | { status: "on-inspection" }
+  | { status: "problems"; problems: GroupPriceProblem[] };
+
+/**
+ * Replaces one price group's prices for one service or package with
+ * `entries` (empty: no price for that group), for "content.edit". Call from
+ * a Server Action: it calls updateTag().
+ *
+ * Saving the same entries again gives the same rows and the same answer, so
+ * a retry needs no request token. The transaction first takes an advisory
+ * lock on the service and group: without it, two overlapping saves of one
+ * card on Postgres would both delete, and the second insert would hit the
+ * unique constraint. With it, the last save wins. (PGlite runs one
+ * transaction at a time, so its tests can't show the race; task 20 can.)
+ */
+export async function saveGroupPrices(
+  serviceId: string,
+  categoryId: string,
+  entries: readonly GroupPriceEntry[],
+): Promise<SaveGroupPricesResult> {
+  await authorize("content.edit");
+  if (!isTextId(serviceId) || !isTextId(categoryId)) return { status: "not-found" };
+
+  // Cached reads before the transaction: each opens its own query, and PGlite
+  // would wait forever for a connection the transaction holds.
+  const service = (await readServices()).find((row) => row.id === serviceId);
+  const catalogue = await readVehicleCatalogue();
+  const category = catalogue.categories.find((row) => row.id === categoryId);
+  if (!service || !category) return { status: "not-found" };
+
+  const problems = checkGroupPrices(service, category, catalogue, entries);
+  if (problems.some((problem) => problem.problem === "on-inspection")) return { status: "on-inspection" };
+  if (problems.some((problem) => problem.problem === "category-kind")) return { status: "not-found" };
+  if (problems.length > 0) return { status: "problems", problems };
+
+  const db = await getDatabase();
+  const prices = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`service-price:${serviceId}:${categoryId}`}))`);
+    const group = and(eq(servicePrices.serviceId, serviceId), eq(servicePrices.categoryId, categoryId));
+    await tx.delete(servicePrices).where(group);
+    if (entries.length > 0) {
+      await tx
+        .insert(servicePrices)
+        .values(entries.map((entry) => ({ serviceId, categoryId, fuel: entry.fuel, pricePaise: entry.pricePaise })));
+    }
+    return selectPrices(tx, group);
+  });
+  updateTag(SERVICE_PRICES_TAG);
+  return { status: "saved", prices };
+}
+
+type Reader = Pick<Awaited<ReturnType<typeof getDatabase>>, "select">;
+
+/** The price rows (all, or those matching `where`), in a fixed order. */
+function selectPrices(db: Reader, where?: ReturnType<typeof and>): Promise<ServicePrice[]> {
   return db
     .select({
       serviceId: servicePrices.serviceId,
@@ -89,5 +167,6 @@ export async function readServicePrices(): Promise<ServicePrice[]> {
       pricePaise: servicePrices.pricePaise,
     })
     .from(servicePrices)
+    .where(where)
     .orderBy(asc(servicePrices.serviceId), asc(servicePrices.categoryId), asc(servicePrices.fuel));
 }
