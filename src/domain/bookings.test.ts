@@ -2,15 +2,21 @@ import { describe, expect, test } from "vitest";
 
 import {
   BOOKING_CODE_ALPHABET,
+  ACTIVE_STATUSES,
   BOOKING_EVENT_KINDS,
   BOOKING_STATUSES,
   type BookingInput,
+  type BookingStatus,
   buildBookingLines,
+  CANCEL_REASON_RULES,
+  canChangeStatus,
   checkBookingInput,
+  checkCancelInput,
   formatBookingCode,
   LINE_PRICE_STATUSES,
   makeBookingCode,
   MAX_FUTURE_BOOKINGS,
+  PLACE_HOLDING_STATUSES,
 } from "./bookings";
 import type { PricedVehicle, Service, ServicePrice } from "./services";
 
@@ -261,9 +267,100 @@ describe("booking codes", () => {
 
 describe("the lists the database enums are built from", () => {
   test("their values", () => {
-    expect(BOOKING_STATUSES).toEqual(["booked"]);
-    expect(BOOKING_EVENT_KINDS).toEqual(["booked", "job-update"]);
+    expect(BOOKING_STATUSES).toEqual(["booked", "confirmed", "cancelled", "no-show"]);
+    expect(BOOKING_EVENT_KINDS).toEqual(["booked", "job-update", "status-change", "rescheduled", "assigned"]);
     expect(LINE_PRICE_STATUSES).toEqual(["price", "on-inspection", "no-price"]);
     expect(MAX_FUTURE_BOOKINGS).toBe(3);
+  });
+});
+
+describe("the two sets of statuses (task 27)", () => {
+  test("a no-show still holds its place, but isn't active", () => {
+    expect(PLACE_HOLDING_STATUSES).toEqual(["booked", "confirmed", "no-show"]);
+    expect(ACTIVE_STATUSES).toEqual(["booked", "confirmed"]);
+  });
+});
+
+describe("canChangeStatus (task 27)", () => {
+  // The facts the save reads from the locked booking row.
+  const notStarted = { jobStarted: false, slotStarted: false };
+  const slotPassed = { jobStarted: false, slotStarted: true };
+  const jobStarted = { jobStarted: true, slotStarted: true };
+
+  test.each([
+    ["booked", "confirmed", notStarted],
+    ["booked", "cancelled", notStarted],
+    ["confirmed", "cancelled", notStarted],
+    ["booked", "no-show", slotPassed],
+    ["confirmed", "no-show", slotPassed],
+    ["no-show", "confirmed", slotPassed],
+  ] as const)("%s -> %s is allowed", (from, to, facts) => {
+    expect(canChangeStatus(from, to, facts)).toEqual({ ok: true });
+  });
+
+  test("every other pair is refused, whatever the facts", () => {
+    const allowed = new Set([
+      "booked>confirmed",
+      "booked>cancelled",
+      "confirmed>cancelled",
+      "booked>no-show",
+      "confirmed>no-show",
+      "no-show>confirmed",
+    ]);
+    for (const from of BOOKING_STATUSES) {
+      for (const to of BOOKING_STATUSES) {
+        if (allowed.has(`${from}>${to}`)) continue;
+        for (const facts of [notStarted, slotPassed, jobStarted]) {
+          expect(canChangeStatus(from, to, facts), `${from} -> ${to}`).toEqual({ ok: false, problem: "not-allowed" });
+        }
+      }
+    }
+  });
+
+  test("cancel and no-show are refused once the job has started", () => {
+    expect(canChangeStatus("confirmed", "cancelled", jobStarted)).toEqual({ ok: false, problem: "job-started" });
+    expect(canChangeStatus("booked", "no-show", jobStarted)).toEqual({ ok: false, problem: "job-started" });
+  });
+
+  test("confirm works with a started job and a passed slot: a mechanic may start first", () => {
+    expect(canChangeStatus("booked", "confirmed", jobStarted)).toEqual({ ok: true });
+  });
+
+  test("cancel works after the slot has passed (a customer phones the next day)", () => {
+    expect(canChangeStatus("booked", "cancelled", slotPassed)).toEqual({ ok: true });
+  });
+
+  test("no-show before the slot starts is too early", () => {
+    expect(canChangeStatus("booked", "no-show", notStarted)).toEqual({ ok: false, problem: "too-early" });
+  });
+
+  test("arrived after all works whatever the slot time", () => {
+    const from: BookingStatus = "no-show";
+    expect(canChangeStatus(from, "confirmed", notStarted)).toEqual({ ok: true });
+  });
+});
+
+describe("checkCancelInput (task 27)", () => {
+  test("the limits", () => {
+    expect(CANCEL_REASON_RULES).toEqual({ minLength: 3, maxLength: 200 });
+  });
+
+  test("two characters are too short; three are enough", () => {
+    expect(checkCancelInput("no")).toEqual({ ok: false, problem: "reason-too-short" });
+    expect(checkCancelInput("ill")).toEqual({ ok: true, reason: "ill" });
+  });
+
+  test("200 characters are accepted; 201 are too long (an emoji counts once)", () => {
+    expect(checkCancelInput("a".repeat(200))).toEqual({ ok: true, reason: "a".repeat(200) });
+    expect(checkCancelInput("a".repeat(199) + "🚗")).toEqual({ ok: true, reason: "a".repeat(199) + "🚗" });
+    expect(checkCancelInput("a".repeat(201))).toEqual({ ok: false, problem: "reason-too-long" });
+  });
+
+  test("spaces around and at line ends are cleaned before counting", () => {
+    expect(checkCancelInput("   ab  \r\n ")).toEqual({ ok: false, problem: "reason-too-short" });
+    expect(checkCancelInput("  Customer phoned  \r\n to cancel ")).toEqual({
+      ok: true,
+      reason: "Customer phoned\n to cancel",
+    });
   });
 });

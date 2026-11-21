@@ -23,6 +23,7 @@ import { randomUUID } from "node:crypto";
 
 import { and, asc, count, eq, gt, inArray, isNotNull, isNull, lt, or, type SQL, sql } from "drizzle-orm";
 
+import { isActiveStatus } from "@/domain/bookings";
 import { can } from "@/domain/permissions";
 import { isUuid, looksLikeJpeg, PHOTO_CONTENT_TYPE, PHOTO_RULES, photoKey } from "@/domain/photos";
 import { type Clock, systemClock } from "@/lib/clock";
@@ -30,7 +31,7 @@ import { authorize, authorizeUser } from "@/server/auth/access";
 import type { CurrentUser } from "@/server/auth/session";
 import { type Database, getDatabase } from "@/server/db";
 import { bookings, photoSets, photos } from "@/server/db/schema";
-import { jobRowFilter, jobsOf } from "@/server/dal/job-access";
+import { bookingActive, jobRowFilter, jobsOf } from "@/server/dal/job-access";
 import type { SlotTransaction } from "@/server/dal/slots";
 import { photoStorage, type PhotoStorage, type UploadTarget } from "@/server/providers/photos";
 
@@ -43,7 +44,7 @@ export type StartPhotoUploadResult =
 
 export type StartJobPhotoUploadResult =
   | { ok: true; setId: string; uploads: PhotoUpload[] }
-  | { ok: false; problem: "bad-count" | "too-many-photos" | "not-found" | "job-closed" };
+  | { ok: false; problem: "bad-count" | "too-many-photos" | "not-found" | "job-closed" | "booking-closed" };
 
 export type PhotoDependencies = { storage?: PhotoStorage; clock?: Clock };
 
@@ -179,7 +180,9 @@ export async function startPhotoUpload(
  * `setId`, or in a new one. For staff with "jobs.update" on a booking they
  * may work on (job-access.ts: a mechanic only their assigned, unfinished
  * jobs); any other booking, a missing one and a malformed id are
- * "not-found". A completed job takes no more photos ("job-closed").
+ * "not-found". A completed job takes no more photos ("job-closed"), nor
+ * does a cancelled or no-show booking ("booking-closed", task 27: only
+ * managers and the owner get it; a mechanic's filter answers "not-found").
  *
  * The set belongs to the booking's customer (user_id) and to the job
  * (booking_id): the customer sees the photos, and deleting the customer's
@@ -204,11 +207,12 @@ export async function startJobPhotoUpload(
   const planned = await db.transaction(async (tx) => {
     // The booking row, locked, so its photos are counted one upload at a time.
     const [job] = await tx
-      .select({ customerId: bookings.userId, jobStatus: bookings.jobStatus })
+      .select({ customerId: bookings.userId, jobStatus: bookings.jobStatus, status: bookings.status })
       .from(bookings)
       .where(jobRowFilter(user, request.bookingId))
       .for("update");
     if (!job) return { ok: false as const, problem: "not-found" as const };
+    if (!isActiveStatus(job.status)) return { ok: false as const, problem: "booking-closed" as const };
     if (job.jobStatus === "completed") return { ok: false as const, problem: "job-closed" as const };
 
     let setId = request.setId;
@@ -308,8 +312,9 @@ export async function finishPhotoUpload(
 
 /**
  * finishPhotoUpload for a job's photos (task 31): the same checks, for
- * pending photos in sets of jobs the caller may work on (job-access.ts).
- * Anything else comes back as not stored.
+ * pending photos in sets of jobs the caller may work on (job-access.ts)
+ * whose booking is still active, for every role (task 27): photos of a
+ * cancelled or no-show job come back as not stored, like anything else.
  */
 export async function finishJobPhotoUpload(
   photoIds: readonly string[],
@@ -325,7 +330,7 @@ export async function finishJobPhotoUpload(
     .from(photos)
     .innerJoin(photoSets, eq(photos.setId, photoSets.id))
     .innerJoin(bookings, eq(photoSets.bookingId, bookings.id))
-    .where(and(inArray(photos.id, ids), eq(photos.status, "pending"), jobsOf(user)));
+    .where(and(inArray(photos.id, ids), eq(photos.status, "pending"), bookingActive, jobsOf(user)));
 
   const stored = await storeArrivedPhotos(db, mine, storage, clock);
   return photoIds.map((photoId) => ({ photoId, stored: stored.has(photoId) }));
@@ -340,7 +345,7 @@ export type PhotoViewResult = { ok: true; photos: { photoId: string; url: string
  * - staff with "photos.view" (manager, owner);
  * - for a job's set (task 31), staff with "jobs.update" who may work on that
  *   job (job-access.ts): the assigned mechanic, until the job is reassigned
- *   or completed.
+ *   or completed, or the booking is cancelled or a no-show.
  * Everyone else gets "not-found", the same answer as a set that doesn't exist.
  */
 export async function photoViewUrls(

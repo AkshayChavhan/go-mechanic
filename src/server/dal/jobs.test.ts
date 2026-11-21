@@ -6,6 +6,7 @@ import path from "node:path";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
+import type { BookingStatus } from "@/domain/bookings";
 import type { JobStatus, JobUpdateInput } from "@/domain/jobs";
 import { type Clock, fixedClock } from "@/lib/clock";
 import { AccessDeniedError } from "@/server/auth/access";
@@ -273,6 +274,52 @@ describe("updateJob: a second send", () => {
     if (first.status !== "updated") throw new Error(first.status);
     expect(await updateJob(send, nextClock())).toEqual({ status: "duplicate", update: first.update });
     expect(await updateJob(input(bookingId, { note: "Later" }), nextClock())).toEqual({ status: "job-closed" });
+  });
+});
+
+/** Sets a booking's status directly, as task 27's staff writes will. */
+async function setStatus(bookingId: string, status: BookingStatus) {
+  await db.update(bookings).set({ status }).where(eq(bookings.id, bookingId));
+}
+
+describe("a cancelled or no-show booking (task 27)", () => {
+  test.each(["cancelled", "no-show"] as const)(
+    "%s: the assigned mechanic loses the job; back when it's confirmed again",
+    async (status) => {
+      const bookingId = await job();
+      await setStatus(bookingId, status);
+      expect(await listMyAssignedJobs()).toEqual([]);
+      expect(await readJob(bookingId)).toBeNull();
+      expect(await updateJob(input(bookingId, { toStatus: "vehicle-received" }), nextClock())).toEqual({ status: "not-found" });
+      expect(await stepOf(bookingId)).toBeNull();
+
+      await setStatus(bookingId, "confirmed");
+      expect((await listMyAssignedJobs()).map((row) => row.bookingId)).toEqual([bookingId]);
+      expect(await readJob(bookingId)).not.toBeNull();
+      expect((await updateJob(input(bookingId, { toStatus: "vehicle-received" }), nextClock())).status).toBe("updated");
+    },
+  );
+
+  test.each([
+    ["a manager", manu],
+    ["the owner", omar],
+  ])("%s: booking-closed, and nothing is written", async (_, user) => {
+    const bookingId = await job();
+    await setStatus(bookingId, "cancelled");
+    logIn(user);
+    expect(await updateJob(input(bookingId, { toStatus: "vehicle-received" }), nextClock())).toEqual({ status: "booking-closed" });
+    expect(await stepOf(bookingId)).toBeNull();
+    expect(await db.$count(bookingEvents, eq(bookingEvents.kind, "job-update"))).toBe(0);
+  });
+
+  test("a manager's retry of an update sent before the cancel answers duplicate, not booking-closed", async () => {
+    const bookingId = await job();
+    logIn(manu);
+    const send = input(bookingId, { toStatus: "vehicle-received" });
+    const first = await updateJob(send, nextClock());
+    if (first.status !== "updated") throw new Error(first.status);
+    await setStatus(bookingId, "cancelled");
+    expect(await updateJob(send, nextClock())).toEqual({ status: "duplicate", update: first.update });
   });
 });
 

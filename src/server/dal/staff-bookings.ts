@@ -9,16 +9,18 @@
 
 import "server-only";
 
-import { and, asc, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lt } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import type { BookingLine, BookingStatus } from "@/domain/bookings";
 import { addDays, indiaInstantOn, parseIndiaDate } from "@/domain/india-time";
+import type { JobStatus } from "@/domain/jobs";
 import { can } from "@/domain/permissions";
 import type { Fuel, VehicleKind } from "@/domain/vehicles";
 import type { LocalizedText } from "@/i18n/localized-text";
 import { authorize } from "@/server/auth/access";
 import { getDatabase } from "@/server/db";
-import { bookingItems, bookings, users, vehicleMakes, vehicleModels } from "@/server/db/schema";
+import { bookingEvents, bookingItems, bookings, users, vehicleMakes, vehicleModels } from "@/server/db/schema";
 
 /** A booking as the staff board shows it: the booking's own copies, with names from the catalogue. */
 export type StaffBookingRow = {
@@ -50,9 +52,21 @@ export type StaffBookingRow = {
   customerName: string;
   /** Only for staff with "customers.contact"; null for anyone else. */
   phoneNumber: string | null;
+  /** The job's step; null while not started (Booked). */
+  jobStatus: JobStatus | null;
+  /**
+   * The mechanic given the job (task 27), or null for nobody. Kept after a
+   * cancel or no-show, as history. Name only: never a staff member's number.
+   */
+  mechanic: { id: string; name: string } | null;
+  /** Why it was cancelled, for the garage only; null unless the booking is cancelled. */
+  cancelReason: string | null;
 };
 
 export type ListBookingsOnResult = { ok: true; bookings: StaffBookingRow[] } | { ok: false; problem: "invalid-date" };
+
+// The assigned mechanic is another users row: joined under its own name.
+const mechanics = alias(users, "mechanics");
 
 /**
  * The bookings whose slot falls on `date` (an India date, "YYYY-MM-DD"),
@@ -84,9 +98,13 @@ export async function listBookingsOn(date: string): Promise<ListBookingsOnResult
       pickupFeePaise: bookings.pickupFeePaise,
       customerName: users.name,
       phoneNumber: users.phoneNumber,
+      jobStatus: bookings.jobStatus,
+      mechanicId: mechanics.id,
+      mechanicName: mechanics.name,
     })
     .from(bookings)
     .innerJoin(users, eq(bookings.userId, users.id))
+    .leftJoin(mechanics, eq(bookings.assignedMechanicId, mechanics.id))
     .innerJoin(vehicleModels, eq(bookings.modelId, vehicleModels.id))
     .innerJoin(vehicleMakes, eq(vehicleModels.makeId, vehicleMakes.id))
     .where(and(gte(bookings.startsAt, indiaInstantOn(day, 0)), lt(bookings.startsAt, indiaInstantOn(addDays(day, 1), 0))))
@@ -118,6 +136,27 @@ export async function listBookingsOn(date: string): Promise<ListBookingsOnResult
     linesByBooking.set(bookingId, lines);
   }
 
+  // The reason of each cancelled booking's cancel (cancelled is final, so
+  // there is one; newest first all the same).
+  const cancelledIds = rows.filter((row) => row.status === "cancelled").map((row) => row.id);
+  const reasons = new Map<string, string>();
+  if (cancelledIds.length > 0) {
+    const reasonRows = await db
+      .select({ bookingId: bookingEvents.bookingId, reason: bookingEvents.reason })
+      .from(bookingEvents)
+      .where(
+        and(
+          inArray(bookingEvents.bookingId, cancelledIds),
+          eq(bookingEvents.kind, "status-change"),
+          eq(bookingEvents.newStatus, "cancelled"),
+        ),
+      )
+      .orderBy(desc(bookingEvents.createdAt), desc(bookingEvents.id));
+    for (const { bookingId, reason } of reasonRows) {
+      if (reason !== null && !reasons.has(bookingId)) reasons.set(bookingId, reason);
+    }
+  }
+
   return {
     ok: true,
     bookings: rows.map((row) => ({
@@ -143,6 +182,9 @@ export async function listBookingsOn(date: string): Promise<ListBookingsOnResult
       },
       customerName: row.customerName,
       phoneNumber: showContact ? row.phoneNumber : null,
+      jobStatus: row.jobStatus,
+      mechanic: row.mechanicId !== null && row.mechanicName !== null ? { id: row.mechanicId, name: row.mechanicName } : null,
+      cancelReason: reasons.get(row.id) ?? null,
     })),
   };
 }

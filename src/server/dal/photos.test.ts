@@ -502,6 +502,15 @@ describe("startJobPhotoUpload", () => {
     expect(await startJobPhotoUpload({ bookingId, count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
   });
 
+  test("a no-show booking: booking-closed for a manager, not-found for the assigned mechanic", async () => {
+    const bookingId = await job();
+    await db.update(bookings).set({ status: "no-show" }).where(eq(bookings.id, bookingId));
+    logIn(manager);
+    expect(await startJobPhotoUpload({ bookingId, count: 1 }, deps)).toEqual({ ok: false, problem: "booking-closed" });
+    logIn(mechanic);
+    expect(await startJobPhotoUpload({ bookingId, count: 1 }, deps)).toEqual({ ok: false, problem: "not-found" });
+  });
+
   test("adding to a set: only that job's open set, and never past 6", async () => {
     const bookingId = await job();
     const otherJob = await job({ code: "K7Q4MY" });
@@ -560,6 +569,19 @@ describe("finishJobPhotoUpload", () => {
     expect(await finishJobPhotoUpload([photoId], deps)).toEqual([{ photoId, stored: true }]);
   });
 
+  test("an upload started before the booking became a no-show isn't stored, for the mechanic or a manager", async () => {
+    const bookingId = await job();
+    logIn(mechanic);
+    const started = await startJobPhotoUpload({ bookingId, count: 1 }, deps);
+    if (!started.ok) throw new Error(started.problem);
+    const photoId = started.uploads[0]!.photoId;
+    await putFile(photoId);
+    await db.update(bookings).set({ status: "no-show" }).where(eq(bookings.id, bookingId));
+    expect(await finishJobPhotoUpload([photoId], deps)).toEqual([{ photoId, stored: false }]);
+    logIn(manager);
+    expect(await finishJobPhotoUpload([photoId], deps)).toEqual([{ photoId, stored: false }]);
+  });
+
   test("a customer's own set can't be finished through the job function", async () => {
     const started = await startPhotoUpload({ count: 1 }, deps);
     if (!started.ok) throw new Error(started.problem);
@@ -612,6 +634,22 @@ describe("photoViewUrls for job sets", () => {
     logIn(asha);
     expect((await photoViewUrls(setId, deps)).ok).toBe(true);
   });
+
+  test.each(["cancelled", "no-show"] as const)(
+    "the mechanic loses access while the booking is %s; a manager keeps it; Arrived after all gives it back",
+    async (status) => {
+      const bookingId = await job();
+      logIn(mechanic);
+      const setId = await storedJobSet(bookingId);
+      await db.update(bookings).set({ status }).where(eq(bookings.id, bookingId));
+      expect(await photoViewUrls(setId, deps)).toEqual({ ok: false, problem: "not-found" });
+      logIn(manager);
+      expect((await photoViewUrls(setId, deps)).ok).toBe(true);
+      await db.update(bookings).set({ status: "confirmed" }).where(eq(bookings.id, bookingId));
+      logIn(mechanic);
+      expect((await photoViewUrls(setId, deps)).ok).toBe(true);
+    },
+  );
 });
 
 describe("cleanup and deletion of job sets", () => {
