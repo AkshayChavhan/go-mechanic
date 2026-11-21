@@ -67,6 +67,24 @@ describe("ServicePriceEditor", () => {
     expect(sedan.querySelector("details")?.open).toBe(false);
   });
 
+  test.each([
+    ["only that fuel's own price", [250_000]],
+    ["an every-fuel price and that fuel's own price", [200_000, 250_000]],
+  ])("a one-fuel group shows the price its customers pay: %s", async (_, amounts) => {
+    // Premium motorcycles are all petrol: the card has no fold, so its one box
+    // must show what priceFor charges (the fuel's own row wins), or a Save
+    // without a change would replace that price with the box's.
+    const rows: ServicePrice[] = amounts.map((pricePaise, index) => ({
+      serviceId: "two-wheeler-basic",
+      categoryId: "premium-motorcycle",
+      fuel: index === amounts.length - 1 ? "petrol" : null,
+      pricePaise,
+    }));
+    await editor("two-wheeler-basic", rows);
+    const card = screen.getByRole("region", { name: "Premium motorcycle" });
+    expect((within(card).getByLabelText(t.groupLabel) as HTMLInputElement).value).toBe("2,500");
+  });
+
   test("a group none of whose models runs on a covered fuel: a note, no form", async () => {
     const electricSuvs: VehicleCatalogue = {
       ...draftCatalogue,

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "vitest";
 
+import { parseRupees } from "@/domain/money";
 import {
   formatAddress,
   formatDate,
@@ -24,6 +25,10 @@ test("formatRupeeAmount: paise as a price box shows them, without the sign; pars
   expect(formatRupeeAmount(12_345_600, "en")).toBe("1,23,456");
   expect(formatRupeeAmount(49_950, "en")).toBe("499.50");
   expect(() => formatRupeeAmount(1.5, "en")).toThrow(RangeError);
+  // Every Save posts its untouched boxes in this format, so whole rupees must read back exactly.
+  for (const paise of [100, 150_000, 12_345_600, 100_000_000]) {
+    expect(parseRupees(formatRupeeAmount(paise, "en"))).toEqual({ ok: true, paise });
+  }
 });
 
 test("rupeeSymbol: the sign a price box shows before the amount", () => {
