@@ -61,11 +61,11 @@ export default async function PackagesPage() {
     packages: packages.filter((item) => item.vehicleKinds.includes(kind)),
   })).filter((section) => section.packages.length > 0);
 
-  // The finder needs the catalogue and the picker's words: read only when it shows.
-  const finder =
-    showSamples() && shown
-      ? { catalogue: await readVehicleCatalogue(), pickerLabels: await vehiclePickerLabels() }
-      : null;
+  // "From ₹…" counts only the fuels each group's models run on (groupFuels),
+  // so the catalogue is read always. The finder also needs the picker's words:
+  // read only when it shows.
+  const catalogue = await readVehicleCatalogue();
+  const finder = showSamples() && shown ? { catalogue, pickerLabels: await vehiclePickerLabels() } : null;
 
   /** A card's price line: text only, never a button (the page's one action group is at the end). */
   const priceLine = (paise: number | null) =>
@@ -157,7 +157,7 @@ export default async function PackagesPage() {
                     name={localize(item.name, locale)}
                     summary={localize(item.summary, locale)}
                     included={item.included.map((line) => localize(line, locale))}
-                    price={priceLine(shown ? fromPrice(item, shown.items) : null)}
+                    price={priceLine(shown ? fromPrice(item, shown.items, catalogue) : null)}
                   />
                 </li>
               ))}

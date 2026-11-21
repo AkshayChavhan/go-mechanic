@@ -1073,7 +1073,7 @@ export default async function DesignPage() {
                       <ServiceTile
                         service={service}
                         href={servicePath(service.id)}
-                        fromPaise={shownPrices ? fromPrice(service, shownPrices.items) : null}
+                        fromPaise={shownPrices ? fromPrice(service, shownPrices.items, catalogue) : null}
                         sample={shownPrices?.sample ?? false}
                       />
                     </li>
@@ -1088,7 +1088,7 @@ export default async function DesignPage() {
                 description="One package on /packages: its checklist, then a price line, text only. Without a price it says to call or WhatsApp."
               >
                 <ul data-sample="package-card" className="grid max-w-3xl gap-4 sm:grid-cols-2">
-                  {[shownPrices ? fromPrice(packages[0], shownPrices.items) : null, null].map((paise, index) => (
+                  {[shownPrices ? fromPrice(packages[0], shownPrices.items, catalogue) : null, null].map((paise, index) => (
                     <li key={index}>
                       <PackageCard
                         name={packages[0]!.name.en}

@@ -1,22 +1,12 @@
 import { useLocale, useTranslations } from "next-intl";
 
-import { priceFor, type Service, type ServicePrice } from "@/domain/services";
-import { FUELS, type Fuel, type VehicleCatalogue, type VehicleKind } from "@/domain/vehicles";
+import { groupFuels, priceFor, type Service, type ServicePrice } from "@/domain/services";
+import type { Fuel, VehicleCatalogue, VehicleKind } from "@/domain/vehicles";
 import { formatRupees } from "@/i18n/format";
 import { localize } from "@/i18n/localized-text";
 import type { Shown } from "@/lib/samples";
 
 import { SampleBadge } from "./sample-badge";
-
-/** The fuels that the models of one price group run on and the service covers, in FUELS order. */
-function groupFuels(catalogue: VehicleCatalogue, categoryId: string, service: Service): Fuel[] {
-  const fuels = new Set(
-    catalogue.makes.flatMap((make) =>
-      make.models.filter((model) => model.categoryId === categoryId).flatMap((model) => model.fuels),
-    ),
-  );
-  return FUELS.filter((fuel) => fuels.has(fuel) && service.fuels.includes(fuel));
-}
 
 type ServicePricesProps = {
   service: Service;
@@ -36,8 +26,8 @@ type ServicePricesProps = {
  *   "Call or WhatsApp us".
  * - Prices: one table per vehicle kind, a row per price group, with a line
  *   per fuel when the fuels' prices differ. Samples carry data-sample and the
- *   Sample badge. Price group names show only here, and only under
- *   `npm run dev` until real prices exist (task 39 decides about the live site).
+ *   Sample badge. Price group names show only here: on the live site once
+ *   the service has real prices (owner, 2026-11-20, task 39).
  */
 export function ServicePrices({ service, shown, catalogue, headingId }: ServicePricesProps) {
   const t = useTranslations("Services.price");

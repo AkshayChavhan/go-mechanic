@@ -46,9 +46,9 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
-| 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | In progress | [37_reviews.md](../learning/37_reviews.md) |
+| 37 | `37_reviews` | Customer reviews, `/reviews`, and the staff reply or hide (the admin page waits for task 26) | Done | [37_reviews.md](../learning/37_reviews.md) |
 | 38 | `38_offers_coupons` | Offers, banner, coupons at booking | To do |  |
-| 39 | `39_catalogue_admin` | Admin editing of services, prices, packages, vehicles | To do |  |
+| 39 | `39_catalogue_admin` | Admin editing of real prices (services and packages edits, and brands and models, split off: see the backlog) | In progress | [39_catalogue_admin.md](../learning/39_catalogue_admin.md) |
 | 40 | `40_content_admin` | Admin editing of FAQ, content blocks and garage info | To do |  |
 | 41 | `41_admin_reports` | Reports and CSV export | To do |  |
 | 42 | `42_local_seo` | Metadata, sitemap, robots, social image, AutoRepair structured data | To do |  |
@@ -548,7 +548,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc
 - [x] Review with `ce-code-review` ("Ready with fixes": 2 P2 and 7 P3, 8 fixed, 1 to the backlog) and `code-reviewer` (2 must-fixes in the learning doc and 1 accessibility fix, all done)
 - [x] Compound: [next-intl-template-for-client-fill-use-t-raw.md](../solutions/conventions/next-intl-template-for-client-fill-use-t-raw.md) (new)
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 38_offers_coupons
 
@@ -564,12 +564,14 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 39_catalogue_admin
 
-- [ ] Create branch `39_catalogue_admin`
-- [ ] Plan with `ce-plan`
-- [ ] Admin editing of services, prices, packages, vehicles
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `39_catalogue_admin`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-20-1311-feat-staff-price-editor-plan.md)
+- [x] `/admin/prices`: managers and the owner (`content.edit`) set each service's and package's real price per price group, with an optional different price for one fuel, or clear it (owner, 2026-11-20). A save goes live at once (`updateTag("service-prices")`)
+- [x] Public price tables show the price group names once real prices exist (owner, 2026-11-20). The menu keeps "Packages": the rename moved to the backlog (plan KTD8)
+- [x] `fromPrice()` uses only the fuels the service page shows (task 18 code review)
+- [x] Write the learning doc
+- [x] Review with `code-reviewer` and fix what it finds
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
 ### 40_content_admin
@@ -840,6 +842,12 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 43: deleting a customer's reviews (`reviews.user_id` restricts deletes, as for bookings; deleting a booking deletes its review), and the notice's "Your reviews" retention then (task 37)
 - Task 20: on Postgres, check `updateTag("reviews")` refreshes `/reviews` and the home page across Vercel's instances after a review is sent or hidden (task 37)
 - The review form's and the estimate form's character counters miss text typed before the page's JavaScript loads (the textarea is uncontrolled; React's lint rule refuses syncing state from an effect): count it once after hydration in a way the lint allows, with a `hydrateRoot` test, in both `review-form.tsx` and `estimate-form.tsx` (task 37 review)
+- Split from task 39 (owner, 2026-11-20): staff editing of services and packages (names, summaries, what's included, signs, order, hide with `listed = false`, "priced after inspection", a "time taken" per service; `updateTag("services")`; a service added later is built on its first visit). Needs a task number
+- Split from task 39 (owner, 2026-11-20): staff editing of brands and models (add, rename, order, price group, fuels, hide with `listed = false`; ids never change; `updateTag("vehicle-catalogue")`) and the "models approved" switch, separate from `showSamples()`, that lets the price finder on `/packages`, the model in review credits and the other model displays go live. Carries task 39's backlog notes about the catalogue (brands whose models are all hidden, the draft-catalogue rule for `/estimate` and the add-vehicle form, review credits with the model). Needs a task number
+- Owner: the menu calls `/packages` "Packages" (`Nav.prices`) and the home hero's link says "See packages" (`Packages.seePackages`). Task 18 planned to rename them "Prices" and "See prices" once real prices exist; task 39 kept them, since a label that depends on data would put a price read into the shell that `global-not-found.tsx` also renders, and `/packages` is still the packages page. Ask the owner whether "Packages" is fine (task 39)
+- Prices on each line of the staff bookings board (`src/components/admin/bookings-board.tsx`, "Names only: prices come with task 39"): `listBookingsOn` already returns them. Left out of task 39 while task 27 changes that board (task 39)
+- Task 20: on Postgres, check two `saveGroupPrices` calls on one service and price group at once: the advisory lock should make the last save win with no unique-constraint error; PGlite runs one transaction at a time and can't show it (task 39)
+- `npm run dev` logged "Next.js encountered the unstable value `Date.now()` while prerendering" at `AdminNavGate` (`src/app/[locale]/admin/layout.tsx`) twice, each time on the first staff page load right after a file change recompiled the page; never on a fresh load. The e2e run doesn't read the server's log, so the production build is unchecked. Find out whether it's Next.js's dev-only re-check after a recompile or a real read before `headers()` (task 39)
 
 ## How to add a task
 

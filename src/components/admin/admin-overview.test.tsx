@@ -62,16 +62,18 @@ describe("AdminOverview (/admin's gate)", () => {
     expect(screen.queryByText(t.overview.intro)).toBeNull();
   });
 
-  test.each(["manager", "owner"] as const)("a %s: a card for Bookings, as a link", async (role) => {
+  test.each(["manager", "owner"] as const)("a %s: a card for Bookings and one for Prices, as links", async (role) => {
     vi.mocked(getCurrentUser).mockResolvedValue(userWith(role));
     renderWithIntl(await AdminOverview({ locale: "en" }));
     expect(screen.getByRole("heading", { level: 1, name: t.overview.heading })).toBeTruthy();
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
       t.nav.bookings,
+      t.nav.prices,
     ]);
     const links = screen.getAllByRole("link");
-    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/admin/bookings"]);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(["/admin/bookings", "/admin/prices"]);
     expect(links[0].textContent).toContain(t.overview.bookingsDescription);
+    expect(links[1].textContent).toContain(t.overview.pricesDescription);
     expect(screen.queryByText(t.overview.mechanicNote)).toBeNull();
   });
 });
