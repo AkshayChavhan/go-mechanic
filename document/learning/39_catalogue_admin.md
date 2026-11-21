@@ -114,8 +114,23 @@ After the simplify pass, typecheck, lint and the 1,126 affected tests passed.
 
 ## Review
 
-_To come: `ce-code-review` and then `code-reviewer` have not run yet. Their verdicts and the fixes go here after they do._
+**`ce-code-review`** (7 reviewers): "Ready with fixes". What we fixed:
+
+- **A one-fuel card could overwrite a real price (P2, data loss).** When a price group's models run on one fuel only, the card shows one box and no fold. That box showed the every-fuel price. If the fuel also had its own price (the one customers pay, because a fuel's own row wins in `priceFor`), pressing Save without touching anything replaced it. The box now shows `groupPriceRow(rows, fuel)`, which is exactly what customers pay. A new test failed before the fix and passes after it (`service-price-editor.test.tsx`).
+- **A comment named the wrong function (P3).** A rename (`selectPrices` → `selectPriceRows`) had also changed a comment that was about the other `selectPrices()`. Put back.
+- **Added a round-trip test.** Every amount the editor shows (`formatRupeeAmount`) reads back through `parseRupees` as the same paise, so a Save without a change never changes a price.
+
+Left as known gaps: two staff saving the same group at the same moment is "last save wins" by design (the advisory lock is only proven on real Postgres in task 20).
+
+**`code-reviewer`:** "Needs changes", with two must-fixes, both fixed:
+
+- **The price card had a shadow.** The design system keeps cards flat (`shadow-sm` is only for things that float, like menus). Removed.
+- **`readme.md` still said prices couldn't be entered.** It now describes `/admin/prices`.
+
+We also took two of its suggestions. The "not offered" card takes its name from its heading (`aria-labelledby`), and the Playwright config says that `--no-deps` runs the prices spec alone. We skipped one: refusing an every-fuel price for a group that offers no fuel. No screen shows that row, and no page reads it.
+
+A full `npm run check` once failed one waiting test while the machine was busy (load average about 15). It passed when run again.
 
 ## Compound
 
-_To come: the compound question is asked after the reviews._
+Yes. Without a note, the next task whose browser test saves something every visitor sees (garage details, the offer, page content) would hit the same failures that depend on timing. The lesson is [`document/solutions/conventions/playwright-spec-that-saves-shared-data-runs-in-last-project.md`](../solutions/conventions/playwright-spec-that-saves-shared-data-runs-in-last-project.md).
