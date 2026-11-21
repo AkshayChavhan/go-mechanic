@@ -1,6 +1,6 @@
 # 27_booking_management: confirm, cancel, no-show and assign a mechanic
 
-> **Branch:** `27_booking_management` · **Date:** 2026-11-20 · **Status:** In review
+> **Branch:** `27_booking_management` · **Date:** 2026-11-20 · **Status:** Done
 
 ## In one minute
 
