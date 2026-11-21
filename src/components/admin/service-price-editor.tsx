@@ -2,7 +2,7 @@ import { ArrowLeftIcon } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { Button } from "@/components/ui/button";
-import { groupFuels, type Service, type ServicePrice } from "@/domain/services";
+import { groupFuels, groupPriceRow, type Service, type ServicePrice } from "@/domain/services";
 import type { VehicleCatalogue } from "@/domain/vehicles";
 import type { Locale } from "@/i18n/config";
 import { formatRupeeAmount, rupeeSymbol } from "@/i18n/format";
@@ -44,9 +44,11 @@ export async function ServicePriceEditor({ locale, service, prices, catalogue }:
       const initial: PriceFormValues = { group: amount(rowFor(null)) };
       if (fuels.length >= 2) {
         for (const fuel of fuels) initial[fuel] = amount(rowFor(fuel));
-      } else if (fuels.length === 1 && !rowFor(null)) {
-        // One fuel only, so no fold: a price saved for that fuel is the group's price.
-        initial.group = amount(rowFor(fuels[0]!));
+      } else if (fuels.length === 1) {
+        // One fuel only, so no fold: the box shows what that fuel pays (its own
+        // row wins, as in priceFor). Showing the every-fuel row instead would let
+        // a Save without a change replace the price customers pay (task 39 review).
+        initial.group = amount(groupPriceRow(rows, fuels[0]!));
       }
       return { category, fuels, initial };
     });

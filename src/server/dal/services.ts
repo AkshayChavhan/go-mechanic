@@ -83,7 +83,7 @@ export function serviceIdsToBuild(): string[] {
 
 /**
  * Every real price. Empty until staff save one (task 39's editor): pages then
- * show the samples under `npm run dev` (selectPriceRows() in
+ * show the samples under `npm run dev` (selectPrices() in
  * src/content/sample-prices.ts) and no price anywhere else. A price of a
  * hidden service is still returned; pages only look up the services they show.
  */
