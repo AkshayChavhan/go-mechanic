@@ -72,8 +72,10 @@ export async function ServicePriceEditor({ locale, service, prices, catalogue }:
           {groups.map(({ category, fuels, initial }) => {
             const name = localize(category.name, locale);
             return fuels.length === 0 ? (
-              <section key={category.id} aria-label={name} className="flex flex-col gap-2 rounded-xl bg-card p-5">
-                <h2 className="type-title">{name}</h2>
+              <section key={category.id} aria-labelledby={`group-${category.id}`} className="flex flex-col gap-2 rounded-xl bg-card p-5">
+                <h2 id={`group-${category.id}`} className="type-title">
+                  {name}
+                </h2>
                 <p className="type-callout text-pretty text-muted-foreground">{t("notOffered")}</p>
               </section>
             ) : (

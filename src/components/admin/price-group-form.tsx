@@ -125,7 +125,7 @@ function PriceGroupFormVisit({ action, heading, fuels, initial, labels }: PriceG
   };
 
   return (
-    <section aria-labelledby={`${id}-heading`} className="flex flex-col gap-4 rounded-xl bg-card p-5 shadow-sm">
+    <section aria-labelledby={`${id}-heading`} className="flex flex-col gap-4 rounded-xl bg-card p-5">
       <h2 id={`${id}-heading`} className="type-title">
         {heading}
       </h2>

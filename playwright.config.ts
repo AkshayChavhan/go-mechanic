@@ -31,6 +31,7 @@ export default defineConfig({
   // 39) runs in the last project, after all the others: a price saved
   // mid-run would break the specs that expect none (services, booking).
   // A project's testIgnore replaces the top-level one, so "site" repeats it.
+  // Running prices.spec.ts alone runs "site" first; add --no-deps to skip it.
   projects: [
     { name: "site", testIgnore: ["**/e2e/dev/**", "**/prices.spec.ts"] },
     { name: "prices", testMatch: "**/prices.spec.ts", dependencies: ["site"] },
