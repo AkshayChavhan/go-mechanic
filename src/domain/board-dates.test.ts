@@ -1,6 +1,17 @@
 import { describe, expect, test } from "vitest";
 
-import { BOARD_RANGE_DAYS, isOnBoard, pickBoardDate } from "./board-dates";
+import {
+  BOARD_NOTICES,
+  BOARD_RANGE_DAYS,
+  BOARD_REFUSAL_NOTICES,
+  boardQuery,
+  checkBoardView,
+  isOnBoard,
+  isRefusalNotice,
+  parseBoardNotice,
+  parseShowCancelled,
+  pickBoardDate,
+} from "./board-dates";
 
 const today = "2026-11-19";
 
@@ -39,5 +50,66 @@ describe("isOnBoard", () => {
     expect(isOnBoard("2027-11-21", today)).toBe(false);
     expect(isOnBoard("2025-11-18", today)).toBe(true);
     expect(isOnBoard("2025-11-17", today)).toBe(false);
+  });
+});
+
+describe("parseShowCancelled (the board's cancelled filter)", () => {
+  test("only ?cancelled=show shows cancelled bookings", () => {
+    expect(parseShowCancelled("show")).toBe(true);
+    for (const value of [undefined, "", "1", "true", "SHOW", ["show", "show"]]) expect(parseShowCancelled(value)).toBe(false);
+  });
+});
+
+describe("parseBoardNotice (the notice after a board action)", () => {
+  test("a known notice with a well-formed booking code", () => {
+    expect(parseBoardNotice("cancelled", "K7Q4MX")).toEqual({ notice: "cancelled", code: "K7Q4MX" });
+    expect(parseBoardNotice("reason-too-short", "PZ3H8T")).toEqual({ notice: "reason-too-short", code: "PZ3H8T" });
+  });
+
+  test.each([
+    ["an unknown notice", "deleted", "K7Q4MX"],
+    ["no notice", undefined, "K7Q4MX"],
+    ["no code", "confirmed", undefined],
+    ["a code with a letter the alphabet leaves out (O)", "confirmed", "K7Q4MO"],
+    ["a dashed code", "confirmed", "K7Q-4MX"],
+    ["a short code", "confirmed", "K7Q4M"],
+    ["a lower-case code", "confirmed", "k7q4mx"],
+    ["several notices", ["confirmed", "cancelled"], "K7Q4MX"],
+    ["a name of Object.prototype", "toString", "K7Q4MX"],
+  ])("%s gives no notice", (_, notice, code) => {
+    expect(parseBoardNotice(notice, code)).toBeNull();
+  });
+
+  test("refusals are told apart from successes", () => {
+    expect(isRefusalNotice("changed")).toBe(true);
+    expect(isRefusalNotice("reason-too-long")).toBe(true);
+    expect(isRefusalNotice("confirmed")).toBe(false);
+    expect(isRefusalNotice("unchanged")).toBe(false);
+    // Every notice is one or the other, never both.
+    for (const notice of BOARD_NOTICES) expect(BOARD_REFUSAL_NOTICES.includes(notice as never)).toBe(isRefusalNotice(notice));
+  });
+});
+
+describe("checkBoardView (the view a board action was bound to, checked again)", () => {
+  test("a real date and the filter on", () => {
+    expect(checkBoardView({ date: "2026-11-20", showCancelled: true })).toEqual({ date: "2026-11-20", showCancelled: true });
+  });
+
+  test.each([
+    ["nothing", undefined],
+    ["a string", "2026-11-20"],
+    ["an unreadable date", { date: "2026-02-30", showCancelled: "yes" }],
+    ["a number for the date", { date: 20261120, showCancelled: 1 }],
+  ])("%s gives no date and the filter off", (_, value) => {
+    expect(checkBoardView(value)).toEqual({ date: null, showCancelled: false });
+  });
+});
+
+describe("boardQuery (the board's address for a view)", () => {
+  test("the date, and cancelled=show only when the filter is on", () => {
+    expect(boardQuery({ date: "2026-11-20", showCancelled: false })).toEqual({ date: "2026-11-20" });
+    expect(boardQuery({ date: "2026-11-20", showCancelled: true })).toEqual({ date: "2026-11-20", cancelled: "show" });
+    expect(boardQuery({ date: null, showCancelled: true })).toEqual({ cancelled: "show" });
+    expect(boardQuery({ date: null, showCancelled: false })).toEqual({});
   });
 });

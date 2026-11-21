@@ -5,7 +5,15 @@ import { describe, expect, test } from "vitest";
 
 import { redirect } from "@/i18n/navigation";
 
-import { BookingServiceError, bookingWithoutDetails, kindOf, LoginServiceError, withoutDetails } from "./errors";
+import {
+  BookingServiceError,
+  bookingWithoutDetails,
+  kindOf,
+  LoginServiceError,
+  StaffServiceError,
+  staffWithoutDetails,
+  withoutDetails,
+} from "./errors";
 
 // A database error as Drizzle throws it: the message holds the query and its
 // values, the cause holds Postgres's own error with its code.
@@ -94,6 +102,44 @@ describe("bookingWithoutDetails (errors from the booking action, without their d
         throw login;
       }),
     ).rejects.toBe(login);
+  });
+});
+
+describe("staffWithoutDetails (errors from the board's staff actions, without their details)", () => {
+  // A failed status-change event insert: its params hold the cancel reason.
+  function eventInsertError(): Error {
+    const cause = Object.assign(new Error("duplicate key value violates unique constraint"), { code: "23505" });
+    return Object.assign(
+      new Error("Failed query: insert into booking_events ... params: Customer called, sick at home, 3f2b8c4e", { cause }),
+      { name: "DrizzleQueryError" },
+    );
+  }
+
+  test("a database error becomes a StaffServiceError with no message or cause from the original", async () => {
+    const error = await staffWithoutDetails("changeBookingStatus", async () => {
+      throw eventInsertError();
+    }).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(StaffServiceError);
+    expect((error as Error).message).toBe("changeBookingStatus failed (DrizzleQueryError 23505)");
+    expect((error as Error).cause).toBeUndefined();
+    expect(inspect(error, { depth: 10 })).not.toMatch(/sick at home|3f2b8c4e|Failed query/);
+  });
+
+  test("Next.js's signals and errors already without details pass through unchanged", async () => {
+    const moved = await staffWithoutDetails("step", async () => redirect({ href: "/admin", locale: "en" })).catch(
+      (caught: unknown) => caught,
+    );
+    expect(moved).toMatchObject({ digest: expect.stringMatching(/^NEXT_REDIRECT;/) });
+    const login = new LoginServiceError("getCurrentUser", "Error");
+    await expect(
+      staffWithoutDetails("step", async () => {
+        throw login;
+      }),
+    ).rejects.toBe(login);
+  });
+
+  test("returns the step's answer when nothing goes wrong", async () => {
+    expect(await staffWithoutDetails("step", async () => 42)).toBe(42);
   });
 });
 

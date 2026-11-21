@@ -3,13 +3,14 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 
-import type { BookingLine } from "@/domain/bookings";
+import type { BookingLine, BookingStatus } from "@/domain/bookings";
+import type { JobStatus } from "@/domain/jobs";
 import { can } from "@/domain/permissions";
 import type { Role } from "@/domain/roles";
 import { AccessDeniedError } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth/session";
 import { closeDatabase, createDatabase, type Database, getDatabase } from "@/server/db";
-import { bookingItems, bookings, users, vehicleModels } from "@/server/db/schema";
+import { bookingEvents, bookingItems, bookings, users, vehicleModels } from "@/server/db/schema";
 
 import { listBookingsOn } from "./staff-bookings";
 
@@ -101,6 +102,9 @@ type BookingRow = {
   modelId?: string;
   pickup?: { address: string; postalCode: string; feePaise: number } | null;
   lines?: BookingLine[];
+  status?: BookingStatus;
+  jobStatus?: JobStatus | null;
+  assigned?: string | null;
 };
 
 const CODE_LETTERS = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
@@ -112,7 +116,17 @@ function nextCode(): string {
 }
 
 /** Writes a booking straight into the table (the save's own rules are tested in bookings.test.ts). */
-async function book({ userId = "asha", startsAt, code = nextCode(), modelId = "car-honda-city", pickup = null, lines = [brakes] }: BookingRow) {
+async function book({
+  userId = "asha",
+  startsAt,
+  code = nextCode(),
+  modelId = "car-honda-city",
+  pickup = null,
+  lines = [brakes],
+  status = "booked",
+  jobStatus = null,
+  assigned = null,
+}: BookingRow) {
   const [row] = await db
     .insert(bookings)
     .values({
@@ -130,6 +144,9 @@ async function book({ userId = "asha", startsAt, code = nextCode(), modelId = "c
       pickupAddress: pickup?.address ?? null,
       pickupPostalCode: pickup?.postalCode ?? null,
       pickupFeePaise: pickup?.feePaise ?? null,
+      status,
+      jobStatus,
+      assignedMechanicId: assigned,
     })
     .returning({ id: bookings.id });
   if (lines.length > 0) await db.insert(bookingItems).values(lines.map((line) => ({ bookingId: row!.id, ...line, serviceKind: line.kind })));
@@ -196,6 +213,9 @@ describe("listBookingsOn", () => {
       pickup: { included: true, address: "12 MG Road, Pune", postalCode: "411001", feePaise: 0 },
       customerName: "Asha",
       phoneNumber: asha.phoneNumber,
+      jobStatus: null,
+      mechanic: null,
+      cancelReason: null,
     });
     // Inserted battery (position 1) first: the order comes from `position`.
     expect(result.bookings[1]!.lines).toEqual([brakes, battery]);
@@ -238,6 +258,26 @@ describe("listBookingsOn", () => {
     const linesOf = (id: string) => result.bookings.find((row) => row.id === id)!.lines.map((line) => line.serviceId);
     expect(linesOf(first)).toEqual([brakes.serviceId]);
     expect(linesOf(second)).toEqual([battery.serviceId]);
+  });
+
+  test("each row has its job step, its mechanic by name, and a cancelled one its reason", async () => {
+    await db.update(users).set({ name: "Mona" }).where(eq(users.id, "mona"));
+    const assigned = await book({ startsAt: "2026-11-24T04:30:00Z", status: "confirmed", jobStatus: "inspection", assigned: "mona" });
+    const cancelled = await book({ userId: "ravi", startsAt: "2026-11-24T05:30:00Z", status: "cancelled", assigned: "mona" });
+    const noShow = await book({ startsAt: "2026-11-24T06:30:00Z", status: "no-show" });
+    const event = { kind: "status-change" as const, actorUserId: "manu", requestToken: randomUUID() };
+    await db.insert(bookingEvents).values([
+      { ...event, bookingId: cancelled, newStatus: "confirmed", requestToken: randomUUID(), createdAt: new Date("2026-11-20T04:00:00Z") },
+      { ...event, bookingId: cancelled, newStatus: "cancelled", reason: "Customer called", createdAt: new Date("2026-11-20T05:00:00Z") },
+      { ...event, bookingId: noShow, newStatus: "no-show", requestToken: randomUUID() },
+    ]);
+
+    const result = await listBookingsOn(DAY);
+    if (!result.ok) throw new Error("expected bookings");
+    const row = (id: string) => result.bookings.find((booking) => booking.id === id)!;
+    expect(row(assigned)).toMatchObject({ status: "confirmed", jobStatus: "inspection", mechanic: { id: "mona", name: "Mona" }, cancelReason: null });
+    expect(row(cancelled)).toMatchObject({ status: "cancelled", jobStatus: null, mechanic: { id: "mona", name: "Mona" }, cancelReason: "Customer called" });
+    expect(row(noShow)).toMatchObject({ status: "no-show", mechanic: null, cancelReason: null });
   });
 
   test("a day with no bookings gives an empty list", async () => {

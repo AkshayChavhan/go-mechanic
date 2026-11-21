@@ -17,7 +17,9 @@
 //    "duplicate"), a pickup PIN code the garage doesn't serve (found before
 //    the transaction, answered only here, so a retry after the area was
 //    paused still gets "duplicate"), the future-bookings limit. Then
-//    reserveSlot. Last, the writes.
+//    reserveSlot. Last, the writes. The same-slot check and the limit look
+//    only at active bookings (booked or confirmed, ACTIVE_STATUSES, task
+//    27): a cancelled or no-show booking neither blocks nor counts.
 // Every answer that refuses comes before reserveSlot, so after it the only
 // answer is "booked". A write that fails after it throws, and the whole
 // transaction rolls back, the slot's place included. Nothing here catches.
@@ -26,9 +28,10 @@ import "server-only";
 
 import { randomInt } from "node:crypto";
 
-import { and, asc, eq, gt, sql } from "drizzle-orm";
+import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
 
 import {
+  ACTIVE_STATUSES,
   type BookingInput,
   type BookingInputProblem,
   type BookingLine,
@@ -199,13 +202,15 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
 
     // The same vehicle in the same slot again, under a new token (a reload
     // makes a new one): the first booking stands, so its code comes back.
+    // Only while it's active: after a cancel or a no-show, booking again is
+    // a new booking.
     const [sameSlot] = await tx
       .select({ id: bookings.id })
       .from(bookings)
       .where(
         and(
           eq(bookings.userId, user.id),
-          eq(bookings.status, "booked"),
+          inArray(bookings.status, [...ACTIVE_STATUSES]),
           eq(bookings.registrationNumber, vehicle.registrationNumber),
           eq(bookings.startsAt, booking.startsAt),
         ),
@@ -217,7 +222,7 @@ export async function createMyBooking(input: BookingInput, clock: Clock = system
     const now = clock.now();
     const future = await tx.$count(
       bookings,
-      and(eq(bookings.userId, user.id), eq(bookings.status, "booked"), gt(bookings.startsAt, now)),
+      and(eq(bookings.userId, user.id), inArray(bookings.status, [...ACTIVE_STATUSES]), gt(bookings.startsAt, now)),
     );
     if (future >= MAX_FUTURE_BOOKINGS) return { status: "too-many-bookings", limit: MAX_FUTURE_BOOKINGS };
 

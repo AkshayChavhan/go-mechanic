@@ -17,6 +17,7 @@ import "server-only";
 
 import { and, asc, eq, sql } from "drizzle-orm";
 
+import { isActiveStatus } from "@/domain/bookings";
 import { isUuid } from "@/domain/ids";
 import { canMoveJob, checkJobUpdateInput, type JobStatus, type JobUpdateInput, type JobUpdateInputProblem } from "@/domain/jobs";
 import { can } from "@/domain/permissions";
@@ -49,7 +50,13 @@ export type UpdateJobResult =
   /** Not a booking the caller may work on (or no such booking). */
   | { status: "not-found" }
   /** Completed: a job takes no more updates. Only staff who may see completed jobs get this. */
-  | { status: "job-closed" };
+  | { status: "job-closed" }
+  /**
+   * The booking is cancelled or a no-show (task 27): no updates, for any
+   * role. Only managers and the owner get this; a mechanic's filter already
+   * answers "not-found".
+   */
+  | { status: "booking-closed" };
 
 const savedUpdateColumns = {
   id: bookingEvents.id,
@@ -89,7 +96,7 @@ export async function updateJob(input: JobUpdateInput, clock: Clock = systemCloc
     // Locked, so two updates of one job (or an update and task 27's cancel)
     // can't both read the same step and both move it.
     const [job] = await tx
-      .select({ id: bookings.id, jobStatus: bookings.jobStatus })
+      .select({ id: bookings.id, jobStatus: bookings.jobStatus, status: bookings.status })
       .from(bookings)
       .where(jobRowFilter(user, update.bookingId))
       .for("update");
@@ -108,6 +115,9 @@ export async function updateJob(input: JobUpdateInput, clock: Clock = systemCloc
     if (earlier) return { status: "duplicate", update: earlier };
     if (!job) return { status: "not-found" };
 
+    // After the token lookup: a retry of an update sent before a cancel or a
+    // no-show still answers "duplicate".
+    if (!isActiveStatus(job.status)) return { status: "booking-closed" };
     if (job.jobStatus === "completed") return { status: "job-closed" };
     const problems: JobUpdateProblem[] = [];
     if (update.toStatus !== null && !canMoveJob(job.jobStatus, update.toStatus)) {
@@ -288,7 +298,8 @@ export async function readMyJobTimeline(
 
 /**
  * One job, for staff with "jobs.update" who may work on it (job-access.ts):
- * the assigned mechanic until it's completed, or a manager or the owner.
+ * the assigned mechanic until it's completed (and while the booking is
+ * active), or a manager or the owner.
  * Anything else, and a malformed id, is null.
  */
 export async function readJob(bookingId: string, { storage = photoStorage() }: ReadDependencies = {}): Promise<StaffJob | null> {
