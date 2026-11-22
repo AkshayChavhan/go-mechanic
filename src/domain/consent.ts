@@ -49,6 +49,6 @@ export const PRIVACY_NOTICE_VALUES = {
     openDays: PHOTO_RULES.keepOpenDays,
     pendingHours: PHOTO_RULES.keepPendingHours,
   },
-  // A request's photo set stays open until task 33 closes it, so the open-set rule applies (task 32).
+  // A request's photo set stays open until task 51 closes it, so the open-set rule applies (task 32).
   estimates: { photoDays: PHOTO_RULES.keepOpenDays },
 } as const;

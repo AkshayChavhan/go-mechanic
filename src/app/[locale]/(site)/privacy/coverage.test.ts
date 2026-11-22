@@ -109,6 +109,41 @@ const TABLES: Record<string, Personal | null> = {
       "created_at",
     ],
   },
+  // The garage's estimate for a booked job (task 33): each version, who started and sent it and
+  // when, and its priced part and labour lines. Kept with the booking (deleting it deletes them).
+  estimates: {
+    item: "bookings",
+    columns: [
+      "id",
+      "booking_id",
+      "version",
+      "created_by",
+      "created_at",
+      "create_token",
+      "revision",
+      "sent_at",
+      "sent_by",
+      "send_token",
+      "superseded_at",
+    ],
+  },
+  estimate_lines: {
+    item: "bookings",
+    columns: [
+      "id",
+      "estimate_id",
+      "position",
+      "kind",
+      "description",
+      "amount_paise",
+      "needed",
+      "service_id",
+      "copied_from_line_id",
+      "added_by",
+      "request_token",
+      "created_at",
+    ],
+  },
   // Requests for a free estimate (task 32): the vehicle copy, the description and the photo set it points to.
   estimate_requests: {
     item: "estimates",

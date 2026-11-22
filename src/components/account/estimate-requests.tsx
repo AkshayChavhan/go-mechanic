@@ -31,7 +31,7 @@ type EstimateRequestsProps = {
  * "Your estimate requests" on /account (task 32): a link to /estimate, and
  * each request the customer sent, newest first: when, for which vehicle,
  * the start of what they wrote, how many photos, and "Waiting for the
- * garage" (every request waits until task 33's estimates answer it). With
+ * garage" (every request waits until task 51 lets the garage answer it). With
  * none yet, one line and the link.
  */
 export async function EstimateRequests({ requests, locale }: EstimateRequestsProps) {

@@ -34,11 +34,13 @@ import {
   time,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
 import type { BookingEventKind, BookingStatus, LinePriceStatus } from "@/domain/bookings";
 import type { ConsentPurpose } from "@/domain/consent";
+import type { EstimateLineKind } from "@/domain/estimates";
 import type { JobStatus } from "@/domain/jobs";
 import type { Weekday } from "@/domain/opening-hours";
 import type { Role } from "@/domain/roles";
@@ -914,7 +916,7 @@ export const photoSets = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     /**
      * Set when the set's job update is saved (task 31) or its estimate request
-     * is closed (tasks 33, 34); a year later it's deleted.
+     * is answered (task 51); a year later it's deleted.
      */
     closedAt: timestamp("closed_at", { withTimezone: true }),
     /**
@@ -960,7 +962,7 @@ export const photos = pgTable(
  * what's wrong, with photos if they like. The vehicle is a copy, like a
  * booking's, so a later change to the saved vehicle never changes the
  * request. There's no status yet: every request is waiting for the garage
- * until task 33's estimates answer it.
+ * until task 51 lets the garage answer it.
  */
 export const estimateRequests = pgTable(
   "estimate_requests",
@@ -984,7 +986,7 @@ export const estimateRequests = pgTable(
     description: text("description").notNull(),
     /**
      * The customer's photos, if any. One set belongs to one request. When the
-     * photo cleanup deletes the set (30 days after it started, unless task 33
+     * photo cleanup deletes the set (30 days after it started, unless task 51
      * closes it), this goes null and the request stays.
      */
     photoSetId: uuid("photo_set_id")
@@ -1063,5 +1065,144 @@ export const reviews = pgTable(
     check("reviews_reply_complete", sql`(${table.reply} is null) = (${table.repliedAt} is null)`),
     // The public list: shown ones, newest first.
     index("reviews_hidden_created_index").on(table.hiddenAt, table.createdAt),
+  ],
+);
+
+// --- Estimates (task 33) ------------------------------------------------------
+//
+// The garage's priced list of parts and labour for a booked job, which staff
+// send for the customer's approval. Only src/server/dal/estimates.ts writes
+// them. A booking's estimate comes in numbered versions (1, 2, ...): staff
+// build a draft, send it, and from then on it never changes. "Change
+// estimate" starts the next version as a draft holding a copy of the sent
+// one's lines; the sent one stays the current one until the new one is sent,
+// and is then marked superseded. Every version stays on record.
+//
+// A version's state comes from its timestamps, not a status column:
+// - draft: sent_at is null;
+// - sent (the current one): sent_at is set, superseded_at is null;
+// - superseded: both are set.
+//
+// (These are a booked job's estimates. A customer's request for a free
+// estimate before booking is estimate_requests above; task 51 answers those.)
+
+/** A line's kind, as in ESTIMATE_LINE_KINDS (src/domain/estimates.ts; estimates-tables.test.ts checks they match). */
+export const estimateLineKind = pgEnum("estimate_line_kind", ["part", "labour"] as const satisfies readonly EstimateLineKind[]);
+
+/**
+ * One version of a booking's estimate.
+ * - Deleting the booking deletes its estimates ("cascade"), and with them
+ *   their lines; a user named here can't be deleted ("restrict"), like the
+ *   booking itself.
+ * - Two partial unique indexes keep the versions in order: at most one draft
+ *   per booking, and at most one current sent version. Postgres checks a
+ *   partial unique index after each statement and can't put that check off
+ *   to the end of the transaction, so a send first marks the earlier version
+ *   superseded, then marks the draft sent. The other order would briefly
+ *   hold two current versions and be refused.
+ * - Each kind of write carries its own random token, unique per person, so a
+ *   double tap or a retry after a lost answer makes nothing twice (the save
+ *   looks the token up first; these are the backstops).
+ */
+export const estimates = pgTable(
+  "estimates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => bookings.id, { onDelete: "cascade" }),
+    /** 1, 2, 3...: one number per version of this booking's estimate. */
+    version: integer("version").notNull(),
+    /** The staff member who started this version. */
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** A random uuid per "Start estimate" or "Change estimate" form. */
+    createToken: uuid("create_token").notNull(),
+    /**
+     * Bumped by every line added or removed. A send posts the revision it
+     * showed, so staff never send a list that changed since they read it.
+     */
+    revision: integer("revision").notNull().default(0),
+    // The send: all three set together, or none while it's a draft.
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    sentBy: text("sent_by").references(() => users.id, { onDelete: "restrict" }),
+    /** A random uuid per send form. */
+    sendToken: uuid("send_token"),
+    /** Set when the next version is sent: this one stays on record, no longer current. */
+    supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  },
+  (table) => [
+    unique("estimates_booking_version").on(table.bookingId, table.version),
+    unique("estimates_created_by_create_token").on(table.createdBy, table.createToken),
+    unique("estimates_sent_by_send_token").on(table.sentBy, table.sendToken),
+    uniqueIndex("estimates_one_draft_per_booking")
+      .on(table.bookingId)
+      .where(sql`${table.sentAt} is null`),
+    uniqueIndex("estimates_one_current_per_booking")
+      .on(table.bookingId)
+      .where(sql`${table.sentAt} is not null and ${table.supersededAt} is null`),
+    check(
+      "estimates_send_complete",
+      sql`(${table.sentAt} is null) = (${table.sentBy} is null) and (${table.sentAt} is null) = (${table.sendToken} is null)`,
+    ),
+    check("estimates_superseded_after_send", sql`${table.supersededAt} is null or ${table.sentAt} is not null`),
+    check("estimates_version_positive", sql`${table.version} >= 1`),
+    check("estimates_revision_not_negative", sql`${table.revision} >= 0`),
+  ],
+);
+
+/**
+ * The lines of one estimate version: a part or some labour, its price, and
+ * whether the job needs it or it's optional. A sent version's lines never
+ * change (the save refuses; there is no updated_at). Deleting the version
+ * deletes its lines ("cascade"); a service a line was taken from can't be
+ * deleted ("restrict"): the garage hides it instead.
+ */
+export const estimateLines = pgTable(
+  "estimate_lines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    estimateId: uuid("estimate_id")
+      .notNull()
+      .references(() => estimates.id, { onDelete: "cascade" }),
+    /** 0, 1, 2...: the order the lines were added in. */
+    position: integer("position").notNull(),
+    kind: estimateLineKind("kind").notNull(),
+    /** As staff typed it, or the service's name (trimmed; spaces collapsed). */
+    description: text("description").notNull(),
+    /** In paise: whole rupees from ₹1 to ₹10,00,000. */
+    amountPaise: integer("amount_paise").notNull(),
+    /** True for work the job needs; false for an optional extra. */
+    needed: boolean("needed").notNull(),
+    /** The service this line was taken from, if any; null for a line typed by hand. */
+    serviceId: text("service_id").references(() => services.id, { onDelete: "restrict" }),
+    /**
+     * For a line copied into a new version by "Change estimate": the line it
+     * was copied from, so task 34 can carry its approval or show what changed.
+     * "set null" keeps the copy if that line ever goes.
+     */
+    copiedFromLineId: uuid("copied_from_line_id").references((): AnyPgColumn => estimateLines.id, { onDelete: "set null" }),
+    /** The staff member who added it (for a copy, who started the new version). */
+    addedBy: text("added_by")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    /**
+     * A random uuid per add-line form. Null on copied lines: one "Change
+     * estimate" copies many lines, and its own token is on the version.
+     */
+    requestToken: uuid("request_token"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    unique("estimate_lines_added_by_request_token").on(table.addedBy, table.requestToken),
+    // Backstops: the save only writes checkEstimateLineInput's forms. 100 and
+    // 100000000 are PRICE_RULES (src/domain/money.ts) and 120 is
+    // ESTIMATE_RULES.descriptionMaxLength; estimates-tables.test.ts keeps them in step.
+    check("estimate_lines_amount_range", sql`${table.amountPaise} between 100 and 100000000`),
+    check("estimate_lines_description_length", sql`char_length(${table.description}) between 1 and 120`),
+    check("estimate_lines_position_not_negative", sql`${table.position} >= 0`),
+    index("estimate_lines_estimate_id_index").on(table.estimateId),
   ],
 );
