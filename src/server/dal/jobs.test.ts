@@ -220,6 +220,45 @@ describe("updateJob: moves", () => {
   });
 });
 
+describe("updateJob: vehicle received only from the booking's India day (owner, 2026-11-22)", () => {
+  // The clock (nextClock) reads 11:31 India time on 19 Nov 2026 and later.
+  const tomorrow = new Date("2026-11-20T04:30:00.000Z"); // 10:00 on the 20th in India
+  const laterToday = new Date("2026-11-19T12:30:00.000Z"); // 18:00 on the 19th in India
+
+  test("refused the day before: a returned problem, nothing written, the job not started", async () => {
+    const bookingId = await job({ startsAt: tomorrow });
+    expect(await updateJob(input(bookingId, { toStatus: "vehicle-received" }), nextClock())).toEqual({
+      status: "problems",
+      problems: [{ field: "status", problem: "before-booking-day" }],
+    });
+    expect(await stepOf(bookingId)).toBeNull();
+    expect(await db.$count(bookingEvents, eq(bookingEvents.kind, "job-update"))).toBe(0);
+    // A note alone is still fine before the day.
+    expect((await updateJob(input(bookingId, { note: "Customer called" }), nextClock())).status).toBe("updated");
+  });
+
+  test("allowed on the day, before the slot's time", async () => {
+    const bookingId = await job({ startsAt: laterToday });
+    expect((await updateJob(input(bookingId, { toStatus: "vehicle-received" }), nextClock())).status).toBe("updated");
+    expect(await stepOf(bookingId)).toBe("vehicle-received");
+  });
+
+  test("allowed on the day: a fixed clock at India midnight of the slot's day", async () => {
+    const bookingId = await job({ startsAt: tomorrow });
+    const midnight = fixedClock(new Date("2026-11-19T18:30:00.000Z"));
+    expect((await updateJob(input(bookingId, { toStatus: "vehicle-received" }), midnight)).status).toBe("updated");
+  });
+
+  test("a retry after an allowed move is still duplicate, even with a clock from the day before", async () => {
+    const bookingId = await job({ startsAt: tomorrow });
+    const send = input(bookingId, { toStatus: "vehicle-received" });
+    const first = await updateJob(send, fixedClock(new Date("2026-11-20T03:00:00.000Z")));
+    if (first.status !== "updated") throw new Error(first.status);
+    expect(await updateJob(send, fixedClock(new Date("2026-11-19T12:00:00.000Z")))).toEqual({ status: "duplicate", update: first.update });
+    expect(await db.$count(bookingEvents, eq(bookingEvents.kind, "job-update"))).toBe(1);
+  });
+});
+
 describe("updateJob: a second send", () => {
   test("the same token again answers duplicate with the first update, although the step has moved since", async () => {
     const bookingId = await job();

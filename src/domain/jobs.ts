@@ -12,6 +12,7 @@
 // "Booked".
 
 import { isUuid } from "./ids";
+import { indiaDateOf } from "./india-time";
 import { normalizeTypedText, typedLength } from "./typed-text";
 
 /**
@@ -81,6 +82,35 @@ const JOB_MOVES: readonly { from: JobStatus | null; to: JobStatus; how: JobMoveH
  */
 export function canMoveJob(from: JobStatus | null, to: JobStatus): boolean {
   return JOB_MOVES.some((move) => move.how === "by-hand" && move.from === from && move.to === to);
+}
+
+/**
+ * Whether a booking's India day has come (owner, 2026-11-22): a job may move
+ * to "vehicle-received" only on or after the day of its slot, in India time.
+ * One mis-tap on a future booking would otherwise start the job, and a
+ * started job can no longer be cancelled or marked a no-show. updateJob
+ * refuses the move earlier ("before-booking-day"); the board hides its button.
+ * The dates are "YYYY-MM-DD", so comparing them as text compares them as days.
+ */
+export function bookingDayReached(startsAt: Date, now: Date): boolean {
+  return indiaDateOf(startsAt) <= indiaDateOf(now);
+}
+
+/**
+ * Whether the board's Job step control may offer a move to `to` at all,
+ * whatever the job's step: never "completed" (the plan's KD5: Completed
+ * waits for the staff reviews page, since nothing else could take a review
+ * down), and "vehicle-received" only once the booking's day has come
+ * (bookingDayReached). The board's action checks this before updateJob,
+ * which checks the move against the job's step with the booking locked.
+ */
+export function isBoardJobTarget(to: JobStatus, facts: { slotDayReached: boolean }): boolean {
+  return to !== "completed" && (to !== "vehicle-received" || facts.slotDayReached);
+}
+
+/** Whether the board's Job step control offers a move from `from` to `to`: a by-hand move it may offer. */
+export function canMoveJobFromBoard(from: JobStatus | null, to: JobStatus, facts: { slotDayReached: boolean }): boolean {
+  return isBoardJobTarget(to, facts) && canMoveJob(from, to);
 }
 
 /**

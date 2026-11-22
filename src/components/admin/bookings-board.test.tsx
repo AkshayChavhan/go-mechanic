@@ -383,6 +383,16 @@ describe("BookingsBoard: the Job step control (task 33)", () => {
     expect(within(group).getByRole("button").dataset.variant).toBe("outline");
   });
 
+  test("a booking on a later day: no Move to Vehicle received yet (owner, 2026-11-22); today's has it", async () => {
+    // 10:00 India time on the 20th, the day after `now`; the board shows both days' bookings as given.
+    const tomorrow = { ...morning, id: "b3", code: "QW2R7T", status: "confirmed" as const, startsAt: new Date("2026-11-20T04:30:00Z") };
+    await renderBoard({ bookings: [{ ...afternoon, status: "confirmed" }, tomorrow] });
+    expect(within(cardOf("QW2-R7T")).queryByRole("group", { name: /^Job step/ })).toBeNull();
+    expect(cardOf("QW2-R7T").textContent).not.toContain("Move to");
+    // Today's later slot (15:30, not started yet) may already be received.
+    expect(buttonsIn(within(cardOf("PZ3-H8T")).getByRole("group", { name: /^Job step/ }))).toEqual(["Move to Vehicle received"]);
+  });
+
   test("vehicle received: Move to Inspection", async () => {
     expect(await stepButtons("vehicle-received")).toEqual(["Move to Inspection"]);
   });

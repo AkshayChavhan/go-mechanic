@@ -2,6 +2,7 @@ import { type BrowserContext, expect, type Locator, type Page, test } from "@pla
 
 import messages from "../messages/en.json";
 import { BOOKING_CODE_ALPHABET } from "../src/domain/bookings";
+import { indiaDateOf } from "../src/domain/india-time";
 import { formatPhoneNumber } from "../src/lib/contact-links";
 
 import { expectNoErrors, freshNumber, latestCodeFor, logInThroughTheForm, TEST_OWNER_NUMBER, watchErrors } from "./helpers";
@@ -76,9 +77,10 @@ async function continueTo(page: Page, next: string) {
   await expect(stepHeading(page, next)).toBeVisible();
 }
 
-/** Clicks one of the group's enabled pills at random; returns the radio's value. */
-async function pickAtRandom(page: Page, legend: string): Promise<string> {
-  const radios = page.getByRole("group", { name: legend }).locator("input[type=radio]:not([disabled])");
+/** Clicks one of the group's enabled pills at random (never the one valued `except`); returns the radio's value. */
+async function pickAtRandom(page: Page, legend: string, except?: string): Promise<string> {
+  const skip = except === undefined ? "" : `:not([value="${except}"])`;
+  const radios = page.getByRole("group", { name: legend }).locator(`input[type=radio]:not([disabled])${skip}`);
   const count = await radios.count();
   expect(count, `no enabled ${legend} to choose`).toBeGreaterThan(0);
   const radio = radios.nth(Math.floor(Math.random() * count));
@@ -100,9 +102,9 @@ const booked = {
 };
 
 /**
- * A second visit by the same customer (task 33): the owner moves its job on,
- * which the first booking can't take (it's cancelled, and a started job
- * can't be cancelled).
+ * A second visit by the same customer (task 33), on a later day than today:
+ * its Manage panel offers no job step yet, since a vehicle can be received
+ * only from its booking's India day (owner, 2026-11-22).
  */
 const second = { code: "", day: "" };
 
@@ -150,7 +152,8 @@ test("a customer books a visit on /book (the booking the owner looks for)", asyn
   await continueTo(page, wizard.steps.services);
   await page.getByRole("group", { name: wizard.servicesLegend }).getByRole("checkbox").first().check();
   await continueTo(page, wizard.steps.slot);
-  second.day = await pickAtRandom(page, wizard.dayLegend);
+  // Not today: the board must not offer "Move to Vehicle received" for it.
+  second.day = await pickAtRandom(page, wizard.dayLegend, indiaDateOf(new Date()));
   const times = page
     .getByRole("group", { name: wizard.timeLegend })
     .locator(`input[type=radio]:not([disabled]):not([value="${firstTime}"])`);
@@ -233,7 +236,7 @@ test("the manifest and home-screen icons answer for anyone, and only /admin link
   expect(home).not.toContain("/admin.webmanifest");
 });
 
-test("the owner opens the staff area from /account, finds the booking on its day, confirms and cancels it before the page's JavaScript loads, moves a second booking's job to inspection, then a customer on the same phone presses Back and sees nothing of it", async ({
+test("the owner opens the staff area from /account, finds the booking on its day, confirms and cancels it before the page's JavaScript loads, sees no job step on a later day's booking, then a customer on the same phone presses Back and sees nothing of it", async ({
   page,
   browser,
 }) => {
@@ -323,50 +326,20 @@ test("the owner opens the staff area from /account, finds the booking on its day
   await expect(status(bookings.statuses.cancelled)).toBeVisible();
   await expect(staffCard.getByText(bookings.cancelReason.replace("{reason}", reason))).toBeVisible();
 
-  // Task 33: the second booking's job, step by step from its Manage panel.
-  // The first move in the same tab without the page's JavaScript files...
-  const stepLabel = (step: keyof typeof bookings.jobSteps) => bookings.jobSteps[step];
-  const moveTo = (step: keyof typeof bookings.jobSteps) => bookings.manage.moveJob.replace("{step}", stepLabel(step));
-  const jobCard = (on: Page) =>
-    on.getByRole("listitem").filter({ has: on.getByRole("heading", { level: 2, name: new RegExp(second.code) }) });
-  const jobPanel = (on: Page) =>
-    jobCard(on).locator("summary", { hasText: bookings.manage.summary.replace("{code}", second.code) });
-  // React may keep a <details> open across the redirect, so open it only when it's shut.
-  const openJobPanel = async (on: Page) => {
-    const details = jobCard(on).locator("details");
-    if (!(await details.evaluate((element) => (element as HTMLDetailsElement).open))) await jobPanel(on).click();
-  };
-  const moved = (on: Page, step: keyof typeof bookings.jobSteps) =>
-    on.getByRole("status").filter({
-      hasText: bookings.notices["job-moved"].replace("{code}", second.code).replace("{step}", stepLabel(step)),
-    });
-  const jobLine = (on: Page, step: keyof typeof bookings.jobSteps) =>
-    jobCard(on).getByText(bookings.job.replace("{step}", stepLabel(step)), { exact: true });
-
+  // Task 33: the second booking is on a later day, so its Manage panel
+  // offers no job step at all: a vehicle can be received only from its
+  // booking's India day (owner, 2026-11-22; updateJob refuses earlier).
+  // A job that's already started is unit-tested (bookings-board.test.tsx).
+  const jobCard = staff
+    .getByRole("listitem")
+    .filter({ has: staff.getByRole("heading", { level: 2, name: new RegExp(second.code) }) });
   await staff.goto(`/admin/bookings?date=${second.day}`);
-  await expect(jobLine(staff, "not-started")).toBeVisible();
-  await openJobPanel(staff);
-  await expect(jobCard(staff).getByRole("button", { name: moveTo("inspection") })).toHaveCount(0);
-  await jobCard(staff).getByRole("button", { name: moveTo("vehicle-received") }).click();
-  await expect(staff).toHaveURL(/notice=job-moved/);
-  await expect(moved(staff, "vehicle-received")).toBeVisible();
-  await expect(jobLine(staff, "vehicle-received")).toBeVisible();
+  await expect(jobCard.getByText(bookings.job.replace("{step}", bookings.jobSteps["not-started"]), { exact: true })).toBeVisible();
+  await jobCard.locator("summary", { hasText: bookings.manage.summary.replace("{code}", second.code) }).click();
+  await expect(jobCard.getByRole("button", { name: bookings.manage.confirm })).toBeVisible();
+  await expect(jobCard.getByRole("button", { name: new RegExp(`^${bookings.manage.moveJob.replace("{step}", "")}`) })).toHaveCount(0);
+  await expect(jobCard.getByRole("group", { name: new RegExp(`^${bookings.manage.jobStep.replace("{step}", "")}`) })).toHaveCount(0);
   await noScript.close();
-
-  // ...and the next with it, in the owner's own tab.
-  await page.goto(`/admin/bookings?date=${second.day}`);
-  await expect(jobLine(page, "vehicle-received")).toBeVisible();
-  await openJobPanel(page);
-  await jobCard(page).getByRole("button", { name: moveTo("inspection") }).click();
-  await expect(page).toHaveURL(/notice=job-moved/);
-  await expect(moved(page, "inspection")).toBeVisible();
-  await expect(jobLine(page, "inspection")).toBeVisible();
-  // Only sending an estimate reaches "awaiting approval", and nothing offers
-  // "Completed" until the staff reviews page exists (CLAUDE.md "Reviews").
-  await openJobPanel(page);
-  await expect(jobCard(page).getByRole("button", { name: moveTo("in-service") })).toBeVisible();
-  await expect(jobCard(page).getByRole("button", { name: moveTo("completed") })).toHaveCount(0);
-  await expect(jobCard(page).getByRole("button", { name: moveTo("awaiting-approval") })).toHaveCount(0);
 
   // The reason is for the garage only: the customer's /admin HTML still holds none of it.
   const customer404 = await browser.newContext({ ...phone, storageState: booked.storage });

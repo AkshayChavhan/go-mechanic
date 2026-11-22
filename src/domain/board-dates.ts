@@ -112,6 +112,8 @@ export const BOARD_REFUSAL_NOTICES = [
   "reason-too-long",
   /** The job's step changed since the page was shown, so that move no longer fits (task 33). */
   "job-step-changed",
+  /** "Vehicle received" before the booking's India day: updateJob refuses it (owner, 2026-11-22). */
+  "before-booking-day",
   /** A form that was tampered with or broken: nothing saved. */
   "not-saved",
 ] as const;

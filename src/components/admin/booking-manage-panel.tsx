@@ -7,7 +7,7 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea";
 import { type BoardNotice, type BoardView, isRefusalNotice } from "@/domain/board-dates";
 import { type BookingStatus, CANCEL_REASON_RULES, canChangeStatus, formatBookingCode, isActiveStatus } from "@/domain/bookings";
-import { canMoveJob, JOB_STATUSES, type JobStatus } from "@/domain/jobs";
+import { bookingDayReached, canMoveJobFromBoard, JOB_STATUSES, type JobStatus } from "@/domain/jobs";
 import type { Locale } from "@/i18n/config";
 import { assignFromBoard, changeStatusFromBoard, moveJobFromBoard } from "@/server/actions/admin-bookings";
 import type { StaffBookingRow } from "@/server/dal/staff-bookings";
@@ -20,7 +20,7 @@ export type BookingManagePanelProps = {
   view: BoardView;
   /** Everyone who may be given jobs (listMechanics), by name. */
   mechanics: Mechanic[];
-  /** The time the page was asked for: decides whether a No-show is possible yet. */
+  /** The time the page was asked for: decides whether a No-show, or Vehicle received, is possible yet. */
   now: Date;
   /** A fresh request token for each form (a random uuid). */
   newToken: () => string;
@@ -59,12 +59,13 @@ export function BookingManagePanel({ locale, booking, view, mechanics, now, newT
   // Assigning stays open while the job runs (handing a job over mid-way), until it's completed.
   const canAssign = isActiveStatus(booking.status) && booking.jobStatus !== "completed";
   // The Job step control (task 33): the next steps staff may choose by hand
-  // (canMoveJob, the same check updateJob makes), never "completed" yet (the
-  // plan's KD5: the staff reviews page must exist first). A cancelled or
+  // (canMoveJobFromBoard: the move updateJob allows, never "completed", and
+  // "vehicle-received" only from the booking's India day). A cancelled or
   // no-show booking takes no job updates, and "awaiting-approval" has no
   // by-hand moves, so both get no buttons.
+  const jobFacts = { slotDayReached: bookingDayReached(booking.startsAt, now) };
   const jobTargets = isActiveStatus(booking.status)
-    ? JOB_STATUSES.filter((to) => to !== "completed" && canMoveJob(booking.jobStatus, to))
+    ? JOB_STATUSES.filter((to) => canMoveJobFromBoard(booking.jobStatus, to, jobFacts))
     : [];
   if (statusButtons.length === 0 && !canCancel && !canAssign && jobTargets.length === 0) return null;
 

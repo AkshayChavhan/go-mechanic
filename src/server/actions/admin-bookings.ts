@@ -30,7 +30,7 @@ import { RedirectType } from "next/navigation";
 
 import { type BoardNotice, boardQuery, checkBoardView, parseBoardNotice } from "@/domain/board-dates";
 import { isUuid } from "@/domain/ids";
-import { isJobStatus } from "@/domain/jobs";
+import { isBoardJobTarget, isJobStatus } from "@/domain/jobs";
 import type { Locale } from "@/i18n/config";
 import { redirect } from "@/i18n/navigation";
 import { requirePermission } from "@/server/auth/access";
@@ -120,12 +120,12 @@ export async function moveJobFromBoard(
   const id = typeof bookingId === "string" ? bookingId : "";
   const step = formText(formData, "step");
   const posted = formText(formData, "code") || null;
-  // Refused here, before any save: "completed" (the plan's KD5: the staff
-  // reviews page must ship first; the panel never offers it), and a blank or
-  // unknown step (a broken form). Every other step goes to updateJob, which
-  // checks it against the job's step as it is now, with the booking locked
-  // (the page may be out of date), so "awaiting-approval" is refused there.
-  if (step === "completed" || !isJobStatus(step)) {
+  // Refused here, before any save: a blank or unknown step (a broken form),
+  // and "completed", which the board never offers (isBoardJobTarget). The
+  // booking's day isn't known here: updateJob checks it, and the move from
+  // the job's step as it is now, with the booking locked (the page may be
+  // out of date), so "awaiting-approval" and an early "vehicle-received" are refused there.
+  if (!isJobStatus(step) || !isBoardJobTarget(step, { slotDayReached: true })) {
     return backToBoard(checked, id, boardView, "not-saved", posted);
   }
 
@@ -149,8 +149,11 @@ function jobNotice(result: UpdateJobResult): BoardNotice | null {
       // Cancelled or a no-show in the meantime: the notice says which.
       return "changed";
     case "problems":
-      // A move that no longer fits the job's step; anything else is a broken form.
-      return result.problems.some((problem) => problem.problem === "move-not-allowed") ? "job-step-changed" : "not-saved";
+      // A move that no longer fits the job's step, or a vehicle received before
+      // the booking's day; anything else is a broken form.
+      if (result.problems.some((problem) => problem.problem === "move-not-allowed")) return "job-step-changed";
+      if (result.problems.some((problem) => problem.problem === "before-booking-day")) return "before-booking-day";
+      return "not-saved";
     case "not-found":
       return null;
   }

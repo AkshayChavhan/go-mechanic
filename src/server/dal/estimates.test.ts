@@ -352,6 +352,18 @@ describe("start, add and send", () => {
     expect(await send(booking.id, estimateId)).toEqual({ status: "booking-closed" });
   });
 
+  test("a draft started at inspection, then the job moved by hand to ready: the send answers wrong-step and writes nothing", async () => {
+    const booking = await book();
+    const estimateId = await start(booking.id);
+    await add(booking.id, estimateId);
+    await db.update(bookings).set({ jobStatus: "ready" }).where(eq(bookings.id, booking.id));
+
+    expect(await send(booking.id, estimateId)).toEqual({ status: "wrong-step" });
+    expect((await versionOf(estimateId)).sentAt).toBeNull();
+    expect(await jobUpdatesOf(booking.id)).toEqual([]);
+    expect(await jobStepOf(booking.id)).toBe("ready");
+  });
+
   test("a missing booking answers not-found", async () => {
     expect(await startEstimateVersion({ bookingId: unknownId, requestToken: randomUUID() })).toEqual({ status: "not-found" });
     expect(await sendEstimate({ bookingId: unknownId, estimateId: unknownId, revision: "0", requestToken: randomUUID() })).toEqual({

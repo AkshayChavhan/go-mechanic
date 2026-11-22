@@ -777,6 +777,7 @@
         "reason-too-long": "To cancel booking {code}, keep the reason to {max} characters or fewer.",
         "job-moved": "Booking {code}'s job is now at {step}.",
         "job-step-changed": "Booking {code}'s job changed in the meantime and is now at {step}. Check its card, then try again if you still need to.",
+        "before-booking-day": "Booking {code}'s vehicle can be received from its booking day.",
         "not-saved": "Booking {code} wasn't changed. Reload the page and try again.",
         "callReminder": "Call or WhatsApp {name} to let them know: the website doesn't tell customers yet.",
         "call": "Call {name}",

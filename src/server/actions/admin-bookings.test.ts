@@ -276,6 +276,7 @@ describe("moveJobFromBoard (the Job step control, task 33)", () => {
   test.each<[string, UpdateJobResult, string]>([
     ["job-closed", { status: "job-closed" }, "job-step-changed"],
     ["booking-closed", { status: "booking-closed" }, "changed"],
+    ["vehicle received before the booking's day", { status: "problems", problems: [{ field: "status", problem: "before-booking-day" }] }, "before-booking-day"],
     ["a broken form", { status: "problems", problems: [{ field: "form", problem: "bad-request" }] }, "not-saved"],
   ])("%s: the refusal's notice", async (_, answer, notice) => {
     vi.mocked(updateJob).mockResolvedValue(answer);
