@@ -84,8 +84,8 @@ The owner's decisions (2026-11-21 and 2026-11-22):
 Run in the main session after the review fixes:
 
 ```bash
-npm run check      # 2,773 tests passed
-npm run test:e2e   # 137 passed
+npm run check      # 2,884 tests passed (after merging main, which brought task 41)
+npm run test:e2e   # 137 passed (a first run under very heavy machine load timed out in access.spec.ts; the rerun with the load down passed)
 ```
 
 The estimate tests alone (run while writing this doc):
