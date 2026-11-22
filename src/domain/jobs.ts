@@ -4,6 +4,7 @@
 // Pure logic: no Next.js, React or database imports. The data-access save
 // (src/server/dal/jobs.ts) checks what staff send with checkJobUpdateInput(),
 // then, with the booking row locked, checks the move with canMoveJob().
+// The estimate send (task 33) checks its move with canSendEstimateFrom().
 //
 // A job's step is its own column (bookings.job_status), apart from the
 // booking's status (booked, and later confirmed or cancelled: tasks 25, 27).
@@ -16,7 +17,7 @@ import { normalizeTypedText, typedLength } from "./typed-text";
 /**
  * Every step after "Booked", in order. The order is stored in the database
  * enum, so a new step goes in its place here and in a new migration.
- * Nothing reaches "awaiting-approval" yet: sending an estimate (task 33) does.
+ * Only sending an estimate (task 33) reaches "awaiting-approval".
  */
 export const JOB_STATUSES = [
   "vehicle-received",
@@ -47,25 +48,48 @@ export function jobStep(status: JobStatus | null): JobStep {
 }
 
 /**
- * The moves staff may make, from a step (null: not started) to the next.
+ * How a move happens. "by-hand": staff choose the next step (a job update,
+ * the board's Job step control). "by-estimate": only sending an estimate
+ * (task 33) makes the move, so no hand-made update can skip the customer's
+ * approval.
+ */
+export type JobMoveHow = "by-hand" | "by-estimate";
+
+/**
+ * The allowed moves, from a step (null: not started) to the next.
  * Owner's defaults (2026-11-19, see the plan): one step at a time, straight
  * from inspection to ready when no work is needed, and back from ready to
- * in service when a problem turns up. Task 33 adds the estimate's moves into
- * "awaiting-approval" and task 34 the moves out of it: each is a row here.
+ * in service when a problem turns up. Sending an estimate moves the job to
+ * "awaiting-approval" from inspection or in service; task 34 adds the moves
+ * out of it. Each is a row here.
  */
-const JOB_MOVES: readonly (readonly [JobStatus | null, JobStatus])[] = [
-  [null, "vehicle-received"],
-  ["vehicle-received", "inspection"],
-  ["inspection", "in-service"],
-  ["inspection", "ready"],
-  ["in-service", "ready"],
-  ["ready", "in-service"],
-  ["ready", "completed"],
+const JOB_MOVES: readonly { from: JobStatus | null; to: JobStatus; how: JobMoveHow }[] = [
+  { from: null, to: "vehicle-received", how: "by-hand" },
+  { from: "vehicle-received", to: "inspection", how: "by-hand" },
+  { from: "inspection", to: "in-service", how: "by-hand" },
+  { from: "inspection", to: "ready", how: "by-hand" },
+  { from: "in-service", to: "ready", how: "by-hand" },
+  { from: "ready", to: "in-service", how: "by-hand" },
+  { from: "ready", to: "completed", how: "by-hand" },
+  { from: "inspection", to: "awaiting-approval", how: "by-estimate" },
+  { from: "in-service", to: "awaiting-approval", how: "by-estimate" },
 ];
 
-/** Whether staff may move a job from `from` (null: not started) to `to`. */
+/**
+ * Whether staff may move a job by hand from `from` (null: not started) to
+ * `to`. Never true for "awaiting-approval": only sending an estimate gets there.
+ */
 export function canMoveJob(from: JobStatus | null, to: JobStatus): boolean {
-  return JOB_MOVES.some(([a, b]) => a === from && b === to);
+  return JOB_MOVES.some((move) => move.how === "by-hand" && move.from === from && move.to === to);
+}
+
+/**
+ * Whether sending an estimate from this step moves the job to
+ * "awaiting-approval" (inspection, in service). A send while the job is
+ * already awaiting approval moves nothing, so this is false there.
+ */
+export function canSendEstimateFrom(step: JobStatus | null): boolean {
+  return JOB_MOVES.some((move) => move.how === "by-estimate" && move.from === step && move.to === "awaiting-approval");
 }
 
 /** What staff send for one update, as strings. Blank means "not this part". */

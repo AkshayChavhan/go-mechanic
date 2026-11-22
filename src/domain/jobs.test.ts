@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   canMoveJob,
+  canSendEstimateFrom,
   checkJobUpdateInput,
   JOB_STATUSES,
   JOB_STEPS,
@@ -38,15 +39,23 @@ describe("canMoveJob", () => {
     expect(canMoveJob(from, to)).toBe(true);
   });
 
-  test("every other move is refused, nothing reaches awaiting approval, and nothing leaves completed", () => {
+  test("every other move is refused, nothing reaches awaiting approval by hand, and nothing leaves completed", () => {
     const allowed = new Set(["null>vehicle-received", "vehicle-received>inspection", "inspection>in-service", "inspection>ready", "in-service>ready", "ready>in-service", "ready>completed"]);
     for (const from of [null, ...JOB_STATUSES] as (JobStatus | null)[]) {
       for (const to of JOB_STATUSES) {
         expect(canMoveJob(from, to), `${from} → ${to}`).toBe(allowed.has(`${from}>${to}`));
       }
     }
-    expect(JOB_STATUSES.some((from) => canMoveJob(from, "awaiting-approval"))).toBe(false);
+    // Only sending an estimate moves a job to awaiting approval (canSendEstimateFrom).
+    expect([null, ...JOB_STATUSES].some((from) => canMoveJob(from, "awaiting-approval"))).toBe(false);
     expect(JOB_STATUSES.some((to) => canMoveJob("completed", to))).toBe(false);
+  });
+});
+
+describe("canSendEstimateFrom", () => {
+  test("a send moves the job from inspection or in service only", () => {
+    const from = [null, ...JOB_STATUSES].filter((step) => canSendEstimateFrom(step));
+    expect(from).toEqual(["inspection", "in-service"]);
   });
 });
 
