@@ -508,11 +508,11 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Owner, 2026-11-21: amounts are what the customer pays; one line says "Prices include taxes" (no GST breakdown in version 1): the totals are in the engine (`estimateTotals`); the wording ships with the page (task 53)
 - [x] Job step buttons on the board's Manage panel (U3), stopping at Ready
 - [x] Size checkpoint (owner, 2026-11-22): about 2,230 lines after U4, near 3,600 with the page, so the page (U5) and its browser steps moved to task 53
-- [x] Privacy notice for estimates, `LOGIN_NOTICE_VERSION` (`2026-11-22`), a browser test of the Job step buttons, and the "Estimates" block in `CLAUDE.md` (U6, without the estimate page)
+- [x] Privacy notice for estimates, `LOGIN_NOTICE_VERSION` (`2026-11-22`), a browser check that a later day's booking offers no job step (the moves are unit-tested), and the "Estimates" block in `CLAUDE.md` (U6, without the estimate page)
 - [x] Code review (owner, 2026-11-22): a vehicle can be received only from its booking's day in India (`updateJob` answers `before-booking-day`), so one mis-tap can't lock a future booking
 - [x] Write the learning doc: [33_estimate_builder.md](../learning/33_estimate_builder.md)
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Review: `ce-code-review` "Ready with fixes" (2 findings, fixed); `code-reviewer` "Needs changes" for one learning-doc line (fixed), its suggestions fixed too
+- [x] Compound: none needed; the booking-day rule and the browser-test note are in `CLAUDE.md` and task 53's steps (see the learning doc)
 - [ ] Merge into `main`
 
 ### 34_estimate_approval
@@ -760,7 +760,7 @@ Split from task 33 at its size checkpoint (owner, 2026-11-22). Build it from U5 
 - [ ] Create branch `53_estimate_page`
 - [ ] `/admin/bookings/<bookingId>/estimate`: the gate (`estimates.manage`), the states, the line rows, the add form, the totals with "Prices include taxes", Send, Change estimate and the earlier versions (U5)
 - [ ] The four Server Actions in `src/server/actions/admin-estimates.ts` with their closed notice list, and the `sent` notice that reminds staff to tell the customer (call links with `customers.contact`)
-- [ ] The Estimate link in the Manage panel's Job step group (`estimates.manage`), and the card's estimate summary (`StaffBookingRow.estimate`)
+- [ ] The Estimate link in the Manage panel's Job step group (`estimates.manage`), and the card's estimate summary (`StaffBookingRow.estimate`: `listBookingsOn` already reads it on every board load; use it or remove the query)
 - [ ] Browser test: build and send an estimate on a second booking, one add with page scripts blocked, and the estimate page in the customer-HTML scan (U6). A job can be received only from its booking's day (owner, 2026-11-22), so that booking must be for today: find a way to book today's date reliably (or a test-only seed) before writing the steps
 - [ ] Write the learning doc
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
@@ -856,6 +856,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Done in task 33: sending an estimate moves the job to `awaiting-approval` (a "by-estimate" row in `canMoveJob`'s table, kept off-limits by hand, and one `job-update` event for the move). Task 34 adds the moves out of it, a rejected estimate included (task 31)
 - Task 25: the customer's booking page shows JobTimeline, whose 'Awaiting your approval' step needs task 34's estimate view: ship 34 first or explain the step (task 33)
 - Tasks 25 and 52: if either allows cancelling or moving a started job, decide what happens to an open estimate (task 33)
+- Task 53: a draft started at Inspection goes read-only when staff press "Move to Ready" (`wrong-step` until the job moves back to In service); show "a draft is open" on the card, or decide whether that move should be refused while a draft is open (task 33 code-reviewer)
 - Task 35: queue the customer's notification for a job update where `updateJob` marks the spot, inside its transaction (task 31)
 - Task 43: deleting a booking with job photos needs its photos deleted first (`photo_sets.booking_id` restricts it), and the notice's "Your bookings" then says how long progress and notes are kept (task 31)
 - Task 20: on Postgres, check two `updateJob` calls on one booking at once (the `for update` lock); PGlite runs one transaction at a time and can't show the race (task 31)

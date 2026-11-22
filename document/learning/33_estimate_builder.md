@@ -24,7 +24,7 @@ The owner's decisions (2026-11-21 and 2026-11-22):
 
 ## What: what changed
 
-31 files changed (`git diff 872fa7c...HEAD --stat`). The important ones:
+32 files changed (`git diff 872fa7c...HEAD --stat`). The important ones:
 
 | File or folder | Change | Why it exists |
 | --- | --- | --- |
@@ -35,12 +35,12 @@ The owner's decisions (2026-11-21 and 2026-11-22):
 | `src/server/dal/estimates.ts` (+ test) | Added | `startEstimateVersion`, `addEstimateLine`, `removeEstimateLine`, `sendEstimate`, `readEstimateForStaff`. Only this file writes the two tables |
 | `src/server/dal/jobs.ts` (+ test) | Changed | `updateJob` refuses `before-booking-day` |
 | `src/server/dal/staff-booking-changes.ts` | Changed | `lockBooking` exported, so the estimate saves lock the same row the same way |
-| `src/server/dal/staff-bookings.ts` (+ test) | Changed | The board reads each job's step |
+| `src/server/dal/staff-bookings.ts` (+ test) | Changed | The board reads each booking's newest estimate version (shown from task 53) |
 | `src/server/actions/admin-bookings.ts` (+ test) | Changed | `moveJobFromBoard`, the Server Action behind the buttons |
 | `src/components/admin/booking-manage-panel.tsx`, `board-notice.tsx` (+ test) | Changed | "Job step: …" and the "Move to …" buttons, and their notices |
 | `src/domain/board-dates.ts` (+ test) | Changed | New notice codes: `job-moved`, `job-step-changed`, `before-booking-day` |
 | `messages/en.json`, `src/domain/consent.ts`, `consent.test.ts`, `privacy/coverage.test.ts` | Changed | The privacy notice covers estimates; `LOGIN_NOTICE_VERSION` is now `2026-11-22` |
-| `e2e/admin.spec.ts` | Changed | Moves a job with the buttons in a real browser |
+| `e2e/admin.spec.ts` | Changed | Checks that a later day's booking offers no job step; the moves themselves are unit-tested |
 | `CLAUDE.md`, `task.md` | Changed | The "Estimates" rules; task 53 and backlog lines |
 
 ## How: step by step
@@ -96,7 +96,7 @@ npx vitest run src/domain/estimates.test.ts src/domain/jobs.test.ts src/server/d
 #       Tests  90 passed (90)
 ```
 
-In `e2e/admin.spec.ts`, the owner moves today's job with "Move to …". It also checks that the button is absent on a second booking on a later day.
+In `e2e/admin.spec.ts`, the owner opens a second booking on a later day and checks that it offers no "Move to …" button (a vehicle can be received only from its booking day). No browser test clicks a step button yet: the moves are proven by `bookings-board.test.tsx`, `admin-bookings.test.ts` and `jobs.test.ts`. A browser test that moves a job needs a booking for today, which task 53's step says to solve.
 
 **Known gaps (honest list):**
 
@@ -131,8 +131,8 @@ In `e2e/admin.spec.ts`, the owner moves today's job with "Move to …". It also 
 - **`CLAUDE.md` still named task 33** for answering free estimate requests. It now names task 51 (`fa7907c`).
 - **One mis-tap on a future booking started its job for good.** Fixed with the booking-day rule above (`e1f821c`). We also added a test that sends an estimate after the job moved to Ready.
 
-**`code-reviewer`:** Pending (not run yet).
+**`code-reviewer`:** "Needs changes" for one must-fix in the docs: this doc said the browser test moves a job, but it only checks that the button is absent. Fixed above. Its suggestions were fixed too: the description comment in `schema.ts` now says what `normalizeTypedText` really does (it keeps line breaks), the file count and the `staff-bookings.ts` row here are corrected, task 53's steps say the card must use `StaffBookingRow.estimate`, and the backlog notes that moving a job to Ready leaves a draft read-only.
 
 ## Compound
 
-Pending: not decided yet.
+No new lesson in `document/solutions/`. The two things this task taught are now written where the next session reads them: the booking-day rule and "a browser test that needs a started job must book today's date" are in `CLAUDE.md` ("Jobs", "Estimates") and in task 53's steps, and the supersede-before-send order is in the schema comment and tested. The rest followed lessons we already had (idempotent saves, enum migrations, the privacy notice).
