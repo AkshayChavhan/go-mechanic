@@ -45,8 +45,17 @@ export type TopServiceDbRow = { serviceId: string; name: LocalizedText; bookings
 
 /** The window to query, or null for a period the reports can't use. */
 function windowOf(period: ReportPeriodInput): { start: Date; end: Date } | null {
-  const range = checkReportRange(period?.from, period?.to);
+  const range = checkReportRange(period.from, period.to);
   return range.ok ? periodWindow(range) : null;
+}
+
+/** Active bookings (booked, confirmed) whose slot falls in the window: what top services and workload count (plan KTD3). */
+function activeBookingsIn(window: { start: Date; end: Date }) {
+  return and(
+    gte(bookings.startsAt, window.start),
+    lt(bookings.startsAt, window.end),
+    inArray(bookings.status, [...ACTIVE_STATUSES]),
+  );
 }
 
 /** Every booking whose slot falls in the period: when it starts, and its status. */
@@ -80,13 +89,7 @@ export async function readTopServicesReport(period: ReportPeriodInput): Promise<
     .from(bookingItems)
     .innerJoin(bookings, eq(bookingItems.bookingId, bookings.id))
     .innerJoin(services, eq(bookingItems.serviceId, services.id))
-    .where(
-      and(
-        gte(bookings.startsAt, window.start),
-        lt(bookings.startsAt, window.end),
-        inArray(bookings.status, [...ACTIVE_STATUSES]),
-      ),
-    )
+    .where(activeBookingsIn(window))
     .groupBy(services.id, services.name);
   return { ok: true, rows };
 }
@@ -126,17 +129,11 @@ export async function readWorkloadReport(period: ReportPeriodInput): Promise<Rep
       mechanicId: mechanics.id,
       name: mechanics.name,
       bookings: sql<number>`count(*)::int`,
-      completed: sql<number>`(count(*) filter (where ${bookings.jobStatus} = 'completed'))::int`,
+      completed: sql<number>`(count(*) filter (where ${eq(bookings.jobStatus, "completed")}))::int`,
     })
     .from(bookings)
     .leftJoin(mechanics, eq(bookings.assignedMechanicId, mechanics.id))
-    .where(
-      and(
-        gte(bookings.startsAt, window.start),
-        lt(bookings.startsAt, window.end),
-        inArray(bookings.status, [...ACTIVE_STATUSES]),
-      ),
-    )
+    .where(activeBookingsIn(window))
     .groupBy(mechanics.id, mechanics.name);
   return { ok: true, rows };
 }
