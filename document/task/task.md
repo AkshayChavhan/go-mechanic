@@ -50,7 +50,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 38 | `38_offers_coupons` | Offers, banner, coupons at booking | To do |  |
 | 39 | `39_catalogue_admin` | Admin editing of real prices (services and packages edits, and brands and models, split off: see the backlog) | Done | [39_catalogue_admin.md](../learning/39_catalogue_admin.md) |
 | 40 | `40_content_admin` | Admin editing of FAQ, content blocks and garage info | To do |  |
-| 41 | `41_admin_reports` | Reports and CSV export | To do |  |
+| 41 | `41_admin_reports` | Reports and CSV export | In progress | [41_admin_reports.md](../learning/41_admin_reports.md) |
 | 42 | `42_local_seo` | Metadata, sitemap, robots, social image, AutoRepair structured data | To do |  |
 | 43 | `43_privacy_dpdp` | Privacy notice, consent withdrawal, delete-my-data, export | To do |  |
 | 44 | `44_real_sms_otp` | Real SMS OTP (MSG91 + DLT), bot protection, rate limits (paid) | To do |  |
@@ -587,10 +587,10 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 41_admin_reports
 
-- [ ] Create branch `41_admin_reports`
-- [ ] Plan with `ce-plan`
-- [ ] Reports and CSV export
-- [ ] Reports that group by day convert to India time in SQL (`AT TIME ZONE 'Asia/Kolkata'`): the database session runs in UTC (task 14)
+- [x] Create branch `41_admin_reports`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-22-1102-feat-admin-reports-plan.md)
+- [ ] `/admin/reports` (managers and the owner, `reports.view`): bookings per day by status, top services, rating and mechanic workload for the last 7, 30 or 90 days or a custom range, each with a CSV of totals (owner, 2026-11-22)
+- [ ] Bookings are grouped by the slot's India day in code (`indiaDateOf`), not with SQL `AT TIME ZONE`: `india-time.ts` owns India time, and PGlite's time-zone data is untested (plan KTD2)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -848,6 +848,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Prices on each line of the staff bookings board (`src/components/admin/bookings-board.tsx`, "Names only: prices come with task 39"): `listBookingsOn` already returns them. Left out of task 39 while task 27 changes that board (task 39)
 - Task 20: on Postgres, check two `saveGroupPrices` calls on one service and price group at once: the advisory lock should make the last save win with no unique-constraint error; PGlite runs one transaction at a time and can't show it (task 39)
 - `npm run dev` logged "Next.js encountered the unstable value `Date.now()` while prerendering" at `AdminNavGate` (`src/app/[locale]/admin/layout.tsx`) twice, each time on the first staff page load right after a file change recompiled the page; never on a fresh load. The e2e run doesn't read the server's log, so the production build is unchecked. Find out whether it's Next.js's dev-only re-check after a recompile or a real read before `headers()` (task 39)
+- Task 34 adds the "approved estimate value" report to `/admin/reports` (owner, 2026-11-22: task 41 built the other four reports; estimate tables come with tasks 33 and 34). It follows task 41's pattern: a live read with `authorize("reports.view")`, a table builder in `src/domain/reports.ts` shared by the page and the CSV, and totals only in the CSV
 
 ## How to add a task
 
