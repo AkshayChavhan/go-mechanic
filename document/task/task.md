@@ -42,7 +42,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | Done | [31_job_timeline.md](../learning/31_job_timeline.md) |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | Done | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
-| 33 | `33_estimate_builder` | Estimate engine (lines, versions, send for approval) and job steps on the board (the page split into task 53) | In progress |  |
+| 33 | `33_estimate_builder` | Estimate engine (lines, versions, send for approval) and job steps on the board (the page split into task 53) | In progress | [33_estimate_builder.md](../learning/33_estimate_builder.md) |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
@@ -505,11 +505,12 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Estimate lines, versions, send for approval: the rules (U1), the tables (U2, migration 0013) and the saves and reads (U4)
 - [x] Owner, 2026-11-21: estimates for booked jobs first (after inspection; sending moves the job to awaiting approval); answers to free estimate requests come later with the inbox (task 51)
 - [x] Owner, 2026-11-21: each line is marked needed or optional (task 34 decides what a rejected needed line does)
-- [ ] Owner, 2026-11-21: amounts are what the customer pays; one line says "Prices include taxes" (no GST breakdown in version 1): the wording ships with the page (task 53)
+- [x] Owner, 2026-11-21: amounts are what the customer pays; one line says "Prices include taxes" (no GST breakdown in version 1): the totals are in the engine (`estimateTotals`); the wording ships with the page (task 53)
 - [x] Job step buttons on the board's Manage panel (U3), stopping at Ready
 - [x] Size checkpoint (owner, 2026-11-22): about 2,230 lines after U4, near 3,600 with the page, so the page (U5) and its browser steps moved to task 53
-- [ ] Privacy notice for estimates, `LOGIN_NOTICE_VERSION`, a browser test of the Job step buttons, and the "Estimates" block in `CLAUDE.md` (U6, without the estimate page)
-- [ ] Write the learning doc
+- [x] Privacy notice for estimates, `LOGIN_NOTICE_VERSION` (`2026-11-22`), a browser test of the Job step buttons, and the "Estimates" block in `CLAUDE.md` (U6, without the estimate page)
+- [x] Code review (owner, 2026-11-22): a vehicle can be received only from its booking's day in India (`updateJob` answers `before-booking-day`), so one mis-tap can't lock a future booking
+- [x] Write the learning doc: [33_estimate_builder.md](../learning/33_estimate_builder.md)
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
