@@ -147,9 +147,9 @@ export async function ReportsView({ locale, period, tables }: ReportsViewProps) 
                       ))}
                     </tbody>
                     {table.footer.length > 0 && (
-                      <tfoot className="font-semibold">
+                      <tfoot>
                         {table.footer.map((row, rowIndex) => (
-                          <TableRow key={rowIndex} cells={row.map(cellText)} />
+                          <TableRow key={rowIndex} cells={row.map(cellText)} strong />
                         ))}
                       </tfoot>
                     )}
@@ -174,13 +174,13 @@ export async function ReportsView({ locale, period, tables }: ReportsViewProps) 
   );
 }
 
-/** One row: the first cell names the row (a day, a service, a mechanic), the rest are numbers. */
-function TableRow({ cells }: { cells: string[] }) {
+/** One row: the first cell names the row (a day, a service, a mechanic), the rest are numbers. `strong` for a totals row. */
+function TableRow({ cells, strong = false }: { cells: string[]; strong?: boolean }) {
   return (
-    <tr className="border-t border-border">
+    <tr className={cn("border-t border-border", strong ? "font-semibold" : "font-normal")}>
       {cells.map((text, index) =>
         index === 0 ? (
-          <th key={index} scope="row" className="px-4 py-3 text-left font-normal whitespace-nowrap">
+          <th key={index} scope="row" className="px-4 py-3 text-left whitespace-nowrap">
             {text}
           </th>
         ) : (
