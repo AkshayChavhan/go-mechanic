@@ -760,7 +760,7 @@ Split from task 33 at its size checkpoint (owner, 2026-11-22). Build it from U5 
 - [ ] `/admin/bookings/<bookingId>/estimate`: the gate (`estimates.manage`), the states, the line rows, the add form, the totals with "Prices include taxes", Send, Change estimate and the earlier versions (U5)
 - [ ] The four Server Actions in `src/server/actions/admin-estimates.ts` with their closed notice list, and the `sent` notice that reminds staff to tell the customer (call links with `customers.contact`)
 - [ ] The Estimate link in the Manage panel's Job step group (`estimates.manage`), and the card's estimate summary (`StaffBookingRow.estimate`)
-- [ ] Browser test: build and send an estimate on a second booking, one add with page scripts blocked, and the estimate page in the customer-HTML scan (U6)
+- [ ] Browser test: build and send an estimate on a second booking, one add with page scripts blocked, and the estimate page in the customer-HTML scan (U6). A job can be received only from its booking's day (owner, 2026-11-22), so that booking must be for today: find a way to book today's date reliably (or a test-only seed) before writing the steps
 - [ ] Write the learning doc
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
