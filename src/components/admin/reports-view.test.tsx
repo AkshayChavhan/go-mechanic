@@ -52,7 +52,8 @@ describe("ReportsView", () => {
 
   test.each(["unreadable", "reversed", "too-long"] as const)("the %s note says why the default is shown", async (note) => {
     await view({ ...last30, note });
-    expect(screen.getByRole("status").textContent).toBe(t.notes[note]);
+    // The numbers come from the code (REPORT_DEFAULT_DAYS, REPORT_MAX_DAYS), never typed into the message.
+    expect(screen.getByRole("status").textContent).toBe(t.notes[note].replace("{days}", "30").replace("{max}", "366"));
   });
 
   test("the presets link with ?days=, the current one marked", async () => {

@@ -260,6 +260,15 @@ describe("readReportTable (what the page and the CSV both call)", () => {
     expect(workload).toMatchObject({ report: "workload", rows: [[{ kind: "text", value: "Mona" }, { value: 1 }, { value: 1 }]] });
   });
 
+  test.each([
+    ["logged out", null],
+    ["a mechanic", mona],
+  ])("%s: refused on its own first line, before any read", async (_label, user) => {
+    logIn(user);
+    await expect(readReportTable("workload", PERIOD, "en")).rejects.toBeInstanceOf(AccessDeniedError);
+    expect(getDatabase).not.toHaveBeenCalled();
+  });
+
   test("a period the reports can't use: null, without a query", async () => {
     expect(await readReportTable("bookings", { from: "2026-11-07", to: "2026-11-01" }, "en")).toBeNull();
     expect(getDatabase).not.toHaveBeenCalled();
