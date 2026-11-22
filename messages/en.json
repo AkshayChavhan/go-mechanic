@@ -841,9 +841,9 @@
       "show": "Show"
     },
     "notes": {
-      "unreadable": "Those dates couldn't be read, so this shows the last 30 days.",
-      "reversed": "The first date was after the last one, so this shows the last 30 days.",
-      "too-long": "A period can be at most 366 days, so this shows the last 30 days."
+      "unreadable": "Those dates couldn't be read, so this shows the last {days} days.",
+      "reversed": "The first date was after the last one, so this shows the last {days} days.",
+      "too-long": "A period can be at most {max} days, so this shows the last {days} days."
     },
     "download": "Download {report} (CSV)",
     "empty": "Nothing in this period.",

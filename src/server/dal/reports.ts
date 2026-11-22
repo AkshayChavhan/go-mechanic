@@ -142,9 +142,12 @@ export async function readWorkloadReport(period: ReportPeriodInput): Promise<Rep
  * One report's table for the period, in `locale`: the read, then its builder.
  * The page and the CSV both call this, so they always show the same rows.
  * Null for a period the reports can't use (callers pass one from
- * pickReportPeriod, which never gives one).
+ * pickReportPeriod, which never gives one). It checks access on its first
+ * line too, so a report case added later that skips the four reads can't
+ * skip the check.
  */
 export async function readReportTable(report: ReportName, period: ReportPeriodInput, locale: Locale): Promise<ReportTable | null> {
+  await authorize("reports.view");
   switch (report) {
     case "bookings": {
       const result = await readBookingsReport(period);

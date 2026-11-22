@@ -4,7 +4,14 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Field, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { REPORT_PRESETS, type ReportPeriod, type ReportPreset, reportQuery } from "@/domain/report-period";
+import {
+  REPORT_DEFAULT_DAYS,
+  REPORT_MAX_DAYS,
+  REPORT_PRESETS,
+  type ReportPeriod,
+  type ReportPreset,
+  reportQuery,
+} from "@/domain/report-period";
 import type { ReportCell, ReportName, ReportTable } from "@/domain/reports";
 import type { Locale } from "@/i18n/config";
 import { formatIndiaDate, formatNumber } from "@/i18n/format";
@@ -61,7 +68,10 @@ export async function ReportsView({ locale, period, tables }: ReportsViewProps) 
         </p>
         {period.note !== null && (
           <p role="status" className="max-w-2xl type-callout text-pretty text-muted-foreground">
-            {t(`notes.${period.note}`)}
+            {t(`notes.${period.note}`, {
+              days: formatNumber(REPORT_DEFAULT_DAYS, locale),
+              max: formatNumber(REPORT_MAX_DAYS, locale),
+            })}
           </p>
         )}
         <nav aria-label={t("periodLabel")} className="flex flex-wrap gap-3">
