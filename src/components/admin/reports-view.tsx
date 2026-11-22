@@ -24,7 +24,7 @@ const presetKey = { 7: "last7", 30: "last30", 90: "last90" } as const satisfies 
  * /admin/reports (task 41): the period picker, then one block per report
  * with its table and a CSV link. A Server Component: the period changes
  * through plain links and a GET form, so no staff data reaches a client
- * island and it works without the page's JavaScript. Rendered by the page's
+ * island and it works before the page's JavaScript loads. Rendered by the page's
  * gate, after the access check.
  */
 export async function ReportsView({ locale, period, tables }: ReportsViewProps) {

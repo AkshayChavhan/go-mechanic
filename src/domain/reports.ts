@@ -7,7 +7,7 @@
 
 import { BOOKING_STATUSES, type BookingStatus } from "./bookings";
 import { type IndiaDate, indiaDateOf } from "./india-time";
-import { averageRating } from "./reviews";
+import { averageRating, RATINGS } from "./reviews";
 
 /** The four reports, in the order the page shows them (bookings, the long one, last). */
 export const REPORT_NAMES = ["rating", "top-services", "workload", "bookings"] as const;
@@ -118,7 +118,7 @@ export function ratingTable(rows: readonly RatingReportRow[]): ReportTable {
   return {
     report: "rating",
     columns: REPORT_COLUMNS.rating,
-    rows: [5, 4, 3, 2, 1].map((stars) => [num(stars), num(countOf(stars))]),
+    rows: [...RATINGS].reverse().map((stars) => [num(stars), num(countOf(stars))]),
     footer: [
       [label("total"), num(count)],
       [label("average"), { kind: "average", value: averageRating(sum, count) }],
