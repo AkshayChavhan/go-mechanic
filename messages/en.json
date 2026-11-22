@@ -755,7 +755,9 @@
         "mechanicLabel": "Mechanic",
         "nobody": "Nobody",
         "saveMechanic": "Save mechanic",
-        "noMechanics": "No mechanics yet. They show here once the owner adds them to the team."
+        "noMechanics": "No mechanics yet. They show here once the owner adds them to the team.",
+        "jobStep": "Job step: {step}",
+        "moveJob": "Move to {step}"
       },
       "notices": {
         "refused": "Not saved",
@@ -773,6 +775,8 @@
         "not-a-mechanic": "That person can't take jobs any more. Pick someone else for booking {code}.",
         "reason-too-short": "To cancel booking {code}, give a reason of at least {min} characters.",
         "reason-too-long": "To cancel booking {code}, keep the reason to {max} characters or fewer.",
+        "job-moved": "Booking {code}'s job is now at {step}.",
+        "job-step-changed": "Booking {code}'s job changed in the meantime and is now at {step}. Check its card, then try again if you still need to.",
         "not-saved": "Booking {code} wasn't changed. Reload the page and try again.",
         "callReminder": "Call or WhatsApp {name} to let them know: the website doesn't tell customers yet.",
         "call": "Call {name}",

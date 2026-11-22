@@ -46,6 +46,11 @@ export function BoardNotice({ locale, notice, booking, canContact }: BoardNotice
     case "changed":
       message = t("notices.changed", { code, status: t(`statuses.${booking.status}`).toLowerCase() });
       break;
+    case "job-moved":
+    case "job-step-changed":
+      // The job's step as it is now (after the move, or after someone else's).
+      message = t(`notices.${notice}`, { code, step: t(`jobSteps.${booking.jobStatus ?? "not-started"}`) });
+      break;
     case "too-early":
       message = t("notices.too-early", { code, time: formatTime(booking.startsAt, locale) });
       break;

@@ -7,8 +7,9 @@ import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select"
 import { Textarea } from "@/components/ui/textarea";
 import { type BoardNotice, type BoardView, isRefusalNotice } from "@/domain/board-dates";
 import { type BookingStatus, CANCEL_REASON_RULES, canChangeStatus, formatBookingCode, isActiveStatus } from "@/domain/bookings";
+import { canMoveJob, JOB_STATUSES, type JobStatus } from "@/domain/jobs";
 import type { Locale } from "@/i18n/config";
-import { assignFromBoard, changeStatusFromBoard } from "@/server/actions/admin-bookings";
+import { assignFromBoard, changeStatusFromBoard, moveJobFromBoard } from "@/server/actions/admin-bookings";
 import type { StaffBookingRow } from "@/server/dal/staff-bookings";
 import type { Mechanic } from "@/server/dal/staff-users";
 
@@ -31,7 +32,8 @@ export type BookingManagePanelProps = {
 type StatusButton = "confirmed" | "no-show" | "arrived";
 
 /**
- * One booking's "Manage booking K7Q-4MX" panel on the staff board (task 27):
+ * One booking's "Manage booking K7Q-4MX" panel on the staff board (task 27,
+ * and from task 33 the Job step buttons):
  * a native <details>, so it opens and closes without JavaScript, holding only
  * the actions this booking allows right now (canChangeStatus, the same check
  * the save makes). Every action is a plain <form> posting to a Server Action
@@ -56,7 +58,15 @@ export function BookingManagePanel({ locale, booking, view, mechanics, now, newT
   const canCancel = allows("cancelled");
   // Assigning stays open while the job runs (handing a job over mid-way), until it's completed.
   const canAssign = isActiveStatus(booking.status) && booking.jobStatus !== "completed";
-  if (statusButtons.length === 0 && !canCancel && !canAssign) return null;
+  // The Job step control (task 33): the next steps staff may choose by hand
+  // (canMoveJob, the same check updateJob makes), never "completed" yet (the
+  // plan's KD5: the staff reviews page must exist first). A cancelled or
+  // no-show booking takes no job updates, and "awaiting-approval" has no
+  // by-hand moves, so both get no buttons.
+  const jobTargets = isActiveStatus(booking.status)
+    ? JOB_STATUSES.filter((to) => to !== "completed" && canMoveJob(booking.jobStatus, to))
+    : [];
+  if (statusButtons.length === 0 && !canCancel && !canAssign && jobTargets.length === 0) return null;
 
   const code = formatBookingCode(booking.code);
   const id = booking.id;
@@ -69,6 +79,8 @@ export function BookingManagePanel({ locale, booking, view, mechanics, now, newT
   // Bound once: the booking and the board view travel with the form, encrypted.
   const changeStatus = changeStatusFromBoard.bind(null, locale, id, view);
   const assign = assignFromBoard.bind(null, locale, id, view);
+  const moveJob = moveJobFromBoard.bind(null, locale, id, view);
+  const stepLabel = (step: JobStatus | null) => t(`jobSteps.${step ?? "not-started"}`);
   const statusLabels = { confirmed: t("manage.confirm"), arrived: t("manage.arrived"), "no-show": t("manage.noShow") };
 
   return (
@@ -93,6 +105,27 @@ export function BookingManagePanel({ locale, booking, view, mechanics, now, newT
                 </Button>
               </form>
             ))}
+          </div>
+        )}
+
+        {jobTargets.length > 0 && (
+          <div role="group" aria-labelledby={`job-step-${id}`} className="flex flex-col gap-3">
+            <p id={`job-step-${id}`} className="type-callout font-semibold">
+              {t("manage.jobStep", { step: stepLabel(booking.jobStatus) })}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {jobTargets.map((step) => (
+                <form key={step} action={moveJob}>
+                  <input type="hidden" name="step" value={step} />
+                  <input type="hidden" name="code" value={booking.code} />
+                  <input type="hidden" name="requestToken" value={newToken()} />
+                  {/* Outlines: Confirm stays the panel's one blue button. */}
+                  <Button type="submit" variant="outline">
+                    {t("manage.moveJob", { step: stepLabel(step) })}
+                  </Button>
+                </form>
+              ))}
+            </div>
           </div>
         )}
 

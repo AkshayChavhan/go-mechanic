@@ -23,6 +23,7 @@ vi.mock("next-intl/server", async () => {
 vi.mock("@/server/actions/admin-bookings", () => ({
   changeStatusFromBoard: vi.fn(async () => {}),
   assignFromBoard: vi.fn(async () => {}),
+  moveJobFromBoard: vi.fn(async () => {}),
 }));
 
 const t = messages.Admin.bookings;
@@ -257,11 +258,11 @@ describe("BookingsBoard: statuses and the Manage panel (task 27)", () => {
     expect(cancelledCard.querySelector("form")).toBeNull();
   });
 
-  test("a booked card whose slot has started: Confirm (the one blue button), No-show and Cancel", async () => {
+  test("a booked card whose slot has started: Confirm (the one blue button), No-show, the job's first step and Cancel", async () => {
     await renderBoard({ bookings: [morning] });
     const card = cardOf("K7Q-4MX");
     expect(card.querySelector("summary")!.textContent).toBe("Manage booking K7Q-4MX");
-    expect(buttonsIn(card)).toEqual([manage.confirm, manage.noShow, manage.cancel]);
+    expect(buttonsIn(card)).toEqual([manage.confirm, manage.noShow, "Move to Vehicle received", manage.cancel]);
     expect(within(card).getByRole("button", { name: manage.confirm }).dataset.variant).toBe("default");
     expect(within(card).getByRole("button", { name: manage.noShow }).dataset.variant).toBe("outline");
     expect(within(card).getByRole("button", { name: manage.cancel }).dataset.variant).toBe("destructive");
@@ -270,7 +271,7 @@ describe("BookingsBoard: statuses and the Manage panel (task 27)", () => {
 
   test("a booked card before its slot offers no No-show", async () => {
     await renderBoard({ bookings: [afternoon] });
-    expect(buttonsIn(cardOf("PZ3-H8T"))).toEqual([manage.confirm, manage.cancel]);
+    expect(buttonsIn(cardOf("PZ3-H8T"))).toEqual([manage.confirm, "Move to Vehicle received", manage.cancel]);
   });
 
   test("a no-show card offers only Arrived after all (no mechanic form: it isn't active)", async () => {
@@ -286,7 +287,7 @@ describe("BookingsBoard: statuses and the Manage panel (task 27)", () => {
   test("a started job offers no Cancel and no No-show, but the mechanic can still change", async () => {
     await renderBoard({ bookings: [{ ...morning, status: "confirmed", jobStatus: "in-service" }], mechanics });
     const card = cardOf("K7Q-4MX");
-    expect(buttonsIn(card)).toEqual([manage.saveMechanic]);
+    expect(buttonsIn(card)).toEqual(["Move to Ready", manage.saveMechanic]);
     expect(within(card).queryByLabelText(manage.reasonLabel)).toBeNull();
   });
 
@@ -349,7 +350,8 @@ describe("BookingsBoard: statuses and the Manage panel (task 27)", () => {
   test("every form carries its own request token", async () => {
     const { container } = await renderBoard({ bookings: [morning, afternoon], mechanics });
     const forms = [...container.querySelectorAll("li details form")];
-    expect(forms.length).toBe(7);
+    // Per card: Confirm (and No-show on the started one), Move to Vehicle received, Cancel, Assign.
+    expect(forms.length).toBe(9);
     const values = forms.map((form) => form.querySelector<HTMLInputElement>('input[name="requestToken"]')?.value);
     expect(values.every(Boolean)).toBe(true);
     expect(new Set(values).size).toBe(values.length);
@@ -358,6 +360,60 @@ describe("BookingsBoard: statuses and the Manage panel (task 27)", () => {
   test("panels start closed", async () => {
     const { container } = await renderBoard({ bookings: [morning] });
     expect(container.querySelector("details")!.open).toBe(false);
+  });
+});
+
+describe("BookingsBoard: the Job step control (task 33)", () => {
+  /** The Job step group's buttons on a confirmed booking at `jobStatus`. */
+  async function stepButtons(jobStatus: StaffBookingRow["jobStatus"], status: StaffBookingRow["status"] = "confirmed") {
+    await renderBoard({ bookings: [{ ...morning, status, jobStatus }], showCancelled: true, mechanics });
+    const group = within(cardOf("K7Q-4MX")).queryByRole("group", { name: /^Job step/ });
+    return group ? buttonsIn(group) : [];
+  }
+
+  test("not started: the current step, and Move to Vehicle received only", async () => {
+    await renderBoard({ bookings: [{ ...morning, status: "confirmed" }] });
+    const group = within(cardOf("K7Q-4MX")).getByRole("group", { name: "Job step: Not started" });
+    expect(buttonsIn(group)).toEqual(["Move to Vehicle received"]);
+    const form = within(group).getByRole("button").closest("form")!;
+    expect(form.querySelector<HTMLInputElement>('input[name="step"]')!.value).toBe("vehicle-received");
+    expect(form.querySelector<HTMLInputElement>('input[name="code"]')!.value).toBe("K7Q4MX");
+    expect(form.querySelector<HTMLInputElement>('input[name="requestToken"]')!.value).toMatch(/^token-/);
+    expect(within(group).getByRole("button").dataset.variant).toBe("outline");
+  });
+
+  test("vehicle received: Move to Inspection", async () => {
+    expect(await stepButtons("vehicle-received")).toEqual(["Move to Inspection"]);
+  });
+
+  test("inspection: Move to In service and Move to Ready", async () => {
+    expect(await stepButtons("inspection")).toEqual(["Move to In service", "Move to Ready"]);
+  });
+
+  test("ready: Move to In service, and never Completed", async () => {
+    expect(await stepButtons("ready")).toEqual(["Move to In service"]);
+    expect(cardOf("K7Q-4MX").textContent).not.toContain("Move to Completed");
+  });
+
+  test("awaiting approval: no step buttons (only sending an estimate gets there, and task 34 leaves it)", async () => {
+    expect(await stepButtons("awaiting-approval")).toEqual([]);
+  });
+
+  test.each(["cancelled", "no-show"] as const)("a %s booking: no step buttons", async (status) => {
+    expect(await stepButtons(null, status)).toEqual([]);
+  });
+
+  test("Confirm stays the panel's only blue button", async () => {
+    await renderBoard({ bookings: [morning] });
+    expect(cardOf("K7Q-4MX").querySelectorAll('[data-variant="default"]')).toHaveLength(1);
+  });
+
+  test("the notices say where the job is now", async () => {
+    const moved = await renderBoard({ bookings: [{ ...morning, jobStatus: "inspection" }], notice: { notice: "job-moved", code: "K7Q4MX" } });
+    expect(screen.getByRole("status").textContent).toBe("Booking K7Q-4MX's job is now at Inspection.");
+    moved.unmount();
+    await renderBoard({ bookings: [{ ...morning, jobStatus: "ready" }], notice: { notice: "job-step-changed", code: "K7Q4MX" } });
+    expect(screen.getAllByRole("alert")[0].textContent).toContain("Booking K7Q-4MX's job changed in the meantime and is now at Ready.");
   });
 });
 
