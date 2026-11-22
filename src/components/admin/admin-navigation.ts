@@ -29,6 +29,7 @@ export type AdminNavItem = {
 export const adminNavItems: readonly AdminNavItem[] = [
   { href: "/admin/bookings", labelKey: "bookings", permission: "bookings.manage" },
   { href: "/admin/prices", labelKey: "prices", permission: "content.edit" },
+  { href: "/admin/reports", labelKey: "reports", permission: "reports.view" },
   // Task 51 adds the estimate-request inbox here:
   // { href: "/admin/estimates", labelKey: "estimates", permission: "estimates.manage" }.
   // Its words are already in Admin.nav and Admin.overview.

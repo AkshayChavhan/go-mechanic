@@ -696,7 +696,8 @@
       "label": "Staff",
       "bookings": "Bookings",
       "estimates": "Estimate requests",
-      "prices": "Prices"
+      "prices": "Prices",
+      "reports": "Reports"
     },
     "overview": {
       "heading": "Staff area",
@@ -704,6 +705,7 @@
       "bookingsDescription": "One day's bookings at a time, in time order, starting with today.",
       "estimatesDescription": "Requests from customers waiting for a price, with their photos.",
       "pricesDescription": "What each service and package costs for each type of vehicle. A saved price is on the site at once.",
+      "reportsDescription": "Bookings, top services, rating and each mechanic's work over a period, with a CSV of each.",
       "mechanicNote": "Your jobs will show here once job tracking is added to the staff area."
     },
     "bookings": {
@@ -820,6 +822,68 @@
       "repeated": "This fuel was sent twice. Reload the page and try again.",
       "not-found": "This service or vehicle type isn't on the site now. Go back to the list.",
       "on-inspection": "This service is priced after inspection, so it takes no prices."
+    }
+  },
+  "AdminReports": {
+    "heading": "Reports",
+    "intro": "How the garage did over a period of days. Each report downloads as a CSV of its totals, with no customer's details.",
+    "covers": "{from} to {to}",
+    "periodLabel": "Period",
+    "presets": {
+      "last7": "Last 7 days",
+      "last30": "Last 30 days",
+      "last90": "Last 90 days"
+    },
+    "custom": {
+      "legend": "Or pick dates",
+      "from": "From",
+      "to": "To",
+      "show": "Show"
+    },
+    "notes": {
+      "unreadable": "Those dates couldn't be read, so this shows the last {days} days.",
+      "reversed": "The first date was after the last one, so this shows the last {days} days.",
+      "too-long": "A period can be at most {max} days, so this shows the last {days} days."
+    },
+    "download": "Download {report} (CSV)",
+    "empty": "Nothing in this period.",
+    "reports": {
+      "rating": {
+        "title": "Rating",
+        "description": "Published reviews written in this period, by stars. Hidden reviews are left out."
+      },
+      "top-services": {
+        "title": "Top services",
+        "description": "How many bookings in this period include each service or package. Cancelled and no-show bookings are left out."
+      },
+      "workload": {
+        "title": "Mechanic workload",
+        "description": "Bookings in this period by the mechanic they're given to, and how many of those jobs are completed. Cancelled and no-show bookings are left out."
+      },
+      "bookings": {
+        "title": "Bookings",
+        "description": "Bookings by the day of their slot, with every status."
+      }
+    },
+    "columns": {
+      "day": "Day",
+      "booked": "Booked",
+      "confirmed": "Confirmed",
+      "cancelled": "Cancelled",
+      "no-show": "No-show",
+      "total": "Total",
+      "service": "Service or package",
+      "bookings": "Bookings",
+      "stars": "Stars",
+      "reviews": "Reviews",
+      "mechanic": "Mechanic",
+      "completed": "Completed"
+    },
+    "labels": {
+      "total": "Total",
+      "average": "Average",
+      "unassigned": "Unassigned",
+      "unnamed": "Mechanic without a name"
     }
   },
   "JobTimeline": {
