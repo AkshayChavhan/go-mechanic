@@ -11,7 +11,7 @@ import { getCurrentUser } from "@/server/auth/session";
 import { closeDatabase, createDatabase, type Database, getDatabase } from "@/server/db";
 import { bookingItems, bookings, reviews, services, users } from "@/server/db/schema";
 
-import { readBookingsReport, readRatingReport, readTopServicesReport, readWorkloadReport } from "./reports";
+import { readBookingsReport, readRatingReport, readReportTable, readTopServicesReport, readWorkloadReport } from "./reports";
 
 // Starting PGlite (Postgres compiled to WebAssembly) and migrating it takes a
 // few seconds, and much longer when the full test run shares a busy machine
@@ -189,7 +189,8 @@ describe("readBookingsReport", () => {
 
 describe("readTopServicesReport", () => {
   test("counts bookings per service with its current name; cancelled and no-show left out", async () => {
-    await book({ startsAt: "2026-11-02T05:00:00Z", lines: [line("brakes"), line("battery", 1)] });
+    // The same service twice in one booking still counts that booking once.
+    await book({ startsAt: "2026-11-02T05:00:00Z", lines: [line("brakes"), line("battery", 1), line("brakes", 2)] });
     await book({ startsAt: "2026-11-03T05:00:00Z", status: "confirmed" });
     await book({ startsAt: "2026-11-03T06:00:00Z", status: "cancelled" });
     await book({ startsAt: "2026-11-03T07:00:00Z", status: "no-show" });
@@ -234,5 +235,33 @@ describe("readWorkloadReport", () => {
       { mechanicId: "asha", name: "Asha", bookings: 1, completed: 0 },
       { mechanicId: "mona", name: "Mona", bookings: 2, completed: 1 },
     ]);
+  });
+});
+
+describe("readReportTable (what the page and the CSV both call)", () => {
+  test("each report goes to its own builder, with the reader's language for service names", async () => {
+    await db.update(services).set({ name: { en: "Brake service", hi: "ब्रेक सर्विस" } }).where(eq(services.id, "brakes"));
+    await book({ startsAt: "2026-11-02T05:00:00Z", assigned: "mona", jobStatus: "completed" });
+    await review(4, "2026-11-03T05:00:00Z");
+
+    const bookingsReport = await readReportTable("bookings", PERIOD, "en");
+    expect(bookingsReport?.report).toBe("bookings");
+    expect(bookingsReport?.rows.map((row) => row[0])).toEqual([{ kind: "date", value: "2026-11-02" }]);
+
+    const top = await readReportTable("top-services", PERIOD, "hi" as never);
+    expect(top).toMatchObject({ report: "top-services", rows: [[{ kind: "text", value: "ब्रेक सर्विस" }, { value: 1 }]] });
+    const topEnglish = await readReportTable("top-services", PERIOD, "en");
+    expect(topEnglish?.rows[0]?.[0]).toEqual({ kind: "text", value: "Brake service" });
+
+    const rating = await readReportTable("rating", PERIOD, "en");
+    expect(rating).toMatchObject({ report: "rating", footer: [[{ value: "total" }, { value: 1 }], [{ value: "average" }, { value: 4 }]] });
+
+    const workload = await readReportTable("workload", PERIOD, "en");
+    expect(workload).toMatchObject({ report: "workload", rows: [[{ kind: "text", value: "Mona" }, { value: 1 }, { value: 1 }]] });
+  });
+
+  test("a period the reports can't use: null, without a query", async () => {
+    expect(await readReportTable("bookings", { from: "2026-11-07", to: "2026-11-01" }, "en")).toBeNull();
+    expect(getDatabase).not.toHaveBeenCalled();
   });
 });

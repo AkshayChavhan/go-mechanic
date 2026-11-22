@@ -94,6 +94,19 @@ describe("GET /admin/reports/export", () => {
     expect(await (await get("report=top-services&days=7")).text()).toContain('"\'=HYPERLINK(""http://x"")",2');
   });
 
+  test("a range it can't use still downloads, for the default 30 days the file name shows", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(userWith("owner"));
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-21T18:30:00Z")); // already the 22nd in India
+    try {
+      const response = await get("report=bookings&from=2026-11-07&to=2026-11-01");
+      expect(response.status).toBe(200);
+      expect(response.headers.get("content-disposition")).toBe('attachment; filename="bookings-2026-10-24-to-2026-11-22.csv"');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("no file carries a phone number", async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(userWith("owner"));
     for (const report of ["bookings", "top-services", "workload"]) {
