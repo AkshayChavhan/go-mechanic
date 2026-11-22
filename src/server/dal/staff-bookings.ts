@@ -174,7 +174,7 @@ export async function listBookingsOn(date: string): Promise<ListBookingsOnResult
       ),
     )
     .orderBy(desc(estimates.version));
-  const newestEstimate = new Map<string, { version: number; state: "draft" | "sent" }>();
+  const newestEstimate = new Map<string, NonNullable<StaffBookingRow["estimate"]>>();
   for (const { bookingId, version, sentAt } of estimateRows) {
     if (!newestEstimate.has(bookingId)) newestEstimate.set(bookingId, { version, state: sentAt === null ? "draft" : "sent" });
   }

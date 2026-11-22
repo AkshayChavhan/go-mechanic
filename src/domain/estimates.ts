@@ -2,12 +2,7 @@
 // labour lines, each needed or optional, that staff send for the customer's
 // approval.
 //
-// Pure logic: no Next.js, React or database imports. The data-access save
-// (src/server/dal/estimates.ts) checks what the add-line form posts with
-// checkEstimateLineInput(), then fills a blank description or amount from the
-// chosen service and checks against the database what only it can know (the
-// service exists, the booking's state). canEditEstimate() says when the
-// estimate may change at all.
+// Pure logic: no Next.js, React or database imports.
 
 import { type BookingStatus, isActiveStatus } from "./bookings";
 import type { JobStatus } from "./jobs";

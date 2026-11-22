@@ -119,7 +119,6 @@ export function BookingManagePanel({ locale, booking, view, mechanics, now, newT
                   <input type="hidden" name="step" value={step} />
                   <input type="hidden" name="code" value={booking.code} />
                   <input type="hidden" name="requestToken" value={newToken()} />
-                  {/* Outlines: Confirm stays the panel's one blue button. */}
                   <Button type="submit" variant="outline">
                     {t("manage.moveJob", { step: stepLabel(step) })}
                   </Button>

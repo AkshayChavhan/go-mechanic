@@ -408,7 +408,6 @@ export async function sendEstimate(input: SendEstimateInput, clock: Clock = syst
     if (!anyLine) return { status: "no-lines" };
 
     const now = clock.now();
-    // Superseded first, then sent: never two current versions, even for one statement.
     await tx
       .update(estimates)
       .set({ supersededAt: now })
