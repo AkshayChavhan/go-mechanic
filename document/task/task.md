@@ -589,9 +589,9 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `41_admin_reports`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-22-1102-feat-admin-reports-plan.md)
-- [ ] `/admin/reports` (managers and the owner, `reports.view`): bookings per day by status, top services, rating and mechanic workload for the last 7, 30 or 90 days or a custom range, each with a CSV of totals (owner, 2026-11-22)
-- [ ] Bookings are grouped by the slot's India day in code (`indiaDateOf`), not with SQL `AT TIME ZONE`: `india-time.ts` owns India time, and PGlite's time-zone data is untested (plan KTD2)
-- [ ] Write the learning doc
+- [x] `/admin/reports` (managers and the owner, `reports.view`): bookings per day by status, top services, rating and mechanic workload for the last 7, 30 or 90 days or a custom range, each with a CSV of totals (owner, 2026-11-22)
+- [x] Bookings are grouped by the slot's India day in code (`indiaDateOf`), not with SQL `AT TIME ZONE`: `india-time.ts` owns India time, and PGlite's time-zone data is untested (plan KTD2)
+- [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
