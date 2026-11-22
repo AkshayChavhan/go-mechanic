@@ -6,6 +6,7 @@ import { ServiceTile } from "@/components/site/service-tile";
 import { selectPrices } from "@/content/sample-prices";
 import { fromPrice, servicePath } from "@/domain/services";
 import { readServicePrices, readServices } from "@/server/dal/services";
+import { readVehicleCatalogue } from "@/server/dal/vehicles";
 
 // /services (task 18): every service, each tile linking to its page. Built
 // ahead of time: every read is cached, and a request-time read here fails
@@ -27,6 +28,8 @@ export default async function ServicesPage() {
   const t = await getTranslations("Services");
   const services = (await readServices()).filter((service) => service.kind === "service");
   const shown = selectPrices(await readServicePrices());
+  // "From ₹…" counts only the fuels each group's models run on (groupFuels).
+  const catalogue = await readVehicleCatalogue();
   // Periodic service gets the wide tile, as on the home page.
   const wide = "periodic-service";
 
@@ -45,7 +48,7 @@ export default async function ServicesPage() {
               <ServiceTile
                 service={service}
                 href={servicePath(service.id)}
-                fromPaise={shown ? fromPrice(service, shown.items) : null}
+                fromPaise={shown ? fromPrice(service, shown.items, catalogue) : null}
                 sample={shown?.sample ?? false}
               />
             </li>

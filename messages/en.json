@@ -695,13 +695,15 @@
     "nav": {
       "label": "Staff",
       "bookings": "Bookings",
-      "estimates": "Estimate requests"
+      "estimates": "Estimate requests",
+      "prices": "Prices"
     },
     "overview": {
       "heading": "Staff area",
       "intro": "Pick what to work on.",
       "bookingsDescription": "One day's bookings at a time, in time order, starting with today.",
       "estimatesDescription": "Requests from customers waiting for a price, with their photos.",
+      "pricesDescription": "What each service and package costs for each type of vehicle. A saved price is on the site at once.",
       "mechanicNote": "Your jobs will show here once job tracking is added to the staff area."
     },
     "bookings": {
@@ -777,6 +779,47 @@
         "whatsapp": "WhatsApp {name}",
         "whatsappMessage": "Hello {name}, this is about your booking {code} on {day} at {time}."
       }
+    }
+  },
+  "AdminPrices": {
+    "heading": "Prices",
+    "intro": "Pick a service or package to set what it costs for each type of vehicle. A saved price is on the site at once.",
+    "servicesHeading": "Services",
+    "packagesHeading": "Packages",
+    "packageName": "{name}, for {kind}",
+    "kinds": {
+      "car": "cars",
+      "twoWheeler": "two-wheelers"
+    },
+    "listStatus": {
+      "priced": "{count} of {total} vehicle types priced",
+      "none": "No prices yet",
+      "onInspection": "Priced after inspection"
+    },
+    "back": "All prices",
+    "onInspectionNote": "The garage prices this after seeing the vehicle, so it takes no prices here.",
+    "notOffered": "Not offered for this type: none of its listed models runs on a fuel this service covers.",
+    "groupLabel": "Price for every fuel",
+    "groupHint": "Covers every fuel. Leave blank for no price.",
+    "fuelsSummary": "Different price for one fuel",
+    "fuelsHint": "Only the fuels this type's listed models run on are shown. Leave a box blank to use the price above.",
+    "save": "Save {group} prices",
+    "saving": "Saving…",
+    "saved": "Saved. Live on the site now.",
+    "savedLine": "{fuel}: {price}",
+    "noPrice": "no price",
+    "savedNone": "No prices for this type now: the site asks visitors to call.",
+    "connection": "Couldn't reach the garage's server. Check your connection, then save again.",
+    "errors": {
+      "not-a-number": "Type the amount in rupees, like 1,500.",
+      "not-whole": "Whole rupees only, like 1,500.",
+      "too-small": "The lowest price is 1 rupee.",
+      "too-large": "The highest price is 10,00,000 rupees.",
+      "bad-price": "Type an amount from 1 to 10,00,000 rupees.",
+      "fuel-not-offered": "This fuel isn't offered for this type now. Empty the box and save.",
+      "repeated": "This fuel was sent twice. Reload the page and try again.",
+      "not-found": "This service or vehicle type isn't on the site now. Go back to the list.",
+      "on-inspection": "This service is priced after inspection, so it takes no prices."
     }
   },
   "JobTimeline": {

@@ -11,6 +11,7 @@ import { adminNavFor, type AdminNavLabel } from "./admin-navigation";
 const descriptionKey = {
   bookings: "bookingsDescription",
   estimates: "estimatesDescription",
+  prices: "pricesDescription",
 } as const satisfies Record<AdminNavLabel, string>;
 
 /**

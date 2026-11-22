@@ -6,8 +6,8 @@ import { adminNavFor, adminNavItems } from "./admin-navigation";
 // comes from the permission table (src/domain/permissions.ts), never from
 // comparing roles here.
 describe("adminNavFor", () => {
-  test.each(["owner", "manager"] as const)("a %s: Bookings (the inbox comes with task 51)", (role) => {
-    expect(adminNavFor(role).map((item) => item.href)).toEqual(["/admin/bookings"]);
+  test.each(["owner", "manager"] as const)("a %s: Bookings and Prices (the inbox comes with task 51)", (role) => {
+    expect(adminNavFor(role).map((item) => item.href)).toEqual(["/admin/bookings", "/admin/prices"]);
   });
 
   test("a mechanic: nothing yet (their jobs come with task 31)", () => {

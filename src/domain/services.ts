@@ -14,7 +14,8 @@
 
 import type { LocalizedText } from "@/i18n/localized-text";
 
-import { type Fuel, isTextId, type VehicleCategory, type VehicleKind } from "./vehicles";
+import { PRICE_RULES } from "./money";
+import { FUELS, type Fuel, isTextId, type VehicleCatalogue, type VehicleCategory, type VehicleKind } from "./vehicles";
 
 /** A service (brakes, AC...) or a package (Basic, Standard, Comprehensive). */
 export const SERVICE_KINDS = ["service", "package"] as const;
@@ -79,20 +80,25 @@ export function servicePath(id: string): `/services/${string}` {
   return `/services/${id}`;
 }
 
-/** The row that prices this fuel in this group: the fuel's own row, else the every-fuel row. */
+/**
+ * The row that prices `fuel` among one service's rows for one price group:
+ * the fuel's own row, else the every-fuel row. The one place this rule lives.
+ */
+export function groupPriceRow(groupRows: readonly ServicePrice[], fuel: Fuel): ServicePrice | undefined {
+  return groupRows.find((row) => row.fuel === fuel) ?? groupRows.find((row) => row.fuel === null);
+}
+
+/** The row that prices this fuel in this group for this service (groupPriceRow). */
 function findPrice(
   service: PricedService,
   prices: readonly ServicePrice[],
   categoryId: string,
   fuel: Fuel,
 ): ServicePrice | undefined {
-  let everyFuel: ServicePrice | undefined;
-  for (const row of prices) {
-    if (row.serviceId !== service.id || row.categoryId !== categoryId) continue;
-    if (row.fuel === fuel) return row;
-    if (row.fuel === null) everyFuel = row;
-  }
-  return everyFuel;
+  return groupPriceRow(
+    prices.filter((row) => row.serviceId === service.id && row.categoryId === categoryId),
+    fuel,
+  );
 }
 
 /** What `vehicle` pays for `service`, or why there's no number. */
@@ -106,22 +112,101 @@ export function priceFor(service: PricedService, prices: readonly ServicePrice[]
 }
 
 /**
- * The lowest price any vehicle pays for `service` ("From ₹…" in a list), or
- * null when it has no price. Works through every priced group and covered
- * fuel with the same rule as priceFor(), so an every-fuel row that the
- * fuels' own rows all replace never counts.
+ * The fuels a price group's prices are shown for: the ones its listed models
+ * run on that `service` covers, in FUELS order. A service page shows a line
+ * per one of these, "From ₹…" counts only these, and the staff editor (task
+ * 39) offers a fuel's own price only for these. Empty when no listed model of
+ * the group runs on a fuel the service covers: then the group isn't offered.
  */
-export function fromPrice(service: PricedService, prices: readonly ServicePrice[]): number | null {
+export function groupFuels(
+  catalogue: VehicleCatalogue,
+  categoryId: string,
+  service: Pick<PricedService, "fuels">,
+): Fuel[] {
+  const fuels = new Set(
+    catalogue.makes.flatMap((make) =>
+      make.models.filter((model) => model.categoryId === categoryId).flatMap((model) => model.fuels),
+    ),
+  );
+  return FUELS.filter((fuel) => fuels.has(fuel) && service.fuels.includes(fuel));
+}
+
+/**
+ * The lowest price any vehicle pays for `service` ("From ₹…" in a list), or
+ * null when it has no price. Works through every priced group and the fuels
+ * its page shows (groupFuels) with the same rule as priceFor(), so an
+ * every-fuel row that the fuels' own rows all replace never counts, and
+ * neither does a row for a fuel no model of the group runs on.
+ */
+export function fromPrice(
+  service: PricedService,
+  prices: readonly ServicePrice[],
+  catalogue: VehicleCatalogue,
+): number | null {
   if (service.pricedAfterInspection) return null;
   const groups = new Set(prices.filter((row) => row.serviceId === service.id).map((row) => row.categoryId));
   let lowest: number | null = null;
   for (const categoryId of groups) {
-    for (const fuel of service.fuels) {
+    for (const fuel of groupFuels(catalogue, categoryId, service)) {
       const row = findPrice(service, prices, categoryId, fuel);
       if (row && (lowest === null || row.pricePaise < lowest)) lowest = row.pricePaise;
     }
   }
   return lowest;
+}
+
+// --- One price group's prices, as staff save them (task 39) -----------------
+
+/** One price staff typed for a group: every fuel (null) or one fuel. */
+export type GroupPriceEntry = { fuel: Fuel | null; pricePaise: number };
+
+/** A price group card's boxes: the group's own price (every fuel), or one fuel's. */
+export type PriceBox = "group" | Fuel;
+
+/** Where a problem shows: one of the boxes, or the whole form. */
+export type GroupPriceField = PriceBox | "form";
+
+export type GroupPriceProblem = {
+  field: GroupPriceField;
+  problem: "on-inspection" | "category-kind" | "fuel-not-offered" | "bad-price" | "repeated";
+};
+
+/**
+ * Everything wrong with saving `entries` as `category`'s prices for
+ * `service`. An empty list means they can be saved; an empty `entries` means
+ * "no price for this group". The service and group must already be known to
+ * exist (the data-access layer answers "not found" otherwise).
+ */
+export function checkGroupPrices(
+  service: PricedService,
+  category: VehicleCategory,
+  catalogue: VehicleCatalogue,
+  entries: readonly GroupPriceEntry[],
+): GroupPriceProblem[] {
+  if (service.pricedAfterInspection) return [{ field: "form", problem: "on-inspection" }];
+  if (!service.vehicleKinds.includes(category.kind)) return [{ field: "form", problem: "category-kind" }];
+
+  const offered = groupFuels(catalogue, category.id, service);
+  const problems: GroupPriceProblem[] = [];
+  const seen = new Set<Fuel | null>();
+  for (const entry of entries) {
+    const field: GroupPriceField = entry.fuel ?? "group";
+    if (seen.has(entry.fuel)) {
+      problems.push({ field, problem: "repeated" });
+      continue;
+    }
+    seen.add(entry.fuel);
+    if (entry.fuel !== null && !offered.includes(entry.fuel)) {
+      problems.push({ field, problem: "fuel-not-offered" });
+    } else if (
+      !Number.isSafeInteger(entry.pricePaise) ||
+      entry.pricePaise < PRICE_RULES.minPaise ||
+      entry.pricePaise > PRICE_RULES.maxPaise
+    ) {
+      problems.push({ field, problem: "bad-price" });
+    }
+  }
+  return problems;
 }
 
 // --- Checks ------------------------------------------------------------------
