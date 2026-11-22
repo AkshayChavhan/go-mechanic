@@ -4,7 +4,7 @@
 
 ## In one minute
 
-Managers and the owner can now open `/admin/reports` and see four reports for a period: the rating, the top services, each mechanic's workload, and bookings per day. Each report has a "Download CSV" link that gives the same table as a file Excel or Google Sheets can open. Before this, the only way to answer "how busy were we last month?" was to count cards on the bookings board one day at a time.
+Managers and the owner can now open `/admin/reports` and see four reports for a period: the rating, the top services, each mechanic's workload, and bookings per day. Each report has a "Download … (CSV)" link (for example "Download Rating (CSV)") that gives the same table as a file Excel or Google Sheets can open. Before this, the only way to answer "how busy were we last month?" was to count cards on the bookings board one day at a time.
 
 Full details: [the plan](../plans/2026-11-22-1102-feat-admin-reports-plan.md) and the "Reports" block in `CLAUDE.md`.
 
@@ -53,6 +53,8 @@ The owner's decisions (2026-11-22):
 4. **The page and the CSV route**, then their tests.
 5. **A browser check by hand** on `npm run dev` at port 3001 (the other sessions used other ports). Made one booking through `/book`, saw it in the tables, and fetched the CSV. Its body started `"Day","Booked",...` with a `2026-11-24` row, and the answer had `Cache-Control: private, no-store`. This found one bug: the totals row's label wasn't bold (fixed in `f6a2abe`).
 6. **A simplify pass** (`ce-simplify-code`, five reviewers, `44b1351`): one shared `activeBookingsIn` filter for the reads, `eq()` for `"completed"`, and one needless `?.` removed. Skipped: making `readReportTable` throw instead of returning `null` (it would change a mock that a proof test relies on), and pruning comments (this repo keeps teaching comments on purpose).
+7. **Code review** (`ce-code-review`, seven reviewers) and fixes, then the final `code-reviewer` gate and its fixes (see Review below).
+8. **A last full run**, which caught a flaky browser test (see Review).
 
 ## Decisions worth knowing
 
@@ -65,7 +67,7 @@ The owner's decisions (2026-11-22):
 ## New ideas in this task
 
 - **Route Handler:** a `route.ts` file that answers a URL with any `Response` (here a file), instead of a page. Our first one that reads the session. Two traps:
-  - The path has no dot (`/admin/reports/export`, not `/admin/reports.csv`). The proxy skips paths with a file extension, so a dot would skip its "logged out → `/login`" 307.
+  - The path has no dot (`/admin/reports/export`, not `/admin/reports.csv`). The proxy (`src/proxy.ts`) skips paths ending in a listed file extension. `.csv` isn't on that list today, but the repo's rule is "no dot in a page path", and the day someone adds `csv` to the list, a `.csv` download would lose the proxy's "logged out → `/login`" 307 without anyone noticing.
   - It calls `authorize("reports.view")` and turns only `AccessDeniedError` into a plain, empty 404. It never calls `requirePermission`: that calls `notFound()`, which would send the HTML 404 page as the "file".
 - **CSV injection:** a spreadsheet treats a cell starting with `=`, `+`, `-` or `@` as a formula and runs it. Service and mechanic names are typed by staff, so a name like `=HYPERLINK(...)` could do harm on the owner's laptop. `toCsv` puts a `'` in front of such text (and of text starting with a tab or a carriage return), which spreadsheets show as plain text. Like writing "the word:" before a word so nobody reads it as an order.
 - **Byte-order mark (BOM):** three invisible bytes at the start of a file that say "this is UTF-8". Without them, Excel guesses an old encoding and garbles Hindi or `₹`.
@@ -75,14 +77,14 @@ The owner's decisions (2026-11-22):
 
 ## Check that it works
 
-What was run in this session:
+What was run in this session, on the final code (after every fix below):
 
 ```bash
-npm run check      # passed: 2,776 tests
+npm run check      # passed: 2,781 tests
 npm run test:e2e   # passed: 137 tests
 ```
 
-Both ran before the simplify commit (`44b1351`); afterwards, the 56 tests of the touched reads and page passed. The browser test checks the reports inside `admin.spec.ts`'s one owner login, so the test owner number never needs a third login code in an hour. Its counts are "at least" counts, because every spec books on the same database.
+The same two also passed earlier, before the simplify pass (2,776 and 137). The browser test checks the reports inside `admin.spec.ts`'s one owner login, so the test owner number never needs a third login code in an hour. Its counts are "at least" counts, because every spec books on the same database.
 
 I re-ran the pure tests while writing this doc:
 
@@ -97,11 +99,11 @@ By hand:
 1. `npm run dev -- --port 3001` (any free port; `--` passes the flag on to `next dev`).
 2. Log in at `/login` with the garage's own number (the local owner); the code is on `/dev/outbox`.
 3. Make a booking at `/book`, then open `/admin/reports`. Try 7 days, then a custom range.
-4. Click a "Download CSV" link and open the file in a spreadsheet.
+4. Click a "Download … (CSV)" link, such as "Download Bookings (CSV)", and open the file in a spreadsheet.
 
 ## Common mistakes
 
-- **Putting a dot in a Route Handler's path** under `/admin`: the proxy skips it, and a logged-out visitor gets no redirect.
+- **Putting a file extension in a Route Handler's path** under `/admin`: if that extension is on the proxy's skip list, a logged-out visitor gets no redirect.
 - **Using `requirePermission` in a Route Handler:** the "file" becomes the HTML 404 page.
 - **Grouping by UTC date** (`startsAt.toISOString().slice(0, 10)`): late-night India slots land on the wrong day.
 - **Comparing a status with `'booked'` alone:** use `ACTIVE_STATUSES`, or confirmed bookings vanish from the totals.
@@ -121,8 +123,20 @@ By hand:
 
 ## Review
 
-_To come._
+**`ce-code-review`** (seven reviewers: correctness, project standards, testing, maintainability, security, past lessons, adversarial): "Ready with fixes", nothing serious. What we fixed:
+
+- **`readReportTable` was never run for real in a test.** The page and the CSV both call it, but their tests replace it with a stand-in. A mix-up (the rating builder fed the workload rows, say) would have passed every test. Now `src/server/dal/reports.test.ts` runs it on PGlite for all four reports, a Hindi service name included.
+- Smaller ones: the rating rows come from `RATINGS` instead of a typed `[5, 4, 3, 2, 1]`; a test for a service booked twice in one booking; a test that a CSV with an unusable range still downloads the default 30 days; and a comment that said "works without the page's JavaScript" now says "works before the page's JavaScript loads" (a streamed staff page needs Next.js's small inline script).
+- Left as known risks: a login that ends in the milliseconds between the CSV's two access checks would get a 500 instead of a 404.
+
+**`code-reviewer`:** "Ready to merge", with four suggestions, all taken:
+
+- The fallback notes typed "30" and "366" into the messages. They now get the numbers from `REPORT_DEFAULT_DAYS` and `REPORT_MAX_DAYS`, so changing a rule can't leave the page saying the wrong number.
+- `readReportTable` now checks access on its own first line, like every other staff read, instead of relying on the reads it calls.
+- This doc's test notes and link text were behind the code (fixed here).
+
+**A flaky browser test, found by the last full run.** The reports check looked for the bookings block with `locator("section").filter(...)`. That also matched the page's outer `<section>`, so it found every report's CSV link. It passed the first time only because the other reports were empty that day; on the next run another spec's booking landed on the same day and it failed. It now finds the block by its own label, `section[aria-labelledby="report-bookings"]`.
 
 ## Compound
 
-_To come._
+Yes. Without a note, the next spec that reaches into one block of a page would make the same mistake, and it would pass until the data changed. The lesson is [`document/solutions/conventions/playwright-locate-a-block-by-its-label-not-section-filter.md`](../solutions/conventions/playwright-locate-a-block-by-its-label-not-section-filter.md). The CSV rules (byte-order mark, formula guard, the Route Handler's own access check) are written in `CLAUDE.md`'s "Reports" section, which every session reads, so they needed no separate lesson.

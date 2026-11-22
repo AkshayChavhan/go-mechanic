@@ -593,8 +593,8 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Bookings are grouped by the slot's India day in code (`indiaDateOf`), not with SQL `AT TIME ZONE`: `india-time.ts` owns India time, and PGlite's time-zone data is untested (plan KTD2)
 - [x] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
-- [ ] Merge into `main`
+- [x] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Merge into `main`
 
 ### 42_local_seo
 
