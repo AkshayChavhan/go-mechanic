@@ -323,9 +323,9 @@ test("the owner opens the staff area from /account, finds the booking on its day
   for (const report of ["rating", "top-services", "workload", "bookings"] as const) {
     await expect(page.getByRole("heading", { level: 2, name: reports.reports[report].title })).toBeVisible();
   }
-  const bookingsBlock = page.locator("section").filter({
-    has: page.getByRole("heading", { level: 2, name: reports.reports.bookings.title }),
-  });
+  // By its own label: the page's outer <section> holds every report, and other
+  // specs may book on the same day, so the other reports can have rows too.
+  const bookingsBlock = page.locator('section[aria-labelledby="report-bookings"]');
   // The totals row: Booked, Confirmed, Cancelled, No-show, Total.
   const totals = bookingsBlock.locator("tfoot tr td");
   expect(Number(await totals.nth(2).innerText())).toBeGreaterThanOrEqual(1);
