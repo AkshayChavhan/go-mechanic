@@ -1170,7 +1170,7 @@ export const estimateLines = pgTable(
     /** 0, 1, 2...: the order the lines were added in. */
     position: integer("position").notNull(),
     kind: estimateLineKind("kind").notNull(),
-    /** As staff typed it, or the service's name (trimmed; spaces collapsed). */
+    /** As staff typed it, or the service's name (as `normalizeTypedText` leaves it: trimmed, line breaks kept). */
     description: text("description").notNull(),
     /** In paise: whole rupees from ₹1 to ₹10,00,000. */
     amountPaise: integer("amount_paise").notNull(),
