@@ -99,6 +99,13 @@ const booked = {
   storage: undefined as Awaited<ReturnType<BrowserContext["storageState"]>> | undefined,
 };
 
+/**
+ * A second visit by the same customer (task 33): the owner moves its job on,
+ * which the first booking can't take (it's cancelled, and a started job
+ * can't be cancelled).
+ */
+const second = { code: "", day: "" };
+
 test("a customer books a visit on /book (the booking the owner looks for)", async ({ page, context }) => {
   const errors = watchErrors(page);
   const number = await logInThroughTheForm(page);
@@ -122,7 +129,7 @@ test("a customer books a visit on /book (the booking the owner looks for)", asyn
   await continueTo(page, wizard.steps.slot);
   booked.day = await pickAtRandom(page, wizard.dayLegend);
   expect(booked.day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-  await pickAtRandom(page, wizard.timeLegend);
+  const firstTime = await pickAtRandom(page, wizard.timeLegend);
   await continueTo(page, wizard.steps.confirm);
 
   await button(page, wizard.confirm).click();
@@ -131,6 +138,34 @@ test("a customer books a visit on /book (the booking the owner looks for)", asyn
   await expect(code).toHaveCount(1);
   booked.code = (await code.innerText()).trim();
   expect(booked.code).toMatch(CODE_SHAPE);
+
+  // A second visit (MAX_FUTURE_BOOKINGS is 3), with the vehicle the first
+  // booking saved, at another time: the same vehicle in the same slot would
+  // answer "already booked".
+  await page.goto("/book");
+  await expect(stepHeading(page, wizard.steps.vehicle)).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: wizard.savedLegend }).getByRole("radio", { name: `Honda City, ${booked.registration}` }),
+  ).toBeChecked();
+  await continueTo(page, wizard.steps.services);
+  await page.getByRole("group", { name: wizard.servicesLegend }).getByRole("checkbox").first().check();
+  await continueTo(page, wizard.steps.slot);
+  second.day = await pickAtRandom(page, wizard.dayLegend);
+  const times = page
+    .getByRole("group", { name: wizard.timeLegend })
+    .locator(`input[type=radio]:not([disabled]):not([value="${firstTime}"])`);
+  expect(await times.count(), "no other time to choose").toBeGreaterThan(0);
+  const time = times.first();
+  await pill(time).click();
+  await expect(time).toBeChecked();
+  await continueTo(page, wizard.steps.confirm);
+  await button(page, wizard.confirm).click();
+  await expect(stepHeading(page, wizard.doneHeading)).toBeVisible();
+  const secondCode = page.locator('p[translate="no"]').filter({ visible: true });
+  await expect(secondCode).toHaveCount(1);
+  second.code = (await secondCode.innerText()).trim();
+  expect(second.code).toMatch(CODE_SHAPE);
+  expect(second.code).not.toBe(booked.code);
 
   booked.storage = await context.storageState();
   expect(withoutFaviconProbe(errors)).toEqual([]);
@@ -168,6 +203,7 @@ test("a customer opening a staff page sees the 404 page, and its HTML holds no s
     for (const word of STAFF_WORDS) expect(html, `${path}: "${word}"`).not.toContain(word);
     expect(html, path).not.toContain(booked.code);
     expect(html, path).not.toContain(booked.code.replace("-", ""));
+    expect(html, path).not.toContain(second.code);
     expect(html, path).not.toContain(booked.name);
     expect(html, path).not.toContain(booked.registration);
   }
@@ -197,7 +233,7 @@ test("the manifest and home-screen icons answer for anyone, and only /admin link
   expect(home).not.toContain("/admin.webmanifest");
 });
 
-test("the owner opens the staff area from /account, finds the booking on its day, confirms and cancels it before the page's JavaScript loads, then a customer on the same phone presses Back and sees nothing of it", async ({
+test("the owner opens the staff area from /account, finds the booking on its day, confirms and cancels it before the page's JavaScript loads, moves a second booking's job to inspection, then a customer on the same phone presses Back and sees nothing of it", async ({
   page,
   browser,
 }) => {
@@ -286,7 +322,51 @@ test("the owner opens the staff area from /account, finds the booking on its day
   await staff.getByRole("link", { name: /^Show cancelled \(\d+\)$/ }).click();
   await expect(status(bookings.statuses.cancelled)).toBeVisible();
   await expect(staffCard.getByText(bookings.cancelReason.replace("{reason}", reason))).toBeVisible();
+
+  // Task 33: the second booking's job, step by step from its Manage panel.
+  // The first move in the same tab without the page's JavaScript files...
+  const stepLabel = (step: keyof typeof bookings.jobSteps) => bookings.jobSteps[step];
+  const moveTo = (step: keyof typeof bookings.jobSteps) => bookings.manage.moveJob.replace("{step}", stepLabel(step));
+  const jobCard = (on: Page) =>
+    on.getByRole("listitem").filter({ has: on.getByRole("heading", { level: 2, name: new RegExp(second.code) }) });
+  const jobPanel = (on: Page) =>
+    jobCard(on).locator("summary", { hasText: bookings.manage.summary.replace("{code}", second.code) });
+  // React may keep a <details> open across the redirect, so open it only when it's shut.
+  const openJobPanel = async (on: Page) => {
+    const details = jobCard(on).locator("details");
+    if (!(await details.evaluate((element) => (element as HTMLDetailsElement).open))) await jobPanel(on).click();
+  };
+  const moved = (on: Page, step: keyof typeof bookings.jobSteps) =>
+    on.getByRole("status").filter({
+      hasText: bookings.notices["job-moved"].replace("{code}", second.code).replace("{step}", stepLabel(step)),
+    });
+  const jobLine = (on: Page, step: keyof typeof bookings.jobSteps) =>
+    jobCard(on).getByText(bookings.job.replace("{step}", stepLabel(step)), { exact: true });
+
+  await staff.goto(`/admin/bookings?date=${second.day}`);
+  await expect(jobLine(staff, "not-started")).toBeVisible();
+  await openJobPanel(staff);
+  await expect(jobCard(staff).getByRole("button", { name: moveTo("inspection") })).toHaveCount(0);
+  await jobCard(staff).getByRole("button", { name: moveTo("vehicle-received") }).click();
+  await expect(staff).toHaveURL(/notice=job-moved/);
+  await expect(moved(staff, "vehicle-received")).toBeVisible();
+  await expect(jobLine(staff, "vehicle-received")).toBeVisible();
   await noScript.close();
+
+  // ...and the next with it, in the owner's own tab.
+  await page.goto(`/admin/bookings?date=${second.day}`);
+  await expect(jobLine(page, "vehicle-received")).toBeVisible();
+  await openJobPanel(page);
+  await jobCard(page).getByRole("button", { name: moveTo("inspection") }).click();
+  await expect(page).toHaveURL(/notice=job-moved/);
+  await expect(moved(page, "inspection")).toBeVisible();
+  await expect(jobLine(page, "inspection")).toBeVisible();
+  // Only sending an estimate reaches "awaiting approval", and nothing offers
+  // "Completed" until the staff reviews page exists (CLAUDE.md "Reviews").
+  await openJobPanel(page);
+  await expect(jobCard(page).getByRole("button", { name: moveTo("in-service") })).toBeVisible();
+  await expect(jobCard(page).getByRole("button", { name: moveTo("completed") })).toHaveCount(0);
+  await expect(jobCard(page).getByRole("button", { name: moveTo("awaiting-approval") })).toHaveCount(0);
 
   // The reason is for the garage only: the customer's /admin HTML still holds none of it.
   const customer404 = await browser.newContext({ ...phone, storageState: booked.storage });
@@ -325,6 +405,7 @@ test("the owner opens the staff area from /account, finds the booking on its day
     const text = await page.evaluate(() => document.body.innerText);
     seen.push(new URL(page.url()).pathname + new URL(page.url()).search);
     expect(text, `right after Back to ${page.url()}`).not.toContain(booked.code);
+    expect(text, `right after Back to ${page.url()}`).not.toContain(second.code);
     expect(text, `right after Back to ${page.url()}`).not.toContain(booked.name);
     expect(text, `right after Back to ${page.url()}`).not.toMatch(new RegExp(`^${admin.nav.bookings}$`, "m"));
     expect(text, `right after Back to ${page.url()}`).not.toContain(admin.overview.heading);
