@@ -20,7 +20,7 @@ import type { Fuel, VehicleKind } from "@/domain/vehicles";
 import type { LocalizedText } from "@/i18n/localized-text";
 import { authorize } from "@/server/auth/access";
 import { getDatabase } from "@/server/db";
-import { bookingEvents, bookingItems, bookings, users, vehicleMakes, vehicleModels } from "@/server/db/schema";
+import { bookingEvents, bookingItems, bookings, estimates, users, vehicleMakes, vehicleModels } from "@/server/db/schema";
 
 /** A booking as the staff board shows it: the booking's own copies, with names from the catalogue. */
 export type StaffBookingRow = {
@@ -61,6 +61,11 @@ export type StaffBookingRow = {
   mechanic: { id: string; name: string } | null;
   /** Why it was cancelled, for the garage only; null unless the booking is cancelled. */
   cancelReason: string | null;
+  /**
+   * The newest estimate version (task 33): its number, and whether it's
+   * still a draft or was sent. Null when the job has no estimate.
+   */
+  estimate: { version: number; state: "draft" | "sent" } | null;
 };
 
 export type ListBookingsOnResult = { ok: true; bookings: StaffBookingRow[] } | { ok: false; problem: "invalid-date" };
@@ -157,6 +162,23 @@ export async function listBookingsOn(date: string): Promise<ListBookingsOnResult
     }
   }
 
+  // The newest estimate version of each booking (newest first: the first row
+  // per booking wins). The newest is never superseded, so it's a draft or sent.
+  const estimateRows = await db
+    .select({ bookingId: estimates.bookingId, version: estimates.version, sentAt: estimates.sentAt })
+    .from(estimates)
+    .where(
+      inArray(
+        estimates.bookingId,
+        rows.map((row) => row.id),
+      ),
+    )
+    .orderBy(desc(estimates.version));
+  const newestEstimate = new Map<string, { version: number; state: "draft" | "sent" }>();
+  for (const { bookingId, version, sentAt } of estimateRows) {
+    if (!newestEstimate.has(bookingId)) newestEstimate.set(bookingId, { version, state: sentAt === null ? "draft" : "sent" });
+  }
+
   return {
     ok: true,
     bookings: rows.map((row) => ({
@@ -185,6 +207,7 @@ export async function listBookingsOn(date: string): Promise<ListBookingsOnResult
       jobStatus: row.jobStatus,
       mechanic: row.mechanicId !== null && row.mechanicName !== null ? { id: row.mechanicId, name: row.mechanicName } : null,
       cancelReason: reasons.get(row.id) ?? null,
+      estimate: newestEstimate.get(row.id) ?? null,
     })),
   };
 }

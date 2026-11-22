@@ -215,8 +215,11 @@ export async function assignMechanic(input: AssignMechanicInput): Promise<Assign
   });
 }
 
-/** Locks one booking row and reads what the saves decide on, only from it. */
-async function lockBooking(tx: SlotTransaction, bookingId: string) {
+/**
+ * Locks one booking row and reads what the saves decide on, only from it.
+ * The estimate saves (estimates.ts, task 33) lock the same row the same way.
+ */
+export async function lockBooking(tx: SlotTransaction, bookingId: string) {
   const [row] = await tx
     .select({
       id: bookings.id,

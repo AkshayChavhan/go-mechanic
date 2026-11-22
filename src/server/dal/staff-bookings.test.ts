@@ -10,7 +10,7 @@ import type { Role } from "@/domain/roles";
 import { AccessDeniedError } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth/session";
 import { closeDatabase, createDatabase, type Database, getDatabase } from "@/server/db";
-import { bookingEvents, bookingItems, bookings, users, vehicleModels } from "@/server/db/schema";
+import { bookingEvents, bookingItems, bookings, estimates, users, vehicleModels } from "@/server/db/schema";
 
 import { listBookingsOn } from "./staff-bookings";
 
@@ -216,6 +216,7 @@ describe("listBookingsOn", () => {
       jobStatus: null,
       mechanic: null,
       cancelReason: null,
+      estimate: null,
     });
     // Inserted battery (position 1) first: the order comes from `position`.
     expect(result.bookings[1]!.lines).toEqual([brakes, battery]);
@@ -278,6 +279,26 @@ describe("listBookingsOn", () => {
     expect(row(assigned)).toMatchObject({ status: "confirmed", jobStatus: "inspection", mechanic: { id: "mona", name: "Mona" }, cancelReason: null });
     expect(row(cancelled)).toMatchObject({ status: "cancelled", jobStatus: null, mechanic: { id: "mona", name: "Mona" }, cancelReason: "Customer called" });
     expect(row(noShow)).toMatchObject({ status: "no-show", mechanic: null, cancelReason: null });
+  });
+
+  test("each row has its newest estimate version, draft or sent, or null without one", async () => {
+    const withDraft = await book({ startsAt: "2026-11-24T04:30:00Z", jobStatus: "awaiting-approval" });
+    const withSent = await book({ startsAt: "2026-11-24T05:30:00Z", jobStatus: "awaiting-approval" });
+    const without = await book({ startsAt: "2026-11-24T06:30:00Z" });
+    const sent = { sentAt: new Date("2026-11-24T05:00:00Z"), sentBy: "manu", sendToken: randomUUID() };
+    await db.insert(estimates).values([
+      // Version 1 sent, version 2 a draft (the Change estimate case).
+      { bookingId: withDraft, version: 1, createdBy: "manu", createToken: randomUUID(), ...sent },
+      { bookingId: withDraft, version: 2, createdBy: "manu", createToken: randomUUID() },
+      { bookingId: withSent, version: 1, createdBy: "manu", createToken: randomUUID(), ...sent, sendToken: randomUUID() },
+    ]);
+
+    const result = await listBookingsOn(DAY);
+    if (!result.ok) throw new Error("expected bookings");
+    const row = (id: string) => result.bookings.find((booking) => booking.id === id)!;
+    expect(row(withDraft).estimate).toEqual({ version: 2, state: "draft" });
+    expect(row(withSent).estimate).toEqual({ version: 1, state: "sent" });
+    expect(row(without).estimate).toBeNull();
   });
 
   test("a day with no bookings gives an empty list", async () => {

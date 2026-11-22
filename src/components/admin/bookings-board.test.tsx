@@ -50,6 +50,7 @@ function booking(overrides: Partial<StaffBookingRow> & Pick<StaffBookingRow, "id
     jobStatus: null,
     mechanic: null,
     cancelReason: null,
+    estimate: null,
     ...overrides,
   };
 }
