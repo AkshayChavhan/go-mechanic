@@ -42,7 +42,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | Done | [31_job_timeline.md](../learning/31_job_timeline.md) |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | Done | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
-| 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | In progress |  |
+| 33 | `33_estimate_builder` | Estimate engine (lines, versions, send for approval) and job steps on the board (the page split into task 53) | In progress |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
@@ -62,6 +62,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 50 | `50_staff_phone_bookings` | Phone and walk-in bookings made by staff (split from task 26) | To do |  |
 | 51 | `51_admin_estimate_inbox` | The estimate-request inbox and its photo page in `/admin` (split from task 26) | To do |  |
 | 52 | `52_staff_reschedule` | Staff move a booking to another free time, up to 60 days ahead (split from task 27); build before task 50 | To do |  |
+| 53 | `53_estimate_page` | The staff estimate page: lines, totals, send and versions (split from task 33) | To do |  |
 
 ## Task steps
 
@@ -501,10 +502,13 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 - [x] Create branch `33_estimate_builder`
 - [x] Plan with `ce-plan`: [plan](../plans/2026-11-22-1058-feat-estimate-builder-plan.md) (owner, 2026-11-22: a small Job step control on the board's Manage panel, so a job can reach inspection; it stops at Ready until the staff reviews page exists)
-- [ ] Estimate lines, versions, send for approval
-- [ ] Owner, 2026-11-21: estimates for booked jobs first (after inspection; sending moves the job to awaiting approval); answers to free estimate requests come later with the inbox (task 51)
-- [ ] Owner, 2026-11-21: each line is marked needed or optional (task 34 decides what a rejected needed line does)
-- [ ] Owner, 2026-11-21: amounts are what the customer pays; one line says "Prices include taxes" (no GST breakdown in version 1)
+- [x] Estimate lines, versions, send for approval: the rules (U1), the tables (U2, migration 0013) and the saves and reads (U4)
+- [x] Owner, 2026-11-21: estimates for booked jobs first (after inspection; sending moves the job to awaiting approval); answers to free estimate requests come later with the inbox (task 51)
+- [x] Owner, 2026-11-21: each line is marked needed or optional (task 34 decides what a rejected needed line does)
+- [ ] Owner, 2026-11-21: amounts are what the customer pays; one line says "Prices include taxes" (no GST breakdown in version 1): the wording ships with the page (task 53)
+- [x] Job step buttons on the board's Manage panel (U3), stopping at Ready
+- [x] Size checkpoint (owner, 2026-11-22): about 2,230 lines after U4, near 3,600 with the page, so the page (U5) and its browser steps moved to task 53
+- [ ] Privacy notice for estimates, `LOGIN_NOTICE_VERSION`, a browser test of the Job step buttons, and the "Estimates" block in `CLAUDE.md` (U6, without the estimate page)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
@@ -743,6 +747,20 @@ Split from task 27 at its size checkpoint (2026-11-20). Build it from U7 and U8 
 - [ ] The board's picker: a day, then that day's free slots (`readStaffSlotsOn`); the action lands on the new day with the "moved" notice and the reminder to call or WhatsApp the customer
 - [ ] Update the privacy notice: reschedules join the staff history; move `LOGIN_NOTICE_VERSION`
 - [ ] Browser test: move the test booking to another day and find it there
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
+
+### 53_estimate_page
+
+Split from task 33 at its size checkpoint (owner, 2026-11-22). Build it from U5 and the estimate steps of U6 in [task 33's plan](../plans/2026-11-22-1058-feat-estimate-builder-plan.md) (R2 to R11, KTD7, KTD9). The engine (`src/server/dal/estimates.ts`) and the board's Job step buttons are already on `main`.
+
+- [ ] Create branch `53_estimate_page`
+- [ ] `/admin/bookings/<bookingId>/estimate`: the gate (`estimates.manage`), the states, the line rows, the add form, the totals with "Prices include taxes", Send, Change estimate and the earlier versions (U5)
+- [ ] The four Server Actions in `src/server/actions/admin-estimates.ts` with their closed notice list, and the `sent` notice that reminds staff to tell the customer (call links with `customers.contact`)
+- [ ] The Estimate link in the Manage panel's Job step group (`estimates.manage`), and the card's estimate summary (`StaffBookingRow.estimate`)
+- [ ] Browser test: build and send an estimate on a second booking, one add with page scripts blocked, and the estimate page in the customer-HTML scan (U6)
 - [ ] Write the learning doc
 - [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
