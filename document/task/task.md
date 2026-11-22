@@ -42,7 +42,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | Done | [31_job_timeline.md](../learning/31_job_timeline.md) |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | Done | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
-| 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
+| 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | In progress |  |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
@@ -499,9 +499,12 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 33_estimate_builder
 
-- [ ] Create branch `33_estimate_builder`
-- [ ] Plan with `ce-plan`
+- [x] Create branch `33_estimate_builder`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-22-1058-feat-estimate-builder-plan.md) (owner, 2026-11-22: a small Job step control on the board's Manage panel, so a job can reach inspection; it stops at Ready until the staff reviews page exists)
 - [ ] Estimate lines, versions, send for approval
+- [ ] Owner, 2026-11-21: estimates for booked jobs first (after inspection; sending moves the job to awaiting approval); answers to free estimate requests come later with the inbox (task 51)
+- [ ] Owner, 2026-11-21: each line is marked needed or optional (task 34 decides what a rejected needed line does)
+- [ ] Owner, 2026-11-21: amounts are what the customer pays; one line says "Prices include taxes" (no GST breakdown in version 1)
 - [ ] Write the learning doc
 - [ ] Review with `code-reviewer` and fix what it finds
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
