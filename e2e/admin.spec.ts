@@ -59,6 +59,10 @@ const STAFF_WORDS = [
   messages.AdminPrices.groupHint,
   messages.AdminPrices.fuelsSummary,
   messages.AdminPrices.onInspectionNote,
+  // The reports (task 41).
+  messages.AdminReports.intro,
+  messages.AdminReports.reports.bookings.description,
+  messages.AdminReports.reports.workload.description,
 ];
 
 const CODE_SHAPE = new RegExp(`^[${BOOKING_CODE_ALPHABET}]{3}-[${BOOKING_CODE_ALPHABET}]{3}$`);
@@ -159,6 +163,8 @@ test("a customer opening a staff page sees the 404 page, and its HTML holds no s
     `/admin/bookings?date=${booked.day}`,
     "/admin/prices",
     "/admin/prices/periodic-service",
+    "/admin/reports",
+    `/admin/reports?from=${booked.day}&to=${booked.day}`,
   ]) {
     const response = await page.request.get(path, { maxRedirects: 0 });
     // A 404 inside <Suspense> streams with status 200 (CLAUDE.md, "Roles and access").
@@ -171,6 +177,19 @@ test("a customer opening a staff page sees the 404 page, and its HTML holds no s
     expect(html, path).not.toContain(booked.name);
     expect(html, path).not.toContain(booked.registration);
   }
+
+  // The reports' CSV is a Route Handler, not a streamed page: a real 404, with no body.
+  const csv = await page.request.get(`/admin/reports/export?report=bookings&from=${booked.day}&to=${booked.day}`, {
+    maxRedirects: 0,
+  });
+  expect(csv.status()).toBe(404);
+  expect(await csv.text()).toBe("");
+  // Logged out, the proxy sends it to the login page like every /admin path.
+  const visitor = await browser.newContext();
+  const loggedOut = await visitor.request.get("/admin/reports/export?report=bookings", { maxRedirects: 0 });
+  expect(loggedOut.status()).toBe(307);
+  expect(loggedOut.headers().location).toMatch(/\/login$/);
+  await visitor.close();
 
   expect(withoutFaviconProbe(errors)).toEqual([]);
   await context.close();
@@ -294,6 +313,37 @@ test("the owner opens the staff area from /account, finds the booking on its day
   expect(raw).not.toContain(reason);
   expect(raw).not.toContain(bookings.manage.reasonLabel);
   await customer404.close();
+
+  // Task 41: the reports for the booking's day count it (cancelled now), and
+  // its CSV holds totals only. Other specs book on the same database, so the
+  // counts are "at least", never exact.
+  const reports = messages.AdminReports;
+  await page.goto(`/admin/reports?from=${booked.day}&to=${booked.day}`);
+  await expect(page.getByRole("heading", { level: 1, name: reports.heading })).toBeVisible();
+  for (const report of ["rating", "top-services", "workload", "bookings"] as const) {
+    await expect(page.getByRole("heading", { level: 2, name: reports.reports[report].title })).toBeVisible();
+  }
+  const bookingsBlock = page.locator("section").filter({
+    has: page.getByRole("heading", { level: 2, name: reports.reports.bookings.title }),
+  });
+  // The totals row: Booked, Confirmed, Cancelled, No-show, Total.
+  const totals = bookingsBlock.locator("tfoot tr td");
+  expect(Number(await totals.nth(2).innerText())).toBeGreaterThanOrEqual(1);
+  // A phone-width page never scrolls sideways: wide tables scroll inside their own box.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
+
+  const csvHref = await bookingsBlock.getByRole("link", { name: /CSV/ }).getAttribute("href");
+  expect(csvHref).toBe(`/admin/reports/export?report=bookings&from=${booked.day}&to=${booked.day}`);
+  const csv = await page.request.get(csvHref!);
+  expect(csv.status()).toBe(200);
+  expect(csv.headers()["content-type"]).toBe("text/csv; charset=utf-8");
+  expect(csv.headers()["content-disposition"]).toBe(`attachment; filename="bookings-${booked.day}-to-${booked.day}.csv"`);
+  const file = await csv.text();
+  expect(file).toContain('"Day","Booked","Confirmed","Cancelled","No-show","Total"');
+  expect(file).toContain(`"${booked.day}"`);
+  for (const secret of [booked.code, booked.code.replace("-", ""), booked.name, booked.registration, booked.phone, "+91"]) {
+    expect(file).not.toContain(secret);
+  }
 
   // Shared phone: the owner logs out from the staff bar...
   await button(page, account.logOut).click();
