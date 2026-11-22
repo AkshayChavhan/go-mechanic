@@ -19,9 +19,20 @@ import { alias } from "drizzle-orm/pg-core";
 
 import { ACTIVE_STATUSES } from "@/domain/bookings";
 import { checkReportRange, periodWindow } from "@/domain/report-period";
-import type { BookingReportRow, RatingReportRow, WorkloadReportRow } from "@/domain/reports";
 import type { IndiaDate } from "@/domain/india-time";
-import type { LocalizedText } from "@/i18n/localized-text";
+import {
+  type BookingReportRow,
+  bookingsTable,
+  type RatingReportRow,
+  type ReportName,
+  type ReportTable,
+  ratingTable,
+  topServicesTable,
+  type WorkloadReportRow,
+  workloadTable,
+} from "@/domain/reports";
+import type { Locale } from "@/i18n/config";
+import { type LocalizedText, localize } from "@/i18n/localized-text";
 import { authorize } from "@/server/auth/access";
 import { getDatabase } from "@/server/db";
 import { bookingItems, bookings, reviews, services, users } from "@/server/db/schema";
@@ -128,4 +139,33 @@ export async function readWorkloadReport(period: ReportPeriodInput): Promise<Rep
     )
     .groupBy(mechanics.id, mechanics.name);
   return { ok: true, rows };
+}
+
+/**
+ * One report's table for the period, in `locale`: the read, then its builder.
+ * The page and the CSV both call this, so they always show the same rows.
+ * Null for a period the reports can't use (callers pass one from
+ * pickReportPeriod, which never gives one).
+ */
+export async function readReportTable(report: ReportName, period: ReportPeriodInput, locale: Locale): Promise<ReportTable | null> {
+  switch (report) {
+    case "bookings": {
+      const result = await readBookingsReport(period);
+      return result.ok ? bookingsTable(result.rows) : null;
+    }
+    case "top-services": {
+      const result = await readTopServicesReport(period);
+      return result.ok
+        ? topServicesTable(result.rows.map((row) => ({ name: localize(row.name, locale), bookings: row.bookings })))
+        : null;
+    }
+    case "rating": {
+      const result = await readRatingReport(period);
+      return result.ok ? ratingTable(result.rows) : null;
+    }
+    case "workload": {
+      const result = await readWorkloadReport(period);
+      return result.ok ? workloadTable(result.rows) : null;
+    }
+  }
 }
