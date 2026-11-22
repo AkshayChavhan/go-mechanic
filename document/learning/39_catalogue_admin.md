@@ -1,6 +1,6 @@
 # 39_catalogue_admin: staff set the garage's real prices
 
-> **Branch:** `39_catalogue_admin` · **Date:** 2026-11-20 · **Status:** In progress
+> **Branch:** `39_catalogue_admin` · **Date:** 2026-11-20 · **Status:** Done
 
 ## In one minute
 

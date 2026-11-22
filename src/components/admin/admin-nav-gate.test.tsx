@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 
 describe("AdminNavGate (the staff bar's section links)", () => {
-  test.each(["manager", "owner"] as const)("a %s: a Staff nav with Bookings and Prices", async (role) => {
+  test.each(["manager", "owner"] as const)("a %s: a Staff nav with Bookings, Prices and Reports", async (role) => {
     vi.mocked(getCurrentUser).mockResolvedValue(userWith(role));
     renderWithIntl(<>{await AdminNavGate({ locale: "en" })}</>);
     const nav = screen.getByRole("navigation", { name: t.label });
@@ -36,6 +36,7 @@ describe("AdminNavGate (the staff bar's section links)", () => {
     expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
       [t.bookings, "/admin/bookings"],
       [t.prices, "/admin/prices"],
+      [t.reports, "/admin/reports"],
     ]);
   });
 
