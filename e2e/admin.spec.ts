@@ -2,6 +2,7 @@ import { type BrowserContext, expect, type Locator, type Page, test } from "@pla
 
 import messages from "../messages/en.json";
 import { BOOKING_CODE_ALPHABET } from "../src/domain/bookings";
+import { indiaDateOf } from "../src/domain/india-time";
 import { formatPhoneNumber } from "../src/lib/contact-links";
 
 import { expectNoErrors, freshNumber, latestCodeFor, logInThroughTheForm, TEST_OWNER_NUMBER, watchErrors } from "./helpers";
@@ -80,9 +81,10 @@ async function continueTo(page: Page, next: string) {
   await expect(stepHeading(page, next)).toBeVisible();
 }
 
-/** Clicks one of the group's enabled pills at random; returns the radio's value. */
-async function pickAtRandom(page: Page, legend: string): Promise<string> {
-  const radios = page.getByRole("group", { name: legend }).locator("input[type=radio]:not([disabled])");
+/** Clicks one of the group's enabled pills at random (never the one valued `except`); returns the radio's value. */
+async function pickAtRandom(page: Page, legend: string, except?: string): Promise<string> {
+  const skip = except === undefined ? "" : `:not([value="${except}"])`;
+  const radios = page.getByRole("group", { name: legend }).locator(`input[type=radio]:not([disabled])${skip}`);
   const count = await radios.count();
   expect(count, `no enabled ${legend} to choose`).toBeGreaterThan(0);
   const radio = radios.nth(Math.floor(Math.random() * count));
@@ -102,6 +104,13 @@ const booked = {
   /** The customer's login cookies, so the next test opens /admin as them. */
   storage: undefined as Awaited<ReturnType<BrowserContext["storageState"]>> | undefined,
 };
+
+/**
+ * A second visit by the same customer (task 33), on a later day than today:
+ * its Manage panel offers no job step yet, since a vehicle can be received
+ * only from its booking's India day (owner, 2026-11-22).
+ */
+const second = { code: "", day: "" };
 
 test("a customer books a visit on /book (the booking the owner looks for)", async ({ page, context }) => {
   const errors = watchErrors(page);
@@ -126,7 +135,7 @@ test("a customer books a visit on /book (the booking the owner looks for)", asyn
   await continueTo(page, wizard.steps.slot);
   booked.day = await pickAtRandom(page, wizard.dayLegend);
   expect(booked.day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-  await pickAtRandom(page, wizard.timeLegend);
+  const firstTime = await pickAtRandom(page, wizard.timeLegend);
   await continueTo(page, wizard.steps.confirm);
 
   await button(page, wizard.confirm).click();
@@ -135,6 +144,35 @@ test("a customer books a visit on /book (the booking the owner looks for)", asyn
   await expect(code).toHaveCount(1);
   booked.code = (await code.innerText()).trim();
   expect(booked.code).toMatch(CODE_SHAPE);
+
+  // A second visit (MAX_FUTURE_BOOKINGS is 3), with the vehicle the first
+  // booking saved, at another time: the same vehicle in the same slot would
+  // answer "already booked".
+  await page.goto("/book");
+  await expect(stepHeading(page, wizard.steps.vehicle)).toBeVisible();
+  await expect(
+    page.getByRole("group", { name: wizard.savedLegend }).getByRole("radio", { name: `Honda City, ${booked.registration}` }),
+  ).toBeChecked();
+  await continueTo(page, wizard.steps.services);
+  await page.getByRole("group", { name: wizard.servicesLegend }).getByRole("checkbox").first().check();
+  await continueTo(page, wizard.steps.slot);
+  // Not today: the board must not offer "Move to Vehicle received" for it.
+  second.day = await pickAtRandom(page, wizard.dayLegend, indiaDateOf(new Date()));
+  const times = page
+    .getByRole("group", { name: wizard.timeLegend })
+    .locator(`input[type=radio]:not([disabled]):not([value="${firstTime}"])`);
+  expect(await times.count(), "no other time to choose").toBeGreaterThan(0);
+  const time = times.first();
+  await pill(time).click();
+  await expect(time).toBeChecked();
+  await continueTo(page, wizard.steps.confirm);
+  await button(page, wizard.confirm).click();
+  await expect(stepHeading(page, wizard.doneHeading)).toBeVisible();
+  const secondCode = page.locator('p[translate="no"]').filter({ visible: true });
+  await expect(secondCode).toHaveCount(1);
+  second.code = (await secondCode.innerText()).trim();
+  expect(second.code).toMatch(CODE_SHAPE);
+  expect(second.code).not.toBe(booked.code);
 
   booked.storage = await context.storageState();
   expect(withoutFaviconProbe(errors)).toEqual([]);
@@ -174,6 +212,7 @@ test("a customer opening a staff page sees the 404 page, and its HTML holds no s
     for (const word of STAFF_WORDS) expect(html, `${path}: "${word}"`).not.toContain(word);
     expect(html, path).not.toContain(booked.code);
     expect(html, path).not.toContain(booked.code.replace("-", ""));
+    expect(html, path).not.toContain(second.code);
     expect(html, path).not.toContain(booked.name);
     expect(html, path).not.toContain(booked.registration);
   }
@@ -216,7 +255,7 @@ test("the manifest and home-screen icons answer for anyone, and only /admin link
   expect(home).not.toContain("/admin.webmanifest");
 });
 
-test("the owner opens the staff area from /account, finds the booking on its day, confirms and cancels it before the page's JavaScript loads, then a customer on the same phone presses Back and sees nothing of it", async ({
+test("the owner opens the staff area from /account, finds the booking on its day, confirms and cancels it before the page's JavaScript loads, sees no job step on a later day's booking, then a customer on the same phone presses Back and sees nothing of it", async ({
   page,
   browser,
 }) => {
@@ -305,6 +344,20 @@ test("the owner opens the staff area from /account, finds the booking on its day
   await staff.getByRole("link", { name: /^Show cancelled \(\d+\)$/ }).click();
   await expect(status(bookings.statuses.cancelled)).toBeVisible();
   await expect(staffCard.getByText(bookings.cancelReason.replace("{reason}", reason))).toBeVisible();
+
+  // Task 33: the second booking is on a later day, so its Manage panel
+  // offers no job step at all: a vehicle can be received only from its
+  // booking's India day (owner, 2026-11-22; updateJob refuses earlier).
+  // A job that's already started is unit-tested (bookings-board.test.tsx).
+  const jobCard = staff
+    .getByRole("listitem")
+    .filter({ has: staff.getByRole("heading", { level: 2, name: new RegExp(second.code) }) });
+  await staff.goto(`/admin/bookings?date=${second.day}`);
+  await expect(jobCard.getByText(bookings.job.replace("{step}", bookings.jobSteps["not-started"]), { exact: true })).toBeVisible();
+  await jobCard.locator("summary", { hasText: bookings.manage.summary.replace("{code}", second.code) }).click();
+  await expect(jobCard.getByRole("button", { name: bookings.manage.confirm })).toBeVisible();
+  await expect(jobCard.getByRole("button", { name: new RegExp(`^${bookings.manage.moveJob.replace("{step}", "")}`) })).toHaveCount(0);
+  await expect(jobCard.getByRole("group", { name: new RegExp(`^${bookings.manage.jobStep.replace("{step}", "")}`) })).toHaveCount(0);
   await noScript.close();
 
   // The reason is for the garage only: the customer's /admin HTML still holds none of it.
@@ -375,6 +428,7 @@ test("the owner opens the staff area from /account, finds the booking on its day
     const text = await page.evaluate(() => document.body.innerText);
     seen.push(new URL(page.url()).pathname + new URL(page.url()).search);
     expect(text, `right after Back to ${page.url()}`).not.toContain(booked.code);
+    expect(text, `right after Back to ${page.url()}`).not.toContain(second.code);
     expect(text, `right after Back to ${page.url()}`).not.toContain(booked.name);
     expect(text, `right after Back to ${page.url()}`).not.toMatch(new RegExp(`^${admin.nav.bookings}$`, "m"));
     expect(text, `right after Back to ${page.url()}`).not.toContain(admin.overview.heading);

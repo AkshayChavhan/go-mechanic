@@ -36,13 +36,13 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 24 | `24_pickup_drop` | Pickup and drop by pincode, with fee | Done | [24_pickup_drop.md](../learning/24_pickup_drop.md) |
 | 25 | `25_my_bookings` | Customer bookings list and detail, cancel or reschedule | To do |  |
 | 26 | `26_admin_bookings_board` | The `/admin` area: navigation by role, the bookings board, add to home screen | Done | [26_admin_bookings_board.md](../learning/26_admin_bookings_board.md) |
-| 27 | `27_booking_management` | Confirm, cancel, no-show and assign a mechanic; status rules (reschedule split into task 52) | In progress | [27_booking_management.md](../learning/27_booking_management.md) |
+| 27 | `27_booking_management` | Confirm, cancel, no-show and assign a mechanic; status rules (reschedule split into task 52) | Done | [27_booking_management.md](../learning/27_booking_management.md) |
 | 28 | `28_schedule_settings` | Edit hours, slot rules, holidays, pickup areas | To do |  |
 | 29 | `29_team_customers` | Team and roles, customer list, audit log | To do |  |
 | 30 | `30_photo_uploads` | Photo storage with signed URLs, resizing, access checks | Done | [30_photo_uploads.md](../learning/30_photo_uploads.md) |
 | 31 | `31_job_timeline` | Job statuses, mechanic job updates and the customer's timeline: the engine (the pages wait for tasks 25 and 26) | Done | [31_job_timeline.md](../learning/31_job_timeline.md) |
 | 32 | `32_estimate_requests` | Free estimate requests with photos; the staff read for the admin inbox (the page waits for task 26) | Done | [32_estimate_requests.md](../learning/32_estimate_requests.md) |
-| 33 | `33_estimate_builder` | Estimate lines, versions, send for approval | To do |  |
+| 33 | `33_estimate_builder` | Estimate engine (lines, versions, send for approval) and job steps on the board (the page split into task 53) | In progress | [33_estimate_builder.md](../learning/33_estimate_builder.md) |
 | 34 | `34_estimate_approval` | Customer approves or rejects each estimate line | To do |  |
 | 35 | `35_notification_outbox` | Notification outbox (SMS, WhatsApp, email fakes), retries, consent | To do |  |
 | 36 | `36_service_reminders` | Daily reminders: service due, PUC, insurance | To do |  |
@@ -62,6 +62,7 @@ Every piece of work in this repo is a small, numbered task. This file is the one
 | 50 | `50_staff_phone_bookings` | Phone and walk-in bookings made by staff (split from task 26) | To do |  |
 | 51 | `51_admin_estimate_inbox` | The estimate-request inbox and its photo page in `/admin` (split from task 26) | To do |  |
 | 52 | `52_staff_reschedule` | Staff move a booking to another free time, up to 60 days ahead (split from task 27); build before task 50 | To do |  |
+| 53 | `53_estimate_page` | The staff estimate page: lines, totals, send and versions (split from task 33) | To do |  |
 
 ## Task steps
 
@@ -442,7 +443,7 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 - [x] Write the learning doc: [27_booking_management.md](../learning/27_booking_management.md)
 - [x] Review: `ce-code-review` "Ready with fixes" (one missing test, three tidy-ups; fixed); `code-reviewer` "Needs changes" for one broken `CLAUDE.md` line (fixed), its suggestions fixed too
 - [x] Compound: [suspense-streaming-needs-inline-script-test-no-js-by-blocking-bundles.md](../solutions/conventions/suspense-streaming-needs-inline-script-test-no-js-by-blocking-bundles.md)
-- [ ] Merge into `main`
+- [x] Merge into `main`
 
 ### 28_schedule_settings
 
@@ -499,12 +500,19 @@ The master plan is this task's plan. It was made in Claude's plan mode with the 
 
 ### 33_estimate_builder
 
-- [ ] Create branch `33_estimate_builder`
-- [ ] Plan with `ce-plan`
-- [ ] Estimate lines, versions, send for approval
-- [ ] Write the learning doc
-- [ ] Review with `code-reviewer` and fix what it finds
-- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [x] Create branch `33_estimate_builder`
+- [x] Plan with `ce-plan`: [plan](../plans/2026-11-22-1058-feat-estimate-builder-plan.md) (owner, 2026-11-22: a small Job step control on the board's Manage panel, so a job can reach inspection; it stops at Ready until the staff reviews page exists)
+- [x] Estimate lines, versions, send for approval: the rules (U1), the tables (U2, migration 0013) and the saves and reads (U4)
+- [x] Owner, 2026-11-21: estimates for booked jobs first (after inspection; sending moves the job to awaiting approval); answers to free estimate requests come later with the inbox (task 51)
+- [x] Owner, 2026-11-21: each line is marked needed or optional (task 34 decides what a rejected needed line does)
+- [x] Owner, 2026-11-21: amounts are what the customer pays; one line says "Prices include taxes" (no GST breakdown in version 1): the totals are in the engine (`estimateTotals`); the wording ships with the page (task 53)
+- [x] Job step buttons on the board's Manage panel (U3), stopping at Ready
+- [x] Size checkpoint (owner, 2026-11-22): about 2,230 lines after U4, near 3,600 with the page, so the page (U5) and its browser steps moved to task 53
+- [x] Privacy notice for estimates, `LOGIN_NOTICE_VERSION` (`2026-11-22`), a browser check that a later day's booking offers no job step (the moves are unit-tested), and the "Estimates" block in `CLAUDE.md` (U6, without the estimate page)
+- [x] Code review (owner, 2026-11-22): a vehicle can be received only from its booking's day in India (`updateJob` answers `before-booking-day`), so one mis-tap can't lock a future booking
+- [x] Write the learning doc: [33_estimate_builder.md](../learning/33_estimate_builder.md)
+- [x] Review: `ce-code-review` "Ready with fixes" (2 findings, fixed); `code-reviewer` "Needs changes" for one learning-doc line (fixed), its suggestions fixed too
+- [x] Compound: none needed; the booking-day rule and the browser-test note are in `CLAUDE.md` and task 53's steps (see the learning doc)
 - [ ] Merge into `main`
 
 ### 34_estimate_approval
@@ -745,6 +753,20 @@ Split from task 27 at its size checkpoint (2026-11-20). Build it from U7 and U8 
 - [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
 - [ ] Merge into `main`
 
+### 53_estimate_page
+
+Split from task 33 at its size checkpoint (owner, 2026-11-22). Build it from U5 and the estimate steps of U6 in [task 33's plan](../plans/2026-11-22-1058-feat-estimate-builder-plan.md) (R2 to R11, KTD7, KTD9). The engine (`src/server/dal/estimates.ts`) and the board's Job step buttons are already on `main`.
+
+- [ ] Create branch `53_estimate_page`
+- [ ] `/admin/bookings/<bookingId>/estimate`: the gate (`estimates.manage`), the states, the line rows, the add form, the totals with "Prices include taxes", Send, Change estimate and the earlier versions (U5)
+- [ ] The four Server Actions in `src/server/actions/admin-estimates.ts` with their closed notice list, and the `sent` notice that reminds staff to tell the customer (call links with `customers.contact`)
+- [ ] The Estimate link in the Manage panel's Job step group (`estimates.manage`), and the card's estimate summary (`StaffBookingRow.estimate`: `listBookingsOn` already reads it on every board load; use it or remove the query)
+- [ ] Browser test: build and send an estimate on a second booking, one add with page scripts blocked, and the estimate page in the customer-HTML scan (U6). A job can be received only from its booking's day (owner, 2026-11-22), so that booking must be for today: find a way to book today's date reliably (or a test-only seed) before writing the steps
+- [ ] Write the learning doc
+- [ ] Review with `ce-code-review` and `code-reviewer`, and fix what they find
+- [ ] Compound: save a lesson in `document/solutions/` if one passes the counterfactual question
+- [ ] Merge into `main`
+
 ## Backlog (later)
 
 Not in version 1. See [features.md](../website/features.md).
@@ -817,7 +839,7 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 47: show the pickup step only from `readPickupAreas()` (real areas), never `selectPickupAreas()` (the samples can't be booked), so it stays hidden until real areas exist; show the pickup fee next to the services' total, and say "Free" for 0. Wrap the booking action's unexpected errors like `LoginServiceError` (step, error name, Postgres code; no message, no cause): a failed insert's error carries the query's values, the pickup address included. A "duplicate" answer for the same vehicle and slot under a new token returns the first booking's code even if this confirm asked for pickup and the first didn't: say on that screen whether the booked one includes pickup (task 24)
 - Task 43: deleting a customer's bookings deletes their pickup addresses with them (they're columns on `bookings`); the privacy notice's "Your bookings" then says so (task 24)
 - Task 26: the `/admin` inbox for estimate requests: call `listEstimateRequests()` (it checks `estimates.manage` itself, and gives the phone number only with `customers.contact`), open the photos with `photoViewUrls(photoSetId)`, and decide paging and filters (it returns the newest 50 today) (task 32)
-- Task 33: answer estimate requests. Close the request's photo set (`photo_sets.closed_at`) when the garage answers, or an open set (and the request's photos) is deleted 30 days after it started; also refuse uploads to a set a request already uses (a direct `startPhotos` call could add to it). The request has no status column: work its state out from its estimates (task 32)
+- Task 51: answer estimate requests. Close the request's photo set (`photo_sets.closed_at`) when the garage answers, or an open set (and the request's photos) is deleted 30 days after it started; also refuse uploads to a set a request already uses (a direct `startPhotos` call could add to it). The request has no status column: work its state out from its estimates (task 32)
 - Links to `/estimate` from the menu, the footer and the home page (`src/components/site/navigation.ts`, which another session is changing for `/book`), and a login that returns a guest to `/estimate` (today they land on `/account`, which links to it) (task 32)
 - Task 42: `/estimate` in the sitemap, and a title and description that name the place and the vehicles (for example "Free car and bike repair estimate in Kiwale, Pune | GoMechanic"); today no public page links to it, so search engines may never find it until the links above exist (SEO check after task 32)
 - Task 47: the booking action's error wrapper (no message, no cause) should cover `sendEstimateRequest` too: a failed insert's error carries the customer's description (task 32)
@@ -831,7 +853,10 @@ Not in version 1. See [features.md](../website/features.md).
 - Task 26: the mechanic's pages on `/admin`: their jobs (`listMyAssignedJobs()`), a job (`readJob()`, which leaves out the phone number for mechanics) with `JobTimeline`, and the update form (step, note, `PhotoUploader` wired to `startJobPhotoUpload`/`finishJobPhotoUpload` through new Server Actions that call `requireUser` first, a request token per visit) calling `updateJob()`. Its form says notes are shown to the customer (task 31)
 - Task 25: the customer's booking page shows `JobTimeline` from `readMyJobTimeline(bookingId)` (task 31)
 - Task 27: assign a mechanic (`bookings.assigned_mechanic_id`; check the person assigned holds `jobs.update`), and make `updateJob` refuse a cancelled booking and cancelling refuse a job that has started (`job_status` not null) (task 31)
-- Task 33: sending an estimate moves the job to `awaiting-approval`: add the estimate's rows to `canMoveJob`'s table (inspection or in-service → awaiting-approval) with a "how" that keeps them off-limits by hand, and write a `job-update` event for the move (timelines carry the step forward from events). Task 34 adds the moves out of it, a rejected estimate included (task 31)
+- Done in task 33: sending an estimate moves the job to `awaiting-approval` (a "by-estimate" row in `canMoveJob`'s table, kept off-limits by hand, and one `job-update` event for the move). Task 34 adds the moves out of it, a rejected estimate included (task 31)
+- Task 25: the customer's booking page shows JobTimeline, whose 'Awaiting your approval' step needs task 34's estimate view: ship 34 first or explain the step (task 33)
+- Tasks 25 and 52: if either allows cancelling or moving a started job, decide what happens to an open estimate (task 33)
+- Task 53: a draft started at Inspection goes read-only when staff press "Move to Ready" (`wrong-step` until the job moves back to In service); show "a draft is open" on the card, or decide whether that move should be refused while a draft is open (task 33 code-reviewer)
 - Task 35: queue the customer's notification for a job update where `updateJob` marks the spot, inside its transaction (task 31)
 - Task 43: deleting a booking with job photos needs its photos deleted first (`photo_sets.booking_id` restricts it), and the notice's "Your bookings" then says how long progress and notes are kept (task 31)
 - Task 20: on Postgres, check two `updateJob` calls on one booking at once (the `for update` lock); PGlite runs one transaction at a time and can't show the race (task 31)

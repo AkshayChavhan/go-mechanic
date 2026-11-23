@@ -19,7 +19,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 
 import { isActiveStatus } from "@/domain/bookings";
 import { isUuid } from "@/domain/ids";
-import { canMoveJob, checkJobUpdateInput, type JobStatus, type JobUpdateInput, type JobUpdateInputProblem } from "@/domain/jobs";
+import { bookingDayReached, canMoveJob, checkJobUpdateInput, type JobStatus, type JobUpdateInput, type JobUpdateInputProblem } from "@/domain/jobs";
 import { can } from "@/domain/permissions";
 import type { Fuel, VehicleKind } from "@/domain/vehicles";
 import type { LocalizedText } from "@/i18n/localized-text";
@@ -37,6 +37,8 @@ import type { SlotTransaction } from "./slots";
 export type JobUpdateProblem =
   | JobUpdateInputProblem
   | { field: "status"; problem: "move-not-allowed" }
+  /** "vehicle-received" before the booking's India day (bookingDayReached; owner, 2026-11-22). */
+  | { field: "status"; problem: "before-booking-day" }
   | { field: "photos"; problem: "photos-not-found" };
 
 /** One saved update, as updateJob answers with it. */
@@ -96,7 +98,7 @@ export async function updateJob(input: JobUpdateInput, clock: Clock = systemCloc
     // Locked, so two updates of one job (or an update and task 27's cancel)
     // can't both read the same step and both move it.
     const [job] = await tx
-      .select({ id: bookings.id, jobStatus: bookings.jobStatus, status: bookings.status })
+      .select({ id: bookings.id, jobStatus: bookings.jobStatus, status: bookings.status, startsAt: bookings.startsAt })
       .from(bookings)
       .where(jobRowFilter(user, update.bookingId))
       .for("update");
@@ -119,16 +121,20 @@ export async function updateJob(input: JobUpdateInput, clock: Clock = systemCloc
     // no-show still answers "duplicate".
     if (!isActiveStatus(job.status)) return { status: "booking-closed" };
     if (job.jobStatus === "completed") return { status: "job-closed" };
+    const now = clock.now();
     const problems: JobUpdateProblem[] = [];
     if (update.toStatus !== null && !canMoveJob(job.jobStatus, update.toStatus)) {
       problems.push({ field: "status", problem: "move-not-allowed" });
+    } else if (update.toStatus === "vehicle-received" && !bookingDayReached(job.startsAt, now)) {
+      // A started job can't be cancelled or marked a no-show, so a mis-tap on
+      // a future booking would have no way back.
+      problems.push({ field: "status", problem: "before-booking-day" });
     }
     if (update.photoSetId !== null && !(await jobSetIsFree(tx, job.id, update.photoSetId))) {
       problems.push({ field: "photos", problem: "photos-not-found" });
     }
     if (problems.length > 0) return { status: "problems", problems };
 
-    const now = clock.now();
     const [saved] = await tx
       .insert(bookingEvents)
       .values({

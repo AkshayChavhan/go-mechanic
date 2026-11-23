@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { BoardView } from "@/domain/board-dates";
 import type { Role } from "@/domain/roles";
 import { getCurrentUser } from "@/server/auth/session";
+import { type UpdateJobResult, updateJob } from "@/server/dal/jobs";
 import { assignMechanic, changeBookingStatus } from "@/server/dal/staff-booking-changes";
 
-import { assignFromBoard, changeStatusFromBoard } from "./admin-bookings";
+import { assignFromBoard, changeStatusFromBoard, moveJobFromBoard } from "./admin-bookings";
 
 // The actions only check, call the data-access layer and redirect. The saves
 // (tested on their own in staff-booking-changes.test.ts) are replaced here, so
@@ -13,12 +14,15 @@ import { assignFromBoard, changeStatusFromBoard } from "./admin-bookings";
 // reading a mocked session.
 vi.mock("@/server/auth/session", () => ({ getCurrentUser: vi.fn() }));
 vi.mock("@/server/dal/staff-booking-changes", () => ({ changeBookingStatus: vi.fn(), assignMechanic: vi.fn() }));
+vi.mock("@/server/dal/jobs", () => ({ updateJob: vi.fn() }));
 
 const BOOKING = "11111111-2222-4333-8444-555555555555";
 const TOKEN = "3f2b8c4e-1d2a-4b6c-9e8f-0a1b2c3d4e5f";
 const MECHANIC = "99999999-2222-4333-8444-555555555555";
 const day: BoardView = { date: "2026-11-20", showCancelled: false };
 const dayWithCancelled: BoardView = { date: "2026-11-20", showCancelled: true };
+
+const savedUpdate = { id: "event-1", movedTo: "inspection" as const, note: null, hadPhotos: false, createdAt: new Date("2026-11-20T05:00:00Z") };
 
 const userWith = (role: Role) => ({ id: "staff-1", phoneNumber: "+919876500001", role });
 
@@ -27,6 +31,7 @@ beforeEach(() => {
   vi.mocked(getCurrentUser).mockResolvedValue(userWith("manager"));
   vi.mocked(changeBookingStatus).mockResolvedValue({ status: "changed", code: "K7Q4MX", bookingStatus: "confirmed" });
   vi.mocked(assignMechanic).mockResolvedValue({ status: "changed", code: "K7Q4MX", mechanicId: MECHANIC });
+  vi.mocked(updateJob).mockResolvedValue({ status: "updated", update: savedUpdate });
 });
 
 function form(fields: Record<string, string>): FormData {
@@ -223,5 +228,70 @@ describe("assignFromBoard", () => {
     expect(await redirectedTo(assignFromBoard("en", BOOKING, day, form({ mechanicId: MECHANIC, requestToken: TOKEN })))).toBe(
       board(`date=2026-11-20&notice=${notice}&code=K7Q4MX`),
     );
+  });
+});
+
+describe("moveJobFromBoard (the Job step control, task 33)", () => {
+  const move = (step: string) => form({ step, code: "K7Q4MX", requestToken: TOKEN });
+
+  test("logged out: to /login, and nothing is moved", async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(null);
+    expect(await thrownBy(moveJobFromBoard("en", BOOKING, day, move("inspection")))).toMatchObject(TO_LOGIN);
+    expect(updateJob).not.toHaveBeenCalled();
+  });
+
+  test.each(["customer", "mechanic"] as const)("a %s: the 404 page, and nothing is moved", async (role) => {
+    vi.mocked(getCurrentUser).mockResolvedValue(userWith(role));
+    expect(await thrownBy(moveJobFromBoard("en", BOOKING, day, move("inspection")))).toMatchObject(NOT_FOUND);
+    expect(updateJob).not.toHaveBeenCalled();
+  });
+
+  test("passes the bound booking, the posted step and token, no note or photos; back with the notice", async () => {
+    const url = await redirectedTo(
+      moveJobFromBoard("en", BOOKING, dayWithCancelled, form({ step: "inspection", code: "K7Q4MX", requestToken: TOKEN, note: "x", bookingId: "y" })),
+    );
+    expect(updateJob).toHaveBeenCalledWith({ bookingId: BOOKING, toStatus: "inspection", note: "", photoSetId: "", requestToken: TOKEN });
+    expect(url).toBe(board("date=2026-11-20&cancelled=show&notice=job-moved&code=K7Q4MX"));
+  });
+
+  test("a second send of the same form (duplicate) shows the same notice as the first", async () => {
+    vi.mocked(updateJob).mockResolvedValue({ status: "duplicate", update: savedUpdate });
+    expect(await redirectedTo(moveJobFromBoard("en", BOOKING, day, move("inspection")))).toBe(
+      board("date=2026-11-20&notice=job-moved&code=K7Q4MX"),
+    );
+  });
+
+  test.each(["completed", "", "toString", "booked"])("a posted %j step is refused before updateJob", async (step) => {
+    expect(await redirectedTo(moveJobFromBoard("en", BOOKING, day, move(step)))).toBe(board("date=2026-11-20&notice=not-saved&code=K7Q4MX"));
+    expect(updateJob).not.toHaveBeenCalled();
+  });
+
+  test("awaiting approval goes to updateJob, which refuses the move: nothing written, the job-step notice", async () => {
+    vi.mocked(updateJob).mockResolvedValue({ status: "problems", problems: [{ field: "status", problem: "move-not-allowed" }] });
+    const url = await redirectedTo(moveJobFromBoard("en", BOOKING, day, move("awaiting-approval")));
+    expect(updateJob).toHaveBeenCalledWith(expect.objectContaining({ toStatus: "awaiting-approval" }));
+    expect(url).toBe(board("date=2026-11-20&notice=job-step-changed&code=K7Q4MX"));
+  });
+
+  test.each<[string, UpdateJobResult, string]>([
+    ["job-closed", { status: "job-closed" }, "job-step-changed"],
+    ["booking-closed", { status: "booking-closed" }, "changed"],
+    ["vehicle received before the booking's day", { status: "problems", problems: [{ field: "status", problem: "before-booking-day" }] }, "before-booking-day"],
+    ["a broken form", { status: "problems", problems: [{ field: "form", problem: "bad-request" }] }, "not-saved"],
+  ])("%s: the refusal's notice", async (_, answer, notice) => {
+    vi.mocked(updateJob).mockResolvedValue(answer);
+    expect(await redirectedTo(moveJobFromBoard("en", BOOKING, day, move("ready")))).toBe(board(`date=2026-11-20&notice=${notice}&code=K7Q4MX`));
+  });
+
+  test("a booking the caller may not work on: back to the board, no notice", async () => {
+    vi.mocked(updateJob).mockResolvedValue({ status: "not-found" });
+    expect(await redirectedTo(moveJobFromBoard("en", BOOKING, day, move("inspection")))).toBe(board("date=2026-11-20"));
+  });
+
+  test("an unexpected error comes out without its details", async () => {
+    vi.mocked(updateJob).mockRejectedValue(new Error("Failed query: params: MH12AB0042"));
+    const error = await thrownBy(moveJobFromBoard("en", BOOKING, day, move("inspection")));
+    expect((error as Error).name).toBe("StaffServiceError");
+    expect((error as Error).message).not.toContain("MH12");
   });
 });

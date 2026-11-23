@@ -89,7 +89,16 @@ export function boardQuery(view: BoardView): { date?: IndiaDate; cancelled?: typ
 // --- The notice after an action (task 27) ---------------------------------------
 
 /** Notices that say a change was saved (or that nothing needed saving). */
-export const BOARD_SUCCESS_NOTICES = ["confirmed", "cancelled", "no-show", "arrived", "assigned", "unchanged"] as const;
+export const BOARD_SUCCESS_NOTICES = [
+  "confirmed",
+  "cancelled",
+  "no-show",
+  "arrived",
+  "assigned",
+  "unchanged",
+  /** The job moved to a new step from the Job step control (task 33). */
+  "job-moved",
+] as const;
 
 /** Notices that say a change was refused, and what to do next. */
 export const BOARD_REFUSAL_NOTICES = [
@@ -101,6 +110,10 @@ export const BOARD_REFUSAL_NOTICES = [
   "not-a-mechanic",
   "reason-too-short",
   "reason-too-long",
+  /** The job's step changed since the page was shown, so that move no longer fits (task 33). */
+  "job-step-changed",
+  /** "Vehicle received" before the booking's India day: updateJob refuses it (owner, 2026-11-22). */
+  "before-booking-day",
   /** A form that was tampered with or broken: nothing saved. */
   "not-saved",
 ] as const;

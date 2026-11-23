@@ -1,7 +1,11 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  bookingDayReached,
   canMoveJob,
+  canMoveJobFromBoard,
+  isBoardJobTarget,
+  canSendEstimateFrom,
   checkJobUpdateInput,
   JOB_STATUSES,
   JOB_STEPS,
@@ -38,15 +42,55 @@ describe("canMoveJob", () => {
     expect(canMoveJob(from, to)).toBe(true);
   });
 
-  test("every other move is refused, nothing reaches awaiting approval, and nothing leaves completed", () => {
+  test("every other move is refused, nothing reaches awaiting approval by hand, and nothing leaves completed", () => {
     const allowed = new Set(["null>vehicle-received", "vehicle-received>inspection", "inspection>in-service", "inspection>ready", "in-service>ready", "ready>in-service", "ready>completed"]);
     for (const from of [null, ...JOB_STATUSES] as (JobStatus | null)[]) {
       for (const to of JOB_STATUSES) {
         expect(canMoveJob(from, to), `${from} → ${to}`).toBe(allowed.has(`${from}>${to}`));
       }
     }
-    expect(JOB_STATUSES.some((from) => canMoveJob(from, "awaiting-approval"))).toBe(false);
+    // Only sending an estimate moves a job to awaiting approval (canSendEstimateFrom).
+    expect([null, ...JOB_STATUSES].some((from) => canMoveJob(from, "awaiting-approval"))).toBe(false);
     expect(JOB_STATUSES.some((to) => canMoveJob("completed", to))).toBe(false);
+  });
+});
+
+describe("bookingDayReached (owner, 2026-11-22)", () => {
+  // A 10:00 India slot on 20 Nov 2026 (04:30 UTC).
+  const slot = new Date("2026-11-20T04:30:00Z");
+
+  test("false the day before, even late in the evening India time", () => {
+    expect(bookingDayReached(slot, new Date("2026-11-19T18:29:00Z"))).toBe(false); // 23:59 on the 19th in India
+  });
+
+  test("true from India midnight of the slot's day (still the 19th in UTC), before the slot and after it", () => {
+    expect(bookingDayReached(slot, new Date("2026-11-19T18:30:00Z"))).toBe(true); // 00:00 on the 20th in India
+    expect(bookingDayReached(slot, new Date("2026-11-21T10:00:00Z"))).toBe(true);
+  });
+});
+
+describe("the board's Job step control", () => {
+  test("never offers completed, and vehicle received only once the booking's day has come", () => {
+    expect(isBoardJobTarget("completed", { slotDayReached: true })).toBe(false);
+    expect(isBoardJobTarget("vehicle-received", { slotDayReached: false })).toBe(false);
+    expect(isBoardJobTarget("vehicle-received", { slotDayReached: true })).toBe(true);
+    expect(isBoardJobTarget("inspection", { slotDayReached: false })).toBe(true);
+  });
+
+  test("offers the by-hand moves it may offer, from the job's step", () => {
+    expect(canMoveJobFromBoard(null, "vehicle-received", { slotDayReached: true })).toBe(true);
+    expect(canMoveJobFromBoard(null, "vehicle-received", { slotDayReached: false })).toBe(false);
+    expect(canMoveJobFromBoard("ready", "completed", { slotDayReached: true })).toBe(false);
+    expect(canMoveJobFromBoard("vehicle-received", "inspection", { slotDayReached: false })).toBe(true);
+    expect(canMoveJobFromBoard(null, "inspection", { slotDayReached: true })).toBe(false);
+    expect(canMoveJobFromBoard("inspection", "awaiting-approval", { slotDayReached: true })).toBe(false);
+  });
+});
+
+describe("canSendEstimateFrom", () => {
+  test("a send moves the job from inspection or in service only", () => {
+    const from = [null, ...JOB_STATUSES].filter((step) => canSendEstimateFrom(step));
+    expect(from).toEqual(["inspection", "in-service"]);
   });
 });
 

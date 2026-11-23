@@ -64,6 +64,9 @@ describe("parseBoardNotice (the notice after a board action)", () => {
   test("a known notice with a well-formed booking code", () => {
     expect(parseBoardNotice("cancelled", "K7Q4MX")).toEqual({ notice: "cancelled", code: "K7Q4MX" });
     expect(parseBoardNotice("reason-too-short", "PZ3H8T")).toEqual({ notice: "reason-too-short", code: "PZ3H8T" });
+    // The Job step control's notices (task 33).
+    expect(parseBoardNotice("job-moved", "K7Q4MX")).toEqual({ notice: "job-moved", code: "K7Q4MX" });
+    expect(parseBoardNotice("job-step-changed", "K7Q4MX")).toEqual({ notice: "job-step-changed", code: "K7Q4MX" });
   });
 
   test.each([
@@ -85,6 +88,8 @@ describe("parseBoardNotice (the notice after a board action)", () => {
     expect(isRefusalNotice("reason-too-long")).toBe(true);
     expect(isRefusalNotice("confirmed")).toBe(false);
     expect(isRefusalNotice("unchanged")).toBe(false);
+    expect(isRefusalNotice("job-moved")).toBe(false);
+    expect(isRefusalNotice("job-step-changed")).toBe(true);
     // Every notice is one or the other, never both.
     for (const notice of BOARD_NOTICES) expect(BOARD_REFUSAL_NOTICES.includes(notice as never)).toBe(isRefusalNotice(notice));
   });

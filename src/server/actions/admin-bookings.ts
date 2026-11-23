@@ -1,7 +1,8 @@
 "use server";
 
 // The bookings board's Server Actions (task 27): a status change (Confirm,
-// Cancel, No-show, Arrived after all) and Assign mechanic.
+// Cancel, No-show, Arrived after all) and Assign mechanic; from task 33 the
+// Job step control's move (moveJobFromBoard).
 //
 // The board posts them as plain <form>s, so they work without JavaScript
 // (node_modules/next/dist/docs/01-app/02-guides/forms.md, "Passing additional
@@ -29,10 +30,12 @@ import { RedirectType } from "next/navigation";
 
 import { type BoardNotice, boardQuery, checkBoardView, parseBoardNotice } from "@/domain/board-dates";
 import { isUuid } from "@/domain/ids";
+import { isBoardJobTarget, isJobStatus } from "@/domain/jobs";
 import type { Locale } from "@/i18n/config";
 import { redirect } from "@/i18n/navigation";
 import { requirePermission } from "@/server/auth/access";
 import { staffWithoutDetails } from "@/server/auth/errors";
+import { type UpdateJobResult, updateJob } from "@/server/dal/jobs";
 import {
   type AssignMechanicResult,
   assignMechanic,
@@ -97,6 +100,63 @@ export async function assignFromBoard(
     assignMechanic({ bookingId: id, mechanicId: mechanicId === "" ? null : mechanicId, requestToken: formText(formData, "requestToken") }),
   );
   return backToBoard(checked, id, boardView, assignNotice(result), codeOf(result, formData));
+}
+
+/**
+ * Moves a booking's job to the posted step, from the Job step control (task 33).
+ * It reuses task 31's engine (updateJob), which checks "jobs.update", an
+ * active booking, the move from the job's step as it is now, and the token,
+ * and writes the job-update event. The move carries no note and no photos.
+ */
+export async function moveJobFromBoard(
+  locale: string,
+  bookingId: string,
+  boardView: unknown,
+  formData: FormData,
+): Promise<void> {
+  const checked = checkedLocale(locale);
+  await requirePermission(checked, "bookings.manage");
+
+  const id = typeof bookingId === "string" ? bookingId : "";
+  const step = formText(formData, "step");
+  const posted = formText(formData, "code") || null;
+  // Refused here, before any save: a blank or unknown step (a broken form),
+  // and "completed", which the board never offers (isBoardJobTarget). The
+  // booking's day isn't known here: updateJob checks it, and the move from
+  // the job's step as it is now, with the booking locked (the page may be
+  // out of date), so "awaiting-approval" and an early "vehicle-received" are refused there.
+  if (!isJobStatus(step) || !isBoardJobTarget(step, { slotDayReached: true })) {
+    return backToBoard(checked, id, boardView, "not-saved", posted);
+  }
+
+  const result = await staffWithoutDetails("updateJob", () =>
+    updateJob({ bookingId: id, toStatus: step, note: "", photoSetId: "", requestToken: formText(formData, "requestToken") }),
+  );
+  // updateJob's answers carry no booking code, so the one the panel posted
+  // picks the card (the board checks it is one of the day's bookings).
+  return backToBoard(checked, id, boardView, jobNotice(result), posted);
+}
+
+function jobNotice(result: UpdateJobResult): BoardNotice | null {
+  switch (result.status) {
+    case "updated":
+    case "duplicate":
+      return "job-moved";
+    case "job-closed":
+      // Completed in the meantime: the notice says where the job is now.
+      return "job-step-changed";
+    case "booking-closed":
+      // Cancelled or a no-show in the meantime: the notice says which.
+      return "changed";
+    case "problems":
+      // A move that no longer fits the job's step, or a vehicle received before
+      // the booking's day; anything else is a broken form.
+      if (result.problems.some((problem) => problem.problem === "move-not-allowed")) return "job-step-changed";
+      if (result.problems.some((problem) => problem.problem === "before-booking-day")) return "before-booking-day";
+      return "not-saved";
+    case "not-found":
+      return null;
+  }
 }
 
 function statusNotice(result: ChangeBookingStatusResult, success: BoardNotice | null): BoardNotice | null {
